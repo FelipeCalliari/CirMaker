@@ -252,7 +252,7 @@
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="317"/>
         <source>Pre&amp;ferences...</source>
-        <translation type="unfinished"></translation>
+        <translation>Pre&amp;ferências...</translation>
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="322"/>
@@ -327,12 +327,12 @@
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="403"/>
         <source>&amp;Undo %1</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Desfazer %1</translation>
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="404"/>
         <source>&amp;Redo %1</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Refazer %1</translation>
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="413"/>
@@ -563,77 +563,77 @@
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="42"/>
         <source>Preferences</source>
-        <translation type="unfinished"></translation>
+        <translation>Preferências</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="45"/>
         <source>General</source>
-        <translation type="unfinished"></translation>
+        <translation>Geral</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="48"/>
         <source>System default</source>
-        <translation type="unfinished"></translation>
+        <translation>Padrão do sistema</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="52"/>
         <source>&amp;Language:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Idioma:</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="53"/>
         <source>A language change takes effect after restarting.</source>
-        <translation type="unfinished"></translation>
+        <translation>A troca de idioma vale após reiniciar o programa.</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="58"/>
         <source>Schematic</source>
-        <translation type="unfinished"></translation>
+        <translation>Esquemático</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="60"/>
         <source>Show grid</source>
-        <translation type="unfinished"></translation>
+        <translation>Mostrar grade</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="64"/>
         <source>Dots</source>
-        <translation type="unfinished"></translation>
+        <translation>Pontos</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="65"/>
         <source>Lines</source>
-        <translation type="unfinished"></translation>
+        <translation>Linhas</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="67"/>
         <source>Grid &amp;style:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Estilo da grade:</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="73"/>
         <source>Zoom used for new and opened circuits; &quot;Fit to window&quot; never enlarges beyond it</source>
-        <translation type="unfinished"></translation>
+        <translation>Zoom usado em circuitos novos e abertos; "Ajustar à janela" nunca amplia além dele</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="74"/>
         <source>Default &amp;zoom:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Zoom padrão:</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="77"/>
         <source>Digital simulation</source>
-        <translation type="unfinished"></translation>
+        <translation>Simulação digital</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="81"/>
         <source> ticks/frame</source>
-        <translation type="unfinished"> ticks/quadro</translation>
+        <translation> ticks/quadro</translation>
     </message>
     <message>
         <location filename="../src/ui/PreferencesDialog.cpp" line="83"/>
         <source>Initial &amp;speed:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Velocidade inicial:</translation>
     </message>
 </context>
 <context>
@@ -820,7 +820,7 @@
     <message>
         <location filename="../src/ui/SchematicScene.cpp" line="1114"/>
         <source>Reshape wire</source>
-        <translation type="unfinished"></translation>
+        <translation>Remodelar fio</translation>
     </message>
 </context>
 <context>
