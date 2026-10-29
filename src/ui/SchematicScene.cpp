@@ -7,6 +7,7 @@
 #include "ui/ComponentItem.h"
 #include "ui/Hotkeys.h"
 #include "ui/PropertiesDialog.h"
+#include "ui/SymbolPainter.h"
 #include "ui/TextNoteItem.h"
 #include "ui/TitleBlockItem.h"
 #include "ui/WaveformView.h"
@@ -421,6 +422,98 @@ void SchematicScene::deleteAt(QPointF p, bool snipWire)
         m_undo->push(new RemoveItemsCommand(m_circuit, sel, tr("Delete")));
         return;
     }
+}
+
+void SchematicScene::nudgeSelection(QPointF delta)
+{
+    const Selection before = selection();
+    if (before.components.isEmpty())
+        return;
+    Selection b, a;
+    for (const Component& c : before.components) {
+        b.components << c;
+        Component n = c;
+        n.pos += delta;
+        a.components << n;
+    }
+    m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Nudge")));
+}
+
+void SchematicScene::straightenWires()
+{
+    if (simulating())
+        return;
+    Selection sel = selection();
+    if (sel.wires.isEmpty())
+        for (const Wire& w : m_circuit->wires()) sel.wires << w;
+    Selection before, after;
+    for (const Wire& w : std::as_const(sel.wires)) {
+        // drop repeated and collinear points, then short zig-zags
+        QVector<QPointF> pts = simplify(w.points);
+        for (int i = 1; i + 2 < pts.size(); ++i) {
+            const QLineF mid(pts[i], pts[i + 1]);
+            if (mid.length() < 2 * kGrid) {
+                // move the short middle segment onto the previous one's line
+                const bool horizontal = std::abs(pts[i - 1].y() - pts[i].y()) < 0.5;
+                if (horizontal) pts[i + 1].setY(pts[i].y()); else pts[i + 1].setX(pts[i].x());
+                if (horizontal) pts[i + 2].setY(pts[i].y()); else pts[i + 2].setX(pts[i].x());
+            }
+        }
+        pts = simplify(pts);
+        if (pts != w.points && pts.size() >= 2) {
+            before.wires << w;
+            Wire n = w;
+            n.points = pts;
+            after.wires << n;
+        }
+    }
+    if (!after.isEmpty())
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Straighten wires")));
+}
+
+void SchematicScene::setDesignations(const QString& prefix, int first)
+{
+    if (simulating())
+        return;
+    QVector<Component> comps = selection().components;
+    if (comps.isEmpty())
+        for (const Component& c : m_circuit->components()) comps << c;
+    std::sort(comps.begin(), comps.end(), [](const Component& a, const Component& b) {
+        return qFuzzyCompare(a.pos.y(), b.pos.y()) ? a.pos.x() < b.pos.x() : a.pos.y() < b.pos.y();
+    });
+    QHash<QString, int> next;
+    Selection before, after;
+    for (const Component& c : std::as_const(comps)) {
+        const SymbolDef* s = m_library.find(c.symbolId);
+        if (!s || s->netLabel || s->hidden || s->prefix.isEmpty()) continue;
+        if (!prefix.isEmpty() && s->prefix != prefix) continue;
+        const int n = next.value(s->prefix, first);
+        next[s->prefix] = n + 1;
+        const QString ref = s->prefix + QString::number(n);
+        if (ref == c.designator) continue;
+        before.components << c;
+        Component m = c;
+        m.designator = ref;
+        after.components << m;
+    }
+    if (!after.isEmpty())
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Set designations")));
+}
+
+void SchematicScene::setPropDelays(int ticks)
+{
+    Selection before, after;
+    for (const Component& c : selection().components) {
+        const SymbolDef* s = m_library.find(c.symbolId);
+        const QString kind = s ? s->model.value(u"kind").toString() : QString();
+        if (kind != u"gate" && kind != u"dff" && kind != u"jkff" && kind != u"tribuf") continue;
+        before.components << c;
+        Component n = c;
+        n.props.insert(QStringLiteral("delay"), std::clamp(ticks, 1, 14));
+        after.components << n;
+    }
+    if (!after.isEmpty())
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Set propagation delays")));
 }
 
 void SchematicScene::duplicateSelection()
@@ -1077,6 +1170,23 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         update();
         return;
     }
+    // Alt+click on a wire highlights its whole node (CircuitMaker)
+    const int previousHighlight = m_highlightNet;
+    m_highlightNet = -1;
+    if (e->modifiers() & Qt::AltModifier) {
+        const int net = netAt(snap(e->scenePos())) >= 0 ? netAt(snap(e->scenePos())) : netAt(e->scenePos());
+        if (net >= 0) {
+            m_highlightNet = net;
+            clearSelection();
+            for (WireItem* w : std::as_const(m_wireItems))
+                if (m_netlist.wireNet.value(w->id(), -1) == net)
+                    w->setSelected(true);
+            update();
+            return;
+        }
+    }
+    if (previousHighlight >= 0)
+        update();
     if (beginWireEdit(e))
         return;
     QGraphicsScene::mousePressEvent(e);
@@ -1280,6 +1390,14 @@ void SchematicScene::keyPressEvent(QKeyEvent* e)
             clearSelection();
         return;
     }
+    if (!simulating() && !m_ghost && m_wirePoints.isEmpty() && e->modifiers() == Qt::NoModifier) {
+        const QPointF d = e->key() == Qt::Key_Left ? QPointF(-kGrid, 0) : e->key() == Qt::Key_Right ? QPointF(kGrid, 0)
+                        : e->key() == Qt::Key_Up ? QPointF(0, -kGrid) : e->key() == Qt::Key_Down ? QPointF(0, kGrid) : QPointF();
+        if (!d.isNull() && !selection().components.isEmpty()) {
+            nudgeSelection(d);
+            return;
+        }
+    }
     if (m_ghost && e->modifiers() == Qt::NoModifier) {
         if (e->key() == Qt::Key_R) { rotateSelection(); return; }
         if (e->key() == Qt::Key_M) { mirrorSelection(); return; }
@@ -1360,6 +1478,56 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         p->setBrush(Qt::NoBrush);
         p->drawPolyline(pts.constData(), int(pts.size()));
     }
+    // pin dots: pins with a wire attached
+    if (m_showPinDots) {
+        p->setPen(Qt::NoPen);
+        p->setBrush(QColor(0x00, 0x30, 0xff));
+        for (const ComponentItem* item : std::as_const(m_componentItems)) {
+            if (item->symbol()->netLabel) continue;
+            for (int i = 0; i < item->symbol()->pins.size(); ++i) {
+                const int net = m_netlist.netOf(item->id(), i);
+                if (net < 0 || m_netlist.nets[net].wires.isEmpty()) continue;
+                const QPointF at = m_library.pinScenePos(item->component(), i);
+                for (ItemId w : m_netlist.nets[net].wires)
+                    if (const Wire* wire = m_circuit->wire(w); wire && WireGeometry::onPolyline(at, wire->points)) {
+                        p->drawEllipse(at, 2.5, 2.5);
+                        break;
+                    }
+            }
+        }
+    }
+    // highlighted node (Alt+click)
+    if (m_highlightNet >= 0 && m_highlightNet < m_netlist.nets.size()) {
+        p->setPen(QPen(QColor(0xff, 0x80, 0x00, 170), 6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        p->setBrush(Qt::NoBrush);
+        for (ItemId w : m_netlist.nets[m_highlightNet].wires)
+            if (const Wire* wire = m_circuit->wire(w); wire && !wire->bus)
+                p->drawPolyline(wire->points.constData(), int(wire->points.size()));
+        p->setBrush(QColor(0xff, 0x80, 0x00));
+        for (const PinRef& r : m_netlist.nets[m_highlightNet].pins)
+            if (const Component* c = m_circuit->component(r.component))
+                p->drawEllipse(m_library.pinScenePos(*c, r.pin), 5, 5);
+    }
+    // node names at the middle of each net's longest wire segment
+    if (m_showNodeNames) {
+        QHash<int, std::pair<double, QPointF>> best;
+        for (const Wire& w : m_circuit->wires()) {
+            if (w.bus) continue;
+            const int net = m_netlist.wireNet.value(w.id, -1);
+            for (int i = 0; i + 1 < w.points.size(); ++i) {
+                const double len = QLineF(w.points[i], w.points[i + 1]).length();
+                if (len > best.value(net, {-1, {}}).first)
+                    best[net] = {len, (w.points[i] + w.points[i + 1]) / 2};
+            }
+        }
+        QFont f = SymbolPainter::schematicFont(10);
+        p->setFont(f);
+        p->setPen(QColor(0x90, 0x00, 0x90));
+        for (auto it = best.cbegin(); it != best.cend(); ++it)
+            if (it.key() >= 0)
+                p->drawText(it.value().second + QPointF(3, -4), m_netlist.nets[it.key()].name);
+    }
+
     // probes: numbered flags in their trace colours
     const QVector<QPointF>& probes = m_circuit->probes();
     for (int i = 0; i < probes.size(); ++i) {

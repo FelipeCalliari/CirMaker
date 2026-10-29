@@ -1,6 +1,7 @@
 #include "ui/MainWindow.h"
 
 #include "core/Bom.h"
+#include "core/PcbNetlist.h"
 #include "core/Circuit.h"
 #include "core/io/CktImporter.h"
 #include "core/io/NativeFormat.h"
@@ -238,10 +239,10 @@ void MainWindow::createActions()
     });
 
     m_zoomIn = new QAction(themeIcon("zoom-in", QStyle::SP_ArrowUp), tr("Zoom &In"), this);
-    m_zoomIn->setShortcuts({QKeySequence::ZoomIn, QKeySequence(Qt::CTRL | Qt::Key_Equal)});
+    m_zoomIn->setShortcuts({QKeySequence(Qt::Key_PageUp), QKeySequence::ZoomIn, QKeySequence(Qt::CTRL | Qt::Key_Equal)});
     connect(m_zoomIn, &QAction::triggered, this, [this] { m_view->zoomBy(1.25); });
     m_zoomOut = new QAction(themeIcon("zoom-out", QStyle::SP_ArrowDown), tr("Zoom &Out"), this);
-    m_zoomOut->setShortcut(QKeySequence::ZoomOut);
+    m_zoomOut->setShortcuts({QKeySequence(Qt::Key_PageDown), QKeySequence::ZoomOut});
     connect(m_zoomOut, &QAction::triggered, this, [this] { m_view->zoomBy(0.8); });
     m_zoomFit = new QAction(themeIcon("zoom-fit-best", QStyle::SP_DesktopIcon), tr("&Fit to Window"), this);
     m_zoomFit->setShortcuts({QKeySequence(Qt::Key_F4), QKeySequence(Qt::CTRL | Qt::Key_0)});
@@ -351,8 +352,64 @@ void MainWindow::createActions()
     m_collapseTree->setShortcut(Qt::Key_F6);
     connect(m_collapseTree, &QAction::triggered, m_browser, &LibraryBrowser::collapse);
     m_refresh = new QAction(tr("&Refresh Screen"), this);
-    m_refresh->setShortcut(Qt::Key_F7);
+    m_refresh->setShortcuts({QKeySequence(Qt::Key_F7), QKeySequence(Qt::Key_End)});
     connect(m_refresh, &QAction::triggered, this, [this] { m_scene->update(); m_view->viewport()->update(); });
+    m_straighten = new QAction(tr("Straighten &Wires"), this);
+    connect(m_straighten, &QAction::triggered, m_scene, &SchematicScene::straightenWires);
+    m_designations = new QAction(tr("Set Desi&gnations..."), this);
+    connect(m_designations, &QAction::triggered, this, [this] {
+        QStringList prefixes{tr("(all)")};
+        for (const Component& c : m_circuit->components())
+            if (const SymbolDef* s = LibraryRegistry::instance().find(c.symbolId); s && !s->prefix.isEmpty() && !s->netLabel
+                && !prefixes.contains(s->prefix))
+                prefixes << s->prefix;
+        bool ok = false;
+        const QString prefix = QInputDialog::getItem(this, tr("Set designations"),
+                                                     tr("Renumber the selected devices (or all) with prefix:"), prefixes, 0, false, &ok);
+        if (!ok) return;
+        const int first = QInputDialog::getInt(this, tr("Set designations"), tr("Starting number:"), 1, 0, 99999, 1, &ok);
+        if (ok) m_scene->setDesignations(prefix == prefixes.first() ? QString() : prefix, first);
+    });
+    m_propDelays = new QAction(tr("Set Prop Dela&ys..."), this);
+    connect(m_propDelays, &QAction::triggered, this, [this] {
+        bool ok = false;
+        const int ticks = QInputDialog::getInt(this, tr("Propagation delay"),
+                                               tr("Delay of the selected digital devices (ticks):"), 1, 1, 14, 1, &ok);
+        if (ok) m_scene->setPropDelays(ticks);
+    });
+    m_showNodeNames = new QAction(tr("Show &Node Names"), this);
+    m_showNodeNames->setCheckable(true);
+    m_showNodeNames->setChecked(QSettings().value(QStringLiteral("prefs/showNodeNames"), false).toBool());
+    m_scene->setShowNodeNames(m_showNodeNames->isChecked());
+    connect(m_showNodeNames, &QAction::toggled, this, [this](bool on) {
+        m_scene->setShowNodeNames(on);
+        QSettings().setValue(QStringLiteral("prefs/showNodeNames"), on);
+    });
+    m_showPinDots = new QAction(tr("Show &Pin Dots"), this);
+    m_showPinDots->setCheckable(true);
+    m_showPinDots->setChecked(QSettings().value(QStringLiteral("prefs/showPinDots"), true).toBool());
+    m_scene->setShowPinDots(m_showPinDots->isChecked());
+    connect(m_showPinDots, &QAction::toggled, this, [this](bool on) {
+        m_scene->setShowPinDots(on);
+        QSettings().setValue(QStringLiteral("prefs/showPinDots"), on);
+    });
+    m_exportSpice = new QAction(tr("&SPICE Netlist..."), this);
+    connect(m_exportSpice, &QAction::triggered, this, [this] {
+        m_scene->refreshNetlist();
+        const spice::Deck deck = spice::build(*m_circuit, LibraryRegistry::instance(), m_scene->netlist());
+        writeTextFile(tr("Export SPICE netlist"), QStringLiteral("cir"), tr("SPICE netlist (*.cir *.sp)"), deck.text);
+    });
+    m_exportPcb = new QAction(tr("&PCB Netlist..."), this);
+    connect(m_exportPcb, &QAction::triggered, this, [this] {
+        m_scene->refreshNetlist();
+        writeTextFile(tr("Export PCB netlist"), QStringLiteral("net"), tr("Protel netlist (*.net)"),
+                      PcbNetlist::write(*m_circuit, LibraryRegistry::instance(), m_scene->netlist()));
+    });
+    m_home = new QAction(tr("Center on Cursor"), this);
+    m_home->setShortcut(Qt::Key_Home);
+    connect(m_home, &QAction::triggered, this, [this] { m_view->centerOn(m_lastCursor); });
+    connect(m_scene, &SchematicScene::cursorMoved, this, [this](QPointF p) { m_lastCursor = p; });
+
     m_trace = new QAction(tr("&Trace"), this);
     m_trace->setShortcut(Qt::Key_F11);
     m_trace->setCheckable(true);
@@ -436,7 +493,9 @@ void MainWindow::createMenus()
     file->addSeparator();
     file->addActions({m_save, m_saveAs});
     file->addSeparator();
-    file->addActions({m_export, m_bom, m_print});
+    QMenu* exportMenu = file->addMenu(tr("E&xport"));
+    exportMenu->addActions({m_export, m_exportSpice, m_exportPcb});
+    file->addActions({m_bom, m_print});
     file->addSeparator();
     file->addAction(m_quit);
 
@@ -445,7 +504,7 @@ void MainWindow::createMenus()
     edit->addSeparator();
     edit->addActions({m_cut, m_copy, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
     edit->addSeparator();
-    edit->addActions({m_rotate, m_mirror, m_props});
+    edit->addActions({m_rotate, m_mirror, m_props, m_straighten, m_designations, m_propDelays});
     edit->addSeparator();
     edit->addAction(m_titleBlock);
     edit->addSeparator();
@@ -453,7 +512,7 @@ void MainWindow::createMenus()
 
     QMenu* view = menuBar()->addMenu(tr("&View"));
     view->setObjectName(QStringLiteral("viewMenu"));
-    view->addActions({m_scale, m_normalSize, m_zoomFit, m_zoomIn, m_zoomOut, m_refresh, m_collapseTree});
+    view->addActions({m_scale, m_normalSize, m_zoomFit, m_zoomIn, m_zoomOut, m_home, m_refresh, m_collapseTree});
     view->addSeparator();
     view->addActions({m_grid, m_showTitleBlock});
     view->addSeparator();
@@ -461,6 +520,8 @@ void MainWindow::createMenus()
     QMenu* tools = menuBar()->addMenu(tr("&Options"));
     QMenu* cursorTools = tools->addMenu(tr("Cursor &Tools"));
     cursorTools->addActions(m_tools->actions());
+    tools->addSeparator();
+    tools->addActions({m_showNodeNames, m_showPinDots});
     tools->addSeparator();
     tools->addAction(m_prefs);
 
@@ -712,6 +773,20 @@ void MainWindow::exportImage()
         QMessageBox::critical(this, tr("Export"), tr("Cannot write %1").arg(path));
     else
         statusBar()->showMessage(tr("Exported %1").arg(path), 4000);
+}
+
+void MainWindow::writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text)
+{
+    const QString base = m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName();
+    const QString path = QFileDialog::getSaveFileName(this, title, base + u'.' + suffix, filter);
+    if (path.isEmpty())
+        return;
+    QSaveFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text) || (f.write(text.toUtf8()), !f.commit())) {
+        QMessageBox::critical(this, title, tr("Cannot write %1:\n%2").arg(path, f.errorString()));
+        return;
+    }
+    statusBar()->showMessage(tr("Written %1").arg(path), 5000);
 }
 
 void MainWindow::exportBom()

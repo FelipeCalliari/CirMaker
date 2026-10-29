@@ -1,6 +1,7 @@
 #include "TestUtil.h"
 
 #include "core/Bom.h"
+#include "core/PcbNetlist.h"
 #include "core/UndoCommands.h"
 #include "core/io/NativeFormat.h"
 
@@ -16,6 +17,7 @@ private slots:
     void bomCsvQuotes();
     void titleBlockRoundTrip();
     void titleBlockUndo();
+    void protelNetlist();
 };
 
 void TestDocument::bomGroupsAndSorts()
@@ -75,6 +77,19 @@ void TestDocument::titleBlockUndo()
     undo.undo();
     QVERIFY(!c.titleBlock().visible);
     QVERIFY(c.titleBlock().title.isEmpty());
+}
+
+void TestDocument::protelNetlist()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("7408"), {0, 0}, QStringLiteral("U1"), QStringLiteral("7408"));
+    const ItemId r = place(c, QStringLiteral("resistor"), {400, 0}, QStringLiteral("R1"), QStringLiteral("1k"));
+    label(c, u, QStringLiteral("Y"), QStringLiteral("OUT"));
+    label(c, r, QStringLiteral("1"), QStringLiteral("OUT"));
+    const QString net = PcbNetlist::write(c, library(), NetlistBuilder::build(c, library()));
+    QVERIFY2(net.contains(QStringLiteral("[\nU1\n7408\n7408\n]")), qPrintable(net));
+    QVERIFY2(net.contains(QStringLiteral("(\nOUT\nR1-1\nU1-3\n)")), qPrintable(net));
+    QVERIFY(!net.contains(QStringLiteral("T1")));                // labels are not parts
 }
 
 QTEST_GUILESS_MAIN(TestDocument)

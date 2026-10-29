@@ -14,6 +14,7 @@ add_library(cmcore STATIC
     src/core/NetlistBuilder.h src/core/NetlistBuilder.cpp
     src/core/WireGeometry.h src/core/WireGeometry.cpp
     src/core/Bom.h src/core/Bom.cpp
+    src/core/PcbNetlist.h src/core/PcbNetlist.cpp
     src/core/UndoCommands.h src/core/UndoCommands.cpp
     src/core/io/NativeFormat.h src/core/io/NativeFormat.cpp
     src/core/io/CktImporter.h src/core/io/CktImporter.cpp
@@ -90,5 +91,6 @@ cm_add_test(tst_analog)
 if(CM_BUILD_APP)
     qt_add_executable(tst_gui tests/tst_gui.cpp)
     target_link_libraries(tst_gui PRIVATE cmui cmlibdata Qt6::Test)
+    target_include_directories(tst_gui PRIVATE tests)
     add_test(NAME tst_gui COMMAND tst_gui -platform offscreen)
 endif()

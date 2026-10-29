@@ -29,6 +29,7 @@ private slots:
     void buttonsAnimate_data();
     void buttonsAnimate();
     void circuitMakerShortcuts();
+    void editMenuTools();
     void screenshot();
 };
 
@@ -210,6 +211,44 @@ void TestGui::circuitMakerShortcuts()
     QVERIFY(ghostIsAnd);
     QTest::keyClick(view, Qt::Key_Escape);
     QCOMPARE(scene->tool(), SchematicScene::Tool::Select);
+}
+
+void TestGui::editMenuTools()
+{
+    ViewFixture f;
+    // Set Designations: reading order, per prefix
+    const ItemId a = place(f.circuit, QStringLiteral("and2"), {300, 0}, QStringLiteral("U7"));
+    const ItemId b = place(f.circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U3"));
+    const ItemId r = place(f.circuit, QStringLiteral("resistor"), {0, 300}, QStringLiteral("R9"));
+    f.scene.setDesignations({}, 1);
+    QCOMPARE(f.circuit.component(b)->designator, QStringLiteral("U1"));
+    QCOMPARE(f.circuit.component(a)->designator, QStringLiteral("U2"));
+    QCOMPARE(f.circuit.component(r)->designator, QStringLiteral("R1"));
+
+    // Straighten Wires removes a short zig-zag
+    const ItemId w = f.circuit.addWire({0, {{-300, -200}, {-200, -200}, {-200, -190}, {-100, -190}}});
+    f.scene.straightenWires();
+    QCOMPARE(f.circuit.wire(w)->points.size(), 2);
+
+    // arrow keys nudge the selected device one grid step
+    f.scene.clearSelection();
+    for (QGraphicsItem* it : f.scene.items())
+        if (auto* c = qgraphicsitem_cast<ComponentItem*>(it); c && c->id() == r)
+            c->setSelected(true);
+    f.view.setFocus();
+    QTest::keyClick(f.view.viewport(), Qt::Key_Right);
+    QCOMPARE(f.circuit.component(r)->pos, QPointF(SchematicScene::kGrid, 300));
+
+    // Alt+click highlights the whole node, wires joined only by labels included
+    const ItemId w1 = f.circuit.addWire({0, {{-300, 100}, {-200, 100}}});
+    const ItemId w2 = f.circuit.addWire({0, {{100, 100}, {200, 100}}});
+    place(f.circuit, QStringLiteral("netlabel"), {-200, 100}, {}, QStringLiteral("N"));
+    place(f.circuit, QStringLiteral("netlabel"), {100, 100}, {}, QStringLiteral("N"));
+    f.scene.refreshNetlist();
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, Qt::AltModifier, f.at({-250, 100}));
+    QVERIFY(f.scene.highlightedNet() >= 0);
+    QCOMPARE(f.scene.netlist().wireNet.value(w1), f.scene.highlightedNet());
+    QCOMPARE(f.scene.netlist().wireNet.value(w2), f.scene.highlightedNet());
 }
 
 // CM_SCREENSHOT=<png> [CM_SCREENSHOT_FILE=<circuit>] saves the main window.

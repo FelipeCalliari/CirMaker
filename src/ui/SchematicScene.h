@@ -48,6 +48,16 @@ public:
     void copySelection();
     void cutSelection();
     void duplicateSelection();
+    // Edit menu tools from CircuitMaker
+    void nudgeSelection(QPointF delta);
+    void straightenWires();
+    // Renumbers designations per prefix (only `prefix` when not empty),
+    // in reading order, starting at `first`; selection only when not empty.
+    void setDesignations(const QString& prefix, int first);
+    void setPropDelays(int ticks);
+    int highlightedNet() const { return m_highlightNet; }
+    void setShowNodeNames(bool on) { m_showNodeNames = on; update(); }
+    void setShowPinDots(bool on) { m_showPinDots = on; update(); }
     // CircuitMaker "Trace": colour wires by logic level while simulating
     void setTrace(bool on) { m_trace = on; update(); }
     bool trace() const { return m_trace; }
@@ -224,6 +234,9 @@ private:
     bool m_gridVisible = true;
     bool m_gridLines = true;
     bool m_trace = true;
+    bool m_showNodeNames = false;
+    bool m_showPinDots = true;
+    int m_highlightNet = -1;
     bool m_exporting = false;
 };
 
