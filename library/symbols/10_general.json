@@ -1,0 +1,272 @@
+{
+ "category": "General",
+ "symbols": [
+  {
+   "id": "ground",
+   "name": "Ground",
+   "prefix": "GND",
+   "aliases": [
+    "Ground"
+   ],
+   "cmPins": [
+    "GND"
+   ],
+   "model": {
+    "kind": "const",
+    "value": 0
+   },
+   "graphics": [
+    {
+     "line": [
+      0,
+      -20,
+      0,
+      0
+     ]
+    },
+    {
+     "line": [
+      -20,
+      0,
+      20,
+      0
+     ]
+    },
+    {
+     "line": [
+      -13,
+      6,
+      13,
+      6
+     ]
+    },
+    {
+     "line": [
+      -6,
+      12,
+      6,
+      12
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "GND",
+     "at": [
+      0,
+      -20
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "vcc",
+   "name": "+V",
+   "prefix": "V",
+   "label": "+5V",
+   "aliases": [
+    "+V",
+    "+5V",
+    "Vcc"
+   ],
+   "cmPins": [
+    "VCC"
+   ],
+   "model": {
+    "kind": "const",
+    "value": 1
+   },
+   "graphics": [
+    {
+     "line": [
+      0,
+      30,
+      0,
+      0
+     ]
+    },
+    {
+     "line": [
+      -15,
+      0,
+      15,
+      0
+     ]
+    },
+    {
+     "text": "+5V",
+     "at": [
+      0,
+      -10
+     ],
+     "size": 8
+    }
+   ],
+   "pins": [
+    {
+     "name": "VCC",
+     "at": [
+      0,
+      30
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "terminal",
+   "name": "Terminal",
+   "prefix": "T",
+   "netLabel": true,
+   "aliases": [
+    "Terminal",
+    "Input",
+    "Output"
+   ],
+   "cmPins": [
+    "1"
+   ],
+   "description": "Connection point; terminals with the same label are connected",
+   "graphics": [
+    {
+     "line": [
+      0,
+      30,
+      0,
+      8
+     ]
+    },
+    {
+     "circle": [
+      0,
+      0,
+      8
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      0,
+      30
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "netlabel",
+   "name": "Net label",
+   "prefix": "",
+   "netLabel": true,
+   "hidden": true,
+   "description": "Joins its pin to every other net label with the same text",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      2
+     ],
+     "fill": true
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      0,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "unknown",
+   "name": "Unknown device",
+   "prefix": "X",
+   "hidden": true,
+   "description": "Placeholder for an imported device that has no equivalent in the library",
+   "graphics": [
+    {
+     "rect": [
+      -40,
+      -30,
+      80,
+      60
+     ]
+    },
+    {
+     "text": "?",
+     "at": [
+      0,
+      0
+     ],
+     "size": 24
+    }
+   ],
+   "pins": []
+  },
+  {
+   "id": "resistor",
+   "name": "Resistor",
+   "prefix": "R",
+   "label": "1k",
+   "aliases": [
+    "Resistor",
+    "ResistorWire"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "resistor"
+   },
+   "description": "In digital mode, a weak (pull-up/pull-down) connection",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "path": "M -30 0 L -25 -10 L -15 10 L -5 -10 L 5 10 L 15 -10 L 25 10 L 30 0"
+    },
+    {
+     "line": [
+      30,
+      0,
+      60,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  }
+ ]
+}

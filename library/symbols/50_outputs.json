@@ -1,0 +1,1093 @@
+{
+ "category": "Digital/Outputs",
+ "symbols": [
+  {
+   "id": "logicdisplay",
+   "name": "Logic Display",
+   "prefix": "L",
+   "display": "lamp",
+   "aliases": [
+    "Logic Display"
+   ],
+   "cmPins": [
+    "D0"
+   ],
+   "model": {
+    "kind": "display",
+    "bits": 1
+   },
+   "description": "Lamp showing the logic level of its input",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      20
+     ]
+    },
+    {
+     "line": [
+      0,
+      20,
+      0,
+      60
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      0,
+      60
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "probe",
+   "name": "Logic Probe",
+   "prefix": "P",
+   "display": "lamp",
+   "aliases": [
+    "Logic Probe"
+   ],
+   "cmPins": [
+    "D0"
+   ],
+   "model": {
+    "kind": "display",
+    "bits": 1
+   },
+   "graphics": [
+    {
+     "path": "M -15 -40 L 15 -40 L 15 -10 L 0 10 L -15 -10 Z"
+    },
+    {
+     "line": [
+      0,
+      10,
+      0,
+      30
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      0,
+      30
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "hexdisplay",
+   "name": "Hex Display",
+   "prefix": "D",
+   "display": "hex",
+   "aliases": [
+    "Hex Display"
+   ],
+   "cmPins": [
+    "D0",
+    "D1",
+    "D2",
+    "D3"
+   ],
+   "model": {
+    "kind": "display",
+    "bits": 4
+   },
+   "description": "Shows the hexadecimal value of D3..D0",
+   "graphics": [
+    {
+     "rect": [
+      -50,
+      -70,
+      100,
+      120
+     ]
+    },
+    {
+     "line": [
+      30,
+      50,
+      30,
+      80
+     ]
+    },
+    {
+     "line": [
+      10,
+      50,
+      10,
+      80
+     ]
+    },
+    {
+     "line": [
+      -10,
+      50,
+      -10,
+      80
+     ]
+    },
+    {
+     "line": [
+      -30,
+      50,
+      -30,
+      80
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      30,
+      80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D1",
+     "at": [
+      10,
+      80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D2",
+     "at": [
+      -10,
+      80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D3",
+     "at": [
+      -30,
+      80
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "asciidisplay",
+   "name": "Ascii Display",
+   "prefix": "D",
+   "display": "ascii",
+   "aliases": [
+    "Ascii Display"
+   ],
+   "cmPins": [
+    "D0",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "D7"
+   ],
+   "model": {
+    "kind": "display",
+    "bits": 7
+   },
+   "description": "Shows the character whose 7-bit code is on D6..D0",
+   "graphics": [
+    {
+     "rect": [
+      -80,
+      -120,
+      160,
+      250
+     ]
+    },
+    {
+     "line": [
+      -110,
+      -100,
+      -80,
+      -100
+     ]
+    },
+    {
+     "line": [
+      -110,
+      -70,
+      -80,
+      -70
+     ]
+    },
+    {
+     "line": [
+      -110,
+      -40,
+      -80,
+      -40
+     ]
+    },
+    {
+     "line": [
+      -110,
+      -10,
+      -80,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -110,
+      20,
+      -80,
+      20
+     ]
+    },
+    {
+     "line": [
+      -110,
+      50,
+      -80,
+      50
+     ]
+    },
+    {
+     "line": [
+      -110,
+      80,
+      -80,
+      80
+     ]
+    },
+    {
+     "line": [
+      -110,
+      110,
+      -80,
+      110
+     ]
+    },
+    {
+     "text": "D0",
+     "at": [
+      -96,
+      -106
+     ],
+     "size": 6
+    },
+    {
+     "text": "D1",
+     "at": [
+      -96,
+      -76
+     ],
+     "size": 6
+    },
+    {
+     "text": "D2",
+     "at": [
+      -96,
+      -46
+     ],
+     "size": 6
+    },
+    {
+     "text": "D3",
+     "at": [
+      -96,
+      -16
+     ],
+     "size": 6
+    },
+    {
+     "text": "D4",
+     "at": [
+      -96,
+      14
+     ],
+     "size": 6
+    },
+    {
+     "text": "D5",
+     "at": [
+      -96,
+      44
+     ],
+     "size": 6
+    },
+    {
+     "text": "D6",
+     "at": [
+      -96,
+      74
+     ],
+     "size": 6
+    },
+    {
+     "text": "D7",
+     "at": [
+      -96,
+      104
+     ],
+     "size": 6
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      -110,
+      -100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D1",
+     "at": [
+      -110,
+      -70
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D2",
+     "at": [
+      -110,
+      -40
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D3",
+     "at": [
+      -110,
+      -10
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D4",
+     "at": [
+      -110,
+      20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D5",
+     "at": [
+      -110,
+      50
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D6",
+     "at": [
+      -110,
+      80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D7",
+     "at": [
+      -110,
+      110
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "led",
+   "name": "LED",
+   "prefix": "D",
+   "display": "led",
+   "aliases": [
+    "LED"
+   ],
+   "cmPins": [
+    "A",
+    "K"
+   ],
+   "model": {
+    "kind": "led"
+   },
+   "description": "Lights when the anode is high and the cathode low",
+   "graphics": [
+    {
+     "line": [
+      0,
+      -30,
+      0,
+      -12
+     ]
+    },
+    {
+     "path": "M -14 -12 L 14 -12 L 0 12 Z"
+    },
+    {
+     "line": [
+      -14,
+      12,
+      14,
+      12
+     ]
+    },
+    {
+     "line": [
+      0,
+      12,
+      0,
+      30
+     ]
+    },
+    {
+     "line": [
+      18,
+      -8,
+      30,
+      -20
+     ]
+    },
+    {
+     "line": [
+      22,
+      4,
+      34,
+      -8
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "A",
+     "at": [
+      0,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "K",
+     "at": [
+      0,
+      30
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "stoplight",
+   "name": "StopLight",
+   "prefix": "L",
+   "display": "stoplight",
+   "aliases": [
+    "StopLight"
+   ],
+   "cmPins": [
+    "D0",
+    "D1",
+    "D2"
+   ],
+   "model": {
+    "kind": "display",
+    "bits": 3
+   },
+   "description": "Traffic light: D0 red, D1 yellow, D2 green",
+   "graphics": [
+    {
+     "rect": [
+      -30,
+      -75,
+      60,
+      150
+     ]
+    },
+    {
+     "circle": [
+      0,
+      -50,
+      18
+     ]
+    },
+    {
+     "circle": [
+      0,
+      0,
+      18
+     ]
+    },
+    {
+     "circle": [
+      0,
+      50,
+      18
+     ]
+    },
+    {
+     "line": [
+      -60,
+      -50,
+      -30,
+      -50
+     ]
+    },
+    {
+     "line": [
+      -60,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "line": [
+      -60,
+      50,
+      -30,
+      50
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      -60,
+      -50
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D1",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D2",
+     "at": [
+      -60,
+      50
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "seg7_cc",
+   "name": "CC 7-Seg",
+   "prefix": "D",
+   "display": "seg7",
+   "aliases": [
+    "CC 7-Seg"
+   ],
+   "model": {
+    "kind": "seg7"
+   },
+   "description": "Common-cathode 7-segment display: segment lit when its pin is high",
+   "graphics": [
+    {
+     "rect": [
+      -80,
+      -80,
+      160,
+      150
+     ]
+    },
+    {
+     "line": [
+      -70,
+      70,
+      -70,
+      100
+     ]
+    },
+    {
+     "text": "a",
+     "at": [
+      -64,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      -50,
+      70,
+      -50,
+      100
+     ]
+    },
+    {
+     "text": "b",
+     "at": [
+      -44,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      -30,
+      70,
+      -30,
+      100
+     ]
+    },
+    {
+     "text": "c",
+     "at": [
+      -24,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      -10,
+      70,
+      -10,
+      100
+     ]
+    },
+    {
+     "text": "d",
+     "at": [
+      -4,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      10,
+      70,
+      10,
+      100
+     ]
+    },
+    {
+     "text": "e",
+     "at": [
+      16,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      30,
+      70,
+      30,
+      100
+     ]
+    },
+    {
+     "text": "f",
+     "at": [
+      36,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      50,
+      70,
+      50,
+      100
+     ]
+    },
+    {
+     "text": "g",
+     "at": [
+      56,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      70,
+      70,
+      70,
+      100
+     ]
+    },
+    {
+     "text": "dp",
+     "at": [
+      76,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      0,
+      -80,
+      0,
+      -100
+     ]
+    },
+    {
+     "text": "COM",
+     "at": [
+      12,
+      -92
+     ],
+     "size": 6,
+     "align": "left"
+    }
+   ],
+   "pins": [
+    {
+     "name": "a",
+     "at": [
+      -70,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "b",
+     "at": [
+      -50,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "c",
+     "at": [
+      -30,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "d",
+     "at": [
+      -10,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "e",
+     "at": [
+      10,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "f",
+     "at": [
+      30,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "g",
+     "at": [
+      50,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "dp",
+     "at": [
+      70,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "COM",
+     "at": [
+      0,
+      -100
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "seg7_ca",
+   "name": "CA 7-Seg",
+   "prefix": "D",
+   "display": "seg7",
+   "aliases": [
+    "CA 7-Seg"
+   ],
+   "model": {
+    "kind": "seg7",
+    "anode": true
+   },
+   "description": "Common-anode 7-segment display: segment lit when its pin is low",
+   "graphics": [
+    {
+     "rect": [
+      -80,
+      -80,
+      160,
+      150
+     ]
+    },
+    {
+     "line": [
+      -70,
+      70,
+      -70,
+      100
+     ]
+    },
+    {
+     "text": "a",
+     "at": [
+      -64,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      -50,
+      70,
+      -50,
+      100
+     ]
+    },
+    {
+     "text": "b",
+     "at": [
+      -44,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      -30,
+      70,
+      -30,
+      100
+     ]
+    },
+    {
+     "text": "c",
+     "at": [
+      -24,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      -10,
+      70,
+      -10,
+      100
+     ]
+    },
+    {
+     "text": "d",
+     "at": [
+      -4,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      10,
+      70,
+      10,
+      100
+     ]
+    },
+    {
+     "text": "e",
+     "at": [
+      16,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      30,
+      70,
+      30,
+      100
+     ]
+    },
+    {
+     "text": "f",
+     "at": [
+      36,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      50,
+      70,
+      50,
+      100
+     ]
+    },
+    {
+     "text": "g",
+     "at": [
+      56,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      70,
+      70,
+      70,
+      100
+     ]
+    },
+    {
+     "text": "dp",
+     "at": [
+      76,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "line": [
+      0,
+      -80,
+      0,
+      -100
+     ]
+    },
+    {
+     "text": "COM",
+     "at": [
+      12,
+      -92
+     ],
+     "size": 6,
+     "align": "left"
+    }
+   ],
+   "pins": [
+    {
+     "name": "a",
+     "at": [
+      -70,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "b",
+     "at": [
+      -50,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "c",
+     "at": [
+      -30,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "d",
+     "at": [
+      -10,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "e",
+     "at": [
+      10,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "f",
+     "at": [
+      30,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "g",
+     "at": [
+      50,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "dp",
+     "at": [
+      70,
+      100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "COM",
+     "at": [
+      0,
+      -100
+     ],
+     "dir": "in"
+    }
+   ]
+  }
+ ]
+}

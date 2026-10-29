@@ -1,0 +1,303 @@
+{
+ "category": "Digital/Flip-Flops",
+ "symbols": [
+  {
+   "id": "dff",
+   "name": "D Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "D",
+     {
+      "name": "CLK",
+      "clock": true
+     }
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [],
+    "bottom": []
+   },
+   "model": {
+    "kind": "dff"
+   },
+   "aliases": [
+    "D Flip-Flop"
+   ],
+   "cmPins": [
+    "D",
+    "CLK",
+    "~Q",
+    "Q"
+   ],
+   "description": "Positive-edge D flip-flop"
+  },
+  {
+   "id": "dff_sr",
+   "name": "4013 D Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "D",
+     {
+      "name": "CLK",
+      "clock": true
+     }
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [
+     "S"
+    ],
+    "bottom": [
+     "R"
+    ]
+   },
+   "model": {
+    "kind": "dff"
+   },
+   "aliases": [
+    "4013",
+    "CD4013"
+   ],
+   "cmPins": [
+    "S",
+    "D",
+    "CLK",
+    "R",
+    "~Q",
+    "Q"
+   ],
+   "label": "4013",
+   "description": "Positive-edge D flip-flop, active-high set/reset (CD4013, one of two)"
+  },
+  {
+   "id": "dff_pc",
+   "name": "7474 D Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "D",
+     {
+      "name": "CLK",
+      "clock": true
+     }
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [
+     "~PRE"
+    ],
+    "bottom": [
+     "~CLR"
+    ]
+   },
+   "model": {
+    "kind": "dff"
+   },
+   "aliases": [
+    "7474",
+    "74LS74",
+    "74HC74"
+   ],
+   "label": "7474",
+   "floatInputs": 1,
+   "cmPins": [
+    "~PRE",
+    "D",
+    "CLK",
+    "~CLR",
+    "~Q",
+    "Q"
+   ],
+   "description": "Positive-edge D flip-flop, active-low preset/clear (74x74, one of two)"
+  },
+  {
+   "id": "jkff",
+   "name": "JK Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "J",
+     {
+      "name": "CLK",
+      "clock": true
+     },
+     "K"
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [],
+    "bottom": []
+   },
+   "model": {
+    "kind": "jkff"
+   },
+   "aliases": [
+    "JK Flip-Flop"
+   ],
+   "cmPins": [
+    "J",
+    "CLK",
+    "K",
+    "~Q",
+    "Q"
+   ],
+   "description": "Positive-edge JK flip-flop"
+  },
+  {
+   "id": "jkff_sr",
+   "name": "4027 JK Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "J",
+     {
+      "name": "CLK",
+      "clock": true
+     },
+     "K"
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [
+     "S"
+    ],
+    "bottom": [
+     "R"
+    ]
+   },
+   "model": {
+    "kind": "jkff"
+   },
+   "aliases": [
+    "4027",
+    "CD4027"
+   ],
+   "label": "4027",
+   "cmPins": [
+    "S",
+    "J",
+    "CLK",
+    "K",
+    "R",
+    "~Q",
+    "Q"
+   ],
+   "description": "Positive-edge JK flip-flop, active-high set/reset (CD4027, one of two)"
+  },
+  {
+   "id": "jkff_pcn",
+   "name": "74112 JK Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "J",
+     {
+      "name": "~CLK",
+      "clock": true
+     },
+     "K"
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [
+     "~PRE"
+    ],
+    "bottom": [
+     "~CLR"
+    ]
+   },
+   "model": {
+    "kind": "jkff"
+   },
+   "aliases": [
+    "74112",
+    "74LS112",
+    "7476",
+    "74LS76"
+   ],
+   "label": "74112",
+   "floatInputs": 1,
+   "cmPins": [
+    "~PRE",
+    "J",
+    "~CLK",
+    "K",
+    "~CLR",
+    "~Q",
+    "Q"
+   ],
+   "description": "Negative-edge JK flip-flop, active-low preset/clear (74x112, one of two)"
+  },
+  {
+   "id": "jkff_rn",
+   "name": "7473 JK Flip-Flop",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "J",
+     {
+      "name": "~CLK",
+      "clock": true
+     },
+     "K"
+    ],
+    "right": [
+     "Q",
+     "~Q"
+    ],
+    "top": [],
+    "bottom": [
+     "~CLR"
+    ]
+   },
+   "model": {
+    "kind": "jkff"
+   },
+   "aliases": [
+    "JK RN",
+    "7473",
+    "74LS73",
+    "74107"
+   ],
+   "label": "7473",
+   "floatInputs": 1,
+   "cmPins": [
+    "J",
+    "~CLK",
+    "K",
+    "~CLR",
+    "~Q",
+    "Q"
+   ],
+   "description": "Negative-edge JK flip-flop, active-low clear (74x73, one of two)"
+  }
+ ]
+}

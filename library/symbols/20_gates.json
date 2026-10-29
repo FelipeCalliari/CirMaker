@@ -1,0 +1,537 @@
+{
+ "category": "Digital/Gates",
+ "symbols": [
+  {
+   "id": "inv",
+   "name": "Inverter",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": true
+   },
+   "aliases": [
+    "Inverter"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ]
+  },
+  {
+   "id": "buf",
+   "name": "Buffer",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": false
+   },
+   "aliases": [
+    "Buffer"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ]
+  },
+  {
+   "id": "and2",
+   "name": "2-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "2-In AND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ]
+  },
+  {
+   "id": "and3",
+   "name": "3-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": false
+   },
+   "aliases": [
+    "3-In AND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ]
+  },
+  {
+   "id": "and4",
+   "name": "4-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": false
+   },
+   "aliases": [
+    "4-In AND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ]
+  },
+  {
+   "id": "and8",
+   "name": "8-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 8,
+    "invert": false
+   },
+   "aliases": [
+    "8-In AND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ]
+  },
+  {
+   "id": "nand2",
+   "name": "2-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "2-In NAND",
+    "2-In NAND:DM"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ]
+  },
+  {
+   "id": "nand3",
+   "name": "3-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": true
+   },
+   "aliases": [
+    "3-In NAND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ]
+  },
+  {
+   "id": "nand4",
+   "name": "4-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": true
+   },
+   "aliases": [
+    "4-In NAND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ]
+  },
+  {
+   "id": "nand8",
+   "name": "8-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 8,
+    "invert": true
+   },
+   "aliases": [
+    "8-In NAND"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ]
+  },
+  {
+   "id": "or2",
+   "name": "2-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "2-In OR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ]
+  },
+  {
+   "id": "or3",
+   "name": "3-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 3,
+    "invert": false
+   },
+   "aliases": [
+    "3-In OR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ]
+  },
+  {
+   "id": "or4",
+   "name": "4-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 4,
+    "invert": false
+   },
+   "aliases": [
+    "4-In OR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ]
+  },
+  {
+   "id": "or8",
+   "name": "8-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 8,
+    "invert": false
+   },
+   "aliases": [
+    "8-In OR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ]
+  },
+  {
+   "id": "nor2",
+   "name": "2-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "2-In NOR",
+    "2-In NOR:DM"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ]
+  },
+  {
+   "id": "nor3",
+   "name": "3-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 3,
+    "invert": true
+   },
+   "aliases": [
+    "3-In NOR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ]
+  },
+  {
+   "id": "nor4",
+   "name": "4-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 4,
+    "invert": true
+   },
+   "aliases": [
+    "4-In NOR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ]
+  },
+  {
+   "id": "nor8",
+   "name": "8-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 8,
+    "invert": true
+   },
+   "aliases": [
+    "8-In NOR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ]
+  },
+  {
+   "id": "xor2",
+   "name": "2-In XOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "2-In XOR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ]
+  },
+  {
+   "id": "xnor2",
+   "name": "2-In XNOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "2-In XNOR"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ]
+  },
+  {
+   "id": "tribuf",
+   "name": "Buffer 3S",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1
+   },
+   "model": {
+    "kind": "tribuf"
+   },
+   "aliases": [
+    "Buffer 3S"
+   ],
+   "cmPins": [
+    "A",
+    "EN",
+    "Y"
+   ],
+   "description": "Tri-state buffer, active-high enable",
+   "graphics": [
+    {
+     "line": [
+      0,
+      15,
+      0,
+      40
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "EN",
+     "at": [
+      0,
+      40
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "tribuf_n",
+   "name": "Buffer 3S (EN low)",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1
+   },
+   "model": {
+    "kind": "tribuf"
+   },
+   "description": "Tri-state buffer, active-low enable",
+   "graphics": [
+    {
+     "line": [
+      0,
+      25,
+      0,
+      40
+     ]
+    },
+    {
+     "circle": [
+      0,
+      20,
+      5
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "~EN",
+     "at": [
+      0,
+      40
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "quad3state",
+   "name": "Quad 3-State",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 40,
+    "left": [
+     "A0",
+     "A1",
+     "A2",
+     "A3"
+    ],
+    "right": [
+     "Y0",
+     "Y1",
+     "Y2",
+     "Y3"
+    ],
+    "top": [],
+    "bottom": [
+     "EN"
+    ],
+    "title": "3-ST"
+   },
+   "aliases": [
+    "Quad 3-State"
+   ],
+   "cmPins": [
+    "A0",
+    "A1",
+    "A2",
+    "A3",
+    "Y0",
+    "Y1",
+    "Y2",
+    "Y3",
+    "EN"
+   ],
+   "model": {
+    "kind": "tribus",
+    "groups": [
+     {
+      "enable": "EN",
+      "bits": [
+       0,
+       1,
+       2,
+       3
+      ]
+     }
+    ]
+   },
+   "description": "Four tri-state buffers with a shared active-high enable"
+  }
+ ]
+}

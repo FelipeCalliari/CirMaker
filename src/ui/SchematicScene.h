@@ -1,0 +1,164 @@
+#pragma once
+
+#include "core/Circuit.h"
+#include "core/NetlistBuilder.h"
+#include "core/UndoCommands.h"
+
+#include <QGraphicsScene>
+#include <QHash>
+#include <QPointer>
+#include <QTimer>
+
+#include <memory>
+
+class QUndoStack;
+
+namespace cm {
+
+class ComponentItem;
+class WireItem;
+class TextNoteItem;
+class LibraryRegistry;
+namespace sim { class EventSimulator; }
+
+class SchematicScene : public QGraphicsScene {
+    Q_OBJECT
+public:
+    static constexpr double kGrid = 10;
+    enum class Tool { Select, Wire, Text, Place };
+
+    SchematicScene(Circuit* circuit, QUndoStack* undo, const LibraryRegistry& library, QObject* parent = nullptr);
+    ~SchematicScene() override;
+
+    Circuit* circuit() const { return m_circuit; }
+    const LibraryRegistry& library() const { return m_library; }
+    const Netlist& netlist() const { return m_netlist; }
+
+    Tool tool() const { return m_tool; }
+    void setTool(Tool tool);
+    void beginPlace(const QString& symbolId);
+
+    // editing (no-ops while simulating)
+    void rotateSelection();
+    void mirrorSelection();
+    void deleteSelection();
+    void selectAll();
+    void copySelection();
+    void cutSelection();
+    void paste();
+    bool hasSelection() const { return !selectedItems().isEmpty(); }
+    Selection selection() const;
+    void editItem(QGraphicsItem* item);
+
+    // simulation
+    bool simulating() const { return m_sim != nullptr; }
+    bool running() const { return m_timer.isActive(); }
+    void run();
+    void pause();
+    void stepSimulation();
+    void resetSimulation();
+    void stopSimulation();
+    void setTicksPerFrame(int ticks) { m_ticksPerFrame = std::max(1, ticks); }
+    int ticksPerFrame() const { return m_ticksPerFrame; }
+    quint64 simTime() const;
+    int simState(ItemId id) const;
+    QColor wireColor(ItemId id) const;
+
+    static QPointF snap(QPointF p);
+
+    // Items' scene bounds without the grid, for export/printing.
+    QRectF contentsRect() const;
+    void setGridVisible(bool on) { m_gridVisible = on; update(); }
+    bool gridVisible() const { return m_gridVisible; }
+    // Hides grid and selection while rendering to an export device.
+    void setExporting(bool on);
+
+signals:
+    void toolChanged(cm::SchematicScene::Tool tool);
+    void simulationChanged();          // started, stopped, paused, resumed
+    void simTimeChanged(quint64 ticks);
+    void statusMessage(const QString& text);
+    void cursorMoved(QPointF scenePos);
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* e) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e) override;
+    void keyPressEvent(QKeyEvent* e) override;
+    void drawBackground(QPainter* p, const QRectF& rect) override;
+    void drawForeground(QPainter* p, const QRectF& rect) override;
+
+private:
+    // model -> items
+    void onComponentAdded(ItemId id);
+    void onComponentChanged(ItemId id);
+    void onComponentRemoved(ItemId id);
+    void onWireAdded(ItemId id);
+    void onWireChanged(ItemId id);
+    void onWireRemoved(ItemId id);
+    void onTextAdded(ItemId id);
+    void onTextChanged(ItemId id);
+    void onTextRemoved(ItemId id);
+    void onCleared();
+    void scheduleNetlist();
+    void rebuildNetlist();
+
+    // wire tool
+    void wireClick(QPointF p);
+    void finishWire();
+    void cancelWire();
+    bool isConnectionPoint(QPointF p) const;
+    bool pinAt(QPointF p, QPointF* pinPos) const;
+
+    // dragging
+    void beginDrag();
+    QHash<ItemId, QVector<QPointF>> rubberBand() const;
+    void updateDragPreview();
+    void commitDrag();
+
+    void cancelPlace();
+    void placeGhost(QPointF scenePos);
+    void transformSelection(bool rotate);
+    void simInteractPress(QGraphicsSceneMouseEvent* e);
+    void simInteractRelease();
+    void advance();
+    void persistSimProps();
+    QWidget* dialogParent() const;
+
+    Circuit* m_circuit;
+    QUndoStack* m_undo;
+    const LibraryRegistry& m_library;
+
+    QHash<ItemId, ComponentItem*> m_componentItems;
+    QHash<ItemId, WireItem*> m_wireItems;
+    QHash<ItemId, TextNoteItem*> m_textItems;
+
+    Netlist m_netlist;
+    bool m_netlistPending = false;
+
+    Tool m_tool = Tool::Select;
+    bool m_wireFromSelect = false;      // wire started by dragging from a pin
+    QVector<QPointF> m_wirePoints;
+    QPointF m_cursor;
+
+    ComponentItem* m_ghost = nullptr;
+    Component m_ghostComponent;
+
+    struct DragState {
+        bool active = false;
+        QHash<ItemId, QPointF> componentStart;
+        QHash<ItemId, QPointF> textStart;
+        QVector<ItemId> wires;
+    } m_drag;
+
+    std::unique_ptr<sim::EventSimulator> m_sim;
+    QTimer m_timer;
+    int m_ticksPerFrame = 2;
+    ItemId m_heldButton = 0;
+    QString m_heldRelease;
+    bool m_gridVisible = true;
+    bool m_exporting = false;
+};
+
+} // namespace cm

@@ -1,0 +1,783 @@
+{
+ "category": "Digital/Inputs",
+ "symbols": [
+  {
+   "id": "logicswitch",
+   "name": "Logic Switch",
+   "prefix": "S",
+   "display": "logicswitch",
+   "aliases": [
+    "Logic Switch"
+   ],
+   "cmPins": [
+    "Y"
+   ],
+   "model": {
+    "kind": "logicswitch"
+   },
+   "props": {
+    "state": 0
+   },
+   "description": "Click during simulation to toggle 0/1",
+   "graphics": [
+    {
+     "rect": [
+      -30,
+      -20,
+      50,
+      40
+     ]
+    },
+    {
+     "line": [
+      20,
+      0,
+      40,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "Y",
+     "at": [
+      40,
+      0
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "pulser",
+   "name": "Pulser",
+   "prefix": "P",
+   "display": "pulser",
+   "aliases": [
+    "Pulser"
+   ],
+   "cmPins": [
+    "",
+    "",
+    "Q",
+    "~Q"
+   ],
+   "model": {
+    "kind": "pulser"
+   },
+   "props": {
+    "high": 10,
+    "low": 10
+   },
+   "description": "Clock source; high and low durations in ticks",
+   "graphics": [
+    {
+     "rect": [
+      -40,
+      -30,
+      80,
+      60
+     ]
+    },
+    {
+     "path": "M -30 10 L -20 10 L -20 -10 L -5 -10 L -5 10 L 10 10 L 10 -10 L 25 -10 L 25 10 L 30 10"
+    },
+    {
+     "line": [
+      40,
+      -20,
+      70,
+      -20
+     ]
+    },
+    {
+     "line": [
+      40,
+      20,
+      50,
+      20
+     ]
+    },
+    {
+     "circle": [
+      55,
+      20,
+      5
+     ]
+    },
+    {
+     "line": [
+      60,
+      20,
+      70,
+      20
+     ]
+    },
+    {
+     "text": "Q",
+     "at": [
+      34,
+      -20
+     ],
+     "size": 7,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "Q",
+     "at": [
+      70,
+      -20
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "~Q",
+     "at": [
+      70,
+      20
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "hexkey",
+   "name": "Hex Key",
+   "prefix": "K",
+   "display": "hexkey",
+   "aliases": [
+    "Hex Key"
+   ],
+   "cmPins": [
+    "D0",
+    "D1",
+    "D2",
+    "D3"
+   ],
+   "model": {
+    "kind": "key",
+    "bits": 4
+   },
+   "props": {
+    "value": 0
+   },
+   "description": "Click a key during simulation to output its 4-bit value",
+   "graphics": [
+    {
+     "rect": [
+      -40,
+      -60,
+      80,
+      110
+     ]
+    },
+    {
+     "line": [
+      30,
+      50,
+      30,
+      80
+     ]
+    },
+    {
+     "line": [
+      10,
+      50,
+      10,
+      80
+     ]
+    },
+    {
+     "line": [
+      -10,
+      50,
+      -10,
+      80
+     ]
+    },
+    {
+     "line": [
+      -30,
+      50,
+      -30,
+      80
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      30,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D1",
+     "at": [
+      10,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D2",
+     "at": [
+      -10,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D3",
+     "at": [
+      -30,
+      80
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "asciikey",
+   "name": "Ascii Key",
+   "prefix": "K",
+   "display": "asciikey",
+   "aliases": [
+    "Ascii Key"
+   ],
+   "cmPins": [
+    "D0",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "STB"
+   ],
+   "model": {
+    "kind": "key",
+    "bits": 7
+   },
+   "props": {
+    "value": 65
+   },
+   "description": "Click during simulation and type a character to output its 7-bit code; STB pulses",
+   "graphics": [
+    {
+     "rect": [
+      -80,
+      -40,
+      160,
+      90
+     ]
+    },
+    {
+     "line": [
+      70,
+      50,
+      70,
+      80
+     ]
+    },
+    {
+     "line": [
+      50,
+      50,
+      50,
+      80
+     ]
+    },
+    {
+     "line": [
+      30,
+      50,
+      30,
+      80
+     ]
+    },
+    {
+     "line": [
+      10,
+      50,
+      10,
+      80
+     ]
+    },
+    {
+     "line": [
+      -10,
+      50,
+      -10,
+      80
+     ]
+    },
+    {
+     "line": [
+      -30,
+      50,
+      -30,
+      80
+     ]
+    },
+    {
+     "line": [
+      -50,
+      50,
+      -50,
+      80
+     ]
+    },
+    {
+     "line": [
+      -70,
+      50,
+      -70,
+      80
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      70,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D1",
+     "at": [
+      50,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D2",
+     "at": [
+      30,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D3",
+     "at": [
+      10,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D4",
+     "at": [
+      -10,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D5",
+     "at": [
+      -30,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "D6",
+     "at": [
+      -50,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "STB",
+     "at": [
+      -70,
+      80
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "pb_no",
+   "name": "NO PushButton",
+   "prefix": "S",
+   "display": "button",
+   "aliases": [
+    "NO PushButton"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "no"
+   },
+   "description": "Normally open; closed while the mouse button is held",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      30,
+      -30,
+      30
+     ]
+    },
+    {
+     "line": [
+      30,
+      30,
+      60,
+      30
+     ]
+    },
+    {
+     "circle": [
+      -25,
+      30,
+      5
+     ]
+    },
+    {
+     "circle": [
+      25,
+      30,
+      5
+     ]
+    },
+    {
+     "line": [
+      -30,
+      15,
+      30,
+      15
+     ]
+    },
+    {
+     "line": [
+      0,
+      15,
+      0,
+      -5
+     ]
+    },
+    {
+     "line": [
+      -12,
+      -5,
+      12,
+      -5
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "2",
+     "at": [
+      -60,
+      30
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "1",
+     "at": [
+      60,
+      30
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "pb_nc",
+   "name": "NC PushButton",
+   "prefix": "S",
+   "display": "button",
+   "aliases": [
+    "NC PushButton"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "nc"
+   },
+   "description": "Normally closed; open while the mouse button is held",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "line": [
+      30,
+      0,
+      60,
+      0
+     ]
+    },
+    {
+     "circle": [
+      -25,
+      0,
+      5
+     ]
+    },
+    {
+     "circle": [
+      25,
+      0,
+      5
+     ]
+    },
+    {
+     "line": [
+      -30,
+      8,
+      30,
+      8
+     ]
+    },
+    {
+     "line": [
+      0,
+      8,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      -12,
+      -25,
+      12,
+      -25
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "2",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "1",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "pb_spdt",
+   "name": "SPDT PB",
+   "prefix": "S",
+   "display": "button",
+   "aliases": [
+    "SPDT PB"
+   ],
+   "cmPins": [
+    "C",
+    "NC",
+    "NO"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "spdt"
+   },
+   "description": "Change-over push button: C-NC at rest, C-NO while held",
+   "graphics": [
+    {
+     "line": [
+      40,
+      0,
+      70,
+      0
+     ]
+    },
+    {
+     "circle": [
+      35,
+      0,
+      5
+     ]
+    },
+    {
+     "line": [
+      -60,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "circle": [
+      -25,
+      0,
+      5
+     ]
+    },
+    {
+     "line": [
+      -60,
+      50,
+      -30,
+      50
+     ]
+    },
+    {
+     "circle": [
+      -25,
+      50,
+      5
+     ]
+    },
+    {
+     "line": [
+      30,
+      3,
+      -20,
+      8
+     ]
+    },
+    {
+     "text": "NC",
+     "at": [
+      -40,
+      -10
+     ],
+     "size": 7
+    },
+    {
+     "text": "NO",
+     "at": [
+      -40,
+      38
+     ],
+     "size": 7
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      70,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NC",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NO",
+     "at": [
+      -60,
+      50
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "spst",
+   "name": "SPST Switch",
+   "prefix": "S",
+   "display": "spst",
+   "aliases": [
+    "SPST Switch"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "toggle"
+   },
+   "props": {
+    "closed": 0
+   },
+   "description": "Click during simulation to open/close",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "line": [
+      30,
+      0,
+      60,
+      0
+     ]
+    },
+    {
+     "circle": [
+      -25,
+      0,
+      5
+     ]
+    },
+    {
+     "circle": [
+      25,
+      0,
+      5
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "2",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "1",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  }
+ ]
+}

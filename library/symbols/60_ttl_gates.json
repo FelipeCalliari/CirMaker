@@ -1,0 +1,387 @@
+{
+ "category": "Digital/74xx Gates",
+ "symbols": [
+  {
+   "id": "7400",
+   "name": "7400 Quad 2-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "7400",
+    "74LS00",
+    "74HC00"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In NAND (TTL); one gate per symbol",
+   "label": "7400",
+   "floatInputs": 1
+  },
+  {
+   "id": "7402",
+   "name": "7402 Quad 2-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "7402",
+    "74LS02",
+    "74HC02"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In NOR (TTL); one gate per symbol",
+   "label": "7402",
+   "floatInputs": 1
+  },
+  {
+   "id": "7404",
+   "name": "7404 Hex Inverter",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": true
+   },
+   "aliases": [
+    "7404",
+    "74LS04",
+    "74HC04"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ],
+   "description": "Hex Inverter (TTL); one gate per symbol",
+   "label": "7404",
+   "floatInputs": 1
+  },
+  {
+   "id": "7407",
+   "name": "7407 Hex Buffer",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": false
+   },
+   "aliases": [
+    "7407",
+    "74LS07",
+    "74HC07"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ],
+   "description": "Hex Buffer (TTL); one gate per symbol",
+   "label": "7407",
+   "floatInputs": 1
+  },
+  {
+   "id": "7408",
+   "name": "7408 Quad 2-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "7408",
+    "74LS08",
+    "74HC08"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In AND (TTL); one gate per symbol",
+   "label": "7408",
+   "floatInputs": 1
+  },
+  {
+   "id": "7410",
+   "name": "7410 Triple 3-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": true
+   },
+   "aliases": [
+    "7410",
+    "74LS10",
+    "74HC10"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In NAND (TTL); one gate per symbol",
+   "label": "7410",
+   "floatInputs": 1
+  },
+  {
+   "id": "7411",
+   "name": "7411 Triple 3-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": false
+   },
+   "aliases": [
+    "7411",
+    "74LS11",
+    "74HC11"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In AND (TTL); one gate per symbol",
+   "label": "7411",
+   "floatInputs": 1
+  },
+  {
+   "id": "7415",
+   "name": "7415 Triple 3-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": false
+   },
+   "aliases": [
+    "7415",
+    "74LS15",
+    "74HC15"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In AND (TTL); one gate per symbol",
+   "label": "7415",
+   "floatInputs": 1
+  },
+  {
+   "id": "7420",
+   "name": "7420 Dual 4-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": true
+   },
+   "aliases": [
+    "7420",
+    "74LS20",
+    "74HC20"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In NAND (TTL); one gate per symbol",
+   "label": "7420",
+   "floatInputs": 1
+  },
+  {
+   "id": "7421",
+   "name": "7421 Dual 4-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": false
+   },
+   "aliases": [
+    "7421",
+    "74LS21",
+    "74HC21"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In AND (TTL); one gate per symbol",
+   "label": "7421",
+   "floatInputs": 1
+  },
+  {
+   "id": "7422",
+   "name": "7422 Dual 4-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": true
+   },
+   "aliases": [
+    "7422",
+    "74LS22",
+    "74HC22"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In NAND (TTL); one gate per symbol",
+   "label": "7422",
+   "floatInputs": 1
+  },
+  {
+   "id": "7427",
+   "name": "7427 Triple 3-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 3,
+    "invert": true
+   },
+   "aliases": [
+    "7427",
+    "74LS27",
+    "74HC27"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In NOR (TTL); one gate per symbol",
+   "label": "7427",
+   "floatInputs": 1
+  },
+  {
+   "id": "7430",
+   "name": "7430 Single 8-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 8,
+    "invert": true
+   },
+   "aliases": [
+    "7430",
+    "74LS30",
+    "74HC30"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ],
+   "description": "Single 8-In NAND (TTL); one gate per symbol",
+   "label": "7430",
+   "floatInputs": 1
+  },
+  {
+   "id": "7432",
+   "name": "7432 Quad 2-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "7432",
+    "74LS32",
+    "74HC32"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In OR (TTL); one gate per symbol",
+   "label": "7432",
+   "floatInputs": 1
+  },
+  {
+   "id": "7486",
+   "name": "7486 Quad 2-In XOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "7486",
+    "74LS86",
+    "74HC86"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In XOR (TTL); one gate per symbol",
+   "label": "7486",
+   "floatInputs": 1
+  },
+  {
+   "id": "74266",
+   "name": "74266 Quad 2-In XNOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "74266",
+    "74LS266",
+    "74HC266"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In XNOR (TTL); one gate per symbol",
+   "label": "74266",
+   "floatInputs": 1
+  }
+ ]
+}

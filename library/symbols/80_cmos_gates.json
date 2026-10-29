@@ -1,0 +1,446 @@
+{
+ "category": "Digital/40xx CMOS",
+ "symbols": [
+  {
+   "id": "4001",
+   "name": "4001 Quad 2-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "4001",
+    "CD4001"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In NOR (CMOS); one gate per symbol",
+   "label": "4001"
+  },
+  {
+   "id": "4002",
+   "name": "4002 Dual 4-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 4,
+    "invert": true
+   },
+   "aliases": [
+    "4002",
+    "CD4002"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In NOR (CMOS); one gate per symbol",
+   "label": "4002"
+  },
+  {
+   "id": "4011",
+   "name": "4011 Quad 2-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "4011",
+    "CD4011"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In NAND (CMOS); one gate per symbol",
+   "label": "4011"
+  },
+  {
+   "id": "4012",
+   "name": "4012 Dual 4-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": true
+   },
+   "aliases": [
+    "4012",
+    "CD4012"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In NAND (CMOS); one gate per symbol",
+   "label": "4012"
+  },
+  {
+   "id": "4023",
+   "name": "4023 Triple 3-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": true
+   },
+   "aliases": [
+    "4023",
+    "CD4023"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In NAND (CMOS); one gate per symbol",
+   "label": "4023"
+  },
+  {
+   "id": "4025",
+   "name": "4025 Triple 3-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 3,
+    "invert": true
+   },
+   "aliases": [
+    "4025",
+    "CD4025"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In NOR (CMOS); one gate per symbol",
+   "label": "4025"
+  },
+  {
+   "id": "4030",
+   "name": "4030 Quad 2-In XOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "4030",
+    "CD4030"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In XOR (CMOS); one gate per symbol",
+   "label": "4030"
+  },
+  {
+   "id": "4049",
+   "name": "4049 Hex Inverter",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": true
+   },
+   "aliases": [
+    "4049",
+    "CD4049"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ],
+   "description": "Hex Inverter (CMOS); one gate per symbol",
+   "label": "4049"
+  },
+  {
+   "id": "4050",
+   "name": "4050 Hex Buffer",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": false
+   },
+   "aliases": [
+    "4050",
+    "CD4050"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ],
+   "description": "Hex Buffer (CMOS); one gate per symbol",
+   "label": "4050"
+  },
+  {
+   "id": "4068",
+   "name": "4068 Single 8-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 8,
+    "invert": false
+   },
+   "aliases": [
+    "4068",
+    "CD4068"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ],
+   "description": "Single 8-In AND (CMOS); one gate per symbol",
+   "label": "4068"
+  },
+  {
+   "id": "4069",
+   "name": "4069 Hex Inverter",
+   "shape": {
+    "type": "gate",
+    "op": "buf",
+    "inputs": 1,
+    "invert": true
+   },
+   "aliases": [
+    "4069",
+    "CD4069"
+   ],
+   "cmPins": [
+    "A",
+    "Y"
+   ],
+   "description": "Hex Inverter (CMOS); one gate per symbol",
+   "label": "4069"
+  },
+  {
+   "id": "4070",
+   "name": "4070 Quad 2-In XOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "4070",
+    "CD4070"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In XOR (CMOS); one gate per symbol",
+   "label": "4070"
+  },
+  {
+   "id": "4071",
+   "name": "4071 Quad 2-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "4071",
+    "CD4071"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In OR (CMOS); one gate per symbol",
+   "label": "4071"
+  },
+  {
+   "id": "4072",
+   "name": "4072 Dual 4-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 4,
+    "invert": false
+   },
+   "aliases": [
+    "4072",
+    "CD4072"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In OR (CMOS); one gate per symbol",
+   "label": "4072"
+  },
+  {
+   "id": "4073",
+   "name": "4073 Triple 3-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 3,
+    "invert": false
+   },
+   "aliases": [
+    "4073",
+    "CD4073"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In AND (CMOS); one gate per symbol",
+   "label": "4073"
+  },
+  {
+   "id": "4075",
+   "name": "4075 Triple 3-In OR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 3,
+    "invert": false
+   },
+   "aliases": [
+    "4075",
+    "CD4075"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "Y"
+   ],
+   "description": "Triple 3-In OR (CMOS); one gate per symbol",
+   "label": "4075"
+  },
+  {
+   "id": "4077",
+   "name": "4077 Quad 2-In XNOR",
+   "shape": {
+    "type": "gate",
+    "op": "xor",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "4077",
+    "CD4077"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In XNOR (CMOS); one gate per symbol",
+   "label": "4077"
+  },
+  {
+   "id": "4078",
+   "name": "4078 Single 8-In NOR",
+   "shape": {
+    "type": "gate",
+    "op": "or",
+    "inputs": 8,
+    "invert": true
+   },
+   "aliases": [
+    "4078",
+    "CD4078"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "Y"
+   ],
+   "description": "Single 8-In NOR (CMOS); one gate per symbol",
+   "label": "4078"
+  },
+  {
+   "id": "4081",
+   "name": "4081 Quad 2-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": false
+   },
+   "aliases": [
+    "4081",
+    "CD4081"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In AND (CMOS); one gate per symbol",
+   "label": "4081"
+  },
+  {
+   "id": "4082",
+   "name": "4082 Dual 4-In AND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 4,
+    "invert": false
+   },
+   "aliases": [
+    "4082",
+    "CD4082"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "Y"
+   ],
+   "description": "Dual 4-In AND (CMOS); one gate per symbol",
+   "label": "4082"
+  }
+ ]
+}
