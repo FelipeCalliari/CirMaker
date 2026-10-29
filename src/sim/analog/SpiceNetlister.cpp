@@ -373,7 +373,7 @@ private:
             }
             return;
         }
-        if (kind == u"display" || kind == u"led")
+        if (kind == u"display" || kind == u"led" || kind == u"scope")
             return;                                 // observers: read back from node voltages
 
         digitalModels();

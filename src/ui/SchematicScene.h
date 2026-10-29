@@ -90,6 +90,9 @@ public:
     int ticksPerFrame() const { return m_ticksPerFrame; }
     quint64 simTime() const;
     sim::EventSimulator* simulator() const { return m_sim.get(); }
+    // Nets shown in the digital waveform window: SCOPE devices and probes.
+    struct Lane { QString name; int net; };
+    const QVector<Lane>& waveformLanes() const { return m_lanes; }
     int simState(ItemId id) const;
     QColor wireColor(ItemId id) const;
 
@@ -211,6 +214,7 @@ private:
     TitleBlockItem* m_titleItem = nullptr;
     std::optional<WireEdit> m_wireEdit;
     std::optional<AnalogOverlay> m_overlay;
+    QVector<Lane> m_lanes;
 
     std::unique_ptr<sim::EventSimulator> m_sim;
     QTimer m_timer;

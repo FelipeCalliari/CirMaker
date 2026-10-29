@@ -377,7 +377,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         QString cmName = d.name;
         if (cmName.endsWith(u'~')) cmName.chop(1);
         // analysis directives and instruments have no schematic meaning here
-        if (cmName.startsWith(u"SAVE") || cmName == u"SCOPE")
+        if (cmName.startsWith(u"SAVE"))
             continue;
         const SymbolDef* s = library.findByAlias(cmName);
         Component c;

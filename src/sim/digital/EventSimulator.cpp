@@ -137,6 +137,15 @@ void EventSimulator::reset()
     m_now = 0;
 }
 
+void EventSimulator::watch(const QVector<int>& nets)
+{
+    m_watched = QSet<int>(nets.cbegin(), nets.cend());
+    m_history.clear();
+    for (int n : nets)
+        if (n >= 0 && n < int(m_netValue.size()))
+            m_history[n].append({m_now, m_netValue[n]});
+}
+
 void EventSimulator::step(std::uint64_t ticks)
 {
     const std::uint64_t target = m_now + ticks;
@@ -299,6 +308,13 @@ void EventSimulator::resolve(const QSet<int>& dirtyNets, QSet<int>& changedNets)
             if (m_netValue[net] != v) {
                 m_netValue[net] = v;
                 changedNets.insert(net);
+                if (m_watched.contains(net)) {
+                    History& h = m_history[net];
+                    if (!h.isEmpty() && h.last().first == m_now)
+                        h.last().second = v;
+                    else
+                        h.append({m_now, v});
+                }
             }
         }
     }

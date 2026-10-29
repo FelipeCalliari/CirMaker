@@ -43,6 +43,10 @@ public:
     void interact(ItemId id, const QString& action, int value = 0);
     // Properties that interactive models want saved (switch positions...).
     QVariantMap persistentProps(ItemId id) const;
+    // Records every change of these nets (for the digital waveform view).
+    void watch(const QVector<int>& nets);
+    using History = QVector<std::pair<std::uint64_t, Logic>>;
+    const QHash<int, History>& history() const { return m_history; }
     // Set when zero-delay feedback did not settle at some instant.
     bool oscillated() const { return m_oscillated; }
 
@@ -82,6 +86,8 @@ private:
     bool m_initializing = false;
     bool m_oscillated = false;
     QStringList m_warnings;
+    QSet<int> m_watched;
+    QHash<int, History> m_history;
 };
 
 } // namespace cm::sim

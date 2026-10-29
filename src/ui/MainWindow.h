@@ -65,6 +65,7 @@ private:
     void runAnalog();
     void analogFinished();
     void showAnalogResults(const spice::Result& r);
+    void showDigitalWaveforms();
     void applyPreferences();
 
     void addRecent(const QString& path);

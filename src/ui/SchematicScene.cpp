@@ -858,6 +858,20 @@ void SchematicScene::run()
         m_sim = std::make_unique<sim::EventSimulator>();
         m_sim->build(*m_circuit, m_library, m_netlist);
         m_sim->reset();
+        m_lanes.clear();
+        for (const ComponentItem* item : std::as_const(m_componentItems)) {
+            const Component& c = item->component();
+            if (c.symbolId != u"scope") continue;
+            const int net = m_netlist.netOf(c.id, 0);
+            m_lanes << Lane{c.label.isEmpty() ? (c.designator.isEmpty() ? m_netlist.nets.value(net).name : c.designator) : c.label, net};
+        }
+        const QVector<int> probes = probeNets();
+        for (int i = 0; i < probes.size(); ++i)
+            if (probes[i] >= 0)
+                m_lanes << Lane{QStringLiteral("%1: %2").arg(i + 1).arg(m_netlist.nets[probes[i]].name), probes[i]};
+        QVector<int> nets;
+        for (const Lane& l : std::as_const(m_lanes)) nets << l.net;
+        m_sim->watch(nets);
         if (!m_sim->warnings().isEmpty())
             emit statusMessage(tr("Simulation: %n problem(s); first: %1", nullptr, int(m_sim->warnings().size()))
                                    .arg(m_sim->warnings().first()));

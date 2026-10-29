@@ -17,7 +17,8 @@ const QHash<QChar, QString>& defaults()
         {u'7', QStringLiteral("jkff")},        {u'8', QStringLiteral("pulser")},
         {u'9', QStringLiteral("hexdisplay")},  {u'0', QStringLiteral("ground")},
         {u'v', QStringLiteral("vcc")},         {u't', QStringLiteral("terminal")},
-        {u'r', QStringLiteral("resistor")},
+        {u'r', QStringLiteral("resistor")},    {u'b', QStringLiteral("battery")},   // as in CircuitMaker's manual
+        {u's', QStringLiteral("scope")},
     };
     return map;
 }

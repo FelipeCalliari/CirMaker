@@ -55,8 +55,75 @@ QString WaveformView::siFormat(double v, const QString& unit, int digits)
     return QString::number(v, 'g', digits) + u' ' + unit;
 }
 
+void WaveformView::setDigital(QVector<Lane> lanes, quint64 now)
+{
+    m_digital = true;
+    m_lanes = std::move(lanes);
+    m_now = now;
+    m_x.clear();
+    update();
+}
+
+void WaveformView::paintDigital(QPainter& p)
+{
+    const QPalette pal = palette();
+    const QColor text = pal.color(QPalette::Text);
+    QFont f = font();
+    p.setFont(f);
+    const double nameWidth = 110, top = 8, laneH = std::clamp((height() - 40.0) / std::max<qsizetype>(1, m_lanes.size()), 18.0, 46.0);
+    const QRectF area(nameWidth, top, width() - nameWidth - 12, laneH * m_lanes.size());
+    // the most recent window of ticks, like a scrolling logic analyser
+    const quint64 window = std::max<quint64>(200, quint64(area.width() / 2));
+    const quint64 t0 = m_now > window ? m_now - window : 0;
+    const quint64 t1 = std::max(t0 + 1, m_now);
+    auto xOf = [&](quint64 t) { return area.left() + double(t - std::min(t, t0)) / double(t1 - t0) * area.width(); };
+
+    // time grid
+    p.setPen(QPen(pal.color(QPalette::Mid).lighter(130), 0, Qt::DotLine));
+    const double step = std::max(1.0, std::pow(10, std::floor(std::log10(double(t1 - t0) / 5))));
+    for (double t = std::ceil(t0 / step) * step; t <= t1; t += step) {
+        const double x = xOf(quint64(t));
+        p.drawLine(QPointF(x, area.top()), QPointF(x, area.bottom()));
+        p.setPen(text);
+        p.drawText(QRectF(x - 40, area.bottom() + 2, 80, 16), Qt::AlignHCenter, QString::number(quint64(t)));
+        p.setPen(QPen(pal.color(QPalette::Mid).lighter(130), 0, Qt::DotLine));
+    }
+    for (int i = 0; i < m_lanes.size(); ++i) {
+        const Lane& lane = m_lanes[i];
+        const double y0 = area.top() + i * laneH + 4, y1 = area.top() + (i + 1) * laneH - 4;
+        const QColor c = traceColor(i);
+        p.setPen(text);
+        p.drawText(QRectF(4, y0, nameWidth - 8, y1 - y0), Qt::AlignRight | Qt::AlignVCenter, lane.name);
+        int state = 3;
+        quint64 from = t0;
+        auto segment = [&](quint64 a, quint64 b, int st) {
+            if (b <= t0 || a >= t1 + 1) return;
+            const double xa = xOf(std::max(a, t0)), xb = xOf(std::min(b, t1));
+            p.setPen(QPen(c, 1.8));
+            if (st == 0) p.drawLine(QPointF(xa, y1), QPointF(xb, y1));
+            else if (st == 1) p.drawLine(QPointF(xa, y0), QPointF(xb, y0));
+            else if (st == 3) { p.setPen(QPen(c, 1.2, Qt::DashLine)); p.drawLine(QPointF(xa, (y0 + y1) / 2), QPointF(xb, (y0 + y1) / 2)); }
+            else { p.setBrush(QBrush(c, Qt::BDiagPattern)); p.setPen(QPen(c, 1)); p.drawRect(QRectF(QPointF(xa, y0), QPointF(xb, y1))); p.setBrush(Qt::NoBrush); }
+        };
+        for (const auto& [t, st] : lane.changes) {
+            if (t > from) segment(from, t, state);
+            if (t >= t0 && t <= t1 && state != st) {   // edge
+                p.setPen(QPen(c, 1.8));
+                p.drawLine(QPointF(xOf(t), y0), QPointF(xOf(t), y1));
+            }
+            state = st;
+            from = std::max(from, t);
+        }
+        segment(from, t1, state);
+    }
+    p.setPen(text);
+    p.drawText(QRectF(4, area.bottom() + 2, nameWidth - 8, 16), Qt::AlignRight, tr("ticks"));
+}
+
 void WaveformView::clear()
 {
+    m_digital = false;
+    m_lanes.clear();
     m_x.clear();
     m_traces.clear();
     m_title.clear();
@@ -73,6 +140,7 @@ void WaveformView::setData(const QString& title, const QString& xLabel, const QS
     m_x = std::move(x);
     m_traces = std::move(traces);
     m_logX = logX;
+    m_digital = false;
     m_cursorX.reset();
     if (!m_x.isEmpty()) {
         m_x0 = m_x.first();
@@ -139,6 +207,10 @@ void WaveformView::paintEvent(QPaintEvent*)
     p.fillRect(rect(), pal.base());
     const QRectF r = plotRect();
 
+    if (m_digital) {
+        paintDigital(p);
+        return;
+    }
     if (m_x.isEmpty()) {
         p.setPen(pal.color(QPalette::PlaceholderText));
         p.drawText(rect(), Qt::AlignCenter,

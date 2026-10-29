@@ -6,6 +6,7 @@
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "ui/LibraryBrowser.h"
+#include "sim/digital/EventSimulator.h"
 #include "ui/AnalysisDialog.h"
 #include "ui/ComponentItem.h"
 #include "ui/PreferencesDialog.h"
@@ -107,8 +108,10 @@ MainWindow::MainWindow()
             [this](QPointF p) { m_coords->setText(QStringLiteral("x %1  y %2").arg(p.x()).arg(p.y())); });
     connect(m_scene, &SchematicScene::statusMessage, this, [this](const QString& t) { statusBar()->showMessage(t, 8000); });
     connect(m_scene, &SchematicScene::simulationChanged, this, &MainWindow::updateActions);
-    connect(m_scene, &SchematicScene::simTimeChanged, this,
-            [this](quint64 t) { m_simStatus->setText(tr("t = %1 ticks").arg(t)); });
+    connect(m_scene, &SchematicScene::simTimeChanged, this, [this](quint64 t) {
+        m_simStatus->setText(tr("t = %1 ticks").arg(t));
+        showDigitalWaveforms();
+    });
     connect(m_scene, &SchematicScene::toolChanged, this, [this](SchematicScene::Tool t) {
         m_toolSelect->setChecked(t == SchematicScene::Tool::Select || t == SchematicScene::Tool::Place);
         m_toolWire->setChecked(t == SchematicScene::Tool::Wire);
@@ -861,6 +864,23 @@ void MainWindow::applyPreferences()
     m_scene->setGridVisible(p.gridVisible);
     m_view->setDefaultZoom(p.zoomPercent / 100.0);
     m_speed->setValue(p.ticksPerFrame);
+}
+
+void MainWindow::showDigitalWaveforms()
+{
+    const auto* sim = m_scene->simulator();
+    if (!sim || m_scene->waveformLanes().isEmpty())
+        return;
+    QVector<WaveformView::Lane> lanes;
+    for (const SchematicScene::Lane& l : m_scene->waveformLanes()) {
+        WaveformView::Lane lane{l.name, {}};
+        for (const auto& [t, v] : sim->history().value(l.net))
+            lane.changes.append(std::pair<quint64, int>(t, int(v)));
+        lanes << lane;
+    }
+    m_waves->setDigital(lanes, sim->time());
+    if (!m_wavesDock->isVisible())
+        m_wavesDock->show();
 }
 
 void MainWindow::setAnalogMode(bool analog)

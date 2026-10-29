@@ -48,8 +48,8 @@ QVector<int> bitPins(const SymbolDef& s, int count)
 class GateModel : public Model {
 public:
     enum class Op { And, Or, Xor, Buf };
-    GateModel(Op op, bool invert, QVector<int> inputs, int output)
-        : m_op(op), m_invert(invert), m_inputs(std::move(inputs)), m_out(output) {}
+    GateModel(Op op, bool invert, QVector<int> inputs, int output, int delay)
+        : m_op(op), m_invert(invert), m_inputs(std::move(inputs)), m_out(output), m_delay(delay) {}
 
     void evaluate(ModelContext& ctx) override
     {
@@ -93,7 +93,7 @@ public:
             if (r == Logic::Z) r = Logic::X;
             break;
         }
-        ctx.drive(m_out, strong(m_invert ? logicNot(r) : r));
+        ctx.drive(m_out, strong(m_invert ? logicNot(r) : r), m_delay);
         m_state = r == Logic::X ? -1 : int((r == Logic::L1) != m_invert);
     }
     int state() const override { return m_state; }
@@ -103,6 +103,7 @@ private:
     bool m_invert;
     QVector<int> m_inputs;
     int m_out;
+    int m_delay;
     int m_state = -1;
 };
 
@@ -139,7 +140,7 @@ public:
         int d = -1, j = -1, k = -1, clk = -1, q = -1, qn = -1, set = -1, reset = -1;
         bool fallingEdge = false, setLow = false, resetLow = false;
     };
-    FlipFlopModel(bool jk, Pins p) : m_jk(jk), m_p(p) {}
+    FlipFlopModel(bool jk, Pins p, int delay) : m_jk(jk), m_p(p), m_delay(delay) {}
 
     void init(ModelContext& ctx) override
     {
@@ -189,13 +190,14 @@ private:
     }
     void output(ModelContext& ctx)
     {
-        const std::uint32_t delay = ctx.settling() ? 0 : 1;
+        const std::uint32_t delay = ctx.settling() ? 0 : std::uint32_t(m_delay);
         if (m_p.q >= 0) ctx.drive(m_p.q, strong(m_q), delay);
         if (m_p.qn >= 0) ctx.drive(m_p.qn, strong(logicNot(m_q)), delay);
     }
 
     bool m_jk;
     Pins m_p;
+    int m_delay;
     Logic m_q = Logic::L0;
     Logic m_lastClk = Logic::X;
 };
@@ -376,9 +378,11 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
 {
     const QString kind = s.model.value(u"kind").toString();
     // analog-only parts have no digital behaviour
-    if (kind.isEmpty() || kind == u"siggen" || kind == u"pot" || kind == u"meter")
+    if (kind.isEmpty() || kind == u"siggen" || kind == u"pot" || kind == u"meter" || kind == u"scope")
         return nullptr;
     const QVariantMap props = mergedProps(s, c);
+    // CircuitMaker propagation delay: 1..14 ticks (Edit > Set Prop Delays)
+    const int delay = std::clamp(props.value(QStringLiteral("delay"), 1).toInt(), 1, 14);
     auto fail = [&](const QString& why) -> std::unique_ptr<Model> {
         if (error) *error = QStringLiteral("%1 (%2): %3").arg(c.designator, s.id, why);
         return nullptr;
@@ -397,7 +401,7 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         const int out = s.pinIndex(QStringLiteral("Y"));
         if (out < 0 || inputs.isEmpty())
             return fail(QStringLiteral("gate needs inputs and a Y output"));
-        return std::make_unique<GateModel>(op, s.model.value(u"invert").toBool(), inputs, out);
+        return std::make_unique<GateModel>(op, s.model.value(u"invert").toBool(), inputs, out, delay);
     }
     if (kind == u"tribuf") {
         bool enLow = false;
@@ -422,7 +426,7 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         p.reset = findPin(s, {"R", "RST", "CLR", "RD"}, &p.resetLow);
         if (p.clk < 0 || (jk ? (p.j < 0 || p.k < 0) : p.d < 0))
             return fail(QStringLiteral("flip-flop is missing data or clock pins"));
-        return std::make_unique<FlipFlopModel>(jk, p);
+        return std::make_unique<FlipFlopModel>(jk, p, delay);
     }
     if (kind == u"const") {
         if (s.pins.isEmpty())

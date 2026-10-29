@@ -46,6 +46,53 @@
    ]
   },
   {
+   "id": "scope",
+   "name": "SCOPE",
+   "prefix": "T",
+   "label": "",
+   "aliases": [
+    "SCOPE"
+   ],
+   "cmPins": [
+    "1"
+   ],
+   "model": {
+    "kind": "scope"
+   },
+   "description": "Adds this node to the waveform window (digital and analog); the label names the trace",
+   "graphics": [
+    {
+     "rect": [
+      -12,
+      -34,
+      24,
+      20
+     ]
+    },
+    {
+     "path": "M -8 -20 L -4 -20 L -4 -28 L 2 -28 L 2 -20 L 8 -20"
+    },
+    {
+     "line": [
+      0,
+      -14,
+      0,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      0,
+      0
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
    "id": "probe",
    "name": "Logic Probe",
    "prefix": "P",
