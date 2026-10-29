@@ -42,6 +42,18 @@ struct TitleBlock {
     friend bool operator==(const TitleBlock&, const TitleBlock&) = default;
 };
 
+// Analog (SPICE) analysis to run. Values are SPICE numbers ("1m", "10k").
+struct AnalysisSettings {
+    enum class Type { OperatingPoint, Transient, AC, DCSweep };
+    bool analogMode = false;
+    Type type = Type::Transient;
+    QString tranStop = QStringLiteral("10m"), tranStep = QStringLiteral("10u");
+    QString acStart = QStringLiteral("10"), acStop = QStringLiteral("1Meg");
+    int acPointsPerDecade = 20;
+    QString dcSource, dcStart = QStringLiteral("0"), dcStop = QStringLiteral("5"), dcStep = QStringLiteral("0.05");
+    friend bool operator==(const AnalysisSettings&, const AnalysisSettings&) = default;
+};
+
 // The schematic document. Mutated only through these methods (normally via the
 // undo commands), which emit the signals the scene uses to stay in sync.
 class Circuit : public QObject {
@@ -78,6 +90,12 @@ public:
     const TitleBlock& titleBlock() const { return m_titleBlock; }
     void setTitleBlock(const TitleBlock& tb);
 
+    const AnalysisSettings& analysis() const { return m_analysis; }
+    void setAnalysis(const AnalysisSettings& a);
+    // Waveform probe points; each one plots the net under it.
+    const QVector<QPointF>& probes() const { return m_probes; }
+    void setProbes(const QVector<QPointF>& probes);
+
 signals:
     void componentAdded(cm::ItemId id);
     void componentChanged(cm::ItemId id);
@@ -90,6 +108,8 @@ signals:
     void textRemoved(cm::ItemId id);
     void cleared();
     void titleBlockChanged();
+    void analysisChanged();
+    void probesChanged();
     // Any change that affects connectivity or contents.
     void modified();
 
@@ -100,6 +120,8 @@ private:
     QMap<ItemId, Wire> m_wires;
     QMap<ItemId, TextNote> m_texts;
     TitleBlock m_titleBlock;
+    AnalysisSettings m_analysis;
+    QVector<QPointF> m_probes;
     ItemId m_nextId = 1;
 };
 

@@ -27,7 +27,7 @@ class SchematicScene : public QGraphicsScene {
     Q_OBJECT
 public:
     static constexpr double kGrid = 10;
-    enum class Tool { Select, Wire, Bus, NetLabel, Text, Place };
+    enum class Tool { Select, Wire, Bus, NetLabel, Text, Probe, Place };
 
     SchematicScene(Circuit* circuit, QUndoStack* undo, const LibraryRegistry& library, QObject* parent = nullptr);
     ~SchematicScene() override;
@@ -54,6 +54,21 @@ public:
     // Selects components whose designator, label or device name contains
     // text (case-insensitive); returns how many were selected.
     int findAndSelect(const QString& text);
+
+    // analog results shown on the schematic until the next edit
+    struct AnalogOverlay {
+        QHash<int, double> netVoltage;          // operating point only
+        QHash<ItemId, QString> meterText;
+        QHash<ItemId, int> displayState;
+    };
+    void setAnalogOverlay(AnalogOverlay overlay);
+    void clearAnalogOverlay();
+    bool analogOverlayShown() const { return m_overlay.has_value(); }
+    int analogState(ItemId id) const { return m_overlay ? m_overlay->displayState.value(id, 0) : 0; }
+    QString meterText(ItemId id) const { return m_overlay ? m_overlay->meterText.value(id) : QString(); }
+    // Net under each probe point (-1 when the probe sits on nothing).
+    QVector<int> probeNets() const;
+    void refreshNetlist() { rebuildNetlist(); }
 
     // title block (no-ops while simulating)
     void editTitleBlock();
@@ -122,6 +137,8 @@ private:
     bool onConductor(QPointF p) const;      // pin or ordinary wire
     QString askNetName(const QString& title, const QString& suggestion);
     void placeNetLabel(QPointF p);
+    void toggleProbe(QPointF p);
+    int netAt(QPointF p) const;
     void cancelWire();
     bool isConnectionPoint(QPointF p) const;
     bool pinAt(QPointF p, QPointF* pinPos) const;
@@ -185,6 +202,7 @@ private:
 
     TitleBlockItem* m_titleItem = nullptr;
     std::optional<WireEdit> m_wireEdit;
+    std::optional<AnalogOverlay> m_overlay;
 
     std::unique_ptr<sim::EventSimulator> m_sim;
     QTimer m_timer;

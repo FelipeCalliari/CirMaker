@@ -262,6 +262,26 @@ QString decodeName(const QVector<int>& nets)
     return s.trimmed();
 }
 
+// Value with a SPICE scale suffix ("1m", "4.7k"); 0 when unreadable.
+double spiceValue(const QString& t)
+{
+    static const QRegularExpression re(QStringLiteral("^([-+]?[\\d.]+(?:[eE][-+]?\\d+)?)([a-zA-Z]*)"));
+    const auto m = re.match(t.trimmed());
+    if (!m.hasMatch()) return 0;
+    double v = m.captured(1).toDouble();
+    const QString suf = m.captured(2).toLower();
+    if (suf.startsWith(u"meg")) return v * 1e6;
+    if (suf.isEmpty()) return v;
+    switch (suf[0].unicode()) {
+    case 'p': return v * 1e-12;
+    case 'n': return v * 1e-9;
+    case 'u': return v * 1e-6;
+    case 'm': return v * 1e-3;
+    case 'k': return v * 1e3;
+    default: return v;
+    }
+}
+
 int ourPin(const SymbolDef& s, int cmPin)
 {
     if (cmPin < 1) return -1;
@@ -317,7 +337,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         QString cmName = d.name;
         if (cmName.endsWith(u'~')) cmName.chop(1);
         // analysis directives and instruments have no schematic meaning here
-        if (cmName.startsWith(u'.') || cmName.startsWith(u"SAVE") || cmName == u"SCOPE")
+        if (cmName.startsWith(u"SAVE") || cmName == u"SCOPE")
             continue;
         const SymbolDef* s = library.findByAlias(cmName);
         Component c;
@@ -330,7 +350,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             c.label = cmName;
         } else if (cmName == u"Input" || cmName == u"Output") {
             c.label = decodeName(d.nets);
-        } else if (s->netLabel || s->prefix == u"U") {
+        } else if (s->netLabel || s->prefix == u"U" || !s->defaultLabel.isEmpty()) {
             c.label = d.value;
         } else {
             c.label = s->defaultLabel;
@@ -342,7 +362,22 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             c.props.insert(QStringLiteral("state"), int(d.value.trimmed() == u"5V"));
         else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0)
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
-        else if (kind == u"rom" && !d.data.isEmpty()) {
+        else if (kind == u"pot") {
+            // "100k 40%": total resistance and wiper position
+            c.label = d.value.section(u' ', 0, 0);
+            static const QRegularExpression percent(QStringLiteral("(\\d+(?:\\.\\d+)?)\\s*%"));
+            if (const auto m = percent.match(d.value); m.hasMatch())
+                c.props.insert(QStringLiteral("position"), m.captured(1).toDouble());
+        } else if (kind == u"siggen") {
+            // "-1/1V": low/high levels
+            static const QRegularExpression levels(QStringLiteral("^\\s*([-+]?[\\d.]+[a-zA-Z]*)\\s*/\\s*([-+]?[\\d.]+[a-zA-Z]*)"));
+            if (const auto m = levels.match(d.value); m.hasMatch()) {
+                const double lo = spiceValue(m.captured(1)), hi = spiceValue(m.captured(2));
+                c.props.insert(QStringLiteral("amplitude"), QString::number((hi - lo) / 2));
+                c.props.insert(QStringLiteral("offset"), QString::number((hi + lo) / 2));
+            }
+            c.label = s->defaultLabel;
+        } else if (kind == u"rom" && !d.data.isEmpty()) {
             QStringList bytes;
             for (int b : d.data)
                 bytes << QStringLiteral("%1").arg(b, 2, 16, QChar(u'0')).toUpper();
@@ -353,6 +388,20 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             c.props.insert(QStringLiteral("value"), bits == 4 ? QString(QChar(code)).toInt(nullptr, 16) : code & 0x7f);
         }
         placed[i] = {0, s, c};
+    }
+
+    // circuits with parts that only make sense in SPICE open in analog mode
+    int analogOnly = 0;
+    for (const Placed& p : std::as_const(placed))
+        if (p.symbol && !p.symbol->spice.isEmpty() && p.symbol->model.isEmpty())
+            ++analogOnly;
+    for (const Placed& p : std::as_const(placed))
+        if (p.symbol && (p.symbol->model.value(u"kind").toString() == u"siggen"))
+            ++analogOnly;
+    if (analogOnly > 0) {
+        AnalysisSettings a;
+        a.analogMode = true;
+        circuit.setAnalysis(a);
     }
 
     // ---- placement: align our pins with the wire ends attached to CM pins

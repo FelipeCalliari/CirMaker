@@ -2,6 +2,10 @@
 
 #include "ui/SchematicScene.h"
 
+#include "sim/analog/NgspiceEngine.h"
+#include "sim/analog/SpiceNetlister.h"
+
+#include <QFutureWatcher>
 #include <QMainWindow>
 
 class QAction;
@@ -9,12 +13,14 @@ class QActionGroup;
 class QLabel;
 class QSpinBox;
 class QUndoStack;
+class QDockWidget;
 
 namespace cm {
 
 class Circuit;
 class LibraryBrowser;
 class SchematicView;
+class WaveformView;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -29,6 +35,8 @@ public:
     void showLibrarySheet();
     SchematicScene* scene() const { return m_scene; }
     QAction* undoAction() const { return m_undoAct; }
+    QAction* runAction() const { return m_run; }
+    bool analogRunning() const { return m_analogWatcher.isRunning(); }
 
 protected:
     void closeEvent(QCloseEvent* e) override;
@@ -52,6 +60,11 @@ private:
     void print();
     void about();
     void editPreferences();
+    void setAnalogMode(bool analog);
+    void editAnalysis();
+    void runAnalog();
+    void analogFinished();
+    void showAnalogResults(const spice::Result& r);
     void applyPreferences();
 
     void addRecent(const QString& path);
@@ -79,6 +92,11 @@ private:
     QAction *m_run, *m_step, *m_reset, *m_stop;
     QAction* m_about;
     QAction* m_prefs;
+    QAction *m_digitalMode, *m_analogMode, *m_analysisSetup, *m_toolProbe;
+    WaveformView* m_waves;
+    QDockWidget* m_wavesDock;
+    QFutureWatcher<spice::Result> m_analogWatcher;
+    spice::Deck m_runningDeck;
 };
 
 } // namespace cm

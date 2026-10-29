@@ -382,6 +382,7 @@ bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
     s.netLabel = o.value(u"netLabel").toBool();
     s.hidden = o.value(u"hidden").toBool();
     s.model = o.value(u"model").toObject();
+    s.spice = o.value(u"spice").toObject();
     s.defaultProps = o.value(u"props").toObject().toVariantMap();
     for (const QJsonValue& a : o.value(u"aliases").toArray())
         s.aliases << a.toString();

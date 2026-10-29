@@ -423,6 +423,12 @@
    "model": {
     "kind": "led"
    },
+   "spice": {
+    "line": "D{name} {A} {K} DLED",
+    "models": [
+     ".model DLED D(Is=1e-22 N=1.5 Rs=2 Bv=5 Ibv=10u)"
+    ]
+   },
    "description": "Lights when the anode is high and the cathode low",
    "graphics": [
     {

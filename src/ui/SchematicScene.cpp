@@ -8,6 +8,7 @@
 #include "ui/PropertiesDialog.h"
 #include "ui/TextNoteItem.h"
 #include "ui/TitleBlockItem.h"
+#include "ui/WaveformView.h"
 #include "ui/WireItem.h"
 
 #include <QApplication>
@@ -17,8 +18,10 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QMimeData>
+#include <QFontMetricsF>
 #include <QPainter>
 #include <QRegularExpression>
+#include <QSet>
 #include <QUndoStack>
 
 #include <cmath>
@@ -63,6 +66,8 @@ SchematicScene::SchematicScene(Circuit* circuit, QUndoStack* undo, const Library
     connect(circuit, &Circuit::cleared, this, &SchematicScene::onCleared);
     connect(circuit, &Circuit::titleBlockChanged, this, &SchematicScene::onTitleBlockChanged);
     connect(circuit, &Circuit::modified, this, &SchematicScene::scheduleNetlist);
+    connect(circuit, &Circuit::modified, this, &SchematicScene::clearAnalogOverlay);
+    connect(circuit, &Circuit::probesChanged, this, [this] { update(); });
 
     m_timer.setInterval(30);
     connect(&m_timer, &QTimer::timeout, this, &SchematicScene::advance);
@@ -203,7 +208,8 @@ void SchematicScene::setTool(Tool tool)
     m_tool = tool;
     for (QGraphicsView* v : views())
         v->viewport()->setCursor(tool == Tool::Select ? Qt::ArrowCursor
-                                 : tool == Tool::Text || tool == Tool::NetLabel ? Qt::IBeamCursor : Qt::CrossCursor);
+                                 : tool == Tool::Text || tool == Tool::NetLabel ? Qt::IBeamCursor
+                                 : tool == Tool::Probe ? Qt::PointingHandCursor : Qt::CrossCursor);
     emit toolChanged(tool);
 }
 
@@ -377,6 +383,61 @@ void SchematicScene::cancelWire()
 {
     m_wirePoints.clear();
     m_wireFromSelect = false;
+    update();
+}
+
+int SchematicScene::netAt(QPointF p) const
+{
+    for (const WireItem* w : m_wireItems)
+        if (!w->wire().bus && WireGeometry::onPolyline(p, w->wire().points))
+            return m_netlist.wireNet.value(w->id(), -1);
+    for (const ComponentItem* item : m_componentItems)
+        for (int i = 0; i < item->symbol()->pins.size(); ++i)
+            if (near(m_library.pinScenePos(item->component(), i), p, 4))
+                return m_netlist.netOf(item->id(), i);
+    return -1;
+}
+
+void SchematicScene::toggleProbe(QPointF p)
+{
+    QVector<QPointF> probes = m_circuit->probes();
+    for (int i = 0; i < probes.size(); ++i) {
+        if (near(probes[i], p, 8)) {
+            probes.remove(i);
+            m_undo->push(new SetProbesCommand(m_circuit, probes, tr("Remove probe")));
+            return;
+        }
+    }
+    QPointF pin;
+    if (pinAt(p, &pin))
+        p = pin;
+    else if (!onConductor(p)) {
+        emit statusMessage(tr("Place probes on a wire or a pin"));
+        return;
+    }
+    probes << p;
+    m_undo->push(new SetProbesCommand(m_circuit, probes, tr("Add probe")));
+}
+
+QVector<int> SchematicScene::probeNets() const
+{
+    QVector<int> out;
+    for (QPointF p : m_circuit->probes())
+        out << netAt(p);
+    return out;
+}
+
+void SchematicScene::setAnalogOverlay(AnalogOverlay overlay)
+{
+    m_overlay = std::move(overlay);
+    update();
+}
+
+void SchematicScene::clearAnalogOverlay()
+{
+    if (!m_overlay)
+        return;
+    m_overlay.reset();
     update();
 }
 
@@ -920,6 +981,9 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
     case Tool::NetLabel:
         placeNetLabel(p);
         return;
+    case Tool::Probe:
+        toggleProbe(p);
+        return;
     case Tool::Text: {
         bool ok = false;
         const QString text = QInputDialog::getMultiLineText(dialogParent(), tr("Add text"), tr("Text:"), {}, &ok);
@@ -1167,7 +1231,7 @@ void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
     // fifth line is a major one
     const double scale = p->worldTransform().m11();
     double step = kGrid;
-    while (step * scale < 6)
+    while (step * scale < 8)
         step *= 5;
     const double major = step * 5;
     const double x0 = std::floor(rect.left() / step) * step, y0 = std::floor(rect.top() / step) * step;
@@ -1219,6 +1283,50 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         p->setBrush(Qt::NoBrush);
         p->drawPolyline(pts.constData(), int(pts.size()));
     }
+    // probes: numbered flags in their trace colours
+    const QVector<QPointF>& probes = m_circuit->probes();
+    for (int i = 0; i < probes.size(); ++i) {
+        const QPointF at = probes[i];
+        const QColor c = WaveformView::traceColor(i);
+        p->setPen(QPen(c.darker(130), 1.2));
+        p->setBrush(c);
+        p->drawPolygon(QPolygonF({at, at + QPointF(6, -14), at + QPointF(22, -14), at + QPointF(22, -28), at + QPointF(0, -28)}));
+        QFont f;
+        f.setPointSizeF(8);
+        f.setBold(true);
+        p->setFont(f);
+        p->setPen(Qt::white);
+        p->drawText(QRectF(at.x(), at.y() - 28, 22, 14), Qt::AlignCenter, QString::number(i + 1));
+    }
+    // operating point: one voltage tag per net, on its first wire or pin
+    if (m_overlay && !m_overlay->netVoltage.isEmpty()) {
+        QFont f;
+        f.setPointSizeF(8);
+        p->setFont(f);
+        const QFontMetricsF fm(f);
+        QSet<int> done;
+        auto tag = [&](int net, QPointF at) {
+            if (net < 0 || done.contains(net) || !m_overlay->netVoltage.contains(net))
+                return;
+            done.insert(net);
+            const QString text = WaveformView::siFormat(m_overlay->netVoltage.value(net), QStringLiteral("V"));
+            const QRectF box(at + QPointF(4, -18), QSizeF(fm.horizontalAdvance(text) + 8, 15));
+            p->setPen(QPen(QColor(0xc0, 0x90, 0x10), 0.8));
+            p->setBrush(QColor(0xff, 0xf4, 0xc0));
+            p->drawRoundedRect(box, 3, 3);
+            p->setPen(QColor(0x50, 0x40, 0x00));
+            p->drawText(box, Qt::AlignCenter, text);
+        };
+        for (const WireItem* w : std::as_const(m_wireItems)) {
+            const QVector<QPointF>& pts = w->wire().points;
+            if (!w->wire().bus && pts.size() >= 2)
+                tag(m_netlist.wireNet.value(w->id(), -1), (pts[0] + pts[1]) / 2);
+        }
+        for (const ComponentItem* item : std::as_const(m_componentItems))
+            for (int i = 0; i < item->symbol()->pins.size(); ++i)
+                tag(m_netlist.netOf(item->id(), i), m_library.pinScenePos(item->component(), i));
+    }
+
     if ((m_tool == Tool::Wire || m_tool == Tool::Bus || !m_wirePoints.isEmpty()) && isConnectionPoint(m_cursor)) {
         p->setPen(QPen(QColor(0x00, 0xa0, 0x40), 1.2));
         p->setBrush(Qt::NoBrush);

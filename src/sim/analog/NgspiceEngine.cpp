@@ -1,0 +1,219 @@
+#include "sim/analog/NgspiceEngine.h"
+
+#include <QLibrary>
+#include <QMutexLocker>
+#include <QStringList>
+
+#include <cstring>
+
+namespace cm::spice {
+
+namespace {
+
+// Subset of ngspice's sharedspice.h (ABI stable since ngspice 26).
+using NgBool = bool;
+struct NgComplex { double real, imag; };
+struct VectorInfo {
+    char* v_name;
+    int v_type;
+    short v_flags;
+    double* v_realdata;
+    NgComplex* v_compdata;
+    int v_length;
+};
+using SendChar = int(char*, int, void*);
+using SendStat = int(char*, int, void*);
+using ControlledExit = int(int, NgBool, NgBool, int, void*);
+using SendData = int(void*, int, int, void*);
+using SendInitData = int(void*, int, void*);
+using BGThreadRunning = int(NgBool, int, void*);
+
+// The engine whose run is in progress; callbacks have no other context
+// because ngspice is a process-wide singleton.
+struct CallbackState {
+    QString log;
+    bool exitRequested = false;
+} g_state;
+
+int onChar(char* text, int, void*)
+{
+    g_state.log += QString::fromLocal8Bit(text) + u'\n';
+    return 0;
+}
+int onStat(char*, int, void*) { return 0; }
+int onExit(int, NgBool, NgBool, int, void*)
+{
+    g_state.exitRequested = true;
+    return 0;
+}
+int onBgThread(NgBool, int, void*) { return 0; }
+
+} // namespace
+
+struct NgspiceEngine::Api {
+    int (*init)(SendChar*, SendStat*, ControlledExit*, SendData*, SendInitData*, BGThreadRunning*, void*) = nullptr;
+    int (*command)(char*) = nullptr;
+    int (*circ)(char**) = nullptr;
+    char* (*curPlot)() = nullptr;
+    char** (*allVecs)(char*) = nullptr;
+    VectorInfo* (*vecInfo)(char*) = nullptr;
+};
+
+const Vector* Result::find(const QString& name) const
+{
+    auto it = vectors.constFind(name.toLower());
+    if (it != vectors.cend())
+        return &*it;
+    it = vectors.constFind(QStringLiteral("v(%1)").arg(name.toLower()));
+    return it == vectors.cend() ? nullptr : &*it;
+}
+
+std::optional<double> Result::last(const QString& name) const
+{
+    const Vector* v = find(name);
+    if (!v || v->size() == 0)
+        return std::nullopt;
+    return v->isComplex() ? std::abs(v->complex.last()) : v->real.last();
+}
+
+NgspiceEngine& NgspiceEngine::instance()
+{
+    static NgspiceEngine engine;
+    return engine;
+}
+
+bool NgspiceEngine::available(QString* why)
+{
+    QMutexLocker lock(&m_mutex);
+    const bool ok = m_api || load(why);
+    if (!ok && why) *why = m_loadError;
+    return ok;
+}
+
+bool NgspiceEngine::load(QString* why)
+{
+    m_lib = new QLibrary(QStringLiteral("ngspice"));
+    for (const QString& name : {QStringLiteral("ngspice"), QStringLiteral("libngspice.so.0"), QStringLiteral("libngspice-0")}) {
+        m_lib->setFileName(name);
+        if (m_lib->load())
+            break;
+    }
+    if (!m_lib->isLoaded()) {
+        m_loadError = QStringLiteral("libngspice was not found (install ngspice built as a shared library): %1")
+                          .arg(m_lib->errorString());
+        delete m_lib;
+        m_lib = nullptr;
+        if (why) *why = m_loadError;
+        return false;
+    }
+    auto* api = new Api;
+    api->init = reinterpret_cast<decltype(api->init)>(m_lib->resolve("ngSpice_Init"));
+    api->command = reinterpret_cast<decltype(api->command)>(m_lib->resolve("ngSpice_Command"));
+    api->circ = reinterpret_cast<decltype(api->circ)>(m_lib->resolve("ngSpice_Circ"));
+    api->curPlot = reinterpret_cast<decltype(api->curPlot)>(m_lib->resolve("ngSpice_CurPlot"));
+    api->allVecs = reinterpret_cast<decltype(api->allVecs)>(m_lib->resolve("ngSpice_AllVecs"));
+    api->vecInfo = reinterpret_cast<decltype(api->vecInfo)>(m_lib->resolve("ngGet_Vec_Info"));
+    if (!api->init || !api->command || !api->circ || !api->curPlot || !api->allVecs || !api->vecInfo) {
+        m_loadError = QStringLiteral("libngspice does not export the shared-library API");
+        delete api;
+        unload();
+        if (why) *why = m_loadError;
+        return false;
+    }
+    g_state = {};
+    api->init(onChar, onStat, onExit, nullptr, nullptr, onBgThread, nullptr);
+    m_api = api;
+    return true;
+}
+
+void NgspiceEngine::unload()
+{
+    delete m_api;
+    m_api = nullptr;
+    if (m_lib) {
+        m_lib->unload();
+        delete m_lib;
+        m_lib = nullptr;
+    }
+}
+
+Result NgspiceEngine::run(const QString& netlist)
+{
+    QMutexLocker lock(&m_mutex);
+    Result r;
+    if (!m_api && !load(&r.error))
+        return r;
+
+    auto command = [&](const char* cmd) {
+        QByteArray c(cmd);
+        return m_api->command(c.data());
+    };
+    g_state.log.clear();
+    g_state.exitRequested = false;
+
+    // ngSpice_Circ takes a null-terminated array of lines
+    QList<QByteArray> lines;
+    for (const QString& l : netlist.split(u'\n'))
+        lines << l.toLocal8Bit();
+    QVector<char*> ptrs;
+    for (QByteArray& l : lines)
+        ptrs << l.data();
+    ptrs << nullptr;
+
+    const int circError = m_api->circ(ptrs.data());
+    if (circError == 0 && !g_state.exitRequested)
+        command("run");
+
+    r.log = g_state.log;
+    for (const QString& line : r.log.split(u'\n')) {
+        const QString l = line.trimmed();
+        if (l.contains(QStringLiteral("rror")) || l.contains(QStringLiteral("singular matrix"))
+            || l.contains(QStringLiteral("aborted"))) {
+            r.error = l.startsWith(QStringLiteral("stderr ")) ? l.mid(7) : l;
+            break;
+        }
+    }
+
+    const QString plot = QString::fromLocal8Bit(m_api->curPlot());
+    r.plotType = plot;
+    while (!r.plotType.isEmpty() && r.plotType.back().isDigit())
+        r.plotType.chop(1);
+    if (r.plotType != u"const") {
+        QByteArray plotName = plot.toLocal8Bit();
+        if (char** names = m_api->allVecs(plotName.data())) {
+            for (int i = 0; names[i]; ++i) {
+                QByteArray full = plotName + '.' + QByteArray(names[i]);
+                const VectorInfo* info = m_api->vecInfo(full.data());
+                if (!info) continue;
+                Vector v;
+                v.name = QString::fromLocal8Bit(info->v_name).toLower();
+                if (info->v_compdata) {
+                    v.complex.resize(info->v_length);
+                    for (int k = 0; k < info->v_length; ++k)
+                        v.complex[k] = {info->v_compdata[k].real, info->v_compdata[k].imag};
+                } else if (info->v_realdata) {
+                    v.real = QVector<double>(info->v_realdata, info->v_realdata + info->v_length);
+                }
+                r.vectors.insert(v.name, v);
+            }
+        }
+    }
+    if (r.plotType == u"tran") r.scale = QStringLiteral("time");
+    else if (r.plotType == u"ac") r.scale = QStringLiteral("frequency");
+    else if (r.plotType == u"dc") {
+        for (auto it = r.vectors.cbegin(); it != r.vectors.cend(); ++it)
+            if (it.key().endsWith(QStringLiteral("sweep")))
+                r.scale = it.key();
+    }
+
+    command("remcirc");
+    command("destroy all");
+    r.ok = r.error.isEmpty() && circError == 0 && !r.vectors.isEmpty();
+    if (!r.ok && r.error.isEmpty())
+        r.error = QStringLiteral("the simulation produced no results");
+    if (g_state.exitRequested)
+        unload();                               // ngspice asked to be unloaded; reload next time
+    return r;
+}
+
+} // namespace cm::spice

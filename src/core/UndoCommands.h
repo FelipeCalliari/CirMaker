@@ -62,4 +62,28 @@ private:
     TitleBlock m_before, m_after;
 };
 
+class SetAnalysisCommand : public QUndoCommand {
+public:
+    SetAnalysisCommand(Circuit* circuit, AnalysisSettings after, const QString& text)
+        : QUndoCommand(text), m_circuit(circuit), m_before(circuit->analysis()), m_after(std::move(after)) {}
+    void redo() override { m_circuit->setAnalysis(m_after); }
+    void undo() override { m_circuit->setAnalysis(m_before); }
+
+private:
+    Circuit* m_circuit;
+    AnalysisSettings m_before, m_after;
+};
+
+class SetProbesCommand : public QUndoCommand {
+public:
+    SetProbesCommand(Circuit* circuit, QVector<QPointF> after, const QString& text)
+        : QUndoCommand(text), m_circuit(circuit), m_before(circuit->probes()), m_after(std::move(after)) {}
+    void redo() override { m_circuit->setProbes(m_after); }
+    void undo() override { m_circuit->setProbes(m_before); }
+
+private:
+    Circuit* m_circuit;
+    QVector<QPointF> m_before, m_after;
+};
+
 } // namespace cm

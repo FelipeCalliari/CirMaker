@@ -19,6 +19,38 @@ QPointF point(const QJsonValue& v)
     return {a.at(0).toDouble(), a.at(1).toDouble()};
 }
 
+const char* const kAnalysisTypes[] = {"op", "tran", "ac", "dc"};
+
+QJsonObject analysisToJson(const AnalysisSettings& a)
+{
+    return {{u"analog"_s, a.analogMode}, {u"type"_s, QString::fromLatin1(kAnalysisTypes[int(a.type)])},
+            {u"tranStop"_s, a.tranStop}, {u"tranStep"_s, a.tranStep},
+            {u"acStart"_s, a.acStart}, {u"acStop"_s, a.acStop}, {u"acPoints"_s, a.acPointsPerDecade},
+            {u"dcSource"_s, a.dcSource}, {u"dcStart"_s, a.dcStart}, {u"dcStop"_s, a.dcStop}, {u"dcStep"_s, a.dcStep}};
+}
+
+AnalysisSettings analysisFromJson(const QJsonObject& o)
+{
+    AnalysisSettings a;
+    if (o.isEmpty())
+        return a;
+    a.analogMode = o.value(u"analog").toBool();
+    const QString type = o.value(u"type").toString();
+    for (int i = 0; i < 4; ++i)
+        if (type == QLatin1String(kAnalysisTypes[i]))
+            a.type = AnalysisSettings::Type(i);
+    a.tranStop = o.value(u"tranStop").toString(a.tranStop);
+    a.tranStep = o.value(u"tranStep").toString(a.tranStep);
+    a.acStart = o.value(u"acStart").toString(a.acStart);
+    a.acStop = o.value(u"acStop").toString(a.acStop);
+    a.acPointsPerDecade = o.value(u"acPoints").toInt(a.acPointsPerDecade);
+    a.dcSource = o.value(u"dcSource").toString();
+    a.dcStart = o.value(u"dcStart").toString(a.dcStart);
+    a.dcStop = o.value(u"dcStop").toString(a.dcStop);
+    a.dcStep = o.value(u"dcStep").toString(a.dcStep);
+    return a;
+}
+
 } // namespace
 
 QByteArray serialize(const Circuit& circuit)
@@ -43,12 +75,17 @@ QByteArray serialize(const Circuit& circuit)
     for (const TextNote& t : circuit.texts())
         texts.append(QJsonObject{{u"pos"_s, point(t.pos)}, {u"text"_s, t.text}, {u"size"_s, t.pointSize}});
 
+    QJsonArray probes;
+    for (QPointF p : circuit.probes())
+        probes.append(point(p));
     const TitleBlock& tb = circuit.titleBlock();
     QJsonObject root{
         {u"format"_s, u"cirmaker-qt"_s},
         {u"version"_s, kVersion},
         {u"title"_s, QJsonObject{{u"title"_s, tb.title}, {u"author"_s, tb.author}, {u"date"_s, tb.date},
                                  {u"revision"_s, tb.revision}, {u"visible"_s, tb.visible}, {u"pos"_s, point(tb.pos)}}},
+        {u"analysis"_s, analysisToJson(circuit.analysis())},
+        {u"probes"_s, probes},
         {u"components"_s, comps},
         {u"wires"_s, wires},
         {u"texts"_s, texts},
@@ -80,6 +117,11 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
     block.visible = tb.value(u"visible").toBool();
     block.pos = point(tb.value(u"pos"));
     circuit.setTitleBlock(block);
+    circuit.setAnalysis(analysisFromJson(root.value(u"analysis").toObject()));
+    QVector<QPointF> probes;
+    for (const QJsonValue& v : root.value(u"probes").toArray())
+        probes << point(v);
+    circuit.setProbes(probes);
     for (const QJsonValue& v : root.value(u"components").toArray()) {
         const QJsonObject o = v.toObject();
         Component c;

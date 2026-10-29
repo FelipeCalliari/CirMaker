@@ -118,6 +118,8 @@ void Circuit::clear()
     m_texts.clear();
     m_nextId = 1;
     m_titleBlock = {};
+    m_analysis = {};
+    m_probes.clear();
     emit cleared();
     emit modified();
 }
@@ -128,6 +130,24 @@ void Circuit::setTitleBlock(const TitleBlock& tb)
         return;
     m_titleBlock = tb;
     emit titleBlockChanged();
+    emit modified();
+}
+
+void Circuit::setAnalysis(const AnalysisSettings& a)
+{
+    if (a == m_analysis)
+        return;
+    m_analysis = a;
+    emit analysisChanged();
+    emit modified();
+}
+
+void Circuit::setProbes(const QVector<QPointF>& probes)
+{
+    if (probes == m_probes)
+        return;
+    m_probes = probes;
+    emit probesChanged();
     emit modified();
 }
 

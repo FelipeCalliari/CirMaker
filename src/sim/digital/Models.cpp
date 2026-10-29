@@ -375,7 +375,8 @@ private:
 std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QString* error)
 {
     const QString kind = s.model.value(u"kind").toString();
-    if (kind.isEmpty())
+    // analog-only parts have no digital behaviour
+    if (kind.isEmpty() || kind == u"siggen" || kind == u"pot" || kind == u"meter")
         return nullptr;
     const QVariantMap props = mergedProps(s, c);
     auto fail = [&](const QString& why) -> std::unique_ptr<Model> {

@@ -45,6 +45,31 @@ Wine e `~/Documents/github/_calliari_/tecdigi/CircuitMaker`.
   Logic Switch, push buttons e Hex Key. Fios vermelhos = 1, azuis = 0,
   laranja = conflito (X), cinza = alta impedância.
 
+## Simulação analógica (SPICE)
+
+Requer o ngspice compilado como biblioteca compartilhada (`libngspice.so`,
+pacote `ngspice` no Arch); ele é carregado em tempo de execução, então o
+programa funciona sem ele no modo digital.
+
+- Simulação → **Modo analógico** (ou a caixa Digital/Analógico na barra).
+- Simulação → **Análise analógica**: ponto de operação, transitório,
+  varredura AC (geradores de sinal são as fontes AC de 1 V) ou varredura DC.
+- **Ponta de prova** (`P`): clique nos fios cujas tensões quer traçar; sem
+  pontas, são traçadas as redes com nome.
+- `F9` roda o ngspice em segundo plano. O ponto de operação aparece nos fios;
+  transitório, AC (em dB, eixo log) e DC aparecem no painel **Formas de onda**,
+  com cursor de leitura e exportação CSV/PNG (botão direito). Multímetros,
+  lâmpadas, LEDs e displays mostram o valor final.
+- Peças: resistor, potenciômetro, capacitor, eletrolítico, indutor, diodo
+  (1N4148/1N4001), zener 5,1 V, LED, BJT 2N3904/2N3906, MOSFET N/P, amp-op
+  comportamental (100 dB, 1 MHz), fontes DC, bateria, fonte de corrente,
+  gerador (senoide, quadrada, triangular), lâmpada, multímetro (V/A), `.IC` e
+  `.NODESET`.
+- **Modo misto**: portas, buffers, tri-states e flip-flops viram modelos XSPICE
+  com pontes A/D (limiares 0,8/2,0 V, saídas 0/5 V); chaves lógicas, pulser e
+  hex key viram fontes. Um tick digital vale 1 µs. CIs MSI ainda não têm
+  modelo analógico e ficam de fora com aviso.
+
 ## Estrutura
 
 | Pasta | Conteúdo |
@@ -52,6 +77,7 @@ Wine e `~/Documents/github/_calliari_/tecdigi/CircuitMaker`.
 | `src/core` | modelo do circuito, conectividade (`NetlistBuilder`), undo, formatos `.cmq` e `.ckt` |
 | `src/library` | carregamento dos símbolos JSON e geradores de portas e caixas |
 | `src/sim/digital` | simulador por eventos (lógica 0/1/X/Z, força forte/fraca), modelos de portas, flip-flops e CIs MSI |
+| `src/sim/analog` | gerador de netlist SPICE e ponte com o ngspice (carregado via `QLibrary`) |
 | `src/ui` | janela principal, cena/vista do esquemático, navegador de dispositivos |
 | `library/symbols` | biblioteca gerada por `tools/gen_library.py` (não editar à mão) |
 | `i18n` | tradução pt-BR (`cmake --build build --target update_translations` atualiza) |
@@ -68,8 +94,9 @@ o importador acrescenta rótulos de rede pequenos.
 
 Nenhum arquivo do CircuitMaker é distribuído: os símbolos são desenhos
 próprios, e apenas as posições dos pinos foram medidas nos circuitos `.ckt`.
-Dispositivos analógicos (resistores reais, transistores, fontes SPICE) e o
-74LS181 ainda não têm equivalente e entram como marcadores `?`.
+Peças sem equivalente (74LS181, relés, transformadores, válvulas, 555,
+instrumentos como o osciloscópio do CM…) entram como marcadores `?`.
+Circuitos com peças só analógicas abrem em modo analógico.
 
 A PROM32 importada traz o conteúdo gravado no `.ckt` na propriedade `data`
 (bytes em hexadecimal, editáveis em Propriedades); a 1K RAM começa zerada.

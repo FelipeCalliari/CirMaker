@@ -154,6 +154,11 @@ void TestGui::screenshot()
     if (const QString file = qEnvironmentVariable("CM_SCREENSHOT_FILE"); !file.isEmpty())
         QVERIFY(w.openFile(file, false));
     QTest::qWait(200);
+    if (qEnvironmentVariableIsSet("CM_SCREENSHOT_RUN")) {
+        w.runAction()->trigger();
+        QTRY_VERIFY_WITH_TIMEOUT(!w.analogRunning(), 20000);
+        QTest::qWait(300);
+    }
     QVERIFY(w.grab().save(out));
 }
 

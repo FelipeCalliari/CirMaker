@@ -1,0 +1,1687 @@
+{
+ "category": "Analog",
+ "symbols": [
+  {
+   "id": "capacitor",
+   "name": "Capacitor",
+   "prefix": "C",
+   "label": "1uF",
+   "aliases": [
+    "Capacitor"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "C{name} {1} {2} {value}"
+   },
+   "graphics": [
+    {
+     "line": [
+      -30,
+      0,
+      -5,
+      0
+     ]
+    },
+    {
+     "line": [
+      5,
+      0,
+      30,
+      0
+     ]
+    },
+    {
+     "line": [
+      -5,
+      -15,
+      -5,
+      15
+     ]
+    },
+    {
+     "line": [
+      5,
+      -15,
+      5,
+      15
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -30,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      30,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "polarcap",
+   "name": "Polar Cap",
+   "prefix": "C",
+   "label": "10uF",
+   "aliases": [
+    "Polar Cap"
+   ],
+   "cmPins": [
+    "+",
+    "-"
+   ],
+   "spice": {
+    "line": "C{name} {+} {-} {value}"
+   },
+   "graphics": [
+    {
+     "line": [
+      -40,
+      0,
+      -15,
+      0
+     ]
+    },
+    {
+     "line": [
+      -15,
+      -15,
+      -15,
+      15
+     ]
+    },
+    {
+     "path": "M -2 -15 Q -8 0 -2 15"
+    },
+    {
+     "line": [
+      -5,
+      0,
+      20,
+      0
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      -25,
+      -12
+     ],
+     "size": 8
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      -40,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      20,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "inductor",
+   "name": "Inductor",
+   "prefix": "L",
+   "label": "1mH",
+   "aliases": [
+    "Inductor",
+    "Coil"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "L{name} {1} {2} {value}"
+   },
+   "graphics": [
+    {
+     "line": [
+      -60,
+      0,
+      -40,
+      0
+     ]
+    },
+    {
+     "line": [
+      40,
+      0,
+      60,
+      0
+     ]
+    },
+    {
+     "path": "M -40 0 Q -40 -14 -30 -14 Q -20 -14 -20 0 Q -20 -14 -10 -14 Q 0 -14 0 0 Q 0 -14 10 -14 Q 20 -14 20 0 Q 20 -14 30 -14 Q 40 -14 40 0"
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "diode",
+   "name": "Diode",
+   "prefix": "D",
+   "label": "1N4148",
+   "aliases": [
+    "Diode"
+   ],
+   "cmPins": [
+    "A",
+    "K"
+   ],
+   "spice": {
+    "line": "D{name} {A} {K} D1N4148",
+    "models": [
+     ".model D1N4148 D(Is=2.52n Rs=.568 N=1.752 Cjo=4p M=.4 Tt=20n Bv=100 Ibv=100u)"
+    ]
+   },
+   "graphics": [
+    {
+     "line": [
+      -30,
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "path": "M -10 -12 L 10 0 L -10 12 Z"
+    },
+    {
+     "line": [
+      10,
+      -12,
+      10,
+      12
+     ]
+    },
+    {
+     "line": [
+      10,
+      0,
+      30,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "A",
+     "at": [
+      -30,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "K",
+     "at": [
+      30,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "rectifier",
+   "name": "Rectifier Diode",
+   "prefix": "D",
+   "label": "1N4001",
+   "aliases": [],
+   "spice": {
+    "line": "D{name} {A} {K} D1N4001",
+    "models": [
+     ".model D1N4001 D(Is=14.11n N=1.984 Rs=33.89m Ikf=94.81 Cjo=25.89p M=.44 Vj=.3245 Bv=75 Ibv=10u Tt=5.7u)"
+    ]
+   },
+   "graphics": [
+    {
+     "line": [
+      -30,
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "path": "M -10 -12 L 10 0 L -10 12 Z"
+    },
+    {
+     "line": [
+      10,
+      -12,
+      10,
+      12
+     ]
+    },
+    {
+     "line": [
+      10,
+      0,
+      30,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "A",
+     "at": [
+      -30,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "K",
+     "at": [
+      30,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "zener",
+   "name": "Zener Diode",
+   "prefix": "D",
+   "label": "5V1",
+   "aliases": [
+    "Zener Diode"
+   ],
+   "cmPins": [
+    "A",
+    "K"
+   ],
+   "spice": {
+    "line": "D{name} {A} {K} DZ5V1",
+    "models": [
+     ".model DZ5V1 D(Is=1n Rs=5 N=1.5 Bv=5.1 Ibv=5m)"
+    ]
+   },
+   "description": "5.1 V zener",
+   "graphics": [
+    {
+     "line": [
+      -30,
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "path": "M -10 -12 L 10 0 L -10 12 Z"
+    },
+    {
+     "path": "M 15 -15 L 10 -12 L 10 12 L 5 15"
+    },
+    {
+     "line": [
+      10,
+      0,
+      30,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "A",
+     "at": [
+      -30,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "K",
+     "at": [
+      30,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "npn",
+   "name": "NPN Transistor",
+   "prefix": "Q",
+   "label": "2N3904",
+   "aliases": [
+    "NPN Trans:C",
+    "NPN Trans"
+   ],
+   "cmPins": [
+    "C",
+    "B",
+    "E"
+   ],
+   "spice": {
+    "line": "Q{name} {C} {B} {E} Q2N3904",
+    "models": [
+     ".model Q2N3904 NPN(Is=6.734f Xti=3 Eg=1.11 Vaf=74.03 Bf=416.4 Ne=1.259 Ise=6.734f Ikf=66.78m Xtb=1.5 Br=.7371 Nc=2 Rc=1 Cjc=3.638p Mjc=.3085 Vjc=.75 Fc=.5 Cje=4.493p Mje=.2593 Vje=.75 Tr=239.5n Tf=301.2p Itf=.4 Vtf=4 Xtf=2 Rb=10)"
+    ]
+   },
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      30
+     ]
+    },
+    {
+     "line": [
+      -60,
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -20,
+      -10,
+      20
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -8,
+      20,
+      -35
+     ]
+    },
+    {
+     "line": [
+      20,
+      -35,
+      20,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -10,
+      8,
+      20,
+      35
+     ]
+    },
+    {
+     "line": [
+      20,
+      35,
+      20,
+      60
+     ]
+    },
+    {
+     "path": "M 9 32 L 20 35 L 15 25 Z"
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      20,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "B",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "E",
+     "at": [
+      20,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "pnp",
+   "name": "PNP Transistor",
+   "prefix": "Q",
+   "label": "2N3906",
+   "aliases": [
+    "PNP Trans:C",
+    "PNP Trans"
+   ],
+   "cmPins": [
+    "C",
+    "B",
+    "E"
+   ],
+   "spice": {
+    "line": "Q{name} {C} {B} {E} Q2N3906",
+    "models": [
+     ".model Q2N3906 PNP(Is=1.41f Xti=3 Eg=1.11 Vaf=18.7 Bf=180.7 Ne=1.5 Ikf=80m Xtb=1.5 Br=4.977 Nc=2 Rc=2.5 Cjc=9.728p Mjc=.5776 Vjc=.75 Fc=.5 Cje=8.063p Mje=.3677 Vje=.75 Tr=33.42n Tf=179.3p Itf=.4 Vtf=4 Xtf=6 Rb=10)"
+    ]
+   },
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      30
+     ]
+    },
+    {
+     "line": [
+      -60,
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -20,
+      -10,
+      20
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -8,
+      20,
+      -35
+     ]
+    },
+    {
+     "line": [
+      20,
+      -35,
+      20,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -10,
+      8,
+      20,
+      35
+     ]
+    },
+    {
+     "line": [
+      20,
+      35,
+      20,
+      60
+     ]
+    },
+    {
+     "path": "M -10 8 L 1 11 L -4 1 Z"
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      20,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "B",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "E",
+     "at": [
+      20,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "nmos",
+   "name": "N-MOSFET",
+   "prefix": "M",
+   "label": "NMOS",
+   "aliases": [
+    "N-EMOS 3T:A",
+    "N-MOSFET 3T"
+   ],
+   "cmPins": [
+    "D",
+    "G",
+    "S"
+   ],
+   "spice": {
+    "line": "M{name} {D} {G} {S} {S} NMOS_GEN",
+    "models": [
+     ".model NMOS_GEN NMOS(Level=1 Vto=2 Kp=0.5 Lambda=0.01)"
+    ]
+   },
+   "description": "Enhancement N-channel MOSFET, Vth = 2 V",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      30,
+      -20,
+      30
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -25,
+      -20,
+      30
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -30,
+      -10,
+      -12
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -8,
+      -10,
+      8
+     ]
+    },
+    {
+     "line": [
+      -10,
+      12,
+      -10,
+      30
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -20,
+      20,
+      -20
+     ]
+    },
+    {
+     "line": [
+      20,
+      -20,
+      20,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -10,
+      20,
+      20,
+      20
+     ]
+    },
+    {
+     "line": [
+      20,
+      20,
+      20,
+      60
+     ]
+    },
+    {
+     "line": [
+      -10,
+      0,
+      20,
+      0
+     ]
+    },
+    {
+     "line": [
+      20,
+      0,
+      20,
+      20
+     ]
+    },
+    {
+     "path": "M -10 0 L -2 -5 L -2 5 Z"
+    }
+   ],
+   "pins": [
+    {
+     "name": "D",
+     "at": [
+      20,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "G",
+     "at": [
+      -60,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "S",
+     "at": [
+      20,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "pmos",
+   "name": "P-MOSFET",
+   "prefix": "M",
+   "label": "PMOS",
+   "aliases": [
+    "P-EMOS 3T:A",
+    "P-MOSFET 3T"
+   ],
+   "cmPins": [
+    "D",
+    "G",
+    "S"
+   ],
+   "spice": {
+    "line": "M{name} {D} {G} {S} {S} PMOS_GEN",
+    "models": [
+     ".model PMOS_GEN PMOS(Level=1 Vto=-2 Kp=0.5 Lambda=0.01)"
+    ]
+   },
+   "description": "Enhancement P-channel MOSFET, Vth = -2 V",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      30,
+      -20,
+      30
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -25,
+      -20,
+      30
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -30,
+      -10,
+      -12
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -8,
+      -10,
+      8
+     ]
+    },
+    {
+     "line": [
+      -10,
+      12,
+      -10,
+      30
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -20,
+      20,
+      -20
+     ]
+    },
+    {
+     "line": [
+      20,
+      -20,
+      20,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -10,
+      20,
+      20,
+      20
+     ]
+    },
+    {
+     "line": [
+      20,
+      20,
+      20,
+      60
+     ]
+    },
+    {
+     "line": [
+      -10,
+      0,
+      20,
+      0
+     ]
+    },
+    {
+     "line": [
+      20,
+      0,
+      20,
+      20
+     ]
+    },
+    {
+     "path": "M 8 0 L 0 -5 L 0 5 Z"
+    }
+   ],
+   "pins": [
+    {
+     "name": "D",
+     "at": [
+      20,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "G",
+     "at": [
+      -60,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "S",
+     "at": [
+      20,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "opamp",
+   "name": "Op-Amp",
+   "prefix": "U",
+   "label": "OPAMP",
+   "aliases": [
+    "Op-Amp5",
+    "Op-Amp7",
+    "Op-Amp"
+   ],
+   "cmPins": [
+    "+",
+    "-",
+    "V+",
+    "V-",
+    "OUT"
+   ],
+   "spice": {
+    "line": "X{name} {+} {-} {V+} {V-} {OUT} OPAMP_GEN",
+    "subckt": [
+     ".subckt OPAMP_GEN inp inn vp vn out",
+     "Rin inp inn 2Meg",
+     "Gm 0 mid inp inn 1m",
+     "Rm mid 0 100Meg",
+     "Cm mid 0 159p",
+     "Bo outi 0 V = min(max(v(mid), v(vn)+1), v(vp)-1)",
+     "Ro outi out 50",
+     "Rs vp vn 100k",
+     ".ends OPAMP_GEN"
+    ]
+   },
+   "description": "Behavioural op-amp: 100 dB gain, 1 MHz GBW, output within 1 V of the rails",
+   "graphics": [
+    {
+     "path": "M -40 -50 L 40 0 L -40 50 Z"
+    },
+    {
+     "line": [
+      -60,
+      20,
+      -40,
+      20
+     ]
+    },
+    {
+     "line": [
+      -60,
+      -20,
+      -40,
+      -20
+     ]
+    },
+    {
+     "line": [
+      0,
+      -40,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      0,
+      25,
+      0,
+      40
+     ]
+    },
+    {
+     "line": [
+      40,
+      0,
+      60,
+      0
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      -32,
+      20
+     ],
+     "size": 10
+    },
+    {
+     "text": "-",
+     "at": [
+      -32,
+      -20
+     ],
+     "size": 10
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      -60,
+      20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "-",
+     "at": [
+      -60,
+      -20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "V+",
+     "at": [
+      0,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "V-",
+     "at": [
+      0,
+      40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "OUT",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "vsource",
+   "name": "V Source",
+   "prefix": "V",
+   "label": "5V",
+   "aliases": [
+    "V Source"
+   ],
+   "cmPins": [
+    "+",
+    "-"
+   ],
+   "spice": {
+    "line": "V{name} {+} {-} DC {value}"
+   },
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      25
+     ]
+    },
+    {
+     "line": [
+      0,
+      -70,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      0,
+      25,
+      0,
+      70
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      0,
+      -12
+     ],
+     "size": 10
+    },
+    {
+     "text": "-",
+     "at": [
+      0,
+      12
+     ],
+     "size": 10
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      0,
+      -70
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      0,
+      70
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "battery",
+   "name": "Battery",
+   "prefix": "V",
+   "label": "9V",
+   "aliases": [
+    "Battery"
+   ],
+   "cmPins": [
+    "+",
+    "-"
+   ],
+   "spice": {
+    "line": "V{name} {+} {-} DC {value}"
+   },
+   "graphics": [
+    {
+     "line": [
+      0,
+      -40,
+      0,
+      -8
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -8,
+      20,
+      -8
+     ]
+    },
+    {
+     "line": [
+      -10,
+      0,
+      10,
+      0
+     ]
+    },
+    {
+     "line": [
+      -20,
+      8,
+      20,
+      8
+     ]
+    },
+    {
+     "line": [
+      -10,
+      16,
+      10,
+      16
+     ]
+    },
+    {
+     "line": [
+      0,
+      16,
+      0,
+      40
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      18,
+      -18
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      0,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      0,
+      40
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "isource",
+   "name": "I Source",
+   "prefix": "I",
+   "label": "1mA",
+   "aliases": [
+    "I Source"
+   ],
+   "cmPins": [
+    "+",
+    "-"
+   ],
+   "spice": {
+    "line": "I{name} {+} {-} DC {value}"
+   },
+   "description": "Current flows out of the - terminal into the circuit",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      25
+     ]
+    },
+    {
+     "line": [
+      0,
+      -70,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      0,
+      25,
+      0,
+      70
+     ]
+    },
+    {
+     "line": [
+      0,
+      -14,
+      0,
+      14
+     ]
+    },
+    {
+     "path": "M -6 6 L 0 14 L 6 6"
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      0,
+      -70
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      0,
+      70
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "siggen",
+   "name": "Signal Gen",
+   "prefix": "V",
+   "label": "1kHz",
+   "aliases": [
+    "Signal Gen"
+   ],
+   "cmPins": [
+    "+",
+    "-"
+   ],
+   "model": {
+    "kind": "siggen"
+   },
+   "props": {
+    "wave": "sine",
+    "amplitude": "1",
+    "frequency": "1k",
+    "offset": "0"
+   },
+   "description": "Sine, square or triangle source (wave = sine/square/triangle); also the AC source",
+   "graphics": [
+    {
+     "rect": [
+      -40,
+      -40,
+      80,
+      80
+     ]
+    },
+    {
+     "path": "M -28 0 Q -21 -22 -14 0 Q -7 22 0 0 Q 7 -22 14 0 Q 21 22 28 0"
+    },
+    {
+     "line": [
+      40,
+      -20,
+      100,
+      -20
+     ]
+    },
+    {
+     "line": [
+      40,
+      20,
+      100,
+      20
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      50,
+      -28
+     ],
+     "size": 8
+    },
+    {
+     "text": "-",
+     "at": [
+      50,
+      28
+     ],
+     "size": 8
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      100,
+      -20
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      100,
+      20
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "pot",
+   "name": "Potentiometer",
+   "prefix": "R",
+   "label": "10k",
+   "aliases": [
+    "Var Resistor"
+   ],
+   "cmPins": [
+    "1",
+    "W",
+    "2"
+   ],
+   "model": {
+    "kind": "pot"
+   },
+   "props": {
+    "position": 50
+   },
+   "description": "Wiper position in percent from pin 1",
+   "graphics": [
+    {
+     "line": [
+      -60,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "path": "M -30 0 L -25 -10 L -15 10 L -5 -10 L 5 10 L 15 -10 L 25 10 L 30 0"
+    },
+    {
+     "line": [
+      30,
+      0,
+      60,
+      0
+     ]
+    },
+    {
+     "line": [
+      0,
+      -40,
+      0,
+      -14
+     ]
+    },
+    {
+     "path": "M -5 -22 L 0 -12 L 5 -22"
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -60,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "W",
+     "at": [
+      0,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "lamp",
+   "name": "Lamp",
+   "prefix": "L",
+   "label": "100",
+   "aliases": [
+    "Lamp"
+   ],
+   "display": "bulb",
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "R{name} {1} {2} {value}"
+   },
+   "description": "Resistive lamp; glows with the voltage across it",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      25
+     ]
+    },
+    {
+     "line": [
+      -18,
+      -18,
+      18,
+      18
+     ]
+    },
+    {
+     "line": [
+      -18,
+      18,
+      18,
+      -18
+     ]
+    },
+    {
+     "line": [
+      -40,
+      40,
+      -18,
+      18
+     ]
+    },
+    {
+     "line": [
+      18,
+      18,
+      40,
+      40
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -40,
+      40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      40,
+      40
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "ic",
+   "name": ".IC Initial Condition",
+   "prefix": "IC",
+   "label": "0V",
+   "aliases": [
+    ".IC"
+   ],
+   "cmPins": [
+    "1"
+   ],
+   "spice": {
+    "line": ".ic v({1})={value}"
+   },
+   "description": "Starts a transient analysis with this node at the given voltage",
+   "graphics": [
+    {
+     "rect": [
+      -25,
+      -40,
+      50,
+      24
+     ]
+    },
+    {
+     "text": ".IC",
+     "at": [
+      0,
+      -28
+     ],
+     "size": 9
+    },
+    {
+     "line": [
+      0,
+      -16,
+      0,
+      10
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      0,
+      10
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "nodeset",
+   "name": ".NODESET",
+   "prefix": "NS",
+   "label": "0V",
+   "aliases": [
+    ".NODESET"
+   ],
+   "cmPins": [
+    "1"
+   ],
+   "spice": {
+    "line": ".nodeset v({1})={value}"
+   },
+   "description": "Initial guess for this node when finding the operating point",
+   "graphics": [
+    {
+     "rect": [
+      -40,
+      -40,
+      80,
+      24
+     ]
+    },
+    {
+     "text": ".NODESET",
+     "at": [
+      0,
+      -28
+     ],
+     "size": 8
+    },
+    {
+     "line": [
+      0,
+      -16,
+      0,
+      10
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      0,
+      10
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "multimeter",
+   "name": "Multimeter",
+   "prefix": "M",
+   "label": "V",
+   "aliases": [
+    "Multimeter"
+   ],
+   "display": "meter",
+   "cmPins": [
+    "+",
+    "",
+    "",
+    "-"
+   ],
+   "model": {
+    "kind": "meter"
+   },
+   "props": {
+    "mode": "V"
+   },
+   "description": "Voltmeter (mode V) or ammeter (mode A) between + and -",
+   "graphics": [
+    {
+     "rect": [
+      -80,
+      -50,
+      160,
+      100
+     ]
+    },
+    {
+     "line": [
+      -80,
+      50,
+      -80,
+      80
+     ]
+    },
+    {
+     "line": [
+      80,
+      50,
+      80,
+      80
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      -70,
+      40
+     ],
+     "size": 9
+    },
+    {
+     "text": "-",
+     "at": [
+      70,
+      40
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      -80,
+      80
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      80,
+      80
+     ],
+     "dir": "passive"
+    }
+   ]
+  }
+ ]
+}

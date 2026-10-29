@@ -6,13 +6,16 @@
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "ui/LibraryBrowser.h"
+#include "ui/AnalysisDialog.h"
 #include "ui/PreferencesDialog.h"
+#include "ui/WaveformView.h"
 #include "ui/SchematicView.h"
 
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QDockWidget>
 #include <QFile>
 #include <QFileDialog>
@@ -35,6 +38,9 @@
 #include <QSvgGenerator>
 #include <QToolBar>
 #include <QUndoStack>
+#include <QtConcurrent/QtConcurrentRun>
+
+#include <cmath>
 
 namespace cm {
 
@@ -77,10 +83,19 @@ MainWindow::MainWindow()
         m_view->setFocus();
     });
 
+    m_waves = new WaveformView;
+    m_wavesDock = new QDockWidget(tr("Waveforms"), this);
+    m_wavesDock->setObjectName(QStringLiteral("waveformsDock"));
+    m_wavesDock->setWidget(m_waves);
+    addDockWidget(Qt::BottomDockWidgetArea, m_wavesDock);
+    m_wavesDock->hide();
+    connect(&m_analogWatcher, &QFutureWatcher<spice::Result>::finished, this, &MainWindow::analogFinished);
+
     createActions();
     createMenus();
     createToolBars();
     menuBar()->findChild<QMenu*>(QStringLiteral("viewMenu"))->addAction(dock->toggleViewAction());
+    menuBar()->findChild<QMenu*>(QStringLiteral("viewMenu"))->addAction(m_wavesDock->toggleViewAction());
 
     m_coords = new QLabel;
     m_simStatus = new QLabel;
@@ -98,6 +113,7 @@ MainWindow::MainWindow()
         m_toolWire->setChecked(t == SchematicScene::Tool::Wire);
         m_toolBus->setChecked(t == SchematicScene::Tool::Bus);
         m_toolNetLabel->setChecked(t == SchematicScene::Tool::NetLabel);
+        m_toolProbe->setChecked(t == SchematicScene::Tool::Probe);
         m_toolText->setChecked(t == SchematicScene::Tool::Text);
     });
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &MainWindow::updateActions);
@@ -118,6 +134,7 @@ MainWindow::~MainWindow()
 {
     // children (undo stack, scene) emit signals while being destroyed; this
     // window is no longer a MainWindow by then
+    m_analogWatcher.waitForFinished();
     m_undo->disconnect(this);
     m_scene->disconnect(this);
     m_circuit->disconnect(this);
@@ -267,6 +284,14 @@ void MainWindow::createActions()
                                  tr("&Net Label"), m_tools);
     m_toolNetLabel->setShortcut(Qt::Key_N);
     m_toolNetLabel->setToolTip(tr("Net label: points with the same name are connected"));
+    m_toolProbe = new QAction(drawnIcon([](QPainter& p) {
+                                  p.setBrush(WaveformView::traceColor(0));
+                                  p.drawPolygon(QPolygonF({QPointF(6, 28), QPointF(10, 14), QPointF(26, 14), QPointF(26, 4),
+                                                           QPointF(6, 4)}));
+                              }),
+                              tr("&Probe"), m_tools);
+    m_toolProbe->setShortcut(Qt::Key_P);
+    m_toolProbe->setToolTip(tr("Probe: click a wire to plot its voltage in analog mode; click a probe again to remove it"));
     m_toolText = new QAction(drawnIcon([](QPainter& p) {
                                  QFont f = p.font();
                                  f.setPixelSize(24);
@@ -284,6 +309,7 @@ void MainWindow::createActions()
     connect(m_toolText, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Text); });
     connect(m_toolBus, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Bus); });
     connect(m_toolNetLabel, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::NetLabel); });
+    connect(m_toolProbe, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Probe); });
 
     m_find = new QAction(themeIcon("edit-find", QStyle::SP_FileDialogContentsView), tr("&Find and Select..."), this);
     m_find->setShortcut(QKeySequence::Find);
@@ -302,7 +328,24 @@ void MainWindow::createActions()
 
     m_run = new QAction(themeIcon("media-playback-start", QStyle::SP_MediaPlay), tr("&Run"), this);
     m_run->setShortcut(Qt::Key_F9);
-    connect(m_run, &QAction::triggered, this, [this] { m_scene->running() ? m_scene->pause() : m_scene->run(); });
+    connect(m_run, &QAction::triggered, this, [this] {
+        if (m_circuit->analysis().analogMode)
+            runAnalog();
+        else
+            m_scene->running() ? m_scene->pause() : m_scene->run();
+    });
+
+    auto* modes = new QActionGroup(this);
+    m_digitalMode = new QAction(tr("&Digital Mode"), modes);
+    m_analogMode = new QAction(tr("&Analog Mode (SPICE)"), modes);
+    for (QAction* a : {m_digitalMode, m_analogMode})
+        a->setCheckable(true);
+    m_digitalMode->setChecked(true);
+    connect(m_digitalMode, &QAction::triggered, this, [this] { setAnalogMode(false); });
+    connect(m_analogMode, &QAction::triggered, this, [this] { setAnalogMode(true); });
+    connect(m_circuit, &Circuit::analysisChanged, this, &MainWindow::updateActions);
+    m_analysisSetup = new QAction(tr("Analog A&nalysis..."), this);
+    connect(m_analysisSetup, &QAction::triggered, this, &MainWindow::editAnalysis);
     m_step = new QAction(themeIcon("media-skip-forward", QStyle::SP_MediaSkipForward), tr("S&tep"), this);
     m_step->setShortcut(Qt::Key_F10);
     m_step->setToolTip(tr("Advance to the next logic change"));
@@ -358,7 +401,11 @@ void MainWindow::createMenus()
     tools->addActions(m_tools->actions());
 
     QMenu* simulation = menuBar()->addMenu(tr("&Simulation"));
+    simulation->addActions({m_digitalMode, m_analogMode});
+    simulation->addSeparator();
     simulation->addActions({m_run, m_step, m_reset, m_stop});
+    simulation->addSeparator();
+    simulation->addAction(m_analysisSetup);
 
     QMenu* help = menuBar()->addMenu(tr("&Help"));
     help->addAction(m_about);
@@ -380,7 +427,15 @@ void MainWindow::createToolBars()
 
     QToolBar* sim = addToolBar(tr("Simulation"));
     sim->setObjectName(QStringLiteral("simToolBar"));
-    sim->addActions({m_run, m_step, m_reset, m_stop});
+    auto* modeBox = new QComboBox;
+    modeBox->addItems({tr("Digital"), tr("Analog")});
+    modeBox->setToolTip(tr("Simulation mode"));
+    connect(modeBox, &QComboBox::activated, this, [this](int i) { setAnalogMode(i == 1); });
+    connect(m_circuit, &Circuit::analysisChanged, modeBox, [this, modeBox] {
+        modeBox->setCurrentIndex(m_circuit->analysis().analogMode ? 1 : 0);
+    });
+    sim->addWidget(modeBox);
+    sim->addActions({m_run, m_step, m_reset, m_stop, m_analysisSetup});
     sim->addWidget(new QLabel(tr(" Speed: ")));
     m_speed = new QSpinBox;
     m_speed->setRange(1, 1000);
@@ -409,12 +464,27 @@ void MainWindow::updateActions()
     m_step->setEnabled(!m_scene->running());
     m_reset->setEnabled(simulating);
     m_stop->setEnabled(simulating);
-    const bool running = m_scene->running();
+    const bool analog = m_circuit->analysis().analogMode;
+    m_digitalMode->setChecked(!analog);
+    m_analogMode->setChecked(analog);
+    m_digitalMode->setEnabled(!simulating);
+    m_analogMode->setEnabled(!simulating);
+    m_analysisSetup->setEnabled(!simulating);
+    if (analog) {
+        m_step->setEnabled(false);
+        m_reset->setEnabled(false);
+        m_speed->setEnabled(false);
+    } else {
+        m_speed->setEnabled(true);
+    }
+    const bool running = m_scene->running() || m_analogWatcher.isRunning();
     m_run->setText(running ? tr("&Pause") : tr("&Run"));
     m_run->setIcon(running ? themeIcon("media-playback-pause", QStyle::SP_MediaPause)
                            : themeIcon("media-playback-start", QStyle::SP_MediaPlay));
-    if (!simulating)
-        m_simStatus->setText(tr("Editing"));
+    if (m_analogWatcher.isRunning())
+        m_simStatus->setText(tr("SPICE running..."));
+    else if (!simulating)
+        m_simStatus->setText(analog ? tr("Analog mode") : tr("Editing"));
     else
         m_simStatus->setText(tr("t = %1 ticks").arg(m_scene->simTime()));
 }
@@ -729,6 +799,169 @@ void MainWindow::applyPreferences()
     m_scene->setGridVisible(p.gridVisible);
     m_view->setDefaultZoom(p.zoomPercent / 100.0);
     m_speed->setValue(p.ticksPerFrame);
+}
+
+void MainWindow::setAnalogMode(bool analog)
+{
+    if (m_scene->simulating() || m_circuit->analysis().analogMode == analog)
+        return updateActions();
+    AnalysisSettings a = m_circuit->analysis();
+    a.analogMode = analog;
+    m_undo->push(new SetAnalysisCommand(m_circuit, a, analog ? tr("Analog mode") : tr("Digital mode")));
+    if (analog) {
+        QString why;
+        if (!spice::NgspiceEngine::instance().available(&why))
+            QMessageBox::warning(this, tr("Analog mode"), tr("The SPICE engine is not available:\n%1").arg(why));
+    }
+}
+
+void MainWindow::editAnalysis()
+{
+    QStringList sources;
+    for (const Component& c : m_circuit->components()) {
+        const SymbolDef* s = LibraryRegistry::instance().find(c.symbolId);
+        const QString line = s ? s->spice.value(u"line").toString() : QString();
+        if (line.startsWith(u'V') || line.startsWith(u'I') || (s && s->model.value(u"kind").toString() == u"siggen"))
+            sources << c.designator;
+    }
+    sources.sort();
+    AnalysisDialog dlg(m_circuit->analysis(), sources, this);
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+    m_undo->push(new SetAnalysisCommand(m_circuit, dlg.result(), tr("Analysis settings")));
+}
+
+void MainWindow::runAnalog()
+{
+    if (m_analogWatcher.isRunning())
+        return;
+    QString why;
+    if (!spice::NgspiceEngine::instance().available(&why)) {
+        QMessageBox::critical(this, tr("Analog simulation"), tr("The SPICE engine is not available:\n%1").arg(why));
+        return;
+    }
+    m_scene->refreshNetlist();
+    m_runningDeck = spice::build(*m_circuit, LibraryRegistry::instance(), m_scene->netlist());
+    if (!m_runningDeck.ok) {
+        QMessageBox::warning(this, tr("Analog simulation"), m_runningDeck.warnings.join(u'\n'));
+        return;
+    }
+    if (!m_runningDeck.warnings.isEmpty())
+        statusBar()->showMessage(m_runningDeck.warnings.join(QStringLiteral("; ")), 10000);
+    const QString text = m_runningDeck.text;
+    m_analogWatcher.setFuture(QtConcurrent::run([text] { return spice::NgspiceEngine::instance().run(text); }));
+    QApplication::setOverrideCursor(Qt::BusyCursor);
+    updateActions();
+}
+
+void MainWindow::analogFinished()
+{
+    QApplication::restoreOverrideCursor();
+    const spice::Result r = m_analogWatcher.result();
+    updateActions();
+    if (!r.ok) {
+        QMessageBox box(QMessageBox::Critical, tr("Analog simulation"), tr("SPICE could not simulate the circuit."),
+                        QMessageBox::Ok, this);
+        box.setInformativeText(r.error);
+        box.setDetailedText(tr("Netlist:\n%1\nSPICE output:\n%2").arg(m_runningDeck.text, r.log));
+        box.exec();
+        return;
+    }
+    showAnalogResults(r);
+}
+
+void MainWindow::showAnalogResults(const spice::Result& r)
+{
+    const spice::Deck& deck = m_runningDeck;
+    const Netlist& nl = m_scene->netlist();
+    auto voltage = [&](const QString& node) -> double {
+        if (node == u"0") return 0;
+        return r.last(node).value_or(qQNaN());
+    };
+    auto netVoltage = [&](ItemId id, int pin) { return voltage(deck.nodeOfNet.value(nl.netOf(id, pin), QStringLiteral("0"))); };
+
+    // meters and displays read the operating point / final values
+    SchematicScene::AnalogOverlay overlay;
+    for (auto it = deck.meters.cbegin(); it != deck.meters.cend(); ++it) {
+        const spice::Meter& m = it.value();
+        const double v = m.amps ? r.last(m.current).value_or(qQNaN()) : voltage(m.plus) - voltage(m.minus);
+        overlay.meterText.insert(it.key(), WaveformView::siFormat(v, m.amps ? QStringLiteral("A") : QStringLiteral("V"), 4));
+    }
+    for (const Component& c : m_circuit->components()) {
+        const SymbolDef* s = LibraryRegistry::instance().find(c.symbolId);
+        if (!s || s->display.isEmpty()) continue;
+        const QString& d = s->display;
+        if (d == u"led") {
+            overlay.displayState.insert(c.id, netVoltage(c.id, s->pinIndex(QStringLiteral("A")))
+                                                      - netVoltage(c.id, s->pinIndex(QStringLiteral("K"))) > 1.5);
+        } else if (d == u"bulb") {
+            overlay.displayState.insert(c.id, std::abs(netVoltage(c.id, 0) - netVoltage(c.id, 1)) > 0.5);
+        } else if (d == u"lamp" || d == u"hex" || d == u"ascii" || d == u"stoplight") {
+            int value = 0;
+            for (int i = 0; i < s->pins.size(); ++i) {
+                const QString pn = s->pins[i].name;
+                if (pn.startsWith(u'D') && netVoltage(c.id, i) > 2.5)
+                    value |= 1 << pn.mid(1).toInt();
+            }
+            overlay.displayState.insert(c.id, value);
+        }
+    }
+
+    // nets to plot: probes, else named nets, else the first few nodes
+    QVector<std::pair<QString, QString>> plotted;      // (label, node)
+    const QVector<int> probeNets = m_scene->probeNets();
+    for (int i = 0; i < probeNets.size(); ++i)
+        if (probeNets[i] >= 0)
+            plotted << std::pair{QStringLiteral("%1: %2").arg(i + 1).arg(nl.nets[probeNets[i]].name), deck.nodeOfNet.value(probeNets[i])};
+    if (plotted.isEmpty()) {
+        for (int n = 0; n < nl.nets.size() && plotted.size() < 8; ++n) {
+            const QString node = deck.nodeOfNet.value(n);
+            if (node != u"0" && nl.nets[n].name != QStringLiteral("N%1").arg(n + 1))
+                plotted << std::pair{nl.nets[n].name, node};
+        }
+    }
+
+    if (r.plotType == u"op") {
+        for (int n = 0; n < nl.nets.size(); ++n) {
+            const double v = voltage(deck.nodeOfNet.value(n));
+            if (std::isfinite(v)) overlay.netVoltage.insert(n, v);
+        }
+        m_scene->setAnalogOverlay(overlay);
+        statusBar()->showMessage(tr("Operating point: node voltages are shown on the wires"), 8000);
+        return;
+    }
+    m_scene->setAnalogOverlay(overlay);
+
+    const spice::Vector* scale = r.find(r.scale);
+    if (!scale) return;
+    const bool ac = r.plotType == u"ac";
+    QVector<double> x;
+    for (int i = 0; i < scale->size(); ++i)
+        x << (scale->isComplex() ? scale->complex[i].real() : scale->real[i]);
+    if (plotted.isEmpty()) {
+        for (auto it = r.vectors.cbegin(); it != r.vectors.cend() && plotted.size() < 6; ++it)
+            if (it.key() != r.scale && !it.key().contains(u'#'))
+                plotted << std::pair{it.key(), it.key()};
+    }
+    QVector<WaveformView::Trace> traces;
+    for (int i = 0; i < plotted.size(); ++i) {
+        const spice::Vector* v = plotted[i].second == u"0" ? nullptr : r.find(plotted[i].second);
+        WaveformView::Trace t{plotted[i].first, {}, WaveformView::traceColor(probeNets.isEmpty() ? i : i)};
+        for (int k = 0; k < x.size(); ++k) {
+            if (!v) t.y << 0;
+            else if (ac) t.y << 20 * std::log10(std::max(std::abs(v->complex.value(k)), 1e-30));
+            else t.y << v->real.value(k);
+        }
+        traces << t;
+    }
+    if (r.plotType == u"tran")
+        m_waves->setData(tr("Transient"), tr("Time"), QStringLiteral("s"), QStringLiteral("V"), x, traces, false);
+    else if (ac)
+        m_waves->setData(tr("AC sweep (magnitude)"), tr("Frequency"), QStringLiteral("Hz"), QStringLiteral("dB"), x, traces, true);
+    else
+        m_waves->setData(tr("DC sweep"), m_circuit->analysis().dcSource, QStringLiteral("V"), QStringLiteral("V"), x, traces, false);
+    m_wavesDock->show();
+    m_wavesDock->raise();
 }
 
 void MainWindow::about()

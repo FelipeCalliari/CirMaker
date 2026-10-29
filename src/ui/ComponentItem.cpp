@@ -101,9 +101,12 @@ int ComponentItem::hexKeyAt(QPointF local) const
 void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 {
     const SchematicScene* sc = schematic();
-    const bool live = sc && sc->simulating() && m_c.id != 0;
+    const bool analog = sc && sc->analogOverlayShown() && m_c.id != 0;
+    const bool live = (sc && sc->simulating() && m_c.id != 0) || analog;
     int state = kIdle;
-    if (live) {
+    if (analog) {
+        state = sc->analogState(m_c.id);
+    } else if (live) {
         state = sc->simState(m_c.id);
     } else if (m_symbol->display == u"logicswitch") {
         state = m_c.props.value(QStringLiteral("state"), m_symbol->defaultProps.value(QStringLiteral("state"))).toInt();
@@ -243,6 +246,22 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setBrush(state == k ? QColor(0xff, 0xd0, 0x40) : QColor(0xf4, 0xf4, 0xf4));
             p->drawRect(cell.adjusted(3, 3, -3, -3));
             SymbolPainter::uprightText(p, cell.center(), hexDigit(k), 11, 0, ink);
+        }
+    } else if (d == u"meter") {
+        const QRectF screen = body.adjusted(10, 10, -10, -30);
+        p->setPen(QPen(ink, 1));
+        p->setBrush(QColor(0xd8, 0xe8, 0xd0));
+        p->drawRect(screen);
+        const SchematicScene* sc = schematic();
+        QString text = sc ? sc->meterText(m_c.id) : QString();
+        if (text.isEmpty())
+            text = m_c.props.value(QStringLiteral("mode"), QStringLiteral("V")).toString() == u"A" ? QStringLiteral("— A")
+                                                                                                  : QStringLiteral("— V");
+        SymbolPainter::uprightText(p, screen.center(), text, 14, 0, QColor(0x10, 0x30, 0x10));
+    } else if (d == u"bulb") {
+        if (live && state > 0) {
+            p->setBrush(QColor(0xff, 0xe0, 0x40));
+            fillFirst(Primitive::Type::Circle, QColor(0xff, 0xe0, 0x40));
         }
     } else if (d == u"asciikey") {
         const QString text = state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");

@@ -47,6 +47,7 @@ struct SymbolDef {
     QVector<Primitive> graphics;
     QVector<SymbolPin> pins;
     QJsonObject model;      // {"kind": "gate", ...}; empty = no simulation behaviour
+    QJsonObject spice;      // {"line": "R{name} {1} {2} {value}", "models": [...], "subckt": [...]}
     QVariantMap defaultProps;
     QRectF bounds;
 

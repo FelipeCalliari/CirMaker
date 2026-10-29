@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Svg PrintSupport LinguistTools Test)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Svg PrintSupport Concurrent LinguistTools Test)
 qt_standard_project_setup(I18N_SOURCE_LANGUAGE en I18N_TRANSLATED_LANGUAGES pt_BR)
 
 # --- core: data model, connectivity, file formats, symbol library (no widgets)
@@ -28,6 +28,8 @@ add_library(cmsim STATIC
     src/sim/digital/Logic.h
     src/sim/digital/Models.h src/sim/digital/Models.cpp
     src/sim/digital/ChipModels.cpp
+    src/sim/analog/SpiceNetlister.h src/sim/analog/SpiceNetlister.cpp
+    src/sim/analog/NgspiceEngine.h src/sim/analog/NgspiceEngine.cpp
     src/sim/digital/EventSimulator.h src/sim/digital/EventSimulator.cpp
 )
 target_link_libraries(cmsim PUBLIC cmcore)
@@ -54,8 +56,10 @@ add_library(cmui STATIC
     src/ui/LibraryBrowser.h src/ui/LibraryBrowser.cpp
     src/ui/PropertiesDialog.h src/ui/PropertiesDialog.cpp
     src/ui/PreferencesDialog.h src/ui/PreferencesDialog.cpp
+    src/ui/WaveformView.h src/ui/WaveformView.cpp
+    src/ui/AnalysisDialog.h src/ui/AnalysisDialog.cpp
 )
-target_link_libraries(cmui PUBLIC cmcore cmsim Qt6::Widgets Qt6::Svg Qt6::PrintSupport)
+target_link_libraries(cmui PUBLIC cmcore cmsim Qt6::Widgets Qt6::Svg Qt6::PrintSupport Qt6::Concurrent)
 target_compile_definitions(cmui PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 set_target_properties(cmui PROPERTIES AUTOMOC ON)
 
@@ -81,6 +85,7 @@ cm_add_test(tst_simulator)
 cm_add_test(tst_ckt_import)
 cm_add_test(tst_chips)
 cm_add_test(tst_document)
+cm_add_test(tst_analog)
 if(CM_BUILD_APP)
     qt_add_executable(tst_gui tests/tst_gui.cpp)
     target_link_libraries(tst_gui PRIVATE cmui cmlibdata Qt6::Test)
