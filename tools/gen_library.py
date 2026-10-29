@@ -526,8 +526,9 @@ def outputs():
     return [
         {'id': 'logicdisplay', 'name': 'Logic Display', 'prefix': 'L', 'display': 'lamp', 'aliases': ['Logic Display'],
          'cmPins': ['D0'], 'model': {'kind': 'display', 'bits': 1},
-         'description': 'Lamp showing the logic level of its input',
-         'graphics': [C(0, 0, 20), L(0, 20, 0, 60)], 'pins': [pin('D0', 0, 60, 'in')]},
+         'props': {'color': 'red'}, 'choices': {'color': ['red', 'green', 'yellow', 'blue', 'orange', 'white']},
+         'description': 'Lamp showing the logic level of its input; colour in the properties',
+         'graphics': [C(0, 0, 20), C(0, 0, 15), L(0, 20, 0, 60)], 'pins': [pin('D0', 0, 60, 'in')]},
         {'id': 'scope', 'name': 'SCOPE', 'prefix': 'T', 'label': '', 'aliases': ['SCOPE'], 'cmPins': ['1'],
          'model': {'kind': 'scope'},
          'description': 'Adds this node to the waveform window (digital and analog); the label names the trace',

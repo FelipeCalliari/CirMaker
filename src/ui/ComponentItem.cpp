@@ -193,9 +193,45 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
     };
 
     if (d == u"lamp") {
-        const QColor c = !live || state == kIdle ? kLampOff : state == 1 ? kHigh : state == 0 ? kLampOff : Qt::yellow;
-        if (!fillFirst(Primitive::Type::Circle, c))
-            fillFirst(Primitive::Type::Path, c);
+        const QString name = m_c.props.value(QStringLiteral("color"), m_symbol->defaultProps.value(QStringLiteral("color"),
+                                                                                                    QStringLiteral("red"))).toString();
+        const QColor color = ledColor(name);
+        const bool on = live && state == 1;
+        const bool unknown = live && state < 0 && state != kIdle;
+        const auto cs = circles();
+        if (cs.size() >= 2) {
+            // bezel ring, then the lamp: pale when off, bright with a glow and highlight when on
+            const QPointF c(cs[0]->v[0], cs[0]->v[1]);
+            const double outer = cs[0]->v[2], inner = cs[1]->v[2];
+            if (on) {
+                QRadialGradient glow(c, outer * 1.6);
+                QColor halo = color;
+                halo.setAlpha(140);
+                glow.setColorAt(0.5, halo);
+                halo.setAlpha(0);
+                glow.setColorAt(1, halo);
+                p->setBrush(glow);
+                p->drawEllipse(c, outer * 1.6, outer * 1.6);
+            }
+            p->setBrush(QColor(0xe4, 0xe4, 0xe4));
+            p->drawEllipse(c, outer, outer);
+            QRadialGradient lamp(c - QPointF(inner * 0.35, inner * 0.35), inner * 1.3);
+            const QColor base = on ? color : color.lighter(name == u"white" ? 104 : 185);
+            lamp.setColorAt(0, on ? base.lighter(150) : base.lighter(110));
+            lamp.setColorAt(1, on ? base : base.darker(105));
+            p->setBrush(lamp);
+            p->drawEllipse(c, inner, inner);
+            if (on) {
+                p->setBrush(QColor(255, 255, 255, 170));
+                p->drawEllipse(c - QPointF(inner * 0.4, inner * 0.4), inner * 0.28, inner * 0.2);
+            }
+            if (unknown)
+                SymbolPainter::uprightText(p, c, QStringLiteral("X"), 12, 0, QColor(0x90, 0x60, 0x00));
+        } else {
+            const QColor c = !live || state == kIdle ? kLampOff : on ? color : state == 0 ? kLampOff : Qt::yellow;
+            if (!fillFirst(Primitive::Type::Circle, c))
+                fillFirst(Primitive::Type::Path, c);
+        }
     } else if (d == u"led") {
         const QString name = m_c.props.value(QStringLiteral("color"), m_symbol->defaultProps.value(QStringLiteral("color"))).toString();
         const QColor color = ledColor(name);

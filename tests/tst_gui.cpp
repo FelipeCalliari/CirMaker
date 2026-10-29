@@ -33,6 +33,7 @@ private slots:
     void buttonsAnimate();
     void circuitMakerShortcuts();
     void editMenuTools();
+    void ledColourProperty_data();
     void ledColourProperty();
     void screenshot();
 };
@@ -255,12 +256,20 @@ void TestGui::editMenuTools()
     QCOMPARE(f.scene.netlist().wireNet.value(w2), f.scene.highlightedNet());
 }
 
+void TestGui::ledColourProperty_data()
+{
+    QTest::addColumn<QString>("symbol");
+    QTest::newRow("LED") << "led";
+    QTest::newRow("Logic Display") << "logicdisplay";
+}
+
 void TestGui::ledColourProperty()
 {
+    QFETCH(QString, symbol);
     Component led;
-    led.symbolId = QStringLiteral("led");
+    led.symbolId = symbol;
     led.designator = QStringLiteral("D1");
-    PropertiesDialog dlg(led, *library().find(QStringLiteral("led")));
+    PropertiesDialog dlg(led, *library().find(symbol));
     auto* combo = dlg.findChild<QComboBox*>();
     QVERIFY(combo);
     QCOMPARE(combo->currentData().toString(), QStringLiteral("red"));      // default

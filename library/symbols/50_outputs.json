@@ -16,13 +16,33 @@
     "kind": "display",
     "bits": 1
    },
-   "description": "Lamp showing the logic level of its input",
+   "props": {
+    "color": "red"
+   },
+   "choices": {
+    "color": [
+     "red",
+     "green",
+     "yellow",
+     "blue",
+     "orange",
+     "white"
+    ]
+   },
+   "description": "Lamp showing the logic level of its input; colour in the properties",
    "graphics": [
     {
      "circle": [
       0,
       0,
       20
+     ]
+    },
+    {
+     "circle": [
+      0,
+      0,
+      15
      ]
     },
     {
