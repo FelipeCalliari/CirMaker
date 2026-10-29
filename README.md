@@ -25,14 +25,36 @@ O teste de importação lê os `.ckt` dos diretórios em `CM_CKT_DIRS`
 (separados por `:`); sem a variável, procura os exemplos do CircuitMaker no
 Wine e `~/Documents/github/_calliari_/tecdigi/CircuitMaker`.
 
+## Atalhos (os mesmos do CircuitMaker 2000)
+
+| Tecla | Ação | Tecla | Ação |
+| --- | --- | --- | --- |
+| Alt+A | seta | F2 | escala de exibição |
+| Alt+W | fio | F3 | tamanho normal (100 %) |
+| Alt+T | texto | F4 | ajustar à janela |
+| Alt+D | apagar (Shift corta um segmento) | F5 | preferências |
+| Alt+P | ponta de prova | F6 | recolher árvore de dispositivos |
+| Alt+Z | zoom (Shift afasta) | F7 | redesenhar |
+| Alt+N | rótulo de rede | F8 | análises |
+| Ctrl+R / Ctrl+M | girar / espelhar | F9 | passo |
+| Ctrl+D | duplicar | F10 | executar |
+| Ctrl+F | localizar e selecionar | F11 | trace (cores nos fios) |
+| Ctrl+Q | reiniciar simulação | F1 | descrição do item |
+
+**Teclas de dispositivo**: 0–9, a–z e A–Z escolhem um dispositivo para
+colocar, como os HotKeys do CircuitMaker. Atribua no painel Dispositivos com
+o botão *Tecla de atalho…*; a tecla aparece ao lado do nome. Começam com
+1 chave lógica, 2 display lógico, 3 inversor, 4 AND, 5 OR, 6 FF D, 7 FF JK,
+8 pulser, 9 display hex, 0 terra, v +V, t terminal, r resistor.
+
 ## Uso
 
 - **Dispositivos** (painel à esquerda): busque pelo nome ou pelo nome do
   CircuitMaker (`4027`, `2-In AND`…), dê duplo clique e clique no esquemático.
   `R` gira e `M` espelha durante a colocação; Shift continua colocando.
-- **Fios**: ferramenta Fio (`W`) ou arraste a partir da ponta de um pino.
+- **Fios**: ferramenta Fio (`Alt+W`) ou arraste a partir da ponta de um pino.
   Terminais com o mesmo rótulo ficam na mesma rede.
-- **Barramento** (`B`): desenhe a linha grossa; um fio que termina nela pede
+- **Barramento** (`Alt+B`): desenhe a linha grossa; um fio que termina nela pede
   o nome da entrada, e entradas com o mesmo nome ficam ligadas (a linha em si
   não conduz). **Rótulo de rede** (`N`) liga pontos pelo nome em qualquer lugar.
 - **Localizar e selecionar** (`Ctrl+F`): por designador, rótulo ou dispositivo.
@@ -40,8 +62,8 @@ Wine e `~/Documents/github/_calliari_/tecdigi/CircuitMaker`.
   Exibir → Mostrar bloco de título liga e desliga. Sai na exportação e impressão.
 - **Lista de materiais**: Arquivo → Lista de materiais (CSV), agrupada por
   dispositivo e valor.
-- **Simulação**: `F9` executa/pausa, `F10` avança até a próxima mudança,
-  `Ctrl+F9` reinicia, `Shift+F9` volta à edição. Durante a simulação clique em
+- **Simulação**: `F10` executa/pausa, `F9` avança até a próxima mudança,
+  `Ctrl+Q` reinicia, `Shift+F10` volta à edição. Durante a simulação clique em
   Logic Switch, push buttons e Hex Key. Fios vermelhos = 1, azuis = 0,
   laranja = conflito (X), cinza = alta impedância.
 
@@ -54,9 +76,9 @@ programa funciona sem ele no modo digital.
 - Simulação → **Modo analógico** (ou a caixa Digital/Analógico na barra).
 - Simulação → **Análise analógica**: ponto de operação, transitório,
   varredura AC (geradores de sinal são as fontes AC de 1 V) ou varredura DC.
-- **Ponta de prova** (`P`): clique nos fios cujas tensões quer traçar; sem
+- **Ponta de prova** (`Alt+P`): clique nos fios cujas tensões quer traçar; sem
   pontas, são traçadas as redes com nome.
-- `F9` roda o ngspice em segundo plano. O ponto de operação aparece nos fios;
+- `F10` roda o ngspice em segundo plano. O ponto de operação aparece nos fios;
   transitório, AC (em dB, eixo log) e DC aparecem no painel **Formas de onda**,
   com cursor de leitura e exportação CSV/PNG (botão direito). Multímetros,
   lâmpadas, LEDs e displays mostram o valor final.

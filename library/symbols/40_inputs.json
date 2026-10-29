@@ -457,77 +457,83 @@
     "kind": "link",
     "type": "no"
    },
+   "props": {
+    "travel": 7
+   },
    "description": "Normally open; closed while the mouse button is held",
    "graphics": [
     {
      "line": [
-      -60,
-      30,
       -30,
-      30
+      10,
+      -15,
+      10
      ]
     },
     {
      "line": [
+      15,
+      10,
       30,
-      30,
-      60,
-      30
+      10
      ]
     },
     {
      "circle": [
-      -25,
-      30,
-      5
-     ]
-    },
-    {
-     "circle": [
-      25,
-      30,
-      5
-     ]
-    },
-    {
-     "line": [
-      -30,
-      15,
-      30,
-      15
-     ]
-    },
-    {
-     "line": [
-      0,
-      15,
-      0,
-      -5
-     ]
-    },
-    {
-     "line": [
       -12,
-      -5,
-      12,
-      -5
+      10,
+      3
      ]
+    },
+    {
+     "circle": [
+      12,
+      10,
+      3
+     ]
+    },
+    {
+     "line": [
+      -15,
+      2,
+      15,
+      2
+     ],
+     "actuator": true
+    },
+    {
+     "line": [
+      0,
+      2,
+      0,
+      -8
+     ],
+     "actuator": true
+    },
+    {
+     "line": [
+      -6,
+      -8,
+      6,
+      -8
+     ],
+     "actuator": true
     }
    ],
    "pins": [
     {
      "name": "2",
      "at": [
-      -60,
-      30
+      -30,
+      10
      ],
      "dir": "passive"
     },
     {
      "name": "1",
      "at": [
-      60,
-      30
+      30,
+      10
      ],
      "dir": "passive"
     }
@@ -549,68 +555,74 @@
     "kind": "link",
     "type": "nc"
    },
+   "props": {
+    "travel": 7
+   },
    "description": "Normally closed; open while the mouse button is held",
    "graphics": [
     {
      "line": [
-      -60,
-      0,
       -30,
+      0,
+      -15,
       0
      ]
     },
     {
      "line": [
-      30,
+      15,
       0,
-      60,
+      30,
       0
      ]
     },
     {
      "circle": [
-      -25,
-      0,
-      5
-     ]
-    },
-    {
-     "circle": [
-      25,
-      0,
-      5
-     ]
-    },
-    {
-     "line": [
-      -30,
-      8,
-      30,
-      8
-     ]
-    },
-    {
-     "line": [
-      0,
-      8,
-      0,
-      -25
-     ]
-    },
-    {
-     "line": [
       -12,
-      -25,
-      12,
-      -25
+      0,
+      3
      ]
+    },
+    {
+     "circle": [
+      12,
+      0,
+      3
+     ]
+    },
+    {
+     "line": [
+      -15,
+      3,
+      15,
+      3
+     ],
+     "actuator": true
+    },
+    {
+     "line": [
+      0,
+      3,
+      0,
+      -10
+     ],
+     "actuator": true
+    },
+    {
+     "line": [
+      -6,
+      -10,
+      6,
+      -10
+     ],
+     "actuator": true
     }
    ],
    "pins": [
     {
      "name": "2",
      "at": [
-      -60,
+      -30,
       0
      ],
      "dir": "passive"
@@ -618,7 +630,7 @@
     {
      "name": "1",
      "at": [
-      60,
+      30,
       0
      ],
      "dir": "passive"
@@ -645,80 +657,72 @@
    "description": "Change-over push button: C-NC at rest, C-NO while held",
    "graphics": [
     {
+     "circle": [
+      15,
+      0,
+      3
+     ]
+    },
+    {
      "line": [
+      18,
+      0,
       40,
-      0,
-      70,
       0
      ]
     },
     {
      "circle": [
-      35,
+      -15,
       0,
-      5
+      3
      ]
     },
     {
      "line": [
-      -60,
-      0,
       -30,
+      0,
+      -18,
       0
      ]
     },
     {
      "circle": [
-      -25,
-      0,
-      5
+      -15,
+      20,
+      3
      ]
     },
     {
      "line": [
-      -60,
-      50,
       -30,
-      50
-     ]
-    },
-    {
-     "circle": [
-      -25,
-      50,
-      5
-     ]
-    },
-    {
-     "line": [
-      30,
-      3,
-      -20,
-      8
+      20,
+      -18,
+      20
      ]
     },
     {
      "text": "NC",
      "at": [
-      -40,
-      -10
+      -15,
+      -9
      ],
-     "size": 7
+     "size": 6
     },
     {
      "text": "NO",
      "at": [
-      -40,
-      38
+      -15,
+      29
      ],
-     "size": 7
+     "size": 6
     }
    ],
    "pins": [
     {
      "name": "C",
      "at": [
-      70,
+      40,
       0
      ],
      "dir": "passive"
@@ -726,7 +730,7 @@
     {
      "name": "NC",
      "at": [
-      -60,
+      -30,
       0
      ],
      "dir": "passive"
@@ -734,8 +738,8 @@
     {
      "name": "NO",
      "at": [
-      -60,
-      50
+      -30,
+      20
      ],
      "dir": "passive"
     }
@@ -764,32 +768,32 @@
    "graphics": [
     {
      "line": [
-      -60,
-      0,
       -30,
+      0,
+      -15,
       0
      ]
     },
     {
      "line": [
-      30,
+      15,
       0,
-      60,
+      30,
       0
      ]
     },
     {
      "circle": [
-      -25,
+      -12,
       0,
-      5
+      3
      ]
     },
     {
      "circle": [
-      25,
+      12,
       0,
-      5
+      3
      ]
     }
    ],
@@ -797,7 +801,7 @@
     {
      "name": "2",
      "at": [
-      -60,
+      -30,
       0
      ],
      "dir": "passive"
@@ -805,7 +809,7 @@
     {
      "name": "1",
      "at": [
-      60,
+      30,
       0
      ],
      "dir": "passive"

@@ -1,9 +1,12 @@
 #include "ui/LibraryBrowser.h"
 
 #include "library/LibraryRegistry.h"
+#include "ui/Hotkeys.h"
 #include "ui/SymbolPainter.h"
 
+#include <QHBoxLayout>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
@@ -43,7 +46,14 @@ LibraryBrowser::LibraryBrowser(const LibraryRegistry& library, QWidget* parent) 
 
     m_place = new QPushButton(tr("&Place"));
     m_place->setEnabled(false);
-    layout->addWidget(m_place);
+    m_hotkey = new QPushButton(tr("Hot&key..."));
+    m_hotkey->setEnabled(false);
+    m_hotkey->setToolTip(tr("Assign a key (0-9, a-z, A-Z) that picks this device on the schematic"));
+    auto* buttons = new QHBoxLayout;
+    buttons->addWidget(m_hotkey);
+    buttons->addWidget(m_place);
+    layout->addLayout(buttons);
+    connect(m_hotkey, &QPushButton::clicked, this, &LibraryBrowser::assignHotkey);
 
     connect(m_search, &QLineEdit::textChanged, this, &LibraryBrowser::filter);
     connect(m_tree, &QTreeWidget::currentItemChanged, this, &LibraryBrowser::showSelected);
@@ -79,11 +89,51 @@ void LibraryBrowser::reload()
             }
             parent = node;
         }
-        auto* item = parent ? new QTreeWidgetItem(parent, {s->name}) : new QTreeWidgetItem(m_tree, {s->name});
+        const QChar key = Hotkeys::keyFor(s->id);
+        const QString text = key.isNull() ? s->name : QStringLiteral("%1   [%2]").arg(s->name, key);
+        auto* item = parent ? new QTreeWidgetItem(parent, {text}) : new QTreeWidgetItem(m_tree, {text});
         item->setData(0, kIdRole, s->id);
         item->setToolTip(0, s->aliases.isEmpty() ? s->name : tr("CircuitMaker: %1").arg(s->aliases.join(QStringLiteral(", "))));
     }
     m_tree->expandAll();
+}
+
+void LibraryBrowser::collapse()
+{
+    m_tree->collapseAll();
+}
+
+void LibraryBrowser::assignHotkey()
+{
+    const QString id = selectedId();
+    if (id.isEmpty())
+        return;
+    QStringList keys{tr("(none)")};
+    for (char c = '0'; c <= '9'; ++c) keys << QString(QChar(c));
+    for (char c = 'a'; c <= 'z'; ++c) keys << QString(QChar(c));
+    for (char c = 'A'; c <= 'Z'; ++c) keys << QString(QChar(c));
+    const QHash<QChar, QString> current = Hotkeys::load();
+    QStringList items;
+    for (const QString& k : std::as_const(keys)) {
+        const QString used = k.size() == 1 ? current.value(k[0]) : QString();
+        const SymbolDef* s = used.isEmpty() ? nullptr : m_library.find(used);
+        items << (s ? QStringLiteral("%1  — %2").arg(k, s->name) : k);
+    }
+    const QChar mine = Hotkeys::keyFor(id);
+    const int index = mine.isNull() ? 0 : int(keys.indexOf(QString(mine)));
+    bool ok = false;
+    const QString choice = QInputDialog::getItem(this, tr("Hotkey"), tr("Key for %1:").arg(m_library.find(id)->name),
+                                                 items, index, false, &ok);
+    if (!ok)
+        return;
+    const int picked = int(items.indexOf(choice));
+    if (picked <= 0) {
+        if (!mine.isNull()) Hotkeys::assign(mine, {});
+    } else {
+        Hotkeys::assign(keys[picked][0], id);
+    }
+    reload();
+    filter(m_search->text());
 }
 
 void LibraryBrowser::filter(const QString& text)
@@ -120,6 +170,7 @@ void LibraryBrowser::showSelected()
 {
     const SymbolDef* s = m_library.find(selectedId());
     m_place->setEnabled(s != nullptr);
+    m_hotkey->setEnabled(s != nullptr);
     if (!s) {
         m_preview->clear();
         m_info->clear();

@@ -7,6 +7,7 @@
 #include "library/LibraryRegistry.h"
 #include "ui/LibraryBrowser.h"
 #include "ui/AnalysisDialog.h"
+#include "ui/ComponentItem.h"
 #include "ui/PreferencesDialog.h"
 #include "ui/WaveformView.h"
 #include "ui/SchematicView.h"
@@ -114,6 +115,8 @@ MainWindow::MainWindow()
         m_toolBus->setChecked(t == SchematicScene::Tool::Bus);
         m_toolNetLabel->setChecked(t == SchematicScene::Tool::NetLabel);
         m_toolProbe->setChecked(t == SchematicScene::Tool::Probe);
+        if (m_toolDelete) m_toolDelete->setChecked(t == SchematicScene::Tool::Delete);
+        if (m_toolZoom) m_toolZoom->setChecked(t == SchematicScene::Tool::Zoom);
         m_toolText->setChecked(t == SchematicScene::Tool::Text);
     });
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &MainWindow::updateActions);
@@ -128,6 +131,7 @@ MainWindow::MainWindow()
     updateTitle();
     m_view->resetZoom();
     m_view->centerOn(200, 150);
+    m_view->setFocus();             // device hotkeys go to the schematic
 }
 
 MainWindow::~MainWindow()
@@ -171,7 +175,7 @@ void MainWindow::createActions()
     connect(m_print, &QAction::triggered, this, &MainWindow::print);
 
     m_quit = new QAction(tr("E&xit"), this);
-    m_quit->setShortcut(QKeySequence::Quit);
+    m_quit->setShortcut(Qt::ALT | Qt::Key_F4);
     connect(m_quit, &QAction::triggered, this, &QWidget::close);
 
     // own actions instead of QUndoStack's, which re-enable themselves even
@@ -237,7 +241,7 @@ void MainWindow::createActions()
     m_zoomOut->setShortcut(QKeySequence::ZoomOut);
     connect(m_zoomOut, &QAction::triggered, this, [this] { m_view->zoomBy(0.8); });
     m_zoomFit = new QAction(themeIcon("zoom-fit-best", QStyle::SP_DesktopIcon), tr("&Fit to Window"), this);
-    m_zoomFit->setShortcut(Qt::CTRL | Qt::Key_0);
+    m_zoomFit->setShortcuts({QKeySequence(Qt::Key_F4), QKeySequence(Qt::CTRL | Qt::Key_0)});
     connect(m_zoomFit, &QAction::triggered, m_view, &SchematicView::zoomToFit);
     m_grid = new QAction(tr("Show &Grid"), this);
     m_grid->setCheckable(true);
@@ -256,14 +260,14 @@ void MainWindow::createActions()
                                                             QPointF(20, 27), QPointF(16, 18), QPointF(23, 18)}));
                                }),
                                tr("&Arrow"), m_tools);
-    m_toolSelect->setShortcut(Qt::Key_A);
+    m_toolSelect->setShortcut(Qt::ALT | Qt::Key_A);
     m_toolWire = new QAction(drawnIcon([](QPainter& p) {
                                  p.drawPolyline(QPolygonF({QPointF(4, 8), QPointF(16, 8), QPointF(16, 24), QPointF(28, 24)}));
                                  p.setBrush(p.pen().color());
                                  p.drawEllipse(QPointF(16, 8), 2.5, 2.5);
                              }),
                              tr("&Wire"), m_tools);
-    m_toolWire->setShortcut(Qt::Key_W);
+    m_toolWire->setShortcut(Qt::ALT | Qt::Key_W);
     m_toolBus = new QAction(drawnIcon([](QPainter& p) {
                                 QPen pen = p.pen();
                                 pen.setWidthF(5);
@@ -271,7 +275,7 @@ void MainWindow::createActions()
                                 p.drawLine(QPointF(4, 16), QPointF(28, 16));
                             }),
                             tr("&Bus"), m_tools);
-    m_toolBus->setShortcut(Qt::Key_B);
+    m_toolBus->setShortcut(Qt::ALT | Qt::Key_B);
     m_toolBus->setToolTip(tr("Bus: wires ending on it are joined by entry name"));
     m_toolNetLabel = new QAction(drawnIcon([](QPainter& p) {
                                      QFont f = p.font();
@@ -282,7 +286,7 @@ void MainWindow::createActions()
                                      p.drawText(QRectF(0, 2, 32, 20), Qt::AlignCenter, QStringLiteral("N1"));
                                  }),
                                  tr("&Net Label"), m_tools);
-    m_toolNetLabel->setShortcut(Qt::Key_N);
+    m_toolNetLabel->setShortcut(Qt::ALT | Qt::Key_N);
     m_toolNetLabel->setToolTip(tr("Net label: points with the same name are connected"));
     m_toolProbe = new QAction(drawnIcon([](QPainter& p) {
                                   p.setBrush(WaveformView::traceColor(0));
@@ -290,7 +294,7 @@ void MainWindow::createActions()
                                                            QPointF(6, 4)}));
                               }),
                               tr("&Probe"), m_tools);
-    m_toolProbe->setShortcut(Qt::Key_P);
+    m_toolProbe->setShortcut(Qt::ALT | Qt::Key_P);
     m_toolProbe->setToolTip(tr("Probe: click a wire to plot its voltage in analog mode; click a probe again to remove it"));
     m_toolText = new QAction(drawnIcon([](QPainter& p) {
                                  QFont f = p.font();
@@ -300,7 +304,7 @@ void MainWindow::createActions()
                                  p.drawText(QRectF(0, 0, 32, 32), Qt::AlignCenter, QStringLiteral("T"));
                              }),
                              tr("&Text"), m_tools);
-    m_toolText->setShortcut(Qt::Key_T);
+    m_toolText->setShortcut(Qt::ALT | Qt::Key_T);
     for (QAction* a : m_tools->actions())
         a->setCheckable(true);
     m_toolSelect->setChecked(true);
@@ -310,6 +314,59 @@ void MainWindow::createActions()
     connect(m_toolBus, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Bus); });
     connect(m_toolNetLabel, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::NetLabel); });
     connect(m_toolProbe, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Probe); });
+    m_toolDelete = new QAction(themeIcon("edit-delete", QStyle::SP_TrashIcon), tr("&Delete Tool"), m_tools);
+    m_toolDelete->setShortcut(Qt::ALT | Qt::Key_D);
+    m_toolDelete->setToolTip(tr("Delete tool: click an item to delete it (hold Shift to snip one wire segment)"));
+    m_toolDelete->setCheckable(true);
+    connect(m_toolDelete, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Delete); });
+    m_toolZoom = new QAction(themeIcon("zoom-in", QStyle::SP_ArrowUp), tr("&Zoom Tool"), m_tools);
+    m_toolZoom->setShortcut(Qt::ALT | Qt::Key_Z);
+    m_toolZoom->setToolTip(tr("Zoom tool: click to zoom in (hold Shift to zoom out)"));
+    m_toolZoom->setCheckable(true);
+    connect(m_toolZoom, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Zoom); });
+    connect(m_scene, &SchematicScene::zoomRequested, this, [this](QPointF at, double factor) {
+        m_view->zoomBy(factor);
+        m_view->centerOn(at);
+    });
+
+    m_duplicate = new QAction(tr("Dup&licate"), this);
+    m_duplicate->setShortcut(Qt::CTRL | Qt::Key_D);
+    connect(m_duplicate, &QAction::triggered, m_scene, &SchematicScene::duplicateSelection);
+    m_scale = new QAction(tr("&Display Scale..."), this);
+    m_scale->setShortcut(Qt::Key_F2);
+    connect(m_scale, &QAction::triggered, this, [this] {
+        bool ok = false;
+        const int percent = QInputDialog::getInt(this, tr("Display scale"), tr("Zoom (%):"), qRound(m_view->zoom() * 100), 10,
+                                                 2000, 10, &ok);
+        if (ok)
+            m_view->zoomBy(percent / 100.0 / m_view->zoom());
+    });
+    m_normalSize = new QAction(tr("&Normal Size"), this);
+    m_normalSize->setShortcut(Qt::Key_F3);
+    connect(m_normalSize, &QAction::triggered, m_view, &SchematicView::normalSize);
+    m_collapseTree = new QAction(tr("Collapse Device Tree"), this);
+    m_collapseTree->setShortcut(Qt::Key_F6);
+    connect(m_collapseTree, &QAction::triggered, m_browser, &LibraryBrowser::collapse);
+    m_refresh = new QAction(tr("&Refresh Screen"), this);
+    m_refresh->setShortcut(Qt::Key_F7);
+    connect(m_refresh, &QAction::triggered, this, [this] { m_scene->update(); m_view->viewport()->update(); });
+    m_trace = new QAction(tr("&Trace"), this);
+    m_trace->setShortcut(Qt::Key_F11);
+    m_trace->setCheckable(true);
+    m_trace->setChecked(true);
+    m_trace->setToolTip(tr("Colour wires by logic level while simulating"));
+    connect(m_trace, &QAction::toggled, m_scene, &SchematicScene::setTrace);
+    m_topicHelp = new QAction(tr("&Topic for Selected Item"), this);
+    m_topicHelp->setShortcut(Qt::Key_F1);
+    connect(m_topicHelp, &QAction::triggered, this, [this] {
+        for (QGraphicsItem* it : m_scene->selectedItems())
+            if (auto* c = dynamic_cast<ComponentItem*>(it)) {
+                QMessageBox::information(this, c->symbol()->name,
+                                         c->symbol()->description.isEmpty() ? c->symbol()->name : c->symbol()->description);
+                return;
+            }
+        statusBar()->showMessage(tr("Select a device to see its description"), 4000);
+    });
 
     m_find = new QAction(themeIcon("edit-find", QStyle::SP_FileDialogContentsView), tr("&Find and Select..."), this);
     m_find->setShortcut(QKeySequence::Find);
@@ -327,7 +384,7 @@ void MainWindow::createActions()
     connect(m_bom, &QAction::triggered, this, &MainWindow::exportBom);
 
     m_run = new QAction(themeIcon("media-playback-start", QStyle::SP_MediaPlay), tr("&Run"), this);
-    m_run->setShortcut(Qt::Key_F9);
+    m_run->setShortcut(Qt::Key_F10);
     connect(m_run, &QAction::triggered, this, [this] {
         if (m_circuit->analysis().analogMode)
             runAnalog();
@@ -345,20 +402,21 @@ void MainWindow::createActions()
     connect(m_analogMode, &QAction::triggered, this, [this] { setAnalogMode(true); });
     connect(m_circuit, &Circuit::analysisChanged, this, &MainWindow::updateActions);
     m_analysisSetup = new QAction(tr("Analog A&nalysis..."), this);
+    m_analysisSetup->setShortcut(Qt::Key_F8);
     connect(m_analysisSetup, &QAction::triggered, this, &MainWindow::editAnalysis);
     m_step = new QAction(themeIcon("media-skip-forward", QStyle::SP_MediaSkipForward), tr("S&tep"), this);
-    m_step->setShortcut(Qt::Key_F10);
+    m_step->setShortcut(Qt::Key_F9);
     m_step->setToolTip(tr("Advance to the next logic change"));
     connect(m_step, &QAction::triggered, m_scene, &SchematicScene::stepSimulation);
     m_reset = new QAction(themeIcon("view-refresh", QStyle::SP_BrowserReload), tr("R&eset"), this);
-    m_reset->setShortcut(Qt::CTRL | Qt::Key_F9);
+    m_reset->setShortcut(Qt::CTRL | Qt::Key_Q);
     connect(m_reset, &QAction::triggered, m_scene, &SchematicScene::resetSimulation);
     m_stop = new QAction(themeIcon("media-playback-stop", QStyle::SP_MediaStop), tr("&Stop (back to editing)"), this);
-    m_stop->setShortcut(Qt::SHIFT | Qt::Key_F9);
+    m_stop->setShortcut(Qt::SHIFT | Qt::Key_F10);
     connect(m_stop, &QAction::triggered, m_scene, &SchematicScene::stopSimulation);
 
     m_prefs = new QAction(themeIcon("preferences-system", QStyle::SP_FileDialogDetailedView), tr("Pre&ferences..."), this);
-    m_prefs->setShortcuts({QKeySequence::Preferences, QKeySequence(Qt::CTRL | Qt::Key_Comma)});
+    m_prefs->setShortcuts({QKeySequence(Qt::Key_F5), QKeySequence(Qt::CTRL | Qt::Key_Comma)});
     m_prefs->setMenuRole(QAction::PreferencesRole);
     connect(m_prefs, &QAction::triggered, this, &MainWindow::editPreferences);
 
@@ -382,7 +440,7 @@ void MainWindow::createMenus()
     QMenu* edit = menuBar()->addMenu(tr("&Edit"));
     edit->addActions({m_undoAct, m_redoAct});
     edit->addSeparator();
-    edit->addActions({m_cut, m_copy, m_paste, m_delete, m_selectAll, m_find});
+    edit->addActions({m_cut, m_copy, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
     edit->addSeparator();
     edit->addActions({m_rotate, m_mirror, m_props});
     edit->addSeparator();
@@ -392,22 +450,26 @@ void MainWindow::createMenus()
 
     QMenu* view = menuBar()->addMenu(tr("&View"));
     view->setObjectName(QStringLiteral("viewMenu"));
-    view->addActions({m_zoomIn, m_zoomOut, m_zoomFit});
+    view->addActions({m_scale, m_normalSize, m_zoomFit, m_zoomIn, m_zoomOut, m_refresh, m_collapseTree});
     view->addSeparator();
     view->addActions({m_grid, m_showTitleBlock});
     view->addSeparator();
 
-    QMenu* tools = menuBar()->addMenu(tr("&Tools"));
-    tools->addActions(m_tools->actions());
+    QMenu* tools = menuBar()->addMenu(tr("&Options"));
+    QMenu* cursorTools = tools->addMenu(tr("Cursor &Tools"));
+    cursorTools->addActions(m_tools->actions());
+    tools->addSeparator();
+    tools->addAction(m_prefs);
 
     QMenu* simulation = menuBar()->addMenu(tr("&Simulation"));
     simulation->addActions({m_digitalMode, m_analogMode});
     simulation->addSeparator();
-    simulation->addActions({m_run, m_step, m_reset, m_stop});
+    simulation->addActions({m_run, m_step, m_trace, m_reset, m_stop});
     simulation->addSeparator();
     simulation->addAction(m_analysisSetup);
 
     QMenu* help = menuBar()->addMenu(tr("&Help"));
+    help->addAction(m_topicHelp);
     help->addAction(m_about);
     help->addAction(tr("About &Qt"), qApp, &QApplication::aboutQt);
 }

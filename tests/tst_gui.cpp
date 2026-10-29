@@ -9,6 +9,9 @@
 #include "ui/WireItem.h"
 
 #include <QGraphicsView>
+#include <QPainter>
+
+#include "sim/digital/EventSimulator.h"
 #include <QUndoStack>
 
 using namespace cm;
@@ -23,6 +26,9 @@ private slots:
     void dragWireSegment();
     void dragWireEnd();
     void simulationStress();
+    void buttonsAnimate_data();
+    void buttonsAnimate();
+    void circuitMakerShortcuts();
     void screenshot();
 };
 
@@ -139,6 +145,71 @@ void TestGui::simulationStress()
         scene->stopSimulation();
         w.undoAction()->trigger();                   // undoes the switch positions, if any
     }
+}
+
+void TestGui::buttonsAnimate_data()
+{
+    QTest::addColumn<QString>("symbol");
+    QTest::addColumn<QString>("press");
+    QTest::newRow("NO push button") << "pb_no" << "press";
+    QTest::newRow("NC push button") << "pb_nc" << "press";
+    QTest::newRow("SPDT push button") << "pb_spdt" << "press";
+    QTest::newRow("SPST switch") << "spst" << "toggle";
+}
+
+void TestGui::buttonsAnimate()
+{
+    QFETCH(QString, symbol);
+    QFETCH(QString, press);
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    const ItemId id = place(circuit, symbol, {0, 0}, QStringLiteral("S1"));
+    auto render = [&] {
+        QImage img(200, 120, QImage::Format_ARGB32);
+        img.fill(Qt::white);
+        QPainter p(&img);
+        scene.render(&p, {}, QRectF(-50, -30, 100, 60));
+        return img;
+    };
+    scene.run();
+    scene.pause();
+    const QImage released = render();
+    QVERIFY(scene.simulating());
+    // drive the model the way a mouse press does
+    scene.simulator()->interact(id, press);
+    const QImage pressed = render();
+    QVERIFY2(released != pressed, "the symbol looks the same pressed and released");
+    scene.stopSimulation();
+}
+
+void TestGui::circuitMakerShortcuts()
+{
+    MainWindow w;
+    w.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&w));
+    QWidget* view = w.findChild<QGraphicsView*>();
+    QVERIFY(view);
+    view->setFocus();
+    SchematicScene* scene = w.scene();
+
+    QTest::keyClick(view, Qt::Key_W, Qt::AltModifier);
+    QCOMPARE(scene->tool(), SchematicScene::Tool::Wire);
+    QTest::keyClick(view, Qt::Key_D, Qt::AltModifier);
+    QCOMPARE(scene->tool(), SchematicScene::Tool::Delete);
+    QTest::keyClick(view, Qt::Key_A, Qt::AltModifier);
+    QCOMPARE(scene->tool(), SchematicScene::Tool::Select);
+
+    // device hotkey: '4' picks the 2-input AND (default assignment)
+    QTest::keyClick(view, Qt::Key_4);
+    QCOMPARE(scene->tool(), SchematicScene::Tool::Place);
+    bool ghostIsAnd = false;
+    for (QGraphicsItem* it : scene->items())
+        if (auto* c = qgraphicsitem_cast<ComponentItem*>(it))
+            ghostIsAnd = c->id() == 0 && c->component().symbolId == u"and2";
+    QVERIFY(ghostIsAnd);
+    QTest::keyClick(view, Qt::Key_Escape);
+    QCOMPARE(scene->tool(), SchematicScene::Tool::Select);
 }
 
 // CM_SCREENSHOT=<png> [CM_SCREENSHOT_FILE=<circuit>] saves the main window.

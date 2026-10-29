@@ -80,7 +80,7 @@ void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointS
     p->restore();
 }
 
-void paint(QPainter* p, const SymbolDef& s, const QColor& color)
+void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset)
 {
     QPen pen(color, 1.6);
     pen.setCapStyle(Qt::RoundCap);
@@ -88,6 +88,9 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color)
     p->setPen(pen);
     for (const Primitive& g : s.graphics) {
         p->setBrush(g.fill ? QBrush(color) : Qt::NoBrush);
+        p->save();
+        if (g.actuator)
+            p->translate(actuatorOffset);
         switch (g.type) {
         case Primitive::Type::Line:
             p->drawLine(QPointF(g.v[0], g.v[1]), QPointF(g.v[2], g.v[3]));
@@ -105,6 +108,7 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color)
             uprightText(p, {g.v[0], g.v[1]}, g.text, g.size, g.align, color, g.overline);
             break;
         }
+        p->restore();
     }
 }
 

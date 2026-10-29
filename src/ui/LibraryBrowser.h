@@ -18,6 +18,7 @@ class LibraryBrowser : public QWidget {
 public:
     explicit LibraryBrowser(const LibraryRegistry& library, QWidget* parent = nullptr);
     void reload();
+    void collapse();
 
 signals:
     void placeRequested(const QString& symbolId);
@@ -33,6 +34,8 @@ private:
     QLabel* m_preview;
     QLabel* m_info;
     QPushButton* m_place;
+    QPushButton* m_hotkey;
+    void assignHotkey();
 };
 
 } // namespace cm

@@ -58,6 +58,7 @@ add_library(cmui STATIC
     src/ui/PreferencesDialog.h src/ui/PreferencesDialog.cpp
     src/ui/WaveformView.h src/ui/WaveformView.cpp
     src/ui/AnalysisDialog.h src/ui/AnalysisDialog.cpp
+    src/ui/Hotkeys.h src/ui/Hotkeys.cpp
 )
 target_link_libraries(cmui PUBLIC cmcore cmsim Qt6::Widgets Qt6::Svg Qt6::PrintSupport Qt6::Concurrent)
 target_compile_definitions(cmui PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")

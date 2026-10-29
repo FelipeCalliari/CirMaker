@@ -15,6 +15,7 @@ public:
     void setDefaultZoom(double zoom) { m_defaultZoom = zoom; }
     void zoomToFit();
     void resetZoom();
+    void normalSize();          // 100 %
     double zoom() const { return transform().m11(); }
 
 signals:

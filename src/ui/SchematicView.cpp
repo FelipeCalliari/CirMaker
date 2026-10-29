@@ -49,6 +49,12 @@ void SchematicView::resetZoom()
     emit zoomChanged(zoom());
 }
 
+void SchematicView::normalSize()
+{
+    setTransform(QTransform());
+    emit zoomChanged(zoom());
+}
+
 void SchematicView::wheelEvent(QWheelEvent* e)
 {
     if (e->modifiers() & (Qt::ShiftModifier | Qt::AltModifier))

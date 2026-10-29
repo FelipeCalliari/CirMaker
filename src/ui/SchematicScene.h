@@ -27,7 +27,7 @@ class SchematicScene : public QGraphicsScene {
     Q_OBJECT
 public:
     static constexpr double kGrid = 10;
-    enum class Tool { Select, Wire, Bus, NetLabel, Text, Probe, Place };
+    enum class Tool { Select, Wire, Bus, NetLabel, Text, Probe, Delete, Zoom, Place };
 
     SchematicScene(Circuit* circuit, QUndoStack* undo, const LibraryRegistry& library, QObject* parent = nullptr);
     ~SchematicScene() override;
@@ -47,6 +47,10 @@ public:
     void selectAll();
     void copySelection();
     void cutSelection();
+    void duplicateSelection();
+    // CircuitMaker "Trace": colour wires by logic level while simulating
+    void setTrace(bool on) { m_trace = on; update(); }
+    bool trace() const { return m_trace; }
     void paste();
     bool hasSelection() const { return !selectedItems().isEmpty(); }
     Selection selection() const;
@@ -85,6 +89,7 @@ public:
     void setTicksPerFrame(int ticks) { m_ticksPerFrame = std::max(1, ticks); }
     int ticksPerFrame() const { return m_ticksPerFrame; }
     quint64 simTime() const;
+    sim::EventSimulator* simulator() const { return m_sim.get(); }
     int simState(ItemId id) const;
     QColor wireColor(ItemId id) const;
 
@@ -104,6 +109,8 @@ signals:
     void simTimeChanged(quint64 ticks);
     void statusMessage(const QString& text);
     void cursorMoved(QPointF scenePos);
+    // Zoom tool click: factor > 1 zooms in around the point
+    void zoomRequested(QPointF scenePos, double factor);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
@@ -137,6 +144,7 @@ private:
     bool onConductor(QPointF p) const;      // pin or ordinary wire
     QString askNetName(const QString& title, const QString& suggestion);
     void placeNetLabel(QPointF p);
+    void deleteAt(QPointF p, bool snipWire);
     void toggleProbe(QPointF p);
     int netAt(QPointF p) const;
     void cancelWire();
@@ -211,6 +219,7 @@ private:
     QString m_heldRelease;
     bool m_gridVisible = true;
     bool m_gridLines = true;
+    bool m_trace = true;
     bool m_exporting = false;
 };
 

@@ -13,7 +13,7 @@ namespace cm {
 namespace SymbolPainter {
 
 // Draws the symbol's static graphics in the painter's current coordinates.
-void paint(QPainter* p, const SymbolDef& s, const QColor& color);
+void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset = {});
 
 // Text that stays upright and unmirrored whatever the item transform is.
 // align: -1 left, 0 centre, 1 right of `anchor` (local coordinates).

@@ -86,7 +86,9 @@ private:
     QAction *m_new, *m_open, *m_import, *m_save, *m_saveAs, *m_export, *m_print, *m_quit;
     QAction *m_undoAct, *m_redoAct, *m_cut, *m_copy, *m_paste, *m_delete, *m_selectAll, *m_rotate, *m_mirror, *m_props;
     QAction *m_zoomIn, *m_zoomOut, *m_zoomFit, *m_grid;
-    QAction *m_toolSelect, *m_toolWire, *m_toolBus, *m_toolNetLabel, *m_toolText;
+    QAction *m_toolSelect, *m_toolWire, *m_toolBus, *m_toolNetLabel, *m_toolText, *m_toolDelete = nullptr,
+            *m_toolZoom = nullptr;
+    QAction *m_duplicate, *m_scale, *m_normalSize, *m_collapseTree, *m_refresh, *m_trace, *m_topicHelp;
     QAction *m_find, *m_titleBlock, *m_showTitleBlock, *m_bom;
     QActionGroup* m_tools;
     QAction *m_run, *m_step, *m_reset, *m_stop;

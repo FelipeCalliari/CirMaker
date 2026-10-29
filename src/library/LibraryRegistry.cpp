@@ -438,6 +438,7 @@ bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
             return false;
         }
         p.fill = g.value(u"fill").toBool();
+        p.actuator = g.value(u"actuator").toBool();
         s.graphics << p;
     }
 

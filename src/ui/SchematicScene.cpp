@@ -5,6 +5,7 @@
 #include "library/LibraryRegistry.h"
 #include "sim/digital/EventSimulator.h"
 #include "ui/ComponentItem.h"
+#include "ui/Hotkeys.h"
 #include "ui/PropertiesDialog.h"
 #include "ui/TextNoteItem.h"
 #include "ui/TitleBlockItem.h"
@@ -209,7 +210,9 @@ void SchematicScene::setTool(Tool tool)
     for (QGraphicsView* v : views())
         v->viewport()->setCursor(tool == Tool::Select ? Qt::ArrowCursor
                                  : tool == Tool::Text || tool == Tool::NetLabel ? Qt::IBeamCursor
-                                 : tool == Tool::Probe ? Qt::PointingHandCursor : Qt::CrossCursor);
+                                 : tool == Tool::Probe ? Qt::PointingHandCursor
+                                 : tool == Tool::Delete ? Qt::ForbiddenCursor
+                                 : tool == Tool::Zoom ? Qt::SizeAllCursor : Qt::CrossCursor);
     emit toolChanged(tool);
 }
 
@@ -384,6 +387,48 @@ void SchematicScene::cancelWire()
     m_wirePoints.clear();
     m_wireFromSelect = false;
     update();
+}
+
+void SchematicScene::deleteAt(QPointF p, bool snipWire)
+{
+    for (QGraphicsItem* it : items(p)) {
+        if (it == m_ghost) continue;
+        Selection sel;
+        if (auto* c = qgraphicsitem_cast<ComponentItem*>(it)) {
+            sel.components << *m_circuit->component(c->id());
+        } else if (auto* t = qgraphicsitem_cast<TextNoteItem*>(it)) {
+            sel.texts << *m_circuit->text(t->id());
+        } else if (auto* w = qgraphicsitem_cast<WireItem*>(it)) {
+            const Wire wire = *m_circuit->wire(w->id());
+            const int seg = segmentAt(wire.points, p);
+            if (snipWire && seg >= 0 && wire.points.size() > 2) {
+                // Shift: remove only the clicked segment, splitting the wire
+                Selection before, after, added;
+                before.wires << wire;
+                const QVector<QPointF> head = wire.points.mid(0, seg + 1), tail = wire.points.mid(seg + 1);
+                m_undo->beginMacro(tr("Snip wire"));
+                m_undo->push(new RemoveItemsCommand(m_circuit, before, {}));
+                if (head.size() >= 2) added.wires << Wire{0, head, wire.bus, wire.name};
+                if (tail.size() >= 2) added.wires << Wire{0, tail, wire.bus, wire.name};
+                if (!added.isEmpty()) m_undo->push(new AddItemsCommand(m_circuit, added, {}));
+                m_undo->endMacro();
+                return;
+            }
+            sel.wires << wire;
+        } else {
+            continue;
+        }
+        m_undo->push(new RemoveItemsCommand(m_circuit, sel, tr("Delete")));
+        return;
+    }
+}
+
+void SchematicScene::duplicateSelection()
+{
+    if (simulating() || selection().isEmpty())
+        return;
+    copySelection();
+    paste();
 }
 
 int SchematicScene::netAt(QPointF p) const
@@ -893,8 +938,8 @@ int SchematicScene::simState(ItemId id) const { return m_sim ? m_sim->componentS
 
 QColor SchematicScene::wireColor(ItemId id) const
 {
-    if (!m_sim || m_exporting)
-        return kInk;
+    if (!m_sim || m_exporting || !m_trace)
+        return QColor(0x00, 0x30, 0xff);
     switch (m_sim->netValue(m_netlist.wireNet.value(id, -1))) {
     case sim::Logic::L1: return {0xe0, 0x10, 0x10};
     case sim::Logic::L0: return {0x10, 0x50, 0xc0};
@@ -983,6 +1028,12 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         return;
     case Tool::Probe:
         toggleProbe(p);
+        return;
+    case Tool::Delete:
+        deleteAt(e->scenePos(), e->modifiers() & Qt::ShiftModifier);
+        return;
+    case Tool::Zoom:
+        emit zoomRequested(e->scenePos(), e->modifiers() & Qt::ShiftModifier ? 0.5 : 2.0);
         return;
     case Tool::Text: {
         bool ok = false;
@@ -1218,6 +1269,20 @@ void SchematicScene::keyPressEvent(QKeyEvent* e)
     if (m_ghost && e->modifiers() == Qt::NoModifier) {
         if (e->key() == Qt::Key_R) { rotateSelection(); return; }
         if (e->key() == Qt::Key_M) { mirrorSelection(); return; }
+    }
+    // device hotkeys: 0-9, a-z, A-Z pick a device for placement
+    const QString text = e->text();
+    if (!simulating() && text.size() == 1 && Hotkeys::isHotkey(text[0])
+        && !(e->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+        const QString id = Hotkeys::symbolFor(text[0]);
+        if (!id.isEmpty()) {
+            beginPlace(id);
+            if (m_ghost) {
+                m_ghostComponent.pos = m_cursor;
+                m_ghost->setPos(m_cursor);
+            }
+            return;
+        }
     }
     QGraphicsScene::keyPressEvent(e);
 }

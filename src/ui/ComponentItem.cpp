@@ -121,7 +121,11 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     const QColor ink = isSelected() ? kSelected : kInk;
     p->setRenderHint(QPainter::Antialiasing);
     paintDynamic(p, state, live, ink);
-    SymbolPainter::paint(p, *m_symbol, ink);
+    // push buttons: the plunger travels while held
+    QPointF actuator;
+    if (m_symbol->display == u"button" && live && state == 1)
+        actuator = QPointF(0, m_symbol->defaultProps.value(QStringLiteral("travel"), 7).toDouble());
+    SymbolPainter::paint(p, *m_symbol, ink, actuator);
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {
@@ -262,26 +266,17 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         }
     } else if (d == u"spst" || d == u"button") {
         const auto cs = circles();
-        if (cs.size() >= 2) {
+        const QString type = m_symbol->model.value(u"type").toString();
+        if (d == u"spst" && cs.size() >= 2) {
             const QPointF a(cs[0]->v[0], cs[0]->v[1]), b(cs[1]->v[0], cs[1]->v[1]);
-            const QString type = m_symbol->model.value(u"type").toString();
-            if (d == u"spst") {
-                p->setPen(QPen(ink, 2));
-                p->drawLine(a, state == 1 ? b : b + QPointF(-5, -22));
-            } else if (live) {
-                // highlight the conducting contact pair
-                const bool pressed = state == 1;
-                bool conducting = type == u"nc" ? !pressed : pressed;
-                QPointF from = a, to = b;
-                if (type == u"spdt" && cs.size() >= 3) {
-                    conducting = true;
-                    to = pressed ? QPointF(cs[2]->v[0], cs[2]->v[1]) : b;
-                }
-                if (conducting) {
-                    p->setPen(QPen(kHigh, 3, Qt::SolidLine, Qt::RoundCap));
-                    p->drawLine(from, to);
-                }
-            }
+            p->setPen(QPen(live && state == 1 ? kHigh : ink, 2, Qt::SolidLine, Qt::RoundCap));
+            p->drawLine(a, state == 1 ? b : a + (b - a) * 0.85 + QPointF(0, -(b - a).manhattanLength() * 0.45));
+        } else if (type == u"spdt" && cs.size() >= 3) {
+            // lever from the common contact to NC at rest, to NO while held
+            const QPointF com(cs[0]->v[0], cs[0]->v[1]);
+            const QPointF to = live && state == 1 ? QPointF(cs[2]->v[0], cs[2]->v[1]) : QPointF(cs[1]->v[0], cs[1]->v[1]);
+            p->setPen(QPen(live && state == 1 ? kHigh : ink, 2, Qt::SolidLine, Qt::RoundCap));
+            p->drawLine(com, com + (to - com) * 0.88);
         }
     } else if (d == u"hexkey") {
         const double cw = body.width() / 4, ch = body.height() / 4;
