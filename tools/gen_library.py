@@ -180,8 +180,6 @@ def msi():
          D(4, 'Q'), {'kind': 'shift'}),
         ('74244', 'Octal buffer, 3-state', D(8, 'A') + ['~1G', '~2G'], D(8, 'Y'),
          {'kind': 'tribus', 'groups': [{'enable': '1G', 'bits': [0, 1, 2, 3]}, {'enable': '2G', 'bits': [4, 5, 6, 7]}]}),
-        ('74125', 'Quad buffer, 3-state, active-low enables (shared here)', D(4, 'A') + ['~G'], D(4, 'Y'),
-         {'kind': 'tribus', 'groups': [{'enable': 'G', 'bits': [0, 1, 2, 3]}]}),
     ]
     out = []
     for number, desc, left, right, model in chips:
@@ -189,6 +187,103 @@ def msi():
                        title=number, model=model, aliases=[number, f'74LS{number[2:]}', f'74HC{number[2:]}'],
                        label=number, description=desc, floatInputs=1))
     return out
+
+
+RIGHT_INPUTS = {'SER', '~LD', 'INH', '~CLR', '~CS', '~WE', 'DIR', 'I7', 'I8'}
+
+
+def cm_chip(number, desc, left, right, model, cm_pins, left_start, right_start, aliases=None, title=None, **extra):
+    """MSI chip laid out like CircuitMaker's: pitch 30, pins at x = +-110,
+    first pin of each side given explicitly ('' leaves a gap)."""
+    # inputs that CircuitMaker draws on the right-hand side
+    right = [{'name': e, 'dir': 'in'} if isinstance(e, str) and e in RIGHT_INPUTS else e for e in right]
+    shape = {'type': 'box', 'width': 160, 'pitch': 30, 'left': left, 'right': right,
+             'leftStart': left_start, 'rightStart': right_start, 'title': title or number}
+    names = aliases or [number, f'74LS{number[2:]}', f'74HC{number[2:]}', f'74F{number[2:]}']
+    s = {'id': number, 'name': f'{number} {desc.split(",")[0]}', 'shape': shape, 'model': model,
+         'aliases': names, 'cmPins': cm_pins, 'label': number, 'description': desc, 'floatInputs': 1}
+    s.update(extra)
+    return s
+
+
+def cm_chips():
+    D = lambda n, p='D': [f'{p}{i}' for i in range(n)]
+    rev = lambda l: list(reversed(l))
+    du = {'name': 'D/~U', 'label': 'D/U'}
+    chips = [
+        cm_chip('74126', 'Quad buffer, 3-state, active-high enables',
+                ['C3', 'A3', 'C2', 'A2', 'C1', 'A1', 'C0', 'A0'], ['Y3', '', 'Y2', '', 'Y1', '', 'Y0'],
+                {'kind': 'tribus', 'groups': [{'enable': f'C{i}', 'bits': [i]} for i in range(4)]},
+                ['C3', 'A3', 'C2', 'A2', 'C1', 'A1', 'C0', 'A0', 'Y3', 'Y2', 'Y1', 'Y0'], -90, -60),
+        cm_chip('74125', 'Quad buffer, 3-state, active-low enables',
+                ['~C3', 'A3', '~C2', 'A2', '~C1', 'A1', '~C0', 'A0'], ['Y3', '', 'Y2', '', 'Y1', '', 'Y0'],
+                {'kind': 'tribus', 'groups': [{'enable': f'C{i}', 'bits': [i]} for i in range(4)]},
+                ['~C3', 'A3', '~C2', 'A2', '~C1', 'A1', '~C0', 'A0', 'Y3', 'Y2', 'Y1', 'Y0'], -90, -60),
+        cm_chip('74191', 'Synchronous up/down 4-bit binary counter',
+                ['~CTEN', clk('CLK'), '~LOAD', du] + rev(D(4)), ['~RCO', 'MAX/MIN'] + rev(D(4, 'Q')),
+                {'kind': 'updown1', 'modulus': 16},
+                ['~CTEN', 'CLK', '~LOAD', 'D/~U', 'D3', 'D2', 'D1', 'D0', '~RCO', 'MAX/MIN', 'Q3', 'Q2', 'Q1', 'Q0'], -90, -30),
+        cm_chip('74190', 'Synchronous up/down decade counter',
+                ['~CTEN', clk('CLK'), '~LOAD', du] + rev(D(4)), ['~RCO', 'MAX/MIN'] + rev(D(4, 'Q')),
+                {'kind': 'updown1', 'modulus': 10},
+                ['~CTEN', 'CLK', '~LOAD', 'D/~U', 'D3', 'D2', 'D1', 'D0', '~RCO', 'MAX/MIN', 'Q3', 'Q2', 'Q1', 'Q0'], -90, -30),
+        cm_chip('74165', '8-bit parallel-in serial-out shift register',
+                rev(D(8)), ['SER', {'name': '~LD', 'label': 'SH/LD', 'dir': 'in'}, 'INH', {'name': 'CLK', 'clock': True, 'dir': 'in'}, '', '', '', '~QH', 'QH'],
+                {'kind': 'piso'},
+                rev(D(8)) + ['SER', '~LD', 'INH', 'CLK', '~QH', 'QH'], -90, -120),
+        cm_chip('74174', 'Hex D flip-flop with clear', [clk('CLK')] + rev(D(6)), ['~CLR'] + rev(D(6, 'Q')),
+                {'kind': 'register'}, ['CLK'] + rev(D(6)) + ['~CLR'] + rev(D(6, 'Q')), -90, -90),
+        cm_chip('74293', '4-bit binary ripple counter (÷2 and ÷8)', ['R01', 'R02', clk('~CKA'), clk('~CKB')],
+                ['QD', 'QC', 'QB', 'QA'], {'kind': 'ripple', 'modB': 8},
+                ['R01', 'R02', '~CKA', '~CKB', 'QD', 'QC', 'QB', 'QA'], -30, -30),
+        cm_chip('7492', 'Divide-by-12 ripple counter (÷2 and ÷6)', ['R01', 'R02', clk('~CKA'), clk('~CKB')],
+                ['QD', 'QC', 'QB', 'QA'], {'kind': 'ripple', 'modB': 6, 'seq92': True},
+                ['R01', 'R02', '~CKA', '~CKB', 'QD', 'QC', 'QB', 'QA'], -30, -30),
+        cm_chip('74155', 'Dual 2-to-4 line decoder/demultiplexer',
+                ['1C', '~1G', '', 'B', 'A', '~2G', '~2C'],
+                ['~1Y3', '~1Y2', '~1Y1', '~1Y0', '~2Y3', '~2Y2', '~2Y1', '~2Y0'], {'kind': 'decoder155'},
+                ['1C', '~1G', 'B', 'A', '~2G', '~2C', '~1Y3', '~1Y2', '~1Y1', '~1Y0', '~2Y3', '~2Y2', '~2Y1', '~2Y0'], -90, -90),
+        cm_chip('74257', 'Quad 2-to-1 multiplexer, 3-state',
+                ['S', 'B0', 'A0', 'B1', 'A1', 'B2', 'A2', 'B3', 'A3', '~OE'], ['Y0', '', 'Y1', '', 'Y2', '', 'Y3'],
+                {'kind': 'mux2'}, ['S', 'B0', 'A0', 'B1', 'A1', 'B2', 'A2', 'B3', 'A3', '~OE', 'Y0', 'Y1', 'Y2', 'Y3'], -120, -60),
+        cm_chip('74280', '9-bit odd/even parity generator/checker',
+                ['I6', 'I5', 'I4', 'I3', 'I2', 'I1', 'I0'], ['I7', 'I8', {'name': 'EVEN', 'dir': 'out'}, {'name': 'ODD', 'dir': 'out'}],
+                {'kind': 'parity'}, ['I6', 'I5', 'I4', 'I3', 'I2', 'I1', 'I0', 'I7', 'I8', 'EVEN', 'ODD'], -90, -90),
+        cm_chip('74251', '8-to-1 multiplexer, 3-state', rev(D(8)) + ['C', 'B', 'A', '~G'], ['~W', 'Y'],
+                {'kind': 'mux', 'tristate': True}, rev(D(8)) + ['C', 'B', 'A', '~G', '~W', 'Y'], -150, 0),
+        cm_chip('74377', 'Octal D flip-flop with enable', ['~G', clk('CLK')] + rev(D(8)), rev(D(8, 'Q')),
+                {'kind': 'register'}, ['~G', 'CLK'] + rev(D(8)) + rev(D(8, 'Q')), -120, -60),
+        cm_chip('7495', '4-bit parallel-access shift register',
+                ['MODE', clk('~CLK1'), clk('~CLK2')] + rev(D(4)) + ['SER'], rev(D(4, 'Q')), {'kind': 'shift95'},
+                ['MODE', '~CLK1', '~CLK2'] + rev(D(4)) + ['SER'] + rev(D(4, 'Q')), -90, 30),
+        cm_chip('74245', 'Octal bus transceiver, 3-state',
+                ['~G'] + [{'name': f'A{i}', 'dir': 'inout'} for i in range(7, -1, -1)],
+                ['DIR'] + [{'name': f'B{i}', 'dir': 'inout'} for i in range(7, -1, -1)], {'kind': 'transceiver'},
+                rev(D(8, 'A')) + rev(D(8, 'B')) + ['~G', 'DIR'], -120, -120),
+        cm_chip('4585', '4-bit magnitude comparator (CMOS)',
+                rev(D(4, 'A')) + rev(D(4, 'B')) + ['I<', 'I=', 'I>'], ['A>B', 'A=B', 'A<B'], {'kind': 'comparator'},
+                rev(D(4, 'A')) + rev(D(4, 'B')) + ['I<', 'I=', 'I>', 'A<B', 'A=B', 'A>B'], -120, 0,
+                aliases=['4585', 'CD4585'], floatInputs=0),
+        cm_chip('RAM1K', 'Static RAM 1K x 8',
+                rev(D(10, 'A')), ['~CS', '~WE'] + [{'name': f'D{i}', 'dir': 'inout'} for i in range(7, -1, -1)],
+                {'kind': 'ram'}, rev(D(10, 'A')) + rev(D(8)) + ['~CS', '~WE'], -120, -120,
+                aliases=['1K RAM'], title='RAM 1Kx8',
+                description='Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high'),
+        cm_chip('PROM32', 'PROM 32 x 8', ['~CS', '', '', '', ''] + rev(D(5, 'A')), [''] + rev(D(8)),
+                {'kind': 'rom'}, ['~CS'] + rev(D(5, 'A')) + rev(D(8)), -120, -120,
+                aliases=['PROM32'], title='PROM 32x8', props={'data': ''},
+                description='Programmable ROM, 32 x 8; contents as hex bytes in the "data" property'),
+    ]
+    return chips
+
+
+def keypad():
+    rows = [-90, -30, 30, 90]
+    return {'id': 'keypad4x4', 'name': '4x4 Switch', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['4x4 Switch'],
+            'cmPins': ['R0', 'R1', 'R2', 'R3', 'C3', 'C0', 'C1', 'C2'], 'model': {'kind': 'keymatrix'},
+            'description': 'Key matrix: holding a key connects its row to its column',
+            'graphics': [R(-120, -120, 240, 240)] + [L(-150, y, -120, y) for y in rows] + [L(x, 120, x, 150) for x in rows],
+            'pins': [pin(f'R{i}', -150, y) for i, y in enumerate(rows)] + [pin(f'C{i}', x, 150) for i, x in enumerate(rows)]}
 
 
 def inputs():
@@ -339,9 +434,9 @@ if __name__ == '__main__':
     write('10_general.json', 'General', general())
     write('20_gates.json', 'Digital/Gates', generic_gates() + [quad3state()])
     write('30_flipflops.json', 'Digital/Flip-Flops', flipflops())
-    write('40_inputs.json', 'Digital/Inputs', inputs())
+    write('40_inputs.json', 'Digital/Inputs', inputs() + [keypad()])
     write('50_outputs.json', 'Digital/Outputs', outputs())
     write('60_ttl_gates.json', 'Digital/74xx Gates', package_gates(TTL_GATES, ttl=True))
-    write('70_ttl_msi.json', 'Digital/74xx MSI', msi())
+    write('70_ttl_msi.json', 'Digital/74xx MSI', msi() + cm_chips())
     write('80_cmos_gates.json', 'Digital/40xx CMOS', package_gates(CMOS_GATES, ttl=False))
     print('library written to', os.path.normpath(OUT))

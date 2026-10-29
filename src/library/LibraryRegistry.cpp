@@ -208,7 +208,10 @@ void gate(SymbolDef& s, const QString& op, int inputs, bool invert)
 }
 
 // Rectangular body with pins on its sides. Pin entries are names or objects
-// {"name", "dir", "number", "float", "clock"}; "~X" draws an inversion bubble.
+// {"name", "dir", "number", "float", "clock", "label", "bubble"}; "~X" draws an
+// inversion bubble and an empty name leaves a gap. "leftStart"/"rightStart"/
+// "topStart"/"bottomStart" place the first pin of a side explicitly (otherwise
+// the side is centred); the body then spans the side pins.
 void box(SymbolDef& s, const QJsonObject& spec)
 {
     const double pitch = spec.value(u"pitch").toDouble(40);   // keep even counts on the 10 grid: use 20 or 40
@@ -218,26 +221,45 @@ void box(SymbolDef& s, const QJsonObject& spec)
     const QJsonArray topPins = spec.value(u"top").toArray();
     const QJsonArray bottomPins = spec.value(u"bottom").toArray();
     const double w = spec.value(u"width").toDouble(80);
-    const double rows = std::max<qsizetype>({left.size(), right.size(), 1});
-    const double h = spec.value(u"height").toDouble(std::max(rows * pitch, 2 * pitch));
-    const double hw = w / 2, hh = h / 2;
+    const double hw = w / 2;
+    auto start = [&](const char* key, qsizetype count) {
+        const QJsonValue v = spec.value(QLatin1String(key));
+        return v.isDouble() ? v.toDouble() : -(count - 1) * pitch / 2;
+    };
+    const double leftStart = start("leftStart", left.size()), rightStart = start("rightStart", right.size());
+
+    double bodyTop, bodyBottom;
+    if (spec.contains(u"leftStart") || spec.contains(u"rightStart")) {
+        double lo = 1e9, hi = -1e9;
+        if (!left.isEmpty()) { lo = std::min(lo, leftStart); hi = std::max(hi, leftStart + (left.size() - 1) * pitch); }
+        if (!right.isEmpty()) { lo = std::min(lo, rightStart); hi = std::max(hi, rightStart + (right.size() - 1) * pitch); }
+        bodyTop = lo - 20;
+        bodyBottom = hi + 20;
+    } else {
+        const double rows = std::max<qsizetype>({left.size(), right.size(), 1});
+        const double h = spec.value(u"height").toDouble(std::max(rows * pitch, 2 * pitch));
+        bodyTop = -h / 2;
+        bodyBottom = h / 2;
+    }
 
     Primitive body;
     body.type = Primitive::Type::Rect;
-    body.v = {-hw, -hh, w, h};
+    body.v = {-hw, bodyTop, w, bodyBottom - bodyTop};
     s.graphics << body;
 
     if (const QString title = spec.value(u"title").toString(); !title.isEmpty())
-        s.graphics << textPrim(title, 0, spec.value(u"titleY").toDouble(0), 10, 0);
+        s.graphics << textPrim(title, 0, spec.value(u"titleY").toDouble((bodyTop + bodyBottom) / 2), 10, 0);
 
     enum Side { L, R, T, B };
-    auto place = [&](const QJsonArray& list, Side side) {
+    auto place = [&](const QJsonArray& list, Side side, double first) {
         const int count = list.size();
         for (int i = 0; i < count; ++i) {
             const QJsonValue e = list[i];
             const QJsonObject o = e.isObject() ? e.toObject() : QJsonObject{{u"name"_s, e.toString()}};
             const QString name = o.value(u"name").toString();
-            const double offset = -(count - 1) * pitch / 2 + i * pitch;
+            if (name.isEmpty())
+                continue;
+            const double offset = first + i * pitch;
             const bool activeLow = name.startsWith(u'~');
             const bool bubble = activeLow && o.value(u"bubble").toBool(true);
             const bool clock = o.value(u"clock").toBool(name.endsWith(u"CLK"));
@@ -247,8 +269,8 @@ void box(SymbolDef& s, const QJsonObject& spec)
             switch (side) {
             case L: ex = -hw; ey = offset; dx = -1; break;
             case R: ex = hw; ey = offset; dx = 1; break;
-            case T: ex = offset; ey = -hh; dy = -1; break;
-            case B: ex = offset; ey = hh; dy = 1; break;
+            case T: ex = offset; ey = bodyTop; dy = -1; break;
+            case B: ex = offset; ey = bodyBottom; dy = 1; break;
             }
             px = ex + dx * lead;
             py = ey + dy * lead;
@@ -286,10 +308,10 @@ void box(SymbolDef& s, const QJsonObject& spec)
             s.pins << p;
         }
     };
-    place(left, L);
-    place(right, R);
-    place(topPins, T);
-    place(bottomPins, B);
+    place(left, L, leftStart);
+    place(right, R, rightStart);
+    place(topPins, T, start("topStart", topPins.size()));
+    place(bottomPins, B, start("bottomStart", bottomPins.size()));
 }
 
 } // namespace symbolgen

@@ -1047,38 +1047,142 @@
    "floatInputs": 1
   },
   {
+   "id": "74126",
+   "name": "74126 Quad buffer",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "C3",
+     "A3",
+     "C2",
+     "A2",
+     "C1",
+     "A1",
+     "C0",
+     "A0"
+    ],
+    "right": [
+     "Y3",
+     "",
+     "Y2",
+     "",
+     "Y1",
+     "",
+     "Y0"
+    ],
+    "leftStart": -90,
+    "rightStart": -60,
+    "title": "74126"
+   },
+   "model": {
+    "kind": "tribus",
+    "groups": [
+     {
+      "enable": "C0",
+      "bits": [
+       0
+      ]
+     },
+     {
+      "enable": "C1",
+      "bits": [
+       1
+      ]
+     },
+     {
+      "enable": "C2",
+      "bits": [
+       2
+      ]
+     },
+     {
+      "enable": "C3",
+      "bits": [
+       3
+      ]
+     }
+    ]
+   },
+   "aliases": [
+    "74126",
+    "74LS126",
+    "74HC126",
+    "74F126"
+   ],
+   "cmPins": [
+    "C3",
+    "A3",
+    "C2",
+    "A2",
+    "C1",
+    "A1",
+    "C0",
+    "A0",
+    "Y3",
+    "Y2",
+    "Y1",
+    "Y0"
+   ],
+   "label": "74126",
+   "description": "Quad buffer, 3-state, active-high enables",
+   "floatInputs": 1
+  },
+  {
    "id": "74125",
    "name": "74125 Quad buffer",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A0",
-     "A1",
-     "A2",
+     "~C3",
      "A3",
-     "~G"
+     "~C2",
+     "A2",
+     "~C1",
+     "A1",
+     "~C0",
+     "A0"
     ],
     "right": [
-     "Y0",
-     "Y1",
+     "Y3",
+     "",
      "Y2",
-     "Y3"
+     "",
+     "Y1",
+     "",
+     "Y0"
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -60,
     "title": "74125"
    },
    "model": {
     "kind": "tribus",
     "groups": [
      {
-      "enable": "G",
+      "enable": "C0",
       "bits": [
-       0,
-       1,
-       2,
+       0
+      ]
+     },
+     {
+      "enable": "C1",
+      "bits": [
+       1
+      ]
+     },
+     {
+      "enable": "C2",
+      "bits": [
+       2
+      ]
+     },
+     {
+      "enable": "C3",
+      "bits": [
        3
       ]
      }
@@ -1087,11 +1191,1107 @@
    "aliases": [
     "74125",
     "74LS125",
-    "74HC125"
+    "74HC125",
+    "74F125"
+   ],
+   "cmPins": [
+    "~C3",
+    "A3",
+    "~C2",
+    "A2",
+    "~C1",
+    "A1",
+    "~C0",
+    "A0",
+    "Y3",
+    "Y2",
+    "Y1",
+    "Y0"
    ],
    "label": "74125",
-   "description": "Quad buffer, 3-state, active-low enables (shared here)",
+   "description": "Quad buffer, 3-state, active-low enables",
    "floatInputs": 1
+  },
+  {
+   "id": "74191",
+   "name": "74191 Synchronous up/down 4-bit binary counter",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~CTEN",
+     {
+      "name": "CLK",
+      "clock": true
+     },
+     "~LOAD",
+     {
+      "name": "D/~U",
+      "label": "D/U"
+     },
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     "~RCO",
+     "MAX/MIN",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -90,
+    "rightStart": -30,
+    "title": "74191"
+   },
+   "model": {
+    "kind": "updown1",
+    "modulus": 16
+   },
+   "aliases": [
+    "74191",
+    "74LS191",
+    "74HC191",
+    "74F191"
+   ],
+   "cmPins": [
+    "~CTEN",
+    "CLK",
+    "~LOAD",
+    "D/~U",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~RCO",
+    "MAX/MIN",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74191",
+   "description": "Synchronous up/down 4-bit binary counter",
+   "floatInputs": 1
+  },
+  {
+   "id": "74190",
+   "name": "74190 Synchronous up/down decade counter",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~CTEN",
+     {
+      "name": "CLK",
+      "clock": true
+     },
+     "~LOAD",
+     {
+      "name": "D/~U",
+      "label": "D/U"
+     },
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     "~RCO",
+     "MAX/MIN",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -90,
+    "rightStart": -30,
+    "title": "74190"
+   },
+   "model": {
+    "kind": "updown1",
+    "modulus": 10
+   },
+   "aliases": [
+    "74190",
+    "74LS190",
+    "74HC190",
+    "74F190"
+   ],
+   "cmPins": [
+    "~CTEN",
+    "CLK",
+    "~LOAD",
+    "D/~U",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~RCO",
+    "MAX/MIN",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74190",
+   "description": "Synchronous up/down decade counter",
+   "floatInputs": 1
+  },
+  {
+   "id": "74165",
+   "name": "74165 8-bit parallel-in serial-out shift register",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "D7",
+     "D6",
+     "D5",
+     "D4",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     {
+      "name": "SER",
+      "dir": "in"
+     },
+     {
+      "name": "~LD",
+      "label": "SH/LD",
+      "dir": "in"
+     },
+     {
+      "name": "INH",
+      "dir": "in"
+     },
+     {
+      "name": "CLK",
+      "clock": true,
+      "dir": "in"
+     },
+     "",
+     "",
+     "",
+     "~QH",
+     "QH"
+    ],
+    "leftStart": -90,
+    "rightStart": -120,
+    "title": "74165"
+   },
+   "model": {
+    "kind": "piso"
+   },
+   "aliases": [
+    "74165",
+    "74LS165",
+    "74HC165",
+    "74F165"
+   ],
+   "cmPins": [
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "SER",
+    "~LD",
+    "INH",
+    "CLK",
+    "~QH",
+    "QH"
+   ],
+   "label": "74165",
+   "description": "8-bit parallel-in serial-out shift register",
+   "floatInputs": 1
+  },
+  {
+   "id": "74174",
+   "name": "74174 Hex D flip-flop with clear",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     {
+      "name": "CLK",
+      "clock": true
+     },
+     "D5",
+     "D4",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     {
+      "name": "~CLR",
+      "dir": "in"
+     },
+     "Q5",
+     "Q4",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -90,
+    "rightStart": -90,
+    "title": "74174"
+   },
+   "model": {
+    "kind": "register"
+   },
+   "aliases": [
+    "74174",
+    "74LS174",
+    "74HC174",
+    "74F174"
+   ],
+   "cmPins": [
+    "CLK",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~CLR",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74174",
+   "description": "Hex D flip-flop with clear",
+   "floatInputs": 1
+  },
+  {
+   "id": "74293",
+   "name": "74293 4-bit binary ripple counter (÷2 and ÷8)",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "R01",
+     "R02",
+     {
+      "name": "~CKA",
+      "clock": true
+     },
+     {
+      "name": "~CKB",
+      "clock": true
+     }
+    ],
+    "right": [
+     "QD",
+     "QC",
+     "QB",
+     "QA"
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "title": "74293"
+   },
+   "model": {
+    "kind": "ripple",
+    "modB": 8
+   },
+   "aliases": [
+    "74293",
+    "74LS293",
+    "74HC293",
+    "74F293"
+   ],
+   "cmPins": [
+    "R01",
+    "R02",
+    "~CKA",
+    "~CKB",
+    "QD",
+    "QC",
+    "QB",
+    "QA"
+   ],
+   "label": "74293",
+   "description": "4-bit binary ripple counter (÷2 and ÷8)",
+   "floatInputs": 1
+  },
+  {
+   "id": "7492",
+   "name": "7492 Divide-by-12 ripple counter (÷2 and ÷6)",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "R01",
+     "R02",
+     {
+      "name": "~CKA",
+      "clock": true
+     },
+     {
+      "name": "~CKB",
+      "clock": true
+     }
+    ],
+    "right": [
+     "QD",
+     "QC",
+     "QB",
+     "QA"
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "title": "7492"
+   },
+   "model": {
+    "kind": "ripple",
+    "modB": 6,
+    "seq92": true
+   },
+   "aliases": [
+    "7492",
+    "74LS92",
+    "74HC92",
+    "74F92"
+   ],
+   "cmPins": [
+    "R01",
+    "R02",
+    "~CKA",
+    "~CKB",
+    "QD",
+    "QC",
+    "QB",
+    "QA"
+   ],
+   "label": "7492",
+   "description": "Divide-by-12 ripple counter (÷2 and ÷6)",
+   "floatInputs": 1
+  },
+  {
+   "id": "74155",
+   "name": "74155 Dual 2-to-4 line decoder/demultiplexer",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "1C",
+     "~1G",
+     "",
+     "B",
+     "A",
+     "~2G",
+     "~2C"
+    ],
+    "right": [
+     "~1Y3",
+     "~1Y2",
+     "~1Y1",
+     "~1Y0",
+     "~2Y3",
+     "~2Y2",
+     "~2Y1",
+     "~2Y0"
+    ],
+    "leftStart": -90,
+    "rightStart": -90,
+    "title": "74155"
+   },
+   "model": {
+    "kind": "decoder155"
+   },
+   "aliases": [
+    "74155",
+    "74LS155",
+    "74HC155",
+    "74F155"
+   ],
+   "cmPins": [
+    "1C",
+    "~1G",
+    "B",
+    "A",
+    "~2G",
+    "~2C",
+    "~1Y3",
+    "~1Y2",
+    "~1Y1",
+    "~1Y0",
+    "~2Y3",
+    "~2Y2",
+    "~2Y1",
+    "~2Y0"
+   ],
+   "label": "74155",
+   "description": "Dual 2-to-4 line decoder/demultiplexer",
+   "floatInputs": 1
+  },
+  {
+   "id": "74257",
+   "name": "74257 Quad 2-to-1 multiplexer",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "S",
+     "B0",
+     "A0",
+     "B1",
+     "A1",
+     "B2",
+     "A2",
+     "B3",
+     "A3",
+     "~OE"
+    ],
+    "right": [
+     "Y0",
+     "",
+     "Y1",
+     "",
+     "Y2",
+     "",
+     "Y3"
+    ],
+    "leftStart": -120,
+    "rightStart": -60,
+    "title": "74257"
+   },
+   "model": {
+    "kind": "mux2"
+   },
+   "aliases": [
+    "74257",
+    "74LS257",
+    "74HC257",
+    "74F257"
+   ],
+   "cmPins": [
+    "S",
+    "B0",
+    "A0",
+    "B1",
+    "A1",
+    "B2",
+    "A2",
+    "B3",
+    "A3",
+    "~OE",
+    "Y0",
+    "Y1",
+    "Y2",
+    "Y3"
+   ],
+   "label": "74257",
+   "description": "Quad 2-to-1 multiplexer, 3-state",
+   "floatInputs": 1
+  },
+  {
+   "id": "74280",
+   "name": "74280 9-bit odd/even parity generator/checker",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "I6",
+     "I5",
+     "I4",
+     "I3",
+     "I2",
+     "I1",
+     "I0"
+    ],
+    "right": [
+     {
+      "name": "I7",
+      "dir": "in"
+     },
+     {
+      "name": "I8",
+      "dir": "in"
+     },
+     {
+      "name": "EVEN",
+      "dir": "out"
+     },
+     {
+      "name": "ODD",
+      "dir": "out"
+     }
+    ],
+    "leftStart": -90,
+    "rightStart": -90,
+    "title": "74280"
+   },
+   "model": {
+    "kind": "parity"
+   },
+   "aliases": [
+    "74280",
+    "74LS280",
+    "74HC280",
+    "74F280"
+   ],
+   "cmPins": [
+    "I6",
+    "I5",
+    "I4",
+    "I3",
+    "I2",
+    "I1",
+    "I0",
+    "I7",
+    "I8",
+    "EVEN",
+    "ODD"
+   ],
+   "label": "74280",
+   "description": "9-bit odd/even parity generator/checker",
+   "floatInputs": 1
+  },
+  {
+   "id": "74251",
+   "name": "74251 8-to-1 multiplexer",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "D7",
+     "D6",
+     "D5",
+     "D4",
+     "D3",
+     "D2",
+     "D1",
+     "D0",
+     "C",
+     "B",
+     "A",
+     "~G"
+    ],
+    "right": [
+     "~W",
+     "Y"
+    ],
+    "leftStart": -150,
+    "rightStart": 0,
+    "title": "74251"
+   },
+   "model": {
+    "kind": "mux",
+    "tristate": true
+   },
+   "aliases": [
+    "74251",
+    "74LS251",
+    "74HC251",
+    "74F251"
+   ],
+   "cmPins": [
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "C",
+    "B",
+    "A",
+    "~G",
+    "~W",
+    "Y"
+   ],
+   "label": "74251",
+   "description": "8-to-1 multiplexer, 3-state",
+   "floatInputs": 1
+  },
+  {
+   "id": "74377",
+   "name": "74377 Octal D flip-flop with enable",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~G",
+     {
+      "name": "CLK",
+      "clock": true
+     },
+     "D7",
+     "D6",
+     "D5",
+     "D4",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     "Q7",
+     "Q6",
+     "Q5",
+     "Q4",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -120,
+    "rightStart": -60,
+    "title": "74377"
+   },
+   "model": {
+    "kind": "register"
+   },
+   "aliases": [
+    "74377",
+    "74LS377",
+    "74HC377",
+    "74F377"
+   ],
+   "cmPins": [
+    "~G",
+    "CLK",
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "Q7",
+    "Q6",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74377",
+   "description": "Octal D flip-flop with enable",
+   "floatInputs": 1
+  },
+  {
+   "id": "7495",
+   "name": "7495 4-bit parallel-access shift register",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "MODE",
+     {
+      "name": "~CLK1",
+      "clock": true
+     },
+     {
+      "name": "~CLK2",
+      "clock": true
+     },
+     "D3",
+     "D2",
+     "D1",
+     "D0",
+     "SER"
+    ],
+    "right": [
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -90,
+    "rightStart": 30,
+    "title": "7495"
+   },
+   "model": {
+    "kind": "shift95"
+   },
+   "aliases": [
+    "7495",
+    "74LS95",
+    "74HC95",
+    "74F95"
+   ],
+   "cmPins": [
+    "MODE",
+    "~CLK1",
+    "~CLK2",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "SER",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "7495",
+   "description": "4-bit parallel-access shift register",
+   "floatInputs": 1
+  },
+  {
+   "id": "74245",
+   "name": "74245 Octal bus transceiver",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~G",
+     {
+      "name": "A7",
+      "dir": "inout"
+     },
+     {
+      "name": "A6",
+      "dir": "inout"
+     },
+     {
+      "name": "A5",
+      "dir": "inout"
+     },
+     {
+      "name": "A4",
+      "dir": "inout"
+     },
+     {
+      "name": "A3",
+      "dir": "inout"
+     },
+     {
+      "name": "A2",
+      "dir": "inout"
+     },
+     {
+      "name": "A1",
+      "dir": "inout"
+     },
+     {
+      "name": "A0",
+      "dir": "inout"
+     }
+    ],
+    "right": [
+     {
+      "name": "DIR",
+      "dir": "in"
+     },
+     {
+      "name": "B7",
+      "dir": "inout"
+     },
+     {
+      "name": "B6",
+      "dir": "inout"
+     },
+     {
+      "name": "B5",
+      "dir": "inout"
+     },
+     {
+      "name": "B4",
+      "dir": "inout"
+     },
+     {
+      "name": "B3",
+      "dir": "inout"
+     },
+     {
+      "name": "B2",
+      "dir": "inout"
+     },
+     {
+      "name": "B1",
+      "dir": "inout"
+     },
+     {
+      "name": "B0",
+      "dir": "inout"
+     }
+    ],
+    "leftStart": -120,
+    "rightStart": -120,
+    "title": "74245"
+   },
+   "model": {
+    "kind": "transceiver"
+   },
+   "aliases": [
+    "74245",
+    "74LS245",
+    "74HC245",
+    "74F245"
+   ],
+   "cmPins": [
+    "A7",
+    "A6",
+    "A5",
+    "A4",
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "B7",
+    "B6",
+    "B5",
+    "B4",
+    "B3",
+    "B2",
+    "B1",
+    "B0",
+    "~G",
+    "DIR"
+   ],
+   "label": "74245",
+   "description": "Octal bus transceiver, 3-state",
+   "floatInputs": 1
+  },
+  {
+   "id": "4585",
+   "name": "4585 4-bit magnitude comparator (CMOS)",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "A3",
+     "A2",
+     "A1",
+     "A0",
+     "B3",
+     "B2",
+     "B1",
+     "B0",
+     "I<",
+     "I=",
+     "I>"
+    ],
+    "right": [
+     "A>B",
+     "A=B",
+     "A<B"
+    ],
+    "leftStart": -120,
+    "rightStart": 0,
+    "title": "4585"
+   },
+   "model": {
+    "kind": "comparator"
+   },
+   "aliases": [
+    "4585",
+    "CD4585"
+   ],
+   "cmPins": [
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "B3",
+    "B2",
+    "B1",
+    "B0",
+    "I<",
+    "I=",
+    "I>",
+    "A<B",
+    "A=B",
+    "A>B"
+   ],
+   "label": "4585",
+   "description": "4-bit magnitude comparator (CMOS)",
+   "floatInputs": 0
+  },
+  {
+   "id": "RAM1K",
+   "name": "RAM1K Static RAM 1K x 8",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "A9",
+     "A8",
+     "A7",
+     "A6",
+     "A5",
+     "A4",
+     "A3",
+     "A2",
+     "A1",
+     "A0"
+    ],
+    "right": [
+     {
+      "name": "~CS",
+      "dir": "in"
+     },
+     {
+      "name": "~WE",
+      "dir": "in"
+     },
+     {
+      "name": "D7",
+      "dir": "inout"
+     },
+     {
+      "name": "D6",
+      "dir": "inout"
+     },
+     {
+      "name": "D5",
+      "dir": "inout"
+     },
+     {
+      "name": "D4",
+      "dir": "inout"
+     },
+     {
+      "name": "D3",
+      "dir": "inout"
+     },
+     {
+      "name": "D2",
+      "dir": "inout"
+     },
+     {
+      "name": "D1",
+      "dir": "inout"
+     },
+     {
+      "name": "D0",
+      "dir": "inout"
+     }
+    ],
+    "leftStart": -120,
+    "rightStart": -120,
+    "title": "RAM 1Kx8"
+   },
+   "model": {
+    "kind": "ram"
+   },
+   "aliases": [
+    "1K RAM"
+   ],
+   "cmPins": [
+    "A9",
+    "A8",
+    "A7",
+    "A6",
+    "A5",
+    "A4",
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~CS",
+    "~WE"
+   ],
+   "label": "RAM1K",
+   "description": "Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high",
+   "floatInputs": 1
+  },
+  {
+   "id": "PROM32",
+   "name": "PROM32 PROM 32 x 8",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~CS",
+     "",
+     "",
+     "",
+     "",
+     "A4",
+     "A3",
+     "A2",
+     "A1",
+     "A0"
+    ],
+    "right": [
+     "",
+     "D7",
+     "D6",
+     "D5",
+     "D4",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "leftStart": -120,
+    "rightStart": -120,
+    "title": "PROM 32x8"
+   },
+   "model": {
+    "kind": "rom"
+   },
+   "aliases": [
+    "PROM32"
+   ],
+   "cmPins": [
+    "~CS",
+    "A4",
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0"
+   ],
+   "label": "PROM32",
+   "description": "Programmable ROM, 32 x 8; contents as hex bytes in the \"data\" property",
+   "floatInputs": 1,
+   "props": {
+    "data": ""
+   }
   }
  ]
 }

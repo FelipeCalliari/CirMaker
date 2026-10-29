@@ -342,7 +342,12 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             c.props.insert(QStringLiteral("state"), int(d.value.trimmed() == u"5V"));
         else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0)
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
-        else if (kind == u"key" && d.nets.size() > 11 && d.nets[11] > 0) {
+        else if (kind == u"rom" && !d.data.isEmpty()) {
+            QStringList bytes;
+            for (int b : d.data)
+                bytes << QStringLiteral("%1").arg(b, 2, 16, QChar(u'0')).toUpper();
+            c.props.insert(QStringLiteral("data"), bytes.join(u' '));
+        } else if (kind == u"key" && d.nets.size() > 11 && d.nets[11] > 0) {
             const int code = d.nets[11];
             const int bits = s->model.value(u"bits").toInt(4);
             c.props.insert(QStringLiteral("value"), bits == 4 ? QString(QChar(code)).toInt(nullptr, 16) : code & 0x7f);

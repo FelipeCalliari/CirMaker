@@ -60,5 +60,8 @@ o importador acrescenta rótulos de rede pequenos.
 
 Nenhum arquivo do CircuitMaker é distribuído: os símbolos são desenhos
 próprios, e apenas as posições dos pinos foram medidas nos circuitos `.ckt`.
-Dispositivos analógicos (resistores reais, transistores, fontes SPICE) ainda
-não têm equivalente e entram como marcadores `?`.
+Dispositivos analógicos (resistores reais, transistores, fontes SPICE) e o
+74LS181 ainda não têm equivalente e entram como marcadores `?`.
+
+A PROM32 importada traz o conteúdo gravado no `.ckt` na propriedade `data`
+(bytes em hexadecimal, editáveis em Propriedades); a 1K RAM começa zerada.

@@ -62,6 +62,11 @@ void TestCktImport::importsAllCircuits()
             unmapped[it.key()] += it.value();
         for (const Component& comp : c.components())
             labels += comp.symbolId == u"netlabel";
+
+        // every imported model must build and run
+        Bench bench(c);
+        QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(path + u": " + bench.sim.warnings().join(u"; ")));
+        bench.sim.step(500);
     }
     qInfo("%lld files, %d devices, %d wires, %d restoring net labels", qlonglong(files.size()), devices, wires, labels);
     QStringList missing;

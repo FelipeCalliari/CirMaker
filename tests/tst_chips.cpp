@@ -12,6 +12,14 @@ private slots:
     void bcdTo7seg7447();
     void syncCounter74161();
     void adder7483();
+    void upDown74191();
+    void piso74165();
+    void transceiver74245();
+    void ramWriteRead();
+    void promRead();
+    void decoder74155();
+    void parity74280();
+    void keypadConnects();
 };
 
 namespace {
@@ -24,6 +32,29 @@ ItemId source(Circuit& c, ItemId chip, const QString& pin, double x, double y)
     label(c, s, QStringLiteral("Y"), net);
     label(c, chip, pin, net);
     return s;
+}
+
+ItemId tieLow(Circuit& c, ItemId chip, const QString& pin)
+{
+    const ItemId g = place(c, QStringLiteral("ground"), {-2000, 2000});
+    label(c, g, QStringLiteral("GND"), QStringLiteral("LOW"));
+    label(c, chip, pin, QStringLiteral("LOW"));
+    return g;
+}
+
+QStringList names(const QString& prefix, int n)
+{
+    QStringList l;
+    for (int i = 0; i < n; ++i) l << prefix + QString::number(i);
+    return l;
+}
+
+void pulse(Bench& b, ItemId sw)
+{
+    b.sim.interact(sw, QStringLiteral("toggle"));
+    b.sim.step(4);
+    b.sim.interact(sw, QStringLiteral("toggle"));
+    b.sim.step(4);
 }
 
 int bus(const Bench& b, const Circuit& c, ItemId chip, const QStringList& pins)
@@ -150,6 +181,164 @@ void TestChips::adder7483()
     b.sim.step(3);
     QCOMPARE(bus(b, c, u, {QStringLiteral("S0"), QStringLiteral("S1"), QStringLiteral("S2"), QStringLiteral("S3")}), 1);
     QCOMPARE(b.value(c, u, QStringLiteral("CO")), Logic::L1);
+}
+
+void TestChips::upDown74191()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74191"), {0, 0}, QStringLiteral("U1"));
+    const ItemId clk = source(c, u, QStringLiteral("CLK"), -600, 0);
+    const ItemId dir = source(c, u, QStringLiteral("D/~U"), -600, 100);
+    tieLow(c, u, QStringLiteral("~CTEN"));
+    Bench b(c);
+    for (int i = 0; i < 3; ++i) pulse(b, clk);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 4)), 3);
+    b.sim.interact(dir, QStringLiteral("toggle"));               // count down
+    b.sim.step(3);
+    for (int i = 0; i < 5; ++i) pulse(b, clk);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 4)), 14);  // 3 - 5 mod 16
+}
+
+void TestChips::piso74165()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74165"), {0, 0}, QStringLiteral("U1"));
+    const ItemId clk = source(c, u, QStringLiteral("CLK"), -600, 0);
+    const ItemId ld = source(c, u, QStringLiteral("~LD"), -600, 100);
+    tieLow(c, u, QStringLiteral("INH"));
+    tieLow(c, u, QStringLiteral("SER"));
+    // parallel data 1000 0001: D0 and D7 high, others low
+    for (int i = 1; i < 7; ++i) tieLow(c, u, QStringLiteral("D%1").arg(i));
+    Bench b(c);                       // ~LD low (switch off): loading
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("QH")), Logic::L1);   // D7
+    b.sim.interact(ld, QStringLiteral("toggle"));                // shift mode
+    b.sim.step(3);
+    QString bits;
+    for (int i = 0; i < 8; ++i) {
+        bits += b.value(c, u, QStringLiteral("QH")) == Logic::L1 ? u'1' : u'0';
+        pulse(b, clk);
+    }
+    QCOMPARE(bits, QStringLiteral("10000001"));
+}
+
+void TestChips::transceiver74245()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74245"), {0, 0}, QStringLiteral("U1"));
+    const ItemId dir = source(c, u, QStringLiteral("DIR"), -600, 0);
+    const ItemId a0 = source(c, u, QStringLiteral("A0"), -600, 100);
+    const ItemId b1 = source(c, u, QStringLiteral("B1"), 600, 100);
+    tieLow(c, u, QStringLiteral("~G"));
+    Bench b(c);
+    b.sim.interact(b1, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("A1")), Logic::L1);   // DIR low: B -> A
+    b.sim.interact(dir, QStringLiteral("toggle"));
+    b.sim.interact(a0, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("B0")), Logic::L1);   // DIR high: A -> B
+}
+
+void TestChips::ramWriteRead()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("RAM1K"), {0, 0}, QStringLiteral("U1"));
+    const ItemId a0 = source(c, u, QStringLiteral("A0"), -600, 0);
+    for (int i = 1; i < 10; ++i) tieLow(c, u, QStringLiteral("A%1").arg(i));
+    tieLow(c, u, QStringLiteral("~CS"));
+    const ItemId we = source(c, u, QStringLiteral("~WE"), -600, 100);       // low: write
+    // a 74245 isolates the data source from the RAM while reading
+    const ItemId t = place(c, QStringLiteral("74245"), {800, 0}, QStringLiteral("U2"));
+    for (int i = 0; i < 8; ++i) label(c, t, QStringLiteral("A%1").arg(i), QStringLiteral("DB%1").arg(i)),
+                                label(c, u, QStringLiteral("D%1").arg(i), QStringLiteral("DB%1").arg(i));
+    const ItemId d5 = source(c, t, QStringLiteral("B5"), 1400, 0);
+    const ItemId g = source(c, t, QStringLiteral("~G"), 1400, 100);         // low: transceiver on
+    tieLow(c, t, QStringLiteral("DIR"));                                      // B -> A
+    Bench b(c);
+    b.sim.interact(d5, QStringLiteral("toggle"));
+    b.sim.step(5);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x20);
+    b.sim.interact(g, QStringLiteral("toggle"));      // isolate
+    b.sim.interact(we, QStringLiteral("toggle"));     // read
+    b.sim.step(5);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x20);
+    b.sim.interact(a0, QStringLiteral("toggle"));     // other address still 0
+    b.sim.step(5);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x00);
+}
+
+void TestChips::promRead()
+{
+    Circuit c;
+    Component prom;
+    prom.symbolId = QStringLiteral("PROM32");
+    prom.designator = QStringLiteral("U1");
+    prom.props = {{QStringLiteral("data"), QStringLiteral("11 22 33 44")}};
+    const ItemId u = c.addComponent(prom);
+    const ItemId a0 = source(c, u, QStringLiteral("A0"), -600, 0);
+    const ItemId a1 = source(c, u, QStringLiteral("A1"), -600, 100);
+    for (int i = 2; i < 5; ++i) tieLow(c, u, QStringLiteral("A%1").arg(i));
+    const ItemId cs = source(c, u, QStringLiteral("~CS"), -600, 200);
+    Bench b(c);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x11);
+    b.sim.interact(a0, QStringLiteral("toggle"));
+    b.sim.interact(a1, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x44);
+    b.sim.interact(cs, QStringLiteral("toggle"));     // deselect: outputs float
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("D0")), Logic::Z);
+}
+
+void TestChips::decoder74155()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74155"), {0, 0}, QStringLiteral("U1"));
+    const ItemId a = source(c, u, QStringLiteral("A"), -600, 0);
+    const ItemId c1 = source(c, u, QStringLiteral("1C"), -600, 100);
+    for (const char* n : {"B", "~1G", "~2G", "~2C"}) tieLow(c, u, QString::fromLatin1(n));
+    Bench b(c);
+    QCOMPARE(b.value(c, u, QStringLiteral("~2Y0")), Logic::L0);   // section 2 enabled, select 0
+    QCOMPARE(b.value(c, u, QStringLiteral("~1Y0")), Logic::L1);   // 1C low disables section 1
+    b.sim.interact(c1, QStringLiteral("toggle"));
+    b.sim.interact(a, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("~1Y1")), Logic::L0);
+    QCOMPARE(b.value(c, u, QStringLiteral("~2Y1")), Logic::L0);
+    QCOMPARE(b.value(c, u, QStringLiteral("~2Y0")), Logic::L1);
+}
+
+void TestChips::parity74280()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74280"), {0, 0}, QStringLiteral("U1"));
+    const ItemId i0 = source(c, u, QStringLiteral("I0"), -600, 0);
+    for (int i = 1; i < 9; ++i) tieLow(c, u, QStringLiteral("I%1").arg(i));
+    Bench b(c);
+    QCOMPARE(b.value(c, u, QStringLiteral("EVEN")), Logic::L1);
+    b.sim.interact(i0, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("ODD")), Logic::L1);
+    QCOMPARE(b.value(c, u, QStringLiteral("EVEN")), Logic::L0);
+}
+
+void TestChips::keypadConnects()
+{
+    Circuit c;
+    const ItemId k = place(c, QStringLiteral("keypad4x4"), {0, 0}, QStringLiteral("K1"));
+    const ItemId vcc = place(c, QStringLiteral("vcc"), {-600, -600});
+    label(c, vcc, QStringLiteral("VCC"), QStringLiteral("H"));
+    label(c, k, QStringLiteral("R1"), QStringLiteral("H"));
+    const ItemId lamp = place(c, QStringLiteral("logicdisplay"), {600, 600});
+    label(c, lamp, QStringLiteral("D0"), QStringLiteral("COL2"));
+    label(c, k, QStringLiteral("C2"), QStringLiteral("COL2"));
+    Bench b(c);
+    QCOMPARE(b.sim.componentState(lamp), 0);
+    b.sim.interact(k, QStringLiteral("key"), 1 * 4 + 2);
+    QCOMPARE(b.sim.componentState(lamp), 1);
+    b.sim.interact(k, QStringLiteral("release"));
+    QCOMPARE(b.sim.componentState(lamp), 0);
 }
 
 QTEST_GUILESS_MAIN(TestChips)
