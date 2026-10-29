@@ -7,6 +7,8 @@
 #include <QVariantMap>
 #include <QVector>
 
+#include <optional>
+
 namespace cm {
 
 using ItemId = quint64;
@@ -20,12 +22,17 @@ struct Component {
     int rotation = 0;       // quarter turns, clockwise
     bool mirrored = false;
     QVariantMap props;      // model parameters (pulser period, switch state, ...)
+    // Text display; unset = the symbol's default. Offsets are the text
+    // centre relative to pos, in scene orientation.
+    std::optional<bool> showDesignator, showLabel;
+    std::optional<QPointF> designatorAt, labelAt;
 };
 
 struct Wire {
     ItemId id = 0;
     QVector<QPointF> points;    // polyline vertices, at least two
     bool bus = false;           // drawn thick; does not conduct by itself
+    QString name;               // bus name, shown in a box at the bus end
 };
 
 struct TextNote {

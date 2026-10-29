@@ -21,11 +21,26 @@
    "description": "Click during simulation to toggle 0/1",
    "graphics": [
     {
-     "rect": [
-      -30,
+     "line": [
       -20,
-      50,
-      40
+      -11,
+      -4,
+      -11
+     ]
+    },
+    {
+     "circle": [
+      -10,
+      10,
+      4
+     ]
+    },
+    {
+     "line": [
+      -20,
+      10,
+      -14,
+      10
      ]
     },
     {
@@ -35,6 +50,24 @@
       40,
       0
      ]
+    },
+    {
+     "text": "1",
+     "at": [
+      -24,
+      -11
+     ],
+     "size": 7,
+     "align": "right"
+    },
+    {
+     "text": "0",
+     "at": [
+      -24,
+      10
+     ],
+     "size": 7,
+     "align": "right"
     }
    ],
    "pins": [

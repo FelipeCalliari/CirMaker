@@ -48,6 +48,17 @@ QPainterPath parsePath(const QString& d)
     return path;
 }
 
+QFont schematicFont(double pointSize, bool bold)
+{
+    QFont f(QStringLiteral("Courier New"));
+    f.setStyleHint(QFont::TypeWriter);
+    f.setFamilies({QStringLiteral("Courier New"), QStringLiteral("Liberation Mono"), QStringLiteral("DejaVu Sans Mono"),
+                   QStringLiteral("monospace")});
+    f.setPointSizeF(pointSize);
+    f.setBold(bold);
+    return f;
+}
+
 void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointSize, int align, const QColor& color,
                  bool overline, bool vcenter)
 {
@@ -57,8 +68,7 @@ void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointS
 
     p->save();
     p->setWorldTransform(QTransform::fromTranslate(at.x(), at.y()).scale(scale, scale));
-    QFont f = p->font();
-    f.setPointSizeF(pointSize);
+    QFont f = schematicFont(pointSize);
     f.setOverline(overline);
     p->setFont(f);
     p->setPen(color);
@@ -72,7 +82,7 @@ void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointS
 
 void paint(QPainter* p, const SymbolDef& s, const QColor& color)
 {
-    QPen pen(color, 1.2);
+    QPen pen(color, 1.6);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     p->setPen(pen);

@@ -64,7 +64,7 @@
    "id": "vcc",
    "name": "+V",
    "prefix": "V",
-   "label": "+5V",
+   "label": "5V",
    "aliases": [
     "+V",
     "+5V",
@@ -86,24 +86,31 @@
       0,
       30,
       0,
+      10
+     ]
+    },
+    {
+     "circle": [
+      0,
+      0,
+      10
+     ]
+    },
+    {
+     "line": [
+      -5,
+      0,
+      5,
       0
      ]
     },
     {
      "line": [
-      -15,
       0,
-      15,
-      0
+      -5,
+      0,
+      5
      ]
-    },
-    {
-     "text": "+5V",
-     "at": [
-      0,
-      -10
-     ],
-     "size": 8
     }
    ],
    "pins": [
@@ -166,16 +173,7 @@
    "netLabel": true,
    "hidden": true,
    "description": "Joins its pin to every other net label with the same text",
-   "graphics": [
-    {
-     "circle": [
-      0,
-      0,
-      2
-     ],
-     "fill": true
-    }
-   ],
+   "graphics": [],
    "pins": [
     {
      "name": "1",

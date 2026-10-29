@@ -13,7 +13,7 @@ struct Preferences {
 
     QString language;           // "" = system, "pt_BR", "en"
     bool gridVisible = true;
-    GridStyle gridStyle = GridStyle::Dots;
+    GridStyle gridStyle = GridStyle::Lines;
     int zoomPercent = 60;       // initial zoom and upper limit of "fit to window"
     int ticksPerFrame = 2;
 

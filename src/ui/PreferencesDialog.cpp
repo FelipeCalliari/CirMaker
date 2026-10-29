@@ -20,7 +20,8 @@ Preferences Preferences::load()
     Preferences p;
     p.language = s.value(QStringLiteral("prefs/language")).toString();
     p.gridVisible = s.value(QStringLiteral("prefs/gridVisible"), p.gridVisible).toBool();
-    p.gridStyle = s.value(QStringLiteral("prefs/gridStyle")).toString() == u"lines" ? GridStyle::Lines : GridStyle::Dots;
+    p.gridStyle = s.value(QStringLiteral("prefs/gridStyle"), QStringLiteral("lines")).toString() == u"dots" ? GridStyle::Dots
+                                                                                                          : GridStyle::Lines;
     p.zoomPercent = std::clamp(s.value(QStringLiteral("prefs/zoomPercent"), p.zoomPercent).toInt(), 20, 400);
     p.ticksPerFrame = std::clamp(s.value(QStringLiteral("prefs/ticksPerFrame"), p.ticksPerFrame).toInt(), 1, 1000);
     return p;

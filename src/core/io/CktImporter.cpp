@@ -39,7 +39,6 @@ namespace {
 
 // CircuitMaker's 3-unit grid maps onto our 10-unit grid.
 constexpr double kScale = 10.0 / 3.0;
-constexpr int kBusLine1 = -54, kBusLine2 = -51;
 
 struct ParseError : std::runtime_error {
     using std::runtime_error::runtime_error;
@@ -92,7 +91,8 @@ private:
 
 struct Device {
     QString name;
-    int type = 0, x = 0, y = 0, angle = 0;
+    int type = 0, x = 0, y = 0, angle = 0, flags = 0;
+    std::optional<QRectF> valueRect, designatorRect;
     QVector<int> nets;
     QString value, designator, prefix;
     QVector<int> data;
@@ -101,8 +101,34 @@ struct Device {
 struct CktWire {
     QVector<int> h;
     QVector<QPointF> points;
-    bool isBus() const { return h[0] == kBusLine1 || h[0] == kBusLine2; }
+    // a bus line is attached to no device and carries its name in h[0]
+    bool isBus() const { return h[7] == 0 && h[8] == 0 && h[0] < 0 && h[1] == 0; }
 };
+
+// Bus and bus-entry names are stored as negative numbers: the name read as
+// base-64 digits (0-9, A-Z, a-z) minus 64^length. -31 = "X", -2431 = "Q1",
+// -54 = "A".
+QString decodeName(int value)
+{
+    if (value >= 0) return {};
+    qint64 v = value;
+    int n = 1;
+    qint64 base = 64;
+    while (v + base < 0 && n < 5) { base *= 64; ++n; }
+    qint64 code = v + base;
+    QString out;
+    for (int i = 0; i < n; ++i) {
+        const int d = int(code % 64);
+        code /= 64;
+        QChar c;
+        if (d < 10) c = QChar(u'0' + d);
+        else if (d < 36) c = QChar(u'A' + d - 10);
+        else if (d < 62) c = QChar(u'a' + d - 36);
+        else c = u'_';
+        out.prepend(c);
+    }
+    return out;
+}
 
 struct CktText {
     QRectF rect;
@@ -139,11 +165,16 @@ Device readDevice(Reader& r, double version)
     }
     r.string();
     const QVector<int> flags = r.ints(4);
+    d.flags = flags[2];
     d.angle = flags[3];
+    auto rect = [&r] {
+        const QVector<int> v = r.ints(4);
+        return QRectF(QPointF(v[0], v[1]), QPointF(v[2], v[3]));
+    };
     d.value = r.string();
-    if (!d.value.isEmpty()) r.ints(4);
+    if (!d.value.isEmpty()) d.valueRect = rect();
     d.designator = r.string();
-    if (!d.designator.isEmpty()) r.ints(4);
+    if (!d.designator.isEmpty()) d.designatorRect = rect();
     if (!r.string().isEmpty()) r.ints(4);
     r.string();                                 // power pins, e.g. "DVCC=14;DGND=7;"
     r.string();                                 // SPICE template
@@ -280,6 +311,15 @@ double spiceValue(const QString& t)
     case 'k': return v * 1e3;
     default: return v;
     }
+}
+
+// Which side of a bus entry its label goes: towards the wire it ends.
+QString entrySide(QPointF at, QPointF from)
+{
+    const QPointF d = from - at;
+    if (std::abs(d.x()) >= std::abs(d.y()))
+        return d.x() < 0 ? QStringLiteral("left") : QStringLiteral("right");
+    return d.y() < 0 ? QStringLiteral("up") : QStringLiteral("down");
 }
 
 int ourPin(const SymbolDef& s, int cmPin)
@@ -428,14 +468,28 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             for (QPointF p : anchorDeltas[i]) { xs << p.x(); ys << p.y(); }
             placed[i].comp.pos = QPointF(std::round(median(xs) / 10) * 10, std::round(median(ys) / 10) * 10);
         }
-        placed[i].id = circuit.addComponent(placed[i].comp);
+        // text as CircuitMaker showed it: flag 0x200 designator, 0x100 label
+        const Device& d = file.devices[i];
+        Component& comp = placed[i].comp;
+        comp.showDesignator = (d.flags & 0x200) != 0;
+        comp.showLabel = (d.flags & 0x100) != 0;
+        const QPointF origin(d.x, d.y);
+        if (d.designatorRect)
+            comp.designatorAt = (origin + d.designatorRect->center()) * kScale - comp.pos;
+        if (d.valueRect)
+            comp.labelAt = (origin + d.valueRect->center()) * kScale - comp.pos;
+        placed[i].id = circuit.addComponent(comp);
     }
 
     // ---- wires: scale, then pin attached ends to our pins
     QHash<ItemId, int> wireNetOf;               // our wire -> CM net
+    struct Entry { QPointF at; QPointF from; QString name; };
+    QVector<Entry> entries;                     // wire ends on a bus, named as in CircuitMaker
     for (const CktWire& w : file.wires) {
         Wire out;
         out.bus = w.isBus();
+        if (out.bus)
+            out.name = decodeName(w.h[0]);
         for (QPointF p : w.points)
             out.points << scaled(p);
         if (!out.bus) {
@@ -458,6 +512,25 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         const ItemId id = circuit.addWire(out);
         if (!out.bus && w.h[2] > 0)
             wireNetOf.insert(id, w.h[2]);
+        if (!out.bus) {
+            if (w.h[0] < 0 && w.h[7] == 0)
+                entries << Entry{out.points.first(), out.points.value(1), decodeName(w.h[0])};
+            if (w.h[1] < 0 && w.h[8] == 0)
+                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), decodeName(w.h[1])};
+        }
+    }
+    QSet<std::pair<qint64, qint64>> entryAt;
+    for (const Entry& e : std::as_const(entries)) {
+        if (!netLabel || e.name.isEmpty()) continue;
+        const std::pair<qint64, qint64> key{qRound64(e.at.x()), qRound64(e.at.y())};
+        if (entryAt.contains(key)) continue;
+        entryAt.insert(key);
+        Component label;
+        label.symbolId = netLabel->id;
+        label.pos = e.at;
+        label.label = e.name;
+        label.props.insert(QStringLiteral("side"), entrySide(e.at, e.from));
+        circuit.addComponent(label);
     }
 
     for (const CktText& t : file.texts) {
@@ -495,33 +568,98 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
     for (const QSet<int>& s : std::as_const(cmNetsOfOurNet))
         shorts += s.size() > 1;
 
-    int restored = 0;
+    // Connections the redrawn symbols lost become real wires: an L from the
+    // stray group to the nearest point of the net's largest group, as long as
+    // it touches nothing of another net. Only when no clean path exists does
+    // a visible net label pair join them.
+    const Netlist nl2 = NetlistBuilder::build(circuit, library);
+    struct Spot { QPointF at; int net; };
+    QVector<Spot> spots;                        // every pin and wire vertex, with its net
+    for (const Component& c : circuit.components()) {
+        const SymbolDef* sym = library.find(c.symbolId);
+        if (!sym) continue;
+        for (int i = 0; i < sym->pins.size(); ++i)
+            spots << Spot{library.pinScenePos(c, i), nl2.netOf(c.id, i)};
+    }
+    for (const Wire& w : circuit.wires())
+        if (!w.bus)
+            for (QPointF p : w.points)
+                spots << Spot{p, nl2.wireNet.value(w.id, -1)};
+    auto clean = [&](const QVector<QPointF>& path, int netA, int netB) {
+        for (int i = 0; i + 1 < path.size(); ++i)
+            for (const Spot& sp : std::as_const(spots))
+                if (sp.net != netA && sp.net != netB && WireGeometry::onSegment(sp.at, path[i], path[i + 1]))
+                    return false;
+        for (const Wire& w : circuit.wires())       // ends must not land on foreign wires
+            if (!w.bus && nl2.wireNet.value(w.id, -1) != netA && nl2.wireNet.value(w.id, -1) != netB)
+                for (QPointF end : {path.first(), path.last()})
+                    if (WireGeometry::onPolyline(end, w.points))
+                        return false;
+        return true;
+    };
+
+    int drawn = 0, labelled = 0;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it) {
-        QHash<int, Member> groups;              // our net -> anchor (prefer a pin)
-        for (const Member& m : it.value()) {
-            if (m.ourNet < 0) continue;
-            auto g = groups.find(m.ourNet);
-            if (g == groups.end()) groups.insert(m.ourNet, m);
-            else if (m.pin && !g->pin) *g = m;
+        QHash<int, QVector<QPointF>> groups;   // our net -> member points
+        for (const Spot& sp : std::as_const(spots)) {
+            // a spot belongs to this CM net if its net holds one of the members
+            bool member = false;
+            for (const Member& m : it.value())
+                if (WireGeometry::near(m.at, sp.at)) { member = true; break; }
+            if (member && sp.net >= 0)
+                groups[sp.net] << sp.at;
         }
-        if (groups.size() < 2 || !netLabel) continue;
-        const QString name = netName.value(it.key(), QStringLiteral("N%1").arg(it.key()));
-        for (const Member& m : std::as_const(groups)) {
-            Component label;
-            label.symbolId = netLabel->id;
-            label.pos = m.at;
-            label.label = name;
-            circuit.addComponent(label);
-            ++restored;
+        // extend each group with every spot of the same net
+        for (auto g = groups.begin(); g != groups.end(); ++g)
+            for (const Spot& sp : std::as_const(spots))
+                if (sp.net == g.key())
+                    g.value() << sp.at;
+        if (groups.size() < 2) continue;
+        int main = -1;
+        for (auto g = groups.cbegin(); g != groups.cend(); ++g)
+            if (main < 0 || g.value().size() > groups.value(main).size()) main = g.key();
+        for (auto g = groups.cbegin(); g != groups.cend(); ++g) {
+            if (g.key() == main) continue;
+            QPointF a, b;
+            double best = 1e18;
+            for (QPointF pa : g.value())
+                for (QPointF pb : groups.value(main)) {
+                    const double d = std::abs(pa.x() - pb.x()) + std::abs(pa.y() - pb.y());
+                    if (d < best) { best = d; a = pa; b = pb; }
+                }
+            bool done = false;
+            for (const QVector<QPointF>& path : {QVector<QPointF>{a, QPointF(b.x(), a.y()), b},
+                                                 QVector<QPointF>{a, QPointF(a.x(), b.y()), b}}) {
+                if (!clean(path, g.key(), main)) continue;
+                Wire w;
+                w.points = WireGeometry::simplify(path);
+                if (w.points.size() < 2) w.points = {a, b};
+                circuit.addWire(w);
+                ++drawn;
+                done = true;
+                break;
+            }
+            if (!done && netLabel) {
+                const QString name = netName.value(it.key(), QStringLiteral("N%1").arg(it.key()));
+                for (QPointF at : {a, b}) {
+                    Component label;
+                    label.symbolId = netLabel->id;
+                    label.pos = at;
+                    label.label = name;
+                    circuit.addComponent(label);
+                }
+                ++labelled;
+            }
         }
     }
 
     rep.components = int(file.devices.size());
     rep.wires = int(file.wires.size());
     rep.texts = int(file.texts.size());
-    if (restored)
-        rep.warnings << QStringLiteral("%1 net labels added where the drawing alone did not make the original connection")
-                            .arg(restored);
+    if (drawn)
+        rep.warnings << QStringLiteral("%1 wires added where the redrawn symbols no longer met the original wiring").arg(drawn);
+    if (labelled)
+        rep.warnings << QStringLiteral("%1 connections made with net labels because no clean wire path existed").arg(labelled);
     if (shorts)
         rep.warnings << QStringLiteral("%1 places where redrawn symbols touch wires of another net; check them").arg(shorts);
     return true;

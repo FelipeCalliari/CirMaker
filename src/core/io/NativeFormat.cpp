@@ -62,6 +62,10 @@ QByteArray serialize(const Circuit& circuit)
         if (c.rotation) o.insert(u"rot", c.rotation);
         if (c.mirrored) o.insert(u"mirror", true);
         if (!c.props.isEmpty()) o.insert(u"props", QJsonObject::fromVariantMap(c.props));
+        if (c.showDesignator) o.insert(u"showRef", *c.showDesignator);
+        if (c.showLabel) o.insert(u"showLabel", *c.showLabel);
+        if (c.designatorAt) o.insert(u"refAt", point(*c.designatorAt));
+        if (c.labelAt) o.insert(u"labelAt", point(*c.labelAt));
         comps.append(o);
     }
     for (const Wire& w : circuit.wires()) {
@@ -70,6 +74,7 @@ QByteArray serialize(const Circuit& circuit)
             pts.append(point(p));
         QJsonObject o{{u"points"_s, pts}};
         if (w.bus) o.insert(u"bus", true);
+        if (!w.name.isEmpty()) o.insert(u"name", w.name);
         wires.append(o);
     }
     for (const TextNote& t : circuit.texts())
@@ -132,6 +137,10 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
         c.rotation = o.value(u"rot").toInt() & 3;
         c.mirrored = o.value(u"mirror").toBool();
         c.props = o.value(u"props").toObject().toVariantMap();
+        if (o.contains(u"showRef")) c.showDesignator = o.value(u"showRef").toBool();
+        if (o.contains(u"showLabel")) c.showLabel = o.value(u"showLabel").toBool();
+        if (o.contains(u"refAt")) c.designatorAt = point(o.value(u"refAt"));
+        if (o.contains(u"labelAt")) c.labelAt = point(o.value(u"labelAt"));
         circuit.addComponent(c);
     }
     for (const QJsonValue& v : root.value(u"wires").toArray()) {
@@ -139,6 +148,7 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
         for (const QJsonValue& p : v.toObject().value(u"points").toArray())
             w.points << point(p);
         w.bus = v.toObject().value(u"bus").toBool();
+        w.name = v.toObject().value(u"name").toString();
         if (w.points.size() >= 2)
             circuit.addWire(w);
     }

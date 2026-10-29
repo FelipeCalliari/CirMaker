@@ -216,6 +216,7 @@ void box(SymbolDef& s, const QJsonObject& spec)
 {
     const double pitch = spec.value(u"pitch").toDouble(40);   // keep even counts on the 10 grid: use 20 or 40
     const double lead = spec.value(u"lead").toDouble(30);
+    const double labelSize = spec.value(u"labelSize").toDouble(10);
     const QJsonArray left = spec.value(u"left").toArray();
     const QJsonArray right = spec.value(u"right").toArray();
     const QJsonArray topPins = spec.value(u"top").toArray();
@@ -294,10 +295,10 @@ void box(SymbolDef& s, const QJsonObject& spec)
                 const double inset = clock ? 13 : 5;
                 Primitive t;
                 switch (side) {
-                case L: t = textPrim(shown, ex + inset, ey, 8, -1); break;
-                case R: t = textPrim(shown, ex - inset, ey, 8, 1); break;
-                case T: t = textPrim(shown, ex, ey + 10, 8, 0); break;
-                case B: t = textPrim(shown, ex, ey - 10, 8, 0); break;
+                case L: t = textPrim(shown, ex + inset, ey, labelSize, -1); break;
+                case R: t = textPrim(shown, ex - inset, ey, labelSize, 1); break;
+                case T: t = textPrim(shown, ex, ey + labelSize + 1, labelSize, 0); break;
+                case B: t = textPrim(shown, ex, ey - labelSize - 1, labelSize, 0); break;
                 }
                 t.overline = activeLow && !bubble;
                 s.graphics << t;

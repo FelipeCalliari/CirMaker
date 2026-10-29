@@ -16,7 +16,7 @@ namespace {
 
 constexpr int kIdle = INT_MIN;     // not simulating: displays stay blank
 
-const QColor kInk(0x10, 0x10, 0x30);
+const QColor kInk(0x00, 0x00, 0x00);
 const QColor kSelected(0x00, 0x60, 0xff);
 const QColor kHigh(0xe0, 0x10, 0x10);
 const QColor kLow(0x10, 0x50, 0xc0);
@@ -56,18 +56,20 @@ void ComponentItem::sync(const Component& c)
 void ComponentItem::updateLabelGeometry()
 {
     const QString kind = m_symbol->model.value(u"kind").toString();
-    m_showDesignator = !m_symbol->netLabel && kind != u"const" && !m_c.designator.isEmpty();
-    m_showLabel = !m_c.label.isEmpty() && kind != u"const";
+    // CircuitMaker shows designators and hides chip part numbers by default
+    m_showDesignator = m_c.showDesignator.value_or(!m_symbol->netLabel && kind != u"const") && !m_c.designator.isEmpty();
+    m_showLabel = m_c.showLabel.value_or(m_symbol->netLabel || m_symbol->prefix != u"U") && !m_c.label.isEmpty()
+               && (m_symbol->netLabel || kind != u"const" || m_c.showLabel.value_or(false));
 
     // offsets are in scene orientation, relative to pos()
     const QRectF r = transform().mapRect(m_symbol->bounds);
     if (m_symbol->netLabel) {
         m_labelAt = {r.right() + 2, r.center().y()};
     } else {
-        m_designatorAt = {r.right() + 3, r.top() + 4};
-        m_labelAt = {r.right() + 3, r.top() + (m_showDesignator ? 21 : 4)};
+        m_designatorAt = {r.right() + 3, r.top() + 6};
+        m_labelAt = {r.right() + 3, r.top() + (m_showDesignator ? 26 : 6)};
     }
-    const QRectF labels(r.right(), r.top() - 8, 160, std::max(r.height(), 40.0) + 8);
+    const QRectF labels(r.right() - 220, r.top() - 30, 440, std::max(r.height(), 50.0) + 60);
     m_bounds = m_symbol->bounds.united(transform().inverted().mapRect(labels)).adjusted(-3, -3, 3, 3);
 }
 
@@ -122,10 +124,27 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     SymbolPainter::paint(p, *m_symbol, ink);
 
     const QTransform toLocal = transform().inverted();
-    if (m_showDesignator)
-        SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), m_c.designator, 11, -1, ink);
+    if (m_showDesignator) {
+        if (m_c.designatorAt)
+            SymbolPainter::uprightText(p, toLocal.map(*m_c.designatorAt), m_c.designator, 14, 0, ink);
+        else
+            SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), m_c.designator, 14, -1, ink);
+    }
     if (m_showLabel)
-        SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, 11, -1, m_symbol->netLabel ? kLow : ink);
+    {
+        if (m_symbol->id == u"netlabel") {
+            // bus entry / net label: name above the wire, on the wire's side
+            const QString side = m_c.props.value(QStringLiteral("side"), QStringLiteral("right")).toString();
+            const int align = side == u"left" ? 1 : -1;
+            const QPointF at = side == u"left" ? QPointF(-4, -10) : side == u"right" ? QPointF(4, -10)
+                             : side == u"up" ? QPointF(5, -14) : QPointF(5, 14);
+            SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, 16, align, ink);
+        } else if (m_c.labelAt) {
+            SymbolPainter::uprightText(p, toLocal.map(*m_c.labelAt), m_c.label, 14, 0, ink);
+        } else {
+            SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, 14, -1, ink);
+        }
+    }
 }
 
 void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor& ink)
@@ -173,7 +192,30 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setBrush(lit ? on[i] : on[i].lighter(190));
             p->drawEllipse(QPointF(cs[i]->v[0], cs[i]->v[1]), cs[i]->v[2], cs[i]->v[2]);
         }
-    } else if (d == u"hex" || d == u"ascii") {
+    } else if (d == u"hex") {
+        // red seven-segment digit; segments a..g = bits 0..6
+        static constexpr int glyph[16] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07,
+                                          0x7f, 0x6f, 0x77, 0x7c, 0x39, 0x5e, 0x79, 0x71};
+        const QRectF screen = body.adjusted(10, 10, -10, -10);
+        p->setBrush(Qt::white);
+        p->drawRect(screen);
+        const int lit = state == kIdle || state < 0 ? 0 : glyph[state & 15];
+        const double w = screen.width() * 0.32, h = screen.height() * 0.38;
+        const QPointF c = screen.center();
+        const QLineF seg[7] = {
+            {c + QPointF(-w, -2 * h), c + QPointF(w, -2 * h) * 1}, {c + QPointF(w, -2 * h), c + QPointF(w, 0)},
+            {c + QPointF(w, 0), c + QPointF(w, 2 * h)},           {c + QPointF(-w, 2 * h), c + QPointF(w, 2 * h)},
+            {c + QPointF(-w, 0), c + QPointF(-w, 2 * h)},         {c + QPointF(-w, -2 * h), c + QPointF(-w, 0)},
+            {c + QPointF(-w, 0), c + QPointF(w, 0)},
+        };
+        const double scaleH = h / 2;
+        Q_UNUSED(scaleH);
+        for (int i = 0; i < 7; ++i) {
+            const bool on = lit >> i & 1;
+            p->setPen(QPen(on ? QColor(0xff, 0x10, 0x10) : QColor(0xf0, 0xb0, 0xb0), on ? 6 : 2, Qt::SolidLine, Qt::RoundCap));
+            p->drawLine(QLineF(seg[i].p1() * 1, seg[i].p2()));
+        }
+    } else if (d == u"ascii") {
         const QRectF screen = body.adjusted(8, 8, -8, -8);
         p->setBrush(QColor(0x20, 0x20, 0x20));
         p->drawRect(screen);
@@ -203,13 +245,16 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         p->setBrush(lit >> 7 & 1 ? kHigh : QColor(0xe8, 0xe0, 0xe0));
         p->drawEllipse(c + QPointF(w + 12, h), 5, 5);
     } else if (d == u"logicswitch") {
+        // lever from the output pivot to the 1 (upper) or 0 (lower) contact
         const bool on = state == 1;
-        const QRectF half(on ? body.center().x() : body.left(), body.top(), body.width() / 2, body.height());
-        const QRectF other(on ? body.left() : body.center().x(), body.top(), body.width() / 2, body.height());
-        p->setBrush(on ? kHigh : kLow);
-        p->drawRect(half.adjusted(4, 4, -4, -4));
-        SymbolPainter::uprightText(p, other.center(), on ? QStringLiteral("1") : QStringLiteral("0"), 16, 0,
-                                   on ? kHigh : kLow);
+        p->setPen(QPen(on ? kHigh : ink, 2, Qt::SolidLine, Qt::RoundCap));
+        p->drawLine(QPointF(20, 0), on ? QPointF(-4, -11) : QPointF(-6, 9));
+        p->setPen(Qt::NoPen);
+        p->setBrush(on ? kHigh : ink);
+        p->drawEllipse(QPointF(20, 0), 3, 3);
+        if (live)
+            SymbolPainter::uprightText(p, QPointF(-14, on ? -22 : 22), on ? QStringLiteral("1") : QStringLiteral("0"), 9, 0,
+                                       on ? kHigh : kLow);
     } else if (d == u"pulser") {
         if (live) {
             p->setBrush(state == 1 ? kHigh : kLow);

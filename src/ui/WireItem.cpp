@@ -1,6 +1,9 @@
 #include "ui/WireItem.h"
 
 #include "ui/SchematicScene.h"
+#include "ui/SymbolPainter.h"
+
+#include <QFontMetricsF>
 
 #include <QPainter>
 #include <QPainterPathStroker>
@@ -59,15 +62,21 @@ void WireItem::rebuild()
     update();
 }
 
-QRectF WireItem::boundingRect() const { return m_shape.boundingRect().adjusted(-2, -2, 2, 2); }
+QRectF WireItem::boundingRect() const
+{
+    const double margin = m_w.bus && !m_w.name.isEmpty() ? 40 : 3;
+    return m_shape.boundingRect().adjusted(-margin, -margin, margin, margin);
+}
 
 QPainterPath WireItem::shape() const { return m_shape; }
 
 void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 {
     const SchematicScene* sc = qobject_cast<SchematicScene*>(scene());
-    QColor color = sc ? sc->wireColor(m_w.id) : QColor(0x10, 0x10, 0x30);
-    QPen pen(color, m_w.bus ? 4.0 : 1.4);
+    QColor color = sc && sc->simulating() ? sc->wireColor(m_w.id) : QColor(0x00, 0x30, 0xff);
+    if (m_w.bus)
+        color = Qt::black;
+    QPen pen(color, m_w.bus ? 5.0 : 1.6);
     if (isSelected()) {
         pen.setColor(QColor(0x00, 0x60, 0xff));
         pen.setWidthF(2.2);
@@ -79,6 +88,26 @@ void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     p->setRenderHint(QPainter::Antialiasing);
     p->setPen(pen);
     p->drawPath(m_path);
+
+    // bus name in a box past the bus's top (or left) end
+    if (m_w.bus && !m_w.name.isEmpty() && m_shown.size() >= 2) {
+        QPointF end = m_shown.first(), next = m_shown[1];
+        if (m_shown.last().y() < end.y() || (qFuzzyCompare(m_shown.last().y(), end.y()) && m_shown.last().x() < end.x())) {
+            end = m_shown.last();
+            next = m_shown[m_shown.size() - 2];
+        }
+        const QPointF dir = QLineF(next, end).unitVector().p2() - next;
+        QFont f = SymbolPainter::schematicFont(14);
+        p->setFont(f);
+        const QFontMetricsF fm(f);
+        const QSizeF size(fm.horizontalAdvance(m_w.name) + 10, fm.height() + 4);
+        const QPointF centre = end + dir * (size.height() / 2 + 2);
+        const QRectF box(centre - QPointF(size.width() / 2, size.height() / 2), size);
+        p->setPen(QPen(Qt::black, 1.4));
+        p->setBrush(Qt::white);
+        p->drawRect(box);
+        p->drawText(box, Qt::AlignCenter, m_w.name);
+    }
 }
 
 QVariant WireItem::itemChange(GraphicsItemChange change, const QVariant& value)

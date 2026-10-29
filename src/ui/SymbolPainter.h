@@ -22,6 +22,9 @@ void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointS
 
 QPainterPath parsePath(const QString& d);
 
+// Monospaced face used for schematic text, like CircuitMaker's Courier New.
+QFont schematicFont(double pointSize, bool bold = false);
+
 QPixmap preview(const SymbolDef& s, QSize size, const QColor& color, const QColor& background);
 
 } // namespace SymbolPainter

@@ -113,6 +113,22 @@ def package_gates(parts, ttl):
 
 
 def flipflops():
+    ff = flipflop_symbols()
+    # CircuitMaker proportions: data and clock 60 apart (J/CLK/K 30 apart),
+    # Q and Q-bar 60 apart, body 100 wide
+    for s in ff:
+        shape = s['shape']
+        if len(shape['left']) == 2:
+            shape['left'] = [shape['left'][0], '', shape['left'][1]]
+        shape['right'] = [shape['right'][0], '', shape['right'][1]]
+        shape.update(pitch=30, width=100, leftStart=-30, rightStart=-30, labelSize=14)
+        # CircuitMaker labels the clock input "CP"
+        shape['left'] = [dict(e, label='CP') if isinstance(e, dict) and e.get('name', '').endswith('CLK') else e
+                         for e in shape['left']]
+    return ff
+
+
+def flipflop_symbols():
     Qn = '~Q'
     ff = []
     ff.append(box('dff', 'D Flip-Flop', ['D', clk('CLK')], ['Q', Qn], model={'kind': 'dff'},
@@ -444,7 +460,9 @@ def inputs():
         {'id': 'logicswitch', 'name': 'Logic Switch', 'prefix': 'S', 'display': 'logicswitch',
          'aliases': ['Logic Switch'], 'cmPins': ['Y'], 'model': {'kind': 'logicswitch'}, 'props': {'state': 0},
          'description': 'Click during simulation to toggle 0/1',
-         'graphics': [R(-30, -20, 50, 40), L(20, 0, 40, 0)], 'pins': [pin('Y', 40, 0, 'out')]},
+         'graphics': [L(-20, -11, -4, -11), C(-10, 10, 4), L(-20, 10, -14, 10), L(20, 0, 40, 0),
+                      T('1', -24, -11, 7, 'right'), T('0', -24, 10, 7, 'right')],
+         'pins': [pin('Y', 40, 0, 'out')]},
         {'id': 'pulser', 'name': 'Pulser', 'prefix': 'P', 'display': 'pulser', 'aliases': ['Pulser'],
          'cmPins': ['', '', 'Q', '~Q'], 'model': {'kind': 'pulser'}, 'props': {'high': 10, 'low': 10},
          'description': 'Clock source; high and low durations in ticks',
@@ -549,16 +567,16 @@ def general():
          'model': {'kind': 'const', 'value': 0},
          'graphics': [L(0, -20, 0, 0), L(-20, 0, 20, 0), L(-13, 6, 13, 6), L(-6, 12, 6, 12)],
          'pins': [pin('GND', 0, -20, 'out')]},
-        {'id': 'vcc', 'name': '+V', 'prefix': 'V', 'label': '+5V', 'aliases': ['+V', '+5V', 'Vcc'], 'cmPins': ['VCC'],
+        {'id': 'vcc', 'name': '+V', 'prefix': 'V', 'label': '5V', 'aliases': ['+V', '+5V', 'Vcc'], 'cmPins': ['VCC'],
          'model': {'kind': 'const', 'value': 1}, 'spice': sp('V{name} {VCC} 0 DC {value}'),
-         'graphics': [L(0, 30, 0, 0), L(-15, 0, 15, 0), T('+5V', 0, -10, 8)], 'pins': [pin('VCC', 0, 30, 'out')]},
+         'graphics': [L(0, 30, 0, 10), C(0, 0, 10), L(-5, 0, 5, 0), L(0, -5, 0, 5)], 'pins': [pin('VCC', 0, 30, 'out')]},
         {'id': 'terminal', 'name': 'Terminal', 'prefix': 'T', 'netLabel': True,
          'aliases': ['Terminal', 'Input', 'Output'], 'cmPins': ['1'],
          'description': 'Connection point; terminals with the same label are connected',
          'graphics': [L(0, 30, 0, 8), C(0, 0, 8)], 'pins': [pin('1', 0, 30)]},
         {'id': 'netlabel', 'name': 'Net label', 'prefix': '', 'netLabel': True, 'hidden': True,
          'description': 'Joins its pin to every other net label with the same text',
-         'graphics': [C(0, 0, 2, fill=True)], 'pins': [pin('1', 0, 0)]},
+         'graphics': [], 'pins': [pin('1', 0, 0)]},
         {'id': 'unknown', 'name': 'Unknown device', 'prefix': 'X', 'hidden': True,
          'description': 'Placeholder for an imported device that has no equivalent in the library',
          'graphics': [R(-40, -30, 80, 60), T('?', 0, 0, 24)], 'pins': []},

@@ -1227,26 +1227,24 @@ void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
     p->fillRect(rect, Qt::white);
     if (!m_gridVisible || m_exporting)
         return;
-    // minor step on the snap grid while it is at least 6 px apart; every
-    // fifth line is a major one
+    // CircuitMaker-style grid: squares three snap steps wide, coarser when
+    // zoomed out so lines stay at least 8 px apart
     const double scale = p->worldTransform().m11();
-    double step = kGrid;
+    double step = kGrid * 3;
     while (step * scale < 8)
-        step *= 5;
+        step *= 2;
     const double major = step * 5;
     const double x0 = std::floor(rect.left() / step) * step, y0 = std::floor(rect.top() / step) * step;
     auto isMajor = [&](double v) { return std::abs(std::remainder(v, major)) < step / 2; };
 
     if (m_gridLines) {
-        QVector<QLineF> minorLines, majorLines;
+        QVector<QLineF> lines;
         for (double x = x0; x < rect.right(); x += step)
-            (isMajor(x) ? majorLines : minorLines) << QLineF(x, rect.top(), x, rect.bottom());
+            lines << QLineF(x, rect.top(), x, rect.bottom());
         for (double y = y0; y < rect.bottom(); y += step)
-            (isMajor(y) ? majorLines : minorLines) << QLineF(rect.left(), y, rect.right(), y);
-        p->setPen(QPen(QColor(0xe6, 0xe8, 0xf0), 0));
-        p->drawLines(minorLines);
-        p->setPen(QPen(QColor(0xc8, 0xcc, 0xdc), 0));
-        p->drawLines(majorLines);
+            lines << QLineF(rect.left(), y, rect.right(), y);
+        p->setPen(QPen(QColor(0xd8, 0xd8, 0xd8), 0));
+        p->drawLines(lines);
         return;
     }
     QVector<QPointF> minorDots, majorDots;
@@ -1269,9 +1267,9 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
 {
     p->setRenderHint(QPainter::Antialiasing);
     p->setPen(Qt::NoPen);
-    p->setBrush(kInk);
+    p->setBrush(QColor(0x00, 0x30, 0xff));
     for (QPointF j : std::as_const(m_netlist.junctions))
-        p->drawEllipse(j, 2.6, 2.6);
+        p->drawEllipse(j, 4, 4);
 
     if (!m_wirePoints.isEmpty()) {
         QVector<QPointF> pts = m_wirePoints;

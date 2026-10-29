@@ -210,7 +210,7 @@ private:
     ItemId m_heldButton = 0;
     QString m_heldRelease;
     bool m_gridVisible = true;
-    bool m_gridLines = false;
+    bool m_gridLines = true;
     bool m_exporting = false;
 };
 

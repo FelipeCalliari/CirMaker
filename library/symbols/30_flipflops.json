@@ -6,21 +6,27 @@
    "name": "D Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "D",
+     "",
      {
       "name": "CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      }
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [],
-    "bottom": []
+    "bottom": [],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "dff"
@@ -41,17 +47,20 @@
    "name": "4013 D Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "D",
+     "",
      {
       "name": "CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      }
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [
@@ -59,7 +68,10 @@
     ],
     "bottom": [
      "R"
-    ]
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "dff"
@@ -84,17 +96,20 @@
    "name": "7474 D Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "D",
+     "",
      {
       "name": "CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      }
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [
@@ -102,7 +117,10 @@
     ],
     "bottom": [
      "~CLR"
-    ]
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "dff"
@@ -129,22 +147,27 @@
    "name": "JK Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "J",
      {
       "name": "CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      },
      "K"
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [],
-    "bottom": []
+    "bottom": [],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "jkff"
@@ -166,18 +189,20 @@
    "name": "4027 JK Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "J",
      {
       "name": "CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      },
      "K"
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [
@@ -185,7 +210,10 @@
     ],
     "bottom": [
      "R"
-    ]
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "jkff"
@@ -211,18 +239,20 @@
    "name": "74112 JK Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "J",
      {
       "name": "~CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      },
      "K"
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [
@@ -230,7 +260,10 @@
     ],
     "bottom": [
      "~CLR"
-    ]
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "jkff"
@@ -259,24 +292,29 @@
    "name": "7473 JK Flip-Flop",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 40,
+    "width": 100,
+    "pitch": 30,
     "left": [
      "J",
      {
       "name": "~CLK",
-      "clock": true
+      "clock": true,
+      "label": "CP"
      },
      "K"
     ],
     "right": [
      "Q",
+     "",
      "~Q"
     ],
     "top": [],
     "bottom": [
      "~CLR"
-    ]
+    ],
+    "leftStart": -30,
+    "rightStart": -30,
+    "labelSize": 14
    },
    "model": {
     "kind": "jkff"
