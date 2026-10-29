@@ -26,6 +26,8 @@
 
 #include <QFile>
 #include <QHash>
+#include <QLineF>
+#include <QMap>
 #include <QRegularExpression>
 #include <QSet>
 
@@ -96,13 +98,18 @@ struct Device {
     QVector<int> nets;
     QString value, designator, prefix;
     QVector<int> data;
+    QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
 };
 
 struct CktWire {
     QVector<int> h;
     QVector<QPointF> points;
-    // a bus line is attached to no device and carries its name in h[0]
-    bool isBus() const { return h[7] == 0 && h[8] == 0 && h[0] < 0 && h[1] == 0; }
+    // a bus line is attached to no device, carries its name in h[0] (some
+    // files repeat it in h[1]) and has flag 0x20; names may be plain numbers
+    bool isBus() const
+    {
+        return h[7] == 0 && h[8] == 0 && ((h[5] & 0x20) || (h[0] < 0 && (h[1] == 0 || h[1] == h[0])));
+    }
 };
 
 // Bus and bus-entry names are stored as negative numbers: the name read as
@@ -183,7 +190,11 @@ Device readDevice(Reader& r, double version)
         r.string();                             // "type:digital"
         r.string();                             // package
     }
-    r.ints(r.integer() + 1);                    // package pin map
+    // package pin map: 0, the pins of this part, then the pins of every part
+    const QVector<int> pkg = r.ints(r.integer() + 1);
+    const int pins = std::abs(pinMax);
+    if (pins > 0 && pkg.size() >= 1 + 2 * pins)
+        d.packagePins = pkg.mid(1 + pins, pins);
     r.ints(8);
     d.prefix = r.string();
     if (modern) {
@@ -322,12 +333,19 @@ QString entrySide(QPointF at, QPointF from)
     return d.y() < 0 ? QStringLiteral("up") : QStringLiteral("down");
 }
 
-int ourPin(const SymbolDef& s, int cmPin)
+int ourPin(const SymbolDef& s, const Device& d, int cmPin)
 {
     if (cmPin < 1) return -1;
     if (!s.cmPins.isEmpty()) {
         const QString name = s.cmPins.value(cmPin - 1);
         return name.isEmpty() ? -1 : s.pinIndex(name);
+    }
+    // numbered symbols: match the package pin
+    if (cmPin <= d.packagePins.size() && !s.pins.isEmpty() && !s.pins.first().number.isEmpty()) {
+        const QString number = QString::number(d.packagePins[cmPin - 1]);
+        for (int i = 0; i < s.pins.size(); ++i)
+            if (s.pins[i].number == number) return i;
+        return -1;
     }
     return cmPin - 1 < s.pins.size() ? cmPin - 1 : -1;
 }
@@ -382,7 +400,9 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         const SymbolDef* s = library.findByAlias(cmName);
         Component c;
         c.designator = d.designator;
-        c.rotation = rotationFromAngle(d.angle);
+        // 512 marks a mirrored device: 692 = mirrored and turned 180 degrees
+        c.mirrored = d.angle >= 512 && d.angle < 1024;
+        c.rotation = rotationFromAngle(c.mirrored ? d.angle - 512 : d.angle);
         c.pos = scaled(QPointF(d.x, d.y));
         if (!s) {
             rep.unmapped[cmName]++;
@@ -466,7 +486,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         for (int e = 0; e < 2; ++e) {
             const int dev = ends[e][0] - 1, cmPin = ends[e][1];
             if (dev < 0 || dev >= placed.size() || !placed[dev].symbol) continue;
-            const int pin = ourPin(*placed[dev].symbol, cmPin);
+            const int pin = ourPin(*placed[dev].symbol, file.devices[dev], cmPin);
             if (pin < 0) continue;
             Component probe = placed[dev].comp;
             probe.pos = {};
@@ -503,7 +523,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         Wire out;
         out.bus = w.isBus();
         if (out.bus)
-            out.name = decodeName(w.h[0]);
+            out.name = w.h[0] < 0 ? decodeName(w.h[0]) : QString::number(w.h[0]);
         for (QPointF p : w.points)
             out.points << scaled(p);
         if (!out.bus) {
@@ -511,7 +531,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             for (int e = 0; e < 2; ++e) {
                 const int dev = ends[e][0] - 1, cmPin = ends[e][1];
                 if (dev < 0 || dev >= placed.size() || !placed[dev].id) continue;
-                const int pin = ourPin(*placed[dev].symbol, cmPin);
+                const int pin = ourPin(*placed[dev].symbol, file.devices[dev], cmPin);
                 if (pin < 0) continue;
                 const Component* c = circuit.component(placed[dev].id);
                 const int idx = e == 0 ? 0 : int(out.points.size()) - 1;
@@ -527,10 +547,20 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         if (!out.bus && w.h[2] > 0)
             wireNetOf.insert(id, w.h[2]);
         if (!out.bus) {
-            if (w.h[0] < 0 && w.h[7] == 0)
-                entries << Entry{out.points.first(), out.points.value(1), decodeName(w.h[0])};
-            if (w.h[1] < 0 && w.h[8] == 0)
-                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), decodeName(w.h[1])};
+            // an end on a bus line (h[9]/h[10]: the wire it ends on); entry
+            // names are encoded (negative) or plain numbers
+            // names may be plain numbers, which only mean something on their
+            // own bus: they are qualified with the bus name ("1.16")
+            auto onBus = [&](int wire) { return wire > 0 && wire <= file.wires.size() && file.wires[wire - 1].isBus(); };
+            auto entryName = [&](int v, int bus) {
+                if (v < 0) return decodeName(v);
+                const int b = file.wires[bus - 1].h[0];
+                return (b < 0 ? decodeName(b) : QString::number(b)) + u'.' + QString::number(v);
+            };
+            if (w.h[7] == 0 && (w.h[0] < 0 || (w.h[0] > 0 && onBus(w.h[9]))))
+                entries << Entry{out.points.first(), out.points.value(1), entryName(w.h[0], w.h[9])};
+            if (w.h[8] == 0 && (w.h[1] < 0 || (w.h[1] > 0 && onBus(w.h[10]))))
+                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), entryName(w.h[1], w.h[10])};
         }
     }
     QSet<std::pair<qint64, qint64>> entryAt;
@@ -552,10 +582,63 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         circuit.addText({0, scaled(t.rect.topLeft()), t.text, std::max(6.0, t.fontHeight * kScale * 0.6)});
     }
 
+    // ---- CircuitMaker connects only where wires end; a wire that merely
+    // runs over another net's pin tip gets a small step around it
+    {
+        struct Tip { QPointF at; int cmNet; };
+        QVector<Tip> tips;
+        for (int i = 0; i < placed.size(); ++i) {
+            if (!placed[i].id) continue;
+            const Device& d = file.devices[i];
+            const Component* c = circuit.component(placed[i].id);
+            for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin)
+                if (const int pin = ourPin(*placed[i].symbol, d, cmPin); pin >= 0)
+                    tips << Tip{library.pinScenePos(*c, pin), d.nets[cmPin]};
+        }
+        auto blocked = [&](const QVector<QPointF>& path, int net) {
+            for (int i = 0; i + 1 < path.size(); ++i)
+                for (const Tip& t : std::as_const(tips))
+                    if (t.cmNet != net && WireGeometry::onSegment(t.at, path[i], path[i + 1]))
+                        return true;
+            return false;
+        };
+        int stepped = 0;
+        for (auto it = wireNetOf.cbegin(); it != wireNetOf.cend(); ++it) {
+            Wire w = *circuit.wire(it.key());
+            bool changed = false;
+            for (int seg = 0; seg + 1 < w.points.size(); ++seg) {
+                const QPointF a = w.points[seg], b = w.points[seg + 1];
+                if ((a.x() != b.x() && a.y() != b.y()) || a == b) continue;
+                const QPointF dir = (b - a) / QLineF(a, b).length();
+                for (const Tip& t : std::as_const(tips)) {
+                    if (t.cmNet == it.value() || !WireGeometry::onSegment(t.at, a, b)) continue;
+                    if (QLineF(a, t.at).length() < 10 || QLineF(b, t.at).length() < 10) continue;
+                    const QPointF across(-dir.y(), dir.x());
+                    for (int side : {1, -1}) {
+                        const QPointF p1 = t.at - dir * 10, p4 = t.at + dir * 10;
+                        const QPointF p2 = p1 + across * 10 * side, p3 = p4 + across * 10 * side;
+                        if (blocked({p1, p2, p3, p4}, it.value())) continue;
+                        w.points.insert(seg + 1, p1);
+                        w.points.insert(seg + 2, p2);
+                        w.points.insert(seg + 3, p3);
+                        w.points.insert(seg + 4, p4);
+                        changed = true;
+                        ++stepped;
+                        break;
+                    }
+                    break;      // one step per segment; the rest is checked on the next pass
+                }
+            }
+            if (changed) circuit.updateWire(w);
+        }
+        if (stepped)
+            rep.warnings << QStringLiteral("%1 wires stepped around pins they crossed without connecting").arg(stepped);
+    }
+
     // ---- connectivity check: every CM net must be one of our nets
     const Netlist nl = NetlistBuilder::build(circuit, library);
     struct Member { int ourNet; QPointF at; bool pin; };
-    QHash<int, QVector<Member>> byCmNet;
+    QMap<int, QVector<Member>> byCmNet;          // ordered: imports come out the same every time
     QHash<int, QString> netName;                // CM net -> terminal label on it
     for (int i = 0; i < placed.size(); ++i) {
         if (!placed[i].id) continue;
@@ -564,7 +647,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         const Component* c = circuit.component(placed[i].id);
         for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin) {
             const int net = d.nets[cmPin];
-            const int pin = ourPin(s, cmPin);
+            const int pin = ourPin(s, d, cmPin);
             if (net <= 0 || pin < 0) continue;
             byCmNet[net] << Member{nl.netOf(c->id, pin), library.pinScenePos(*c, pin), true};
             if (s.netLabel && !c->label.isEmpty())
@@ -614,7 +697,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
 
     int drawn = 0, labelled = 0;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it) {
-        QHash<int, QVector<QPointF>> groups;   // our net -> member points
+        QMap<int, QVector<QPointF>> groups;    // our net -> member points
         for (const Spot& sp : std::as_const(spots)) {
             // a spot belongs to this CM net if its net holds one of the members
             bool member = false;
@@ -649,6 +732,9 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
                 w.points = WireGeometry::simplify(path);
                 if (w.points.size() < 2) w.points = {a, b};
                 circuit.addWire(w);
+                // later repairs must not cross it
+                for (QPointF p : std::as_const(w.points))
+                    spots << Spot{p, main};
                 ++drawn;
                 done = true;
                 break;
@@ -674,6 +760,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         rep.warnings << QStringLiteral("%1 wires added where the redrawn symbols no longer met the original wiring").arg(drawn);
     if (labelled)
         rep.warnings << QStringLiteral("%1 connections made with net labels because no clean wire path existed").arg(labelled);
+    rep.shorts = shorts;
     if (shorts)
         rep.warnings << QStringLiteral("%1 places where redrawn symbols touch wires of another net; check them").arg(shorts);
     return true;

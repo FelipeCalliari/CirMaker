@@ -17,6 +17,7 @@ private slots:
     void importsAllCircuits();
     void importedCounterCounts();
     void importsDataSequencer();
+    void challengeCounterStops();
 
 private:
     static QStringList circuitFiles();
@@ -50,7 +51,7 @@ void TestCktImport::importsAllCircuits()
     if (files.isEmpty())
         QSKIP("no CircuitMaker circuits found");
     QMap<QString, int> unmapped;
-    int devices = 0, wires = 0, labels = 0;
+    int devices = 0, wires = 0, labels = 0, shorts = 0;
     for (const QString& path : files) {
         Circuit c;
         CktImportReport report;
@@ -63,13 +64,16 @@ void TestCktImport::importsAllCircuits()
             unmapped[it.key()] += it.value();
         for (const Component& comp : c.components())
             labels += comp.symbolId == u"netlabel";
-
+        shorts += report.shorts;
         // every imported model must build and run
         Bench bench(c);
         QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(path + u": " + bench.sim.warnings().join(u"; ")));
         bench.sim.step(500);
     }
-    qInfo("%lld files, %d devices, %d wires, %d restoring net labels", qlonglong(files.size()), devices, wires, labels);
+    qInfo("%lld files, %d devices, %d wires, %d net labels, %d nets merged by redrawn symbols",
+          qlonglong(files.size()), devices, wires, labels, shorts);
+    // regression guard for symbol geometry: was 138 before the CircuitMaker layouts
+    QVERIFY2(shorts <= 65, qPrintable(QString::number(shorts)));
     QStringList missing;
     for (auto it = unmapped.cbegin(); it != unmapped.cend(); ++it)
         missing << QStringLiteral("%1 x%2").arg(it.key()).arg(it.value());
@@ -162,6 +166,46 @@ void TestCktImport::importsDataSequencer()
         if (comp.symbolId == u"logicdisplay")
             lit += bench.sim.componentState(comp.id) == 1;
     QCOMPARE(lit, 1);
+}
+
+// Contador_desafio_7493_0_45_stop: two 7493 count 0..45 on two hex
+// displays; reaching 46 resets them.
+void TestCktImport::challengeCounterStops()
+{
+    QString path;
+    for (const QString& f : circuitFiles())
+        if (f.endsWith(QStringLiteral("/Contador_desafio_7493_0_45_stop.CKT")))
+            path = f;
+    if (path.isEmpty())
+        QSKIP("Contador_desafio_7493_0_45_stop.CKT not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    Bench bench(c);
+    QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(bench.sim.warnings().join(u'\n')));
+    int chips = 0;
+    ItemId disp1 = 0, disp2 = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"7493") ++chips;
+        if (comp.designator == u"DISP1") disp1 = comp.id;
+        if (comp.designator == u"DISP2") disp2 = comp.id;
+    }
+    QCOMPARE(chips, 2);
+    QVERIFY(disp1 && disp2);
+    QSet<int> values;
+    int last = -1;
+    for (int t = 0; t < 40000; ++t) {
+        bench.sim.step(1);
+        const int hi = bench.sim.componentState(disp2), lo = bench.sim.componentState(disp1);
+        const int v = hi < 0 || lo < 0 ? -1 : hi * 16 + lo;
+        if (v >= 0) values.insert(v);
+        last = v;
+    }
+    QVERIFY(last >= 0);
+    // hex displays show every value 0..45 (0x2D); 46 resets at once
+    for (int v = 0; v <= 0x2d; ++v)
+        QVERIFY2(values.contains(v), qPrintable(QString::number(v)));
+    for (int v : std::as_const(values))
+        QVERIFY2(v <= 0x2e, qPrintable(QString::number(v)));
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

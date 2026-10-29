@@ -717,6 +717,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         // imported circuits are saved as .cmq, never over the original
         m_path.clear();
         updateTitle();
+        addRecent(path);
         setWindowModified(true);
         if (interactive && (!report.unmapped.isEmpty() || !report.warnings.isEmpty())) {
             QStringList lines;

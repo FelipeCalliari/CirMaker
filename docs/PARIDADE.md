@@ -33,7 +33,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Recurso | Estado | Observação |
 | --- | --- | --- |
 | Navegador por categorias e busca | ✅ | |
-| Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS181 falta |
+| Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS74/73/112, 74139 e 74153 como pacote inteiro; 74LS181 falta |
 | Entradas/saídas digitais (chaves, teclados, displays, pulser, SCOPE) | ✅ | |
 | Data Sequencer + Pattern Editor | ✅ | clock interno/externo, níveis analógicos (fontes PWL); importado do `.ckt` |
 | 7-seg com decodificador, displays ASCII/hex | ✅ | |
@@ -68,7 +68,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 
 | Recurso | Estado | Observação |
 | --- | --- | --- |
-| Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | |
+| Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | CIs 74xx/40xx com a ordem e o desenho de pinos do CM; peças espelhadas; barramentos com nomes numéricos. Símbolos analógicos ainda têm tamanhos diferentes (fios de reparo) |
 | Salvar em `.ckt` | ❌ | salva em `.cmq` |
 | Exportar imagem (PNG/SVG/PDF), imprimir | ✅ | |
 | Lista de materiais | ✅ | CSV |

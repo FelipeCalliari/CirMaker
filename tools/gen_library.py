@@ -138,7 +138,7 @@ def flipflop_symbols():
                   aliases=['4013', 'CD4013'], cmPins=['S', 'D', 'CLK', 'R', '~Q', 'Q'], label='4013',
                   description='Positive-edge D flip-flop, active-high set/reset (CD4013, one of two)'))
     ff.append(box('dff_pc', '7474 D Flip-Flop', ['D', clk('CLK')], ['Q', Qn], ['~PRE'], ['~CLR'],
-                  model={'kind': 'dff'}, aliases=['7474', '74LS74', '74HC74'], label='7474', floatInputs=1,
+                  model={'kind': 'dff'}, aliases=['7474'], label='7474', floatInputs=1,
                   cmPins=['~PRE', 'D', 'CLK', '~CLR', '~Q', 'Q'],
                   description='Positive-edge D flip-flop, active-low preset/clear (74x74, one of two)'))
     ff.append(box('jkff', 'JK Flip-Flop', ['J', clk('CLK'), 'K'], ['Q', Qn], model={'kind': 'jkff'},
@@ -148,14 +148,48 @@ def flipflop_symbols():
                   cmPins=['S', 'J', 'CLK', 'K', 'R', '~Q', 'Q'],
                   description='Positive-edge JK flip-flop, active-high set/reset (CD4027, one of two)'))
     ff.append(box('jkff_pcn', '74112 JK Flip-Flop', ['J', clk('~CLK'), 'K'], ['Q', Qn], ['~PRE'], ['~CLR'],
-                  model={'kind': 'jkff'}, aliases=['74112', '74LS112', '7476', '74LS76'], label='74112', floatInputs=1,
+                  model={'kind': 'jkff'}, aliases=['74112', '7476'], label='74112', floatInputs=1,
                   cmPins=['~PRE', 'J', '~CLK', 'K', '~CLR', '~Q', 'Q'],
                   description='Negative-edge JK flip-flop, active-low preset/clear (74x112, one of two)'))
     ff.append(box('jkff_rn', '7473 JK Flip-Flop', ['J', clk('~CLK'), 'K'], ['Q', Qn], [], ['~CLR'],
-                  model={'kind': 'jkff'}, aliases=['JK RN', '7473', '74LS73', '74107'], label='7473', floatInputs=1,
+                  model={'kind': 'jkff'}, aliases=['JK RN', '7473', '74107'], label='7473', floatInputs=1,
                   cmPins=['J', '~CLK', 'K', '~CLR', '~Q', 'Q'],
                   description='Negative-edge JK flip-flop, active-low clear (74x73, one of two)'))
     return ff
+
+# DIP package pin numbers (TI datasheets; dual parts: the first one). The
+# .ckt importer matches CircuitMaker pins through them.
+def _pins(spec):
+    return {name: int(num) for name, num in (p.rsplit('=', 1) for p in spec.split())}
+
+
+MSI_PINOUTS = {
+    '7490': _pins('CKB=1 R01=2 R02=3 R91=6 R92=7 QC=8 QB=9 QD=11 QA=12 CKA=14'),
+    '7493': _pins('CKB=1 R01=2 R02=3 QC=8 QB=9 QD=11 QA=12 CKA=14'),
+    '74161': _pins('CLR=1 CLK=2 D0=3 D1=4 D2=5 D3=6 ENP=7 LOAD=9 ENT=10 Q3=11 Q2=12 Q1=13 Q0=14 RCO=15'),
+    '74192': _pins('D1=1 Q1=2 Q0=3 DOWN=4 UP=5 Q2=6 Q3=7 D3=9 D2=10 LOAD=11 CO=12 BO=13 CLR=14 D0=15'),
+    '74138': _pins('A=1 B=2 C=3 G2A=4 G2B=5 G1=6 Y7=7 Y6=9 Y5=10 Y4=11 Y3=12 Y2=13 Y1=14 Y0=15'),
+    '74139': _pins('1G=1 1A=2 1B=3 1Y0=4 1Y1=5 1Y2=6 1Y3=7 2Y3=9 2Y2=10 2Y1=11 2Y0=12 2B=13 2A=14 2G=15'),
+    '7442': _pins('Y0=1 Y1=2 Y2=3 Y3=4 Y4=5 Y5=6 Y6=7 Y7=9 Y8=10 Y9=11 D=12 C=13 B=14 A=15'),
+    '7447': _pins('B=1 C=2 LT=3 BI=4 RBI=5 D=6 A=7 e=9 d=10 c=11 b=12 a=13 g=14 f=15'),
+    '74151': _pins('D3=1 D2=2 D1=3 D0=4 Y=5 W=6 G=7 C=9 B=10 A=11 D7=12 D6=13 D5=14 D4=15'),
+    '74153': _pins('1G=1 B=2 1D3=3 1D2=4 1D1=5 1D0=6 1Y=7 2Y=9 2D0=10 2D1=11 2D2=12 2D3=13 A=14 2G=15'),
+    '74157': _pins('S=1 A0=2 B0=3 Y0=4 A1=5 B1=6 Y1=7 Y2=9 B2=10 A2=11 Y3=12 B3=13 A3=14 G=15'),
+    '7483': _pins('A3=1 S2=2 A2=3 B2=4 S1=6 B1=7 A1=8 S0=9 A0=10 B0=11 CI=13 CO=14 S3=15 B3=16'),
+    '74283': _pins('S1=1 B1=2 A1=3 S0=4 A0=5 B0=6 CI=7 CO=9 S3=10 B3=11 A3=12 S2=13 A2=14 B2=15'),
+    '7485': {**_pins('B3=1 A=B=6 B0=9 A0=10 B1=11 A1=12 A2=13 B2=14 A3=15'),
+             'I<': 2, 'I=': 3, 'I>': 4, 'A>B': 5, 'A<B': 7},
+    '74175': _pins('CLR=1 Q0=2 ~Q0=3 D0=4 D1=5 ~Q1=6 Q1=7 CLK=9 Q2=10 ~Q2=11 D2=12 D3=13 ~Q3=14 Q3=15'),
+    '74273': _pins('CLR=1 Q0=2 D0=3 D1=4 Q1=5 Q2=6 D2=7 D3=8 Q3=9 CLK=11 Q4=12 D4=13 D5=14 Q5=15 Q6=16 D6=17 D7=18 Q7=19'),
+    '74374': _pins('OE=1 Q0=2 D0=3 D1=4 Q1=5 Q2=6 D2=7 D3=8 Q3=9 CLK=11 Q4=12 D4=13 D5=14 Q5=15 Q6=16 D6=17 D7=18 Q7=19'),
+    '74164': _pins('A=1 B=2 Q0=3 Q1=4 Q2=5 Q3=6 CLK=8 CLR=9 Q4=10 Q5=11 Q6=12 Q7=13'),
+    '74194': _pins('CLR=1 SR=2 D0=3 D1=4 D2=5 D3=6 SL=7 S0=9 S1=10 CLK=11 Q3=12 Q2=13 Q1=14 Q0=15'),
+    '74244': _pins('1G=1 A0=2 Y7=3 A1=4 Y6=5 A2=6 Y5=7 A3=8 Y4=9 A4=11 Y3=12 A5=13 Y2=14 A6=15 Y1=16 A7=17 Y0=18 2G=19'),
+}
+MSI_PINOUTS['74163'] = MSI_PINOUTS['74161']
+MSI_PINOUTS['74193'] = MSI_PINOUTS['74192']
+MSI_PINOUTS['7448'] = MSI_PINOUTS['7447']
+MSI_PINOUTS['74373'] = {**MSI_PINOUTS['74374'], 'LE': 11}
 
 
 def msi():
@@ -175,14 +209,14 @@ def msi():
          D(4, 'Q') + ['~CO', '~BO'], {'kind': 'updown', 'modulus': 16}),
         ('74138', '3-to-8 line decoder/demultiplexer', ['A', 'B', 'C', 'G1', '~G2A', '~G2B'],
          [f'~Y{i}' for i in range(8)], {'kind': 'decoder'}),
-        ('74139', '2-to-4 line decoder (one of two)', ['A', 'B', '~G'], [f'~Y{i}' for i in range(4)], {'kind': 'decoder'}),
+        ('74139', 'Dual 2-to-4 line decoder', [], [], {'kind': 'dual', 'inner': 'decoder'}),
         ('7442', 'BCD-to-decimal decoder', ['A', 'B', 'C', 'D'], [f'~Y{i}' for i in range(10)], {'kind': 'decoder'}),
         ('7447', 'BCD to 7-segment decoder/driver, active-low outputs (common anode)',
          ['A', 'B', 'C', 'D', '~LT', '~BI', '~RBI'], ['~' + c for c in 'abcdefg'], {'kind': 'bcd7seg'}),
         ('7448', 'BCD to 7-segment decoder, active-high outputs (common cathode)',
          ['A', 'B', 'C', 'D', '~LT', '~BI', '~RBI'], list('abcdefg'), {'kind': 'bcd7seg'}),
         ('74151', '8-to-1 multiplexer', D(8) + ['A', 'B', 'C', '~G'], ['Y', '~W'], {'kind': 'mux'}),
-        ('74153', '4-to-1 multiplexer (one of two)', D(4) + ['A', 'B', '~G'], ['Y'], {'kind': 'mux'}),
+        ('74153', 'Dual 4-to-1 multiplexer', [], [], {'kind': 'dual', 'inner': 'mux'}),
         ('74157', 'Quad 2-to-1 multiplexer', D(4, 'A') + D(4, 'B') + ['S', '~G'], D(4, 'Y'), {'kind': 'mux2'}),
         ('7483', '4-bit binary full adder', D(4, 'A') + D(4, 'B') + ['CI'], D(4, 'S') + ['CO'], {'kind': 'adder'}),
         ('74283', '4-bit binary full adder, fast carry', D(4, 'A') + D(4, 'B') + ['CI'], D(4, 'S') + ['CO'], {'kind': 'adder'}),
@@ -199,11 +233,67 @@ def msi():
          {'kind': 'tribus', 'groups': [{'enable': '1G', 'bits': [0, 1, 2, 3]}, {'enable': '2G', 'bits': [4, 5, 6, 7]}]}),
     ]
     out = []
-    for number, desc, left, right, model in chips:
-        out.append(box(number, f'{number} {desc.split(",")[0]}', left, right, width=120, pitch=20,
-                       title=number, model=model, aliases=[number, f'74LS{number[2:]}', f'74HC{number[2:]}'],
-                       label=number, description=desc, floatInputs=1))
+    for number, desc, _left, _right, model in chips:
+        # CircuitMaker's own pin order and symbol layout, so imported wires
+        # land on the right pins
+        layout = CM_MSI_LAYOUT[number]
+        pinout = MSI_PINOUTS[number]
+        sides = {}
+        for name, side, y in layout:
+            o = {'name': name, 'number': str(pinout[name.lstrip('~')])}
+            if side == 'r' and name in CM_RIGHT_INPUTS:
+                o['dir'] = 'in'
+            if name.lstrip('~').startswith(('CK', 'CLK', 'UP', 'DOWN')) and model['kind'] != 'register' or name == 'CLK':
+                o['clock'] = True
+            sides.setdefault(side, {})[y] = o
+
+        def column(side):
+            ys = sorted(sides.get(side, {}))
+            if not ys:
+                return [], 0
+            # CircuitMaker grid 9 = pitch 30 here
+            return [sides[side].get(y, '') for y in range(ys[0], ys[-1] + 1, 9)], ys[0] * 10 // 3
+        left, left_start = column('l')
+        right, right_start = column('r')
+        out.append(cm_chip(number, desc, left, right, model, [n for n, _, _ in layout], left_start, right_start,
+                           aliases=[number, f'74LS{number[2:]}', f'74HC{number[2:]}', f'74F{number[2:]}']))
     return out
+
+
+# inputs drawn on the right-hand side of CircuitMaker's symbols
+CM_RIGHT_INPUTS = {'~LOAD', '~CLR', '~G', 'A', 'B', 'C', '~1G', '~2G', 'I<', 'I=', 'I>', 'CLK', 'LE',
+                   'D0', 'D1', 'D2', 'D3', '~BI'}
+
+# CircuitMaker pin order of each MSI chip: (our pin, side, y in CircuitMaker
+# grid units, 9 = one pin pitch), read from its symbol library.
+CM_MSI_LAYOUT = {
+    '7490': [('R91', 'l', -27), ('R92', 'l', -18), ('R01', 'l', -9), ('R02', 'l', 0), ('~CKA', 'l', 18), ('~CKB', 'l', 27), ('QD', 'r', -27), ('QC', 'r', -9), ('QB', 'r', 9), ('QA', 'r', 27)],
+    '7493': [('R01', 'l', -9), ('R02', 'l', 0), ('~CKA', 'l', 9), ('~CKB', 'l', 18), ('QD', 'r', -9), ('QC', 'r', 0), ('QB', 'r', 9), ('QA', 'r', 18)],
+    '74161': [('ENP', 'l', -36), ('ENT', 'l', -27), ('CLK', 'l', -18), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('~LOAD', 'r', -36), ('~CLR', 'r', -27), ('RCO', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36)],
+    '74163': [('ENP', 'l', -27), ('ENT', 'l', -18), ('CLK', 'l', -9), ('~LOAD', 'l', 0), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('~CLR', 'r', -27), ('RCO', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36)],
+    '74192': [('UP', 'l', -27), ('DOWN', 'l', -18), ('~LOAD', 'l', -9), ('CLR', 'l', 0), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('~CO', 'r', -9), ('~BO', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36)],
+    '74193': [('UP', 'l', -27), ('DOWN', 'l', -18), ('~LOAD', 'l', -9), ('CLR', 'l', 0), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('~CO', 'r', -9), ('~BO', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36)],
+    '74138': [('C', 'l', -27), ('B', 'l', -18), ('A', 'l', -9), ('G1', 'l', 18), ('~G2B', 'l', 27), ('~G2A', 'l', 36), ('~Y7', 'r', -27), ('~Y6', 'r', -18), ('~Y5', 'r', -9), ('~Y4', 'r', 0), ('~Y3', 'r', 9), ('~Y2', 'r', 18), ('~Y1', 'r', 27), ('~Y0', 'r', 36)],
+    '74139': [('1B', 'l', -18), ('1A', 'l', -9), ('~1G', 'l', 0), ('2B', 'l', 18), ('2A', 'l', 27), ('~2G', 'l', 36), ('~1Y3', 'r', -27), ('~1Y2', 'r', -18), ('~1Y1', 'r', -9), ('~1Y0', 'r', 0), ('~2Y3', 'r', 9), ('~2Y2', 'r', 18), ('~2Y1', 'r', 27), ('~2Y0', 'r', 36)],
+    '7442': [('D', 'l', 18), ('C', 'l', 27), ('B', 'l', 36), ('A', 'l', 45), ('~Y9', 'r', -36), ('~Y8', 'r', -27), ('~Y7', 'r', -18), ('~Y6', 'r', -9), ('~Y5', 'r', 0), ('~Y4', 'r', 9), ('~Y3', 'r', 18), ('~Y2', 'r', 27), ('~Y1', 'r', 36), ('~Y0', 'r', 45)],
+    '7447': [('D', 'l', -36), ('C', 'l', -27), ('B', 'l', -18), ('A', 'l', -9), ('~LT', 'l', 36), ('~RBI', 'l', 45), ('~g', 'r', -36), ('~f', 'r', -27), ('~e', 'r', -18), ('~d', 'r', -9), ('~c', 'r', 0), ('~b', 'r', 9), ('~a', 'r', 18), ('~BI', 'r', 45)],
+    '7448': [('D', 'l', -36), ('C', 'l', -27), ('B', 'l', -18), ('A', 'l', -9), ('~LT', 'l', 36), ('~RBI', 'l', 45), ('g', 'r', -36), ('f', 'r', -27), ('e', 'r', -18), ('d', 'r', -9), ('c', 'r', 0), ('b', 'r', 9), ('a', 'r', 18), ('~BI', 'r', 45)],
+    '74151': [('D7', 'l', -27), ('D6', 'l', -18), ('D5', 'l', -9), ('D4', 'l', 0), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('~G', 'r', -27), ('C', 'r', -18), ('B', 'r', -9), ('A', 'r', 0), ('Y', 'r', 27), ('~W', 'r', 36)],
+    '74153': [('1D3', 'l', -36), ('1D2', 'l', -27), ('1D1', 'l', -18), ('1D0', 'l', -9), ('B', 'l', 0), ('A', 'l', 9), ('2D3', 'l', 18), ('2D2', 'l', 27), ('2D1', 'l', 36), ('2D0', 'l', 45), ('~1G', 'r', -36), ('~2G', 'r', 45), ('1Y', 'r', -18), ('2Y', 'r', 27)],
+    '74157': [('S', 'l', -36), ('B0', 'l', -27), ('A0', 'l', -18), ('B1', 'l', -9), ('A1', 'l', 0), ('B2', 'l', 9), ('A2', 'l', 18), ('B3', 'l', 27), ('A3', 'l', 36), ('~G', 'l', 45), ('Y0', 'r', -18), ('Y1', 'r', 0), ('Y2', 'r', 18), ('Y3', 'r', 36)],
+    '7483': [('A3', 'l', -36), ('A2', 'l', -27), ('A1', 'l', -18), ('A0', 'l', -9), ('B3', 'l', 0), ('B2', 'l', 9), ('B1', 'l', 18), ('B0', 'l', 27), ('CI', 'l', 45), ('S3', 'r', -9), ('S2', 'r', 0), ('S1', 'r', 9), ('S0', 'r', 18), ('CO', 'r', 45)],
+    '7485': [('A3', 'l', -27), ('A2', 'l', -18), ('A1', 'l', -9), ('A0', 'l', 0), ('B3', 'l', 9), ('B2', 'l', 18), ('B1', 'l', 27), ('B0', 'l', 36), ('I<', 'r', -27), ('I=', 'r', -18), ('I>', 'r', -9), ('A<B', 'r', 18), ('A=B', 'r', 27), ('A>B', 'r', 36)],
+    '74175': [('~CLR', 'l', -27), ('CLK', 'l', -18), ('D3', 'l', 0), ('D2', 'l', 9), ('D1', 'l', 18), ('D0', 'l', 27), ('Q3', 'r', -27), ('~Q3', 'r', -18), ('Q2', 'r', -9), ('~Q2', 'r', 0), ('Q1', 'r', 9), ('~Q1', 'r', 18), ('Q0', 'r', 27), ('~Q0', 'r', 36)],
+    '74273': [('~CLR', 'l', -36), ('CLK', 'l', -27), ('D7', 'l', -18), ('D6', 'l', -9), ('D5', 'l', 0), ('D4', 'l', 9), ('D3', 'l', 18), ('D2', 'l', 27), ('D1', 'l', 36), ('D0', 'l', 45), ('Q7', 'r', -18), ('Q6', 'r', -9), ('Q5', 'r', 0), ('Q4', 'r', 9), ('Q3', 'r', 18), ('Q2', 'r', 27), ('Q1', 'r', 36), ('Q0', 'r', 45)],
+    '74374': [('D7', 'l', -27), ('D6', 'l', -18), ('D5', 'l', -9), ('D4', 'l', 0), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('Q7', 'r', -27), ('Q6', 'r', -18), ('Q5', 'r', -9), ('Q4', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36), ('~OE', 'l', -36), ('CLK', 'r', -36)],
+    '74373': [('D7', 'l', -27), ('D6', 'l', -18), ('D5', 'l', -9), ('D4', 'l', 0), ('D3', 'l', 9), ('D2', 'l', 18), ('D1', 'l', 27), ('D0', 'l', 36), ('Q7', 'r', -27), ('Q6', 'r', -18), ('Q5', 'r', -9), ('Q4', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36), ('~OE', 'l', -36), ('LE', 'r', -36)],
+    '74164': [('A', 'l', -27), ('B', 'l', -18), ('CLK', 'l', 0), ('~CLR', 'l', 18), ('Q7', 'r', -27), ('Q6', 'r', -18), ('Q5', 'r', -9), ('Q4', 'r', 0), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36)],
+    '74194': [('CLK', 'l', -36), ('S1', 'l', -18), ('S0', 'l', -9), ('SR', 'l', 9), ('SL', 'l', 18), ('~CLR', 'l', 36), ('D3', 'r', -36), ('D2', 'r', -27), ('D1', 'r', -18), ('D0', 'r', -9), ('Q3', 'r', 9), ('Q2', 'r', 18), ('Q1', 'r', 27), ('Q0', 'r', 36)],
+    '74244': [('A3', 'l', -27), ('A2', 'l', -18), ('A1', 'l', -9), ('A0', 'l', 0), ('A4', 'l', 18), ('A5', 'l', 27), ('A6', 'l', 36), ('A7', 'l', 45), ('Y3', 'r', -27), ('Y2', 'r', -18), ('Y1', 'r', -9), ('Y0', 'r', 0), ('Y4', 'r', 18), ('Y5', 'r', 27), ('Y6', 'r', 36), ('Y7', 'r', 45), ('~1G', 'l', -36), ('~2G', 'l', 9)],
+    '74283': [('A3', 'l', -36), ('A2', 'l', -27), ('A1', 'l', -18), ('A0', 'l', -9), ('B3', 'l', 0), ('B2', 'l', 9), ('B1', 'l', 18), ('B0', 'l', 27), ('CI', 'l', 45), ('S3', 'r', -9), ('S2', 'r', 0), ('S1', 'r', 9), ('S0', 'r', 18), ('CO', 'r', 45)],
+}
+
+
 
 
 RIGHT_INPUTS = {'SER', '~LD', 'INH', '~CLR', '~CS', '~WE', 'DIR', 'I7', 'I8'}
@@ -257,17 +347,18 @@ def cm_chips():
                 ['QD', 'QC', 'QB', 'QA'], {'kind': 'ripple', 'modB': 6, 'seq92': True},
                 ['R01', 'R02', '~CKA', '~CKB', 'QD', 'QC', 'QB', 'QA'], -30, -30),
         cm_chip('74155', 'Dual 2-to-4 line decoder/demultiplexer',
-                ['1C', '~1G', '', 'B', 'A', '~2G', '~2C'],
+                ['1C', '~1G', '', 'B', 'A', '', '~2G', '~2C'],
                 ['~1Y3', '~1Y2', '~1Y1', '~1Y0', '~2Y3', '~2Y2', '~2Y1', '~2Y0'], {'kind': 'decoder155'},
                 ['1C', '~1G', 'B', 'A', '~2G', '~2C', '~1Y3', '~1Y2', '~1Y1', '~1Y0', '~2Y3', '~2Y2', '~2Y1', '~2Y0'], -90, -90),
         cm_chip('74257', 'Quad 2-to-1 multiplexer, 3-state',
                 ['S', 'B0', 'A0', 'B1', 'A1', 'B2', 'A2', 'B3', 'A3', '~OE'], ['Y0', '', 'Y1', '', 'Y2', '', 'Y3'],
                 {'kind': 'mux2'}, ['S', 'B0', 'A0', 'B1', 'A1', 'B2', 'A2', 'B3', 'A3', '~OE', 'Y0', 'Y1', 'Y2', 'Y3'], -120, -60),
         cm_chip('74280', '9-bit odd/even parity generator/checker',
-                ['I6', 'I5', 'I4', 'I3', 'I2', 'I1', 'I0'], ['I7', 'I8', {'name': 'EVEN', 'dir': 'out'}, {'name': 'ODD', 'dir': 'out'}],
+                ['I6', 'I5', 'I4', 'I3', 'I2', 'I1', 'I0'], ['I7', 'I8', '', {'name': 'ODD', 'dir': 'out'}, {'name': 'EVEN', 'dir': 'out'}],
                 {'kind': 'parity'}, ['I6', 'I5', 'I4', 'I3', 'I2', 'I1', 'I0', 'I7', 'I8', 'EVEN', 'ODD'], -90, -90),
-        cm_chip('74251', '8-to-1 multiplexer, 3-state', rev(D(8)) + ['C', 'B', 'A', '~G'], ['~W', 'Y'],
-                {'kind': 'mux', 'tristate': True}, rev(D(8)) + ['C', 'B', 'A', '~G', '~W', 'Y'], -150, 0),
+        cm_chip('74251', '8-to-1 multiplexer, 3-state', rev(D(8)),
+                [{'name': n, 'dir': 'in'} for n in ('C', 'B', 'A', '~G')] + ['', '', '~W', 'Y'],
+                {'kind': 'mux', 'tristate': True}, rev(D(8)) + ['C', 'B', 'A', '~G', '~W', 'Y'], -90, -90),
         cm_chip('74377', 'Octal D flip-flop with enable', ['~G', clk('CLK')] + rev(D(8)), rev(D(8, 'Q')),
                 {'kind': 'register'}, ['~G', 'CLK'] + rev(D(8)) + rev(D(8, 'Q')), -120, -60),
         cm_chip('7495', '4-bit parallel-access shift register',
@@ -278,20 +369,42 @@ def cm_chips():
                 ['DIR'] + [{'name': f'B{i}', 'dir': 'inout'} for i in range(7, -1, -1)], {'kind': 'transceiver'},
                 rev(D(8, 'A')) + rev(D(8, 'B')) + ['~G', 'DIR'], -120, -120),
         cm_chip('4585', '4-bit magnitude comparator (CMOS)',
-                rev(D(4, 'A')) + rev(D(4, 'B')) + ['I<', 'I=', 'I>'], ['A>B', 'A=B', 'A<B'], {'kind': 'comparator'},
-                rev(D(4, 'A')) + rev(D(4, 'B')) + ['I<', 'I=', 'I>', 'A<B', 'A=B', 'A>B'], -120, 0,
+                rev(D(4, 'A')) + rev(D(4, 'B')) + ['', 'I>', 'I=', 'I<'], ['A>B', 'A=B', 'A<B'], {'kind': 'comparator'},
+                rev(D(4, 'A')) + rev(D(4, 'B')) + ['I>', 'I=', 'I<', 'A<B', 'A=B', 'A>B'], -120, 0,
                 aliases=['4585', 'CD4585'], floatInputs=0),
         cm_chip('RAM1K', 'Static RAM 1K x 8',
                 rev(D(10, 'A')), ['~CS', '~WE'] + [{'name': f'D{i}', 'dir': 'inout'} for i in range(7, -1, -1)],
                 {'kind': 'ram'}, rev(D(10, 'A')) + rev(D(8)) + ['~CS', '~WE'], -120, -120,
                 aliases=['1K RAM'], title='RAM 1Kx8',
                 description='Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high'),
-        cm_chip('PROM32', 'PROM 32 x 8', ['~CS', '', '', '', ''] + rev(D(5, 'A')), [''] + rev(D(8)),
+        cm_chip('PROM32', 'PROM 32 x 8', ['~CS', '', '', ''] + rev(D(5, 'A')), [''] + rev(D(8)),
                 {'kind': 'rom'}, ['~CS'] + rev(D(5, 'A')) + rev(D(8)), -120, -120,
                 aliases=['PROM32'], title='PROM 32x8', props={'data': ''},
                 description='Programmable ROM, 32 x 8; contents as hex bytes in the "data" property'),
     ]
-    return chips
+    return chips + dual_flipflops()
+
+
+def dual_flipflops():
+    """Whole 74x74/73/112 packages as CircuitMaker's 74LS parts draw them."""
+    ff = lambda h, names: [n.replace('#', str(h)) for n in names]
+    out = []
+    for number, desc, inner, left, right, starts in [
+        ('74LS74', 'Dual D flip-flop, active-low preset/clear', 'dff',
+         ff(1, ['#CLK', '#D', '~#PRE', '~#CLR']) + [''] + ff(2, ['#CLK', '#D', '~#PRE', '~#CLR']),
+         ff(1, ['#Q', '~#Q']) + ['', '', ''] + ff(2, ['#Q', '~#Q']), (-120, -90)),
+        ('74LS73', 'Dual JK flip-flop, negative edge, active-low clear', 'jkff',
+         ff(1, ['#J', '#K', '~#CLK', '~#CLR']) + ff(2, ['#J', '#K', '~#CLK', '~#CLR']),
+         ff(1, ['#Q', '~#Q']) + ['', ''] + ff(2, ['#Q', '~#Q']), (-90, -60)),
+        ('74LS112', 'Dual JK flip-flop, negative edge, active-low preset/clear', 'jkff',
+         ff(1, ['#J', '#K', '~#CLK', '~#PRE', '~#CLR']) + ff(2, ['#J', '#K', '~#CLK', '~#PRE', '~#CLR']),
+         ff(1, ['#Q', '~#Q']) + ['', '', ''] + ff(2, ['#Q', '~#Q']), (-120, -120)),
+    ]:
+        left = [{'name': n, 'clock': True} if 'CLK' in n else n for n in left]
+        names = [e['name'] if isinstance(e, dict) else e for e in left + right if e]
+        out.append(cm_chip(number, desc, left, right, {'kind': 'dual', 'inner': inner}, names, *starts,
+                           aliases=[number, '74HC' + number[4:]], title=number))
+    return out
 
 
 def keypad():
@@ -456,6 +569,20 @@ def analog():
     ]
 
 
+def data_sequencer():
+    # CircuitMaker's layout: outputs Q7 (pin 1) to Q0 on the right, clocks low on the left
+    s = cm_chip('dataseq', 'Data Sequencer', [clk('CP1'), clk('CP2')], [f'Q{i}' for i in range(7, -1, -1)],
+                {'kind': 'dataseq'}, [f'Q{i}' for i in range(7, -1, -1)] + ['CP1', 'CP2'], 90, -90,
+                aliases=['Data Seq'], title='DATA SEQ')
+    s['shape']['titleY'] = -120
+    s.update({'name': 'Data Sequencer', 'prefix': 'DS', 'display': 'dataseq', 'label': '', 'floatInputs': 0,
+              'props': {'data': '', 'lines': 32, 'start': 0, 'stop': 31, 'tick': 1, 'external': 0,
+                        'low': '0', 'high': '5', 'step': '1m'},
+              'description': 'Word generator: outputs 8-bit words from address start to stop and repeats. '
+                             'Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock'})
+    return s
+
+
 def inputs():
     return [
         {'id': 'logicswitch', 'name': 'Logic Switch', 'prefix': 'S', 'display': 'logicswitch',
@@ -464,15 +591,7 @@ def inputs():
          'graphics': [L(-20, -11, -4, -11), C(-10, 10, 4), L(-20, 10, -14, 10), L(20, 0, 40, 0),
                       T('1', -24, -11, 7, 'right'), T('0', -24, 10, 7, 'right')],
          'pins': [pin('Y', 40, 0, 'out')]},
-        box('dataseq', 'Data Sequencer', left=[clk('CP1'), clk('CP2')], right=[f'Q{i}' for i in range(8)],
-            width=80, pitch=20, title='DATA SEQ', title_y=-88, prefix='DS', display='dataseq', aliases=['Data Seq'],
-            # CircuitMaker pin 1 is the most significant output
-            cmPins=[f'Q{i}' for i in range(7, -1, -1)] + ['CP1', 'CP2'],
-            model={'kind': 'dataseq'},
-            props={'data': '', 'lines': 32, 'start': 0, 'stop': 31, 'tick': 1, 'external': 0,
-                   'low': '0', 'high': '5', 'step': '1m'},
-            description='Word generator: outputs 8-bit words from address start to stop and repeats. '
-                        'Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock'),
+        data_sequencer(),
         {'id': 'pulser', 'name': 'Pulser', 'prefix': 'P', 'display': 'pulser', 'aliases': ['Pulser'],
          'cmPins': ['', '', 'Q', '~Q'], 'model': {'kind': 'pulser'}, 'props': {'high': 10, 'low': 10},
          'description': 'Clock source; high and low durations in ticks',
@@ -525,9 +644,10 @@ def seg_graphics():
     names = list('abcdefg') + ['dp']
     for i, n in enumerate(names):
         x = -70 + 20 * i
-        g += [L(x, 70, x, 100), T(n, x + 6, 92, 6, 'left')]
-    g += [L(0, -80, 0, -100), T('COM', 12, -92, 6, 'left')]
-    pins = [pin(n, -70 + 20 * i, 100, 'in') for i, n in enumerate(names)] + [pin('COM', 0, -100, 'in')]
+        g += [L(x, 70, x, 120), T(n, x + 6, 92, 6, 'left')]
+    # pin ends where CircuitMaker has them (36 of its units below and above)
+    g += [L(0, -80, 0, -120), T('COM', 12, -100, 6, 'left')]
+    pins = [pin(n, -70 + 20 * i, 120, 'in') for i, n in enumerate(names)] + [pin('COM', 0, -120, 'in')]
     return g, pins
 
 

@@ -86,8 +86,8 @@
    "name": "Data Sequencer",
    "shape": {
     "type": "box",
-    "width": 80,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
      {
       "name": "CP1",
@@ -99,22 +99,23 @@
      }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "Q4",
-     "Q5",
+     "Q7",
      "Q6",
-     "Q7"
+     "Q5",
+     "Q4",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": 90,
+    "rightStart": -90,
     "title": "DATA SEQ",
-    "titleY": -88
+    "titleY": -120
    },
-   "prefix": "DS",
-   "display": "dataseq",
+   "model": {
+    "kind": "dataseq"
+   },
    "aliases": [
     "Data Seq"
    ],
@@ -130,9 +131,11 @@
     "CP1",
     "CP2"
    ],
-   "model": {
-    "kind": "dataseq"
-   },
+   "label": "",
+   "description": "Word generator: outputs 8-bit words from address start to stop and repeats. Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock",
+   "floatInputs": 0,
+   "prefix": "DS",
+   "display": "dataseq",
    "props": {
     "data": "",
     "lines": 32,
@@ -143,8 +146,7 @@
     "low": "0",
     "high": "5",
     "step": "1m"
-   },
-   "description": "Word generator: outputs 8-bit words from address start to stop and repeats. Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock"
+   }
   },
   {
    "id": "pulser",

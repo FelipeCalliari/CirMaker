@@ -909,10 +909,51 @@ private:
 
 } // namespace
 
+namespace {
+
+// Two independent halves of a dual chip (74139, 74153). Pins "1X"/"2X"
+// belong to one half and are seen by its model as "X"; other pins (shared
+// selects) belong to both.
+class DualModel : public Model {
+public:
+    explicit DualModel(std::vector<std::unique_ptr<Model>> halves) : m_halves(std::move(halves)) {}
+    void init(ModelContext& ctx) override { for (auto& h : m_halves) h->init(ctx); }
+    void evaluate(ModelContext& ctx) override { for (auto& h : m_halves) h->evaluate(ctx); }
+    void wake(ModelContext& ctx) override { for (auto& h : m_halves) h->wake(ctx); }
+
+private:
+    std::vector<std::unique_ptr<Model>> m_halves;
+};
+
+SymbolDef halfOf(const SymbolDef& s, QChar half)
+{
+    SymbolDef h = s;
+    h.model = QJsonObject{{QStringLiteral("kind"), s.model.value(u"inner")}};
+    for (SymbolPin& pin : h.pins) {
+        const bool low = pin.name.startsWith(u'~');
+        const QString bare = pin.name.mid(low ? 1 : 0);
+        if (bare.size() > 1 && (bare[0] == u'1' || bare[0] == u'2'))
+            pin.name = bare[0] == half ? (low ? QStringLiteral("~") : QString()) + bare.mid(1) : QString();
+    }
+    return h;
+}
+
+} // namespace
+
 std::unique_ptr<Model> createChipModel(const SymbolDef& s, const Component& c, QString* error)
 {
     const Pins p(s);
     const QString kind = s.model.value(u"kind").toString();
+    if (kind == u"dual") {
+        std::vector<std::unique_ptr<Model>> halves;
+        for (QChar half : {u'1', u'2'}) {
+            const SymbolDef h = halfOf(s, half);
+            std::unique_ptr<Model> m = createModel(h, c, error);
+            if (!m) return nullptr;
+            halves.push_back(std::move(m));
+        }
+        return std::make_unique<DualModel>(std::move(halves));
+    }
     if (kind == u"ripple")
         return std::make_unique<RippleCounter>(p, s.model.value(u"modB").toInt(8), s.model.value(u"seq92").toBool());
     if (kind == u"sync") return std::make_unique<SyncCounter>(p, s.model.value(u"syncClear").toBool());

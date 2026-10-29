@@ -14,6 +14,7 @@ struct CktImportReport {
     int components = 0;
     int wires = 0;
     int texts = 0;
+    int shorts = 0;                 // nets of the file our redrawn symbols join
     QMap<QString, int> unmapped;    // CircuitMaker device name -> occurrences
     QStringList warnings;
 };

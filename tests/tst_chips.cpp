@@ -20,6 +20,8 @@ private slots:
     void decoder74155();
     void parity74280();
     void keypadConnects();
+    void dualDFlipFlop74LS74();
+    void dualDecoder74139();
 };
 
 namespace {
@@ -339,6 +341,46 @@ void TestChips::keypadConnects()
     QCOMPARE(b.sim.componentState(lamp), 1);
     b.sim.interact(k, QStringLiteral("release"));
     QCOMPARE(b.sim.componentState(lamp), 0);
+}
+
+// Both halves of the whole-package 74LS74 work independently.
+void TestChips::dualDFlipFlop74LS74()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74LS74"), {0, 0}, QStringLiteral("U1"));
+    const ItemId d1 = source(c, u, QStringLiteral("1D"), -600, 0);
+    const ItemId k1 = source(c, u, QStringLiteral("1CLK"), -600, 100);
+    const ItemId d2 = source(c, u, QStringLiteral("2D"), -600, 200);
+    const ItemId k2 = source(c, u, QStringLiteral("2CLK"), -600, 300);
+    Bench b(c);         // preset/clear float high (inactive)
+    QCOMPARE(b.value(c, u, QStringLiteral("1Q")), Logic::L0);
+    b.sim.interact(d1, QStringLiteral("toggle"));
+    b.sim.step(4);
+    pulse(b, k1);
+    QCOMPARE(b.value(c, u, QStringLiteral("1Q")), Logic::L1);
+    QCOMPARE(b.value(c, u, QStringLiteral("~1Q")), Logic::L0);
+    QCOMPARE(b.value(c, u, QStringLiteral("2Q")), Logic::L0);     // other half untouched
+    b.sim.interact(d2, QStringLiteral("toggle"));
+    b.sim.step(4);
+    pulse(b, k2);
+    QCOMPARE(b.value(c, u, QStringLiteral("2Q")), Logic::L1);
+}
+
+void TestChips::dualDecoder74139()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74139"), {0, 0}, QStringLiteral("U1"));
+    const ItemId a1 = source(c, u, QStringLiteral("1A"), -600, 0);
+    const ItemId b2 = source(c, u, QStringLiteral("2B"), -600, 100);
+    for (const char* n : {"~1G", "~2G", "1B", "2A"}) tieLow(c, u, QString::fromLatin1(n));
+    Bench b(c);
+    QCOMPARE(bus(b, c, u, {"~1Y0", "~1Y1", "~1Y2", "~1Y3"}), 0b1110);
+    QCOMPARE(bus(b, c, u, {"~2Y0", "~2Y1", "~2Y2", "~2Y3"}), 0b1110);
+    b.sim.interact(a1, QStringLiteral("toggle"));
+    b.sim.interact(b2, QStringLiteral("toggle"));
+    b.sim.step(4);
+    QCOMPARE(bus(b, c, u, {"~1Y0", "~1Y1", "~1Y2", "~1Y3"}), 0b1101);     // 1: A=1 -> Y1
+    QCOMPARE(bus(b, c, u, {"~2Y0", "~2Y1", "~2Y2", "~2Y3"}), 0b1011);     // 2: B=1 -> Y2
 }
 
 QTEST_GUILESS_MAIN(TestChips)

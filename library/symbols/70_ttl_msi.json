@@ -6,30 +6,60 @@
    "name": "7490 Decade counter (÷2 and ÷5)",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
      {
+      "name": "R91",
+      "number": "6"
+     },
+     {
+      "name": "R92",
+      "number": "7"
+     },
+     {
+      "name": "R01",
+      "number": "2"
+     },
+     {
+      "name": "R02",
+      "number": "3"
+     },
+     "",
+     {
       "name": "~CKA",
+      "number": "14",
       "clock": true
      },
      {
       "name": "~CKB",
+      "number": "1",
       "clock": true
-     },
-     "R01",
-     "R02",
-     "R91",
-     "R92"
+     }
     ],
     "right": [
-     "QA",
-     "QB",
-     "QC",
-     "QD"
+     {
+      "name": "QD",
+      "number": "11"
+     },
+     "",
+     {
+      "name": "QC",
+      "number": "8"
+     },
+     "",
+     {
+      "name": "QB",
+      "number": "9"
+     },
+     "",
+     {
+      "name": "QA",
+      "number": "12"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "7490"
    },
    "model": {
@@ -39,7 +69,20 @@
    "aliases": [
     "7490",
     "74LS90",
-    "74HC90"
+    "74HC90",
+    "74F90"
+   ],
+   "cmPins": [
+    "R91",
+    "R92",
+    "R01",
+    "R02",
+    "~CKA",
+    "~CKB",
+    "QD",
+    "QC",
+    "QB",
+    "QA"
    ],
    "label": "7490",
    "description": "Decade counter (÷2 and ÷5)",
@@ -50,28 +93,48 @@
    "name": "7493 4-bit binary ripple counter (÷2 and ÷8)",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
      {
+      "name": "R01",
+      "number": "2"
+     },
+     {
+      "name": "R02",
+      "number": "3"
+     },
+     {
       "name": "~CKA",
+      "number": "14",
       "clock": true
      },
      {
       "name": "~CKB",
+      "number": "1",
       "clock": true
-     },
-     "R01",
-     "R02"
+     }
     ],
     "right": [
-     "QA",
-     "QB",
-     "QC",
-     "QD"
+     {
+      "name": "QD",
+      "number": "11"
+     },
+     {
+      "name": "QC",
+      "number": "8"
+     },
+     {
+      "name": "QB",
+      "number": "9"
+     },
+     {
+      "name": "QA",
+      "number": "12"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -30,
+    "rightStart": -30,
     "title": "7493"
    },
    "model": {
@@ -81,7 +144,18 @@
    "aliases": [
     "7493",
     "74LS93",
-    "74HC93"
+    "74HC93",
+    "74F93"
+   ],
+   "cmPins": [
+    "R01",
+    "R02",
+    "~CKA",
+    "~CKB",
+    "QD",
+    "QC",
+    "QB",
+    "QA"
    ],
    "label": "7493",
    "description": "4-bit binary ripple counter (÷2 and ÷8)",
@@ -92,31 +166,77 @@
    "name": "74161 Synchronous 4-bit counter",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "ENP",
-     "ENT",
+     {
+      "name": "ENP",
+      "number": "7"
+     },
+     {
+      "name": "ENT",
+      "number": "10"
+     },
      {
       "name": "CLK",
+      "number": "2",
       "clock": true
      },
-     "~LOAD",
-     "~CLR"
+     "",
+     "",
+     {
+      "name": "D3",
+      "number": "6"
+     },
+     {
+      "name": "D2",
+      "number": "5"
+     },
+     {
+      "name": "D1",
+      "number": "4"
+     },
+     {
+      "name": "D0",
+      "number": "3"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "RCO"
+     {
+      "name": "~LOAD",
+      "number": "9",
+      "dir": "in"
+     },
+     {
+      "name": "~CLR",
+      "number": "1",
+      "dir": "in"
+     },
+     "",
+     "",
+     {
+      "name": "RCO",
+      "number": "15"
+     },
+     {
+      "name": "Q3",
+      "number": "11"
+     },
+     {
+      "name": "Q2",
+      "number": "12"
+     },
+     {
+      "name": "Q1",
+      "number": "13"
+     },
+     {
+      "name": "Q0",
+      "number": "14"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "74161"
    },
    "model": {
@@ -125,7 +245,24 @@
    "aliases": [
     "74161",
     "74LS161",
-    "74HC161"
+    "74HC161",
+    "74F161"
+   ],
+   "cmPins": [
+    "ENP",
+    "ENT",
+    "CLK",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~LOAD",
+    "~CLR",
+    "RCO",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74161",
    "description": "Synchronous 4-bit counter, asynchronous clear",
@@ -136,31 +273,74 @@
    "name": "74163 Synchronous 4-bit counter",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "ENP",
-     "ENT",
+     {
+      "name": "ENP",
+      "number": "7"
+     },
+     {
+      "name": "ENT",
+      "number": "10"
+     },
      {
       "name": "CLK",
+      "number": "2",
       "clock": true
      },
-     "~LOAD",
-     "~CLR"
+     {
+      "name": "~LOAD",
+      "number": "9"
+     },
+     {
+      "name": "D3",
+      "number": "6"
+     },
+     {
+      "name": "D2",
+      "number": "5"
+     },
+     {
+      "name": "D1",
+      "number": "4"
+     },
+     {
+      "name": "D0",
+      "number": "3"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "RCO"
+     {
+      "name": "~CLR",
+      "number": "1",
+      "dir": "in"
+     },
+     "",
+     "",
+     {
+      "name": "RCO",
+      "number": "15"
+     },
+     {
+      "name": "Q3",
+      "number": "11"
+     },
+     {
+      "name": "Q2",
+      "number": "12"
+     },
+     {
+      "name": "Q1",
+      "number": "13"
+     },
+     {
+      "name": "Q0",
+      "number": "14"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "74163"
    },
    "model": {
@@ -170,7 +350,24 @@
    "aliases": [
     "74163",
     "74LS163",
-    "74HC163"
+    "74HC163",
+    "74F163"
+   ],
+   "cmPins": [
+    "ENP",
+    "ENT",
+    "CLK",
+    "~LOAD",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~CLR",
+    "RCO",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74163",
    "description": "Synchronous 4-bit counter, synchronous clear",
@@ -181,34 +378,72 @@
    "name": "74192 Up/down decade counter",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
      {
       "name": "UP",
+      "number": "5",
       "clock": true
      },
      {
       "name": "DOWN",
+      "number": "4",
       "clock": true
      },
-     "~LOAD",
-     "CLR"
+     {
+      "name": "~LOAD",
+      "number": "11"
+     },
+     {
+      "name": "CLR",
+      "number": "14"
+     },
+     {
+      "name": "D3",
+      "number": "9"
+     },
+     {
+      "name": "D2",
+      "number": "10"
+     },
+     {
+      "name": "D1",
+      "number": "1"
+     },
+     {
+      "name": "D0",
+      "number": "15"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "~CO",
-     "~BO"
+     {
+      "name": "~CO",
+      "number": "12"
+     },
+     {
+      "name": "~BO",
+      "number": "13"
+     },
+     {
+      "name": "Q3",
+      "number": "7"
+     },
+     {
+      "name": "Q2",
+      "number": "6"
+     },
+     {
+      "name": "Q1",
+      "number": "2"
+     },
+     {
+      "name": "Q0",
+      "number": "3"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -30,
     "title": "74192"
    },
    "model": {
@@ -218,7 +453,24 @@
    "aliases": [
     "74192",
     "74LS192",
-    "74HC192"
+    "74HC192",
+    "74F192"
+   ],
+   "cmPins": [
+    "UP",
+    "DOWN",
+    "~LOAD",
+    "CLR",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~CO",
+    "~BO",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74192",
    "description": "Up/down decade counter",
@@ -229,34 +481,72 @@
    "name": "74193 Up/down 4-bit binary counter",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
      {
       "name": "UP",
+      "number": "5",
       "clock": true
      },
      {
       "name": "DOWN",
+      "number": "4",
       "clock": true
      },
-     "~LOAD",
-     "CLR"
+     {
+      "name": "~LOAD",
+      "number": "11"
+     },
+     {
+      "name": "CLR",
+      "number": "14"
+     },
+     {
+      "name": "D3",
+      "number": "9"
+     },
+     {
+      "name": "D2",
+      "number": "10"
+     },
+     {
+      "name": "D1",
+      "number": "1"
+     },
+     {
+      "name": "D0",
+      "number": "15"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "~CO",
-     "~BO"
+     {
+      "name": "~CO",
+      "number": "12"
+     },
+     {
+      "name": "~BO",
+      "number": "13"
+     },
+     {
+      "name": "Q3",
+      "number": "7"
+     },
+     {
+      "name": "Q2",
+      "number": "6"
+     },
+     {
+      "name": "Q1",
+      "number": "2"
+     },
+     {
+      "name": "Q0",
+      "number": "3"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -30,
     "title": "74193"
    },
    "model": {
@@ -266,7 +556,24 @@
    "aliases": [
     "74193",
     "74LS193",
-    "74HC193"
+    "74HC193",
+    "74F193"
+   ],
+   "cmPins": [
+    "UP",
+    "DOWN",
+    "~LOAD",
+    "CLR",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~CO",
+    "~BO",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74193",
    "description": "Up/down 4-bit binary counter",
@@ -277,28 +584,72 @@
    "name": "74138 3-to-8 line decoder/demultiplexer",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A",
-     "B",
-     "C",
-     "G1",
-     "~G2A",
-     "~G2B"
+     {
+      "name": "C",
+      "number": "3"
+     },
+     {
+      "name": "B",
+      "number": "2"
+     },
+     {
+      "name": "A",
+      "number": "1"
+     },
+     "",
+     "",
+     {
+      "name": "G1",
+      "number": "6"
+     },
+     {
+      "name": "~G2B",
+      "number": "5"
+     },
+     {
+      "name": "~G2A",
+      "number": "4"
+     }
     ],
     "right": [
-     "~Y0",
-     "~Y1",
-     "~Y2",
-     "~Y3",
-     "~Y4",
-     "~Y5",
-     "~Y6",
-     "~Y7"
+     {
+      "name": "~Y7",
+      "number": "7"
+     },
+     {
+      "name": "~Y6",
+      "number": "9"
+     },
+     {
+      "name": "~Y5",
+      "number": "10"
+     },
+     {
+      "name": "~Y4",
+      "number": "11"
+     },
+     {
+      "name": "~Y3",
+      "number": "12"
+     },
+     {
+      "name": "~Y2",
+      "number": "13"
+     },
+     {
+      "name": "~Y1",
+      "number": "14"
+     },
+     {
+      "name": "~Y0",
+      "number": "15"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "74138"
    },
    "model": {
@@ -307,7 +658,24 @@
    "aliases": [
     "74138",
     "74LS138",
-    "74HC138"
+    "74HC138",
+    "74F138"
+   ],
+   "cmPins": [
+    "C",
+    "B",
+    "A",
+    "G1",
+    "~G2B",
+    "~G2A",
+    "~Y7",
+    "~Y6",
+    "~Y5",
+    "~Y4",
+    "~Y3",
+    "~Y2",
+    "~Y1",
+    "~Y0"
    ],
    "label": "74138",
    "description": "3-to-8 line decoder/demultiplexer",
@@ -315,36 +683,104 @@
   },
   {
    "id": "74139",
-   "name": "74139 2-to-4 line decoder (one of two)",
+   "name": "74139 Dual 2-to-4 line decoder",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A",
-     "B",
-     "~G"
+     {
+      "name": "1B",
+      "number": "3"
+     },
+     {
+      "name": "1A",
+      "number": "2"
+     },
+     {
+      "name": "~1G",
+      "number": "1"
+     },
+     "",
+     {
+      "name": "2B",
+      "number": "13"
+     },
+     {
+      "name": "2A",
+      "number": "14"
+     },
+     {
+      "name": "~2G",
+      "number": "15"
+     }
     ],
     "right": [
-     "~Y0",
-     "~Y1",
-     "~Y2",
-     "~Y3"
+     {
+      "name": "~1Y3",
+      "number": "7"
+     },
+     {
+      "name": "~1Y2",
+      "number": "6"
+     },
+     {
+      "name": "~1Y1",
+      "number": "5"
+     },
+     {
+      "name": "~1Y0",
+      "number": "4"
+     },
+     {
+      "name": "~2Y3",
+      "number": "9"
+     },
+     {
+      "name": "~2Y2",
+      "number": "10"
+     },
+     {
+      "name": "~2Y1",
+      "number": "11"
+     },
+     {
+      "name": "~2Y0",
+      "number": "12"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -60,
+    "rightStart": -90,
     "title": "74139"
    },
    "model": {
-    "kind": "decoder"
+    "kind": "dual",
+    "inner": "decoder"
    },
    "aliases": [
     "74139",
     "74LS139",
-    "74HC139"
+    "74HC139",
+    "74F139"
+   ],
+   "cmPins": [
+    "1B",
+    "1A",
+    "~1G",
+    "2B",
+    "2A",
+    "~2G",
+    "~1Y3",
+    "~1Y2",
+    "~1Y1",
+    "~1Y0",
+    "~2Y3",
+    "~2Y2",
+    "~2Y1",
+    "~2Y0"
    ],
    "label": "74139",
-   "description": "2-to-4 line decoder (one of two)",
+   "description": "Dual 2-to-4 line decoder",
    "floatInputs": 1
   },
   {
@@ -352,28 +788,70 @@
    "name": "7442 BCD-to-decimal decoder",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A",
-     "B",
-     "C",
-     "D"
+     {
+      "name": "D",
+      "number": "12"
+     },
+     {
+      "name": "C",
+      "number": "13"
+     },
+     {
+      "name": "B",
+      "number": "14"
+     },
+     {
+      "name": "A",
+      "number": "15"
+     }
     ],
     "right": [
-     "~Y0",
-     "~Y1",
-     "~Y2",
-     "~Y3",
-     "~Y4",
-     "~Y5",
-     "~Y6",
-     "~Y7",
-     "~Y8",
-     "~Y9"
+     {
+      "name": "~Y9",
+      "number": "11"
+     },
+     {
+      "name": "~Y8",
+      "number": "10"
+     },
+     {
+      "name": "~Y7",
+      "number": "9"
+     },
+     {
+      "name": "~Y6",
+      "number": "7"
+     },
+     {
+      "name": "~Y5",
+      "number": "6"
+     },
+     {
+      "name": "~Y4",
+      "number": "5"
+     },
+     {
+      "name": "~Y3",
+      "number": "4"
+     },
+     {
+      "name": "~Y2",
+      "number": "3"
+     },
+     {
+      "name": "~Y1",
+      "number": "2"
+     },
+     {
+      "name": "~Y0",
+      "number": "1"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": 60,
+    "rightStart": -120,
     "title": "7442"
    },
    "model": {
@@ -382,7 +860,24 @@
    "aliases": [
     "7442",
     "74LS42",
-    "74HC42"
+    "74HC42",
+    "74F42"
+   ],
+   "cmPins": [
+    "D",
+    "C",
+    "B",
+    "A",
+    "~Y9",
+    "~Y8",
+    "~Y7",
+    "~Y6",
+    "~Y5",
+    "~Y4",
+    "~Y3",
+    "~Y2",
+    "~Y1",
+    "~Y0"
    ],
    "label": "7442",
    "description": "BCD-to-decimal decoder",
@@ -393,28 +888,77 @@
    "name": "7447 BCD to 7-segment decoder/driver",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A",
-     "B",
-     "C",
-     "D",
-     "~LT",
-     "~BI",
-     "~RBI"
+     {
+      "name": "D",
+      "number": "6"
+     },
+     {
+      "name": "C",
+      "number": "2"
+     },
+     {
+      "name": "B",
+      "number": "1"
+     },
+     {
+      "name": "A",
+      "number": "7"
+     },
+     "",
+     "",
+     "",
+     "",
+     {
+      "name": "~LT",
+      "number": "3"
+     },
+     {
+      "name": "~RBI",
+      "number": "5"
+     }
     ],
     "right": [
-     "~a",
-     "~b",
-     "~c",
-     "~d",
-     "~e",
-     "~f",
-     "~g"
+     {
+      "name": "~g",
+      "number": "14"
+     },
+     {
+      "name": "~f",
+      "number": "15"
+     },
+     {
+      "name": "~e",
+      "number": "9"
+     },
+     {
+      "name": "~d",
+      "number": "10"
+     },
+     {
+      "name": "~c",
+      "number": "11"
+     },
+     {
+      "name": "~b",
+      "number": "12"
+     },
+     {
+      "name": "~a",
+      "number": "13"
+     },
+     "",
+     "",
+     {
+      "name": "~BI",
+      "number": "4",
+      "dir": "in"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "7447"
    },
    "model": {
@@ -423,7 +967,24 @@
    "aliases": [
     "7447",
     "74LS47",
-    "74HC47"
+    "74HC47",
+    "74F47"
+   ],
+   "cmPins": [
+    "D",
+    "C",
+    "B",
+    "A",
+    "~LT",
+    "~RBI",
+    "~g",
+    "~f",
+    "~e",
+    "~d",
+    "~c",
+    "~b",
+    "~a",
+    "~BI"
    ],
    "label": "7447",
    "description": "BCD to 7-segment decoder/driver, active-low outputs (common anode)",
@@ -434,28 +995,77 @@
    "name": "7448 BCD to 7-segment decoder",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A",
-     "B",
-     "C",
-     "D",
-     "~LT",
-     "~BI",
-     "~RBI"
+     {
+      "name": "D",
+      "number": "6"
+     },
+     {
+      "name": "C",
+      "number": "2"
+     },
+     {
+      "name": "B",
+      "number": "1"
+     },
+     {
+      "name": "A",
+      "number": "7"
+     },
+     "",
+     "",
+     "",
+     "",
+     {
+      "name": "~LT",
+      "number": "3"
+     },
+     {
+      "name": "~RBI",
+      "number": "5"
+     }
     ],
     "right": [
-     "a",
-     "b",
-     "c",
-     "d",
-     "e",
-     "f",
-     "g"
+     {
+      "name": "g",
+      "number": "14"
+     },
+     {
+      "name": "f",
+      "number": "15"
+     },
+     {
+      "name": "e",
+      "number": "9"
+     },
+     {
+      "name": "d",
+      "number": "10"
+     },
+     {
+      "name": "c",
+      "number": "11"
+     },
+     {
+      "name": "b",
+      "number": "12"
+     },
+     {
+      "name": "a",
+      "number": "13"
+     },
+     "",
+     "",
+     {
+      "name": "~BI",
+      "number": "4",
+      "dir": "in"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "7448"
    },
    "model": {
@@ -464,7 +1074,24 @@
    "aliases": [
     "7448",
     "74LS48",
-    "74HC48"
+    "74HC48",
+    "74F48"
+   ],
+   "cmPins": [
+    "D",
+    "C",
+    "B",
+    "A",
+    "~LT",
+    "~RBI",
+    "g",
+    "f",
+    "e",
+    "d",
+    "c",
+    "b",
+    "a",
+    "~BI"
    ],
    "label": "7448",
    "description": "BCD to 7-segment decoder, active-high outputs (common cathode)",
@@ -475,28 +1102,76 @@
    "name": "74151 8-to-1 multiplexer",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "D4",
-     "D5",
-     "D6",
-     "D7",
-     "A",
-     "B",
-     "C",
-     "~G"
+     {
+      "name": "D7",
+      "number": "12"
+     },
+     {
+      "name": "D6",
+      "number": "13"
+     },
+     {
+      "name": "D5",
+      "number": "14"
+     },
+     {
+      "name": "D4",
+      "number": "15"
+     },
+     {
+      "name": "D3",
+      "number": "1"
+     },
+     {
+      "name": "D2",
+      "number": "2"
+     },
+     {
+      "name": "D1",
+      "number": "3"
+     },
+     {
+      "name": "D0",
+      "number": "4"
+     }
     ],
     "right": [
-     "Y",
-     "~W"
+     {
+      "name": "~G",
+      "number": "7",
+      "dir": "in"
+     },
+     {
+      "name": "C",
+      "number": "9",
+      "dir": "in"
+     },
+     {
+      "name": "B",
+      "number": "10",
+      "dir": "in"
+     },
+     {
+      "name": "A",
+      "number": "11",
+      "dir": "in"
+     },
+     "",
+     "",
+     {
+      "name": "Y",
+      "number": "5"
+     },
+     {
+      "name": "~W",
+      "number": "6"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "74151"
    },
    "model": {
@@ -505,7 +1180,24 @@
    "aliases": [
     "74151",
     "74LS151",
-    "74HC151"
+    "74HC151",
+    "74F151"
+   ],
+   "cmPins": [
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~G",
+    "C",
+    "B",
+    "A",
+    "Y",
+    "~W"
    ],
    "label": "74151",
    "description": "8-to-1 multiplexer",
@@ -513,37 +1205,111 @@
   },
   {
    "id": "74153",
-   "name": "74153 4-to-1 multiplexer (one of two)",
+   "name": "74153 Dual 4-to-1 multiplexer",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "A",
-     "B",
-     "~G"
+     {
+      "name": "1D3",
+      "number": "3"
+     },
+     {
+      "name": "1D2",
+      "number": "4"
+     },
+     {
+      "name": "1D1",
+      "number": "5"
+     },
+     {
+      "name": "1D0",
+      "number": "6"
+     },
+     {
+      "name": "B",
+      "number": "2"
+     },
+     {
+      "name": "A",
+      "number": "14"
+     },
+     {
+      "name": "2D3",
+      "number": "13"
+     },
+     {
+      "name": "2D2",
+      "number": "12"
+     },
+     {
+      "name": "2D1",
+      "number": "11"
+     },
+     {
+      "name": "2D0",
+      "number": "10"
+     }
     ],
     "right": [
-     "Y"
+     {
+      "name": "~1G",
+      "number": "1",
+      "dir": "in"
+     },
+     "",
+     {
+      "name": "1Y",
+      "number": "7"
+     },
+     "",
+     "",
+     "",
+     "",
+     {
+      "name": "2Y",
+      "number": "9"
+     },
+     "",
+     {
+      "name": "~2G",
+      "number": "15",
+      "dir": "in"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "74153"
    },
    "model": {
-    "kind": "mux"
+    "kind": "dual",
+    "inner": "mux"
    },
    "aliases": [
     "74153",
     "74LS153",
-    "74HC153"
+    "74HC153",
+    "74F153"
+   ],
+   "cmPins": [
+    "1D3",
+    "1D2",
+    "1D1",
+    "1D0",
+    "B",
+    "A",
+    "2D3",
+    "2D2",
+    "2D1",
+    "2D0",
+    "~1G",
+    "~2G",
+    "1Y",
+    "2Y"
    ],
    "label": "74153",
-   "description": "4-to-1 multiplexer (one of two)",
+   "description": "Dual 4-to-1 multiplexer",
    "floatInputs": 1
   },
   {
@@ -551,28 +1317,73 @@
    "name": "74157 Quad 2-to-1 multiplexer",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A0",
-     "A1",
-     "A2",
-     "A3",
-     "B0",
-     "B1",
-     "B2",
-     "B3",
-     "S",
-     "~G"
+     {
+      "name": "S",
+      "number": "1"
+     },
+     {
+      "name": "B0",
+      "number": "3"
+     },
+     {
+      "name": "A0",
+      "number": "2"
+     },
+     {
+      "name": "B1",
+      "number": "6"
+     },
+     {
+      "name": "A1",
+      "number": "5"
+     },
+     {
+      "name": "B2",
+      "number": "10"
+     },
+     {
+      "name": "A2",
+      "number": "11"
+     },
+     {
+      "name": "B3",
+      "number": "13"
+     },
+     {
+      "name": "A3",
+      "number": "14"
+     },
+     {
+      "name": "~G",
+      "number": "15"
+     }
     ],
     "right": [
-     "Y0",
-     "Y1",
-     "Y2",
-     "Y3"
+     {
+      "name": "Y0",
+      "number": "4"
+     },
+     "",
+     {
+      "name": "Y1",
+      "number": "7"
+     },
+     "",
+     {
+      "name": "Y2",
+      "number": "9"
+     },
+     "",
+     {
+      "name": "Y3",
+      "number": "12"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -60,
     "title": "74157"
    },
    "model": {
@@ -581,7 +1392,24 @@
    "aliases": [
     "74157",
     "74LS157",
-    "74HC157"
+    "74HC157",
+    "74F157"
+   ],
+   "cmPins": [
+    "S",
+    "B0",
+    "A0",
+    "B1",
+    "A1",
+    "B2",
+    "A2",
+    "B3",
+    "A3",
+    "~G",
+    "Y0",
+    "Y1",
+    "Y2",
+    "Y3"
    ],
    "label": "74157",
    "description": "Quad 2-to-1 multiplexer",
@@ -592,28 +1420,73 @@
    "name": "7483 4-bit binary full adder",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A0",
-     "A1",
-     "A2",
-     "A3",
-     "B0",
-     "B1",
-     "B2",
-     "B3",
-     "CI"
+     {
+      "name": "A3",
+      "number": "1"
+     },
+     {
+      "name": "A2",
+      "number": "3"
+     },
+     {
+      "name": "A1",
+      "number": "8"
+     },
+     {
+      "name": "A0",
+      "number": "10"
+     },
+     {
+      "name": "B3",
+      "number": "16"
+     },
+     {
+      "name": "B2",
+      "number": "4"
+     },
+     {
+      "name": "B1",
+      "number": "7"
+     },
+     {
+      "name": "B0",
+      "number": "11"
+     },
+     "",
+     {
+      "name": "CI",
+      "number": "13"
+     }
     ],
     "right": [
-     "S0",
-     "S1",
-     "S2",
-     "S3",
-     "CO"
+     {
+      "name": "S3",
+      "number": "15"
+     },
+     {
+      "name": "S2",
+      "number": "2"
+     },
+     {
+      "name": "S1",
+      "number": "6"
+     },
+     {
+      "name": "S0",
+      "number": "9"
+     },
+     "",
+     "",
+     {
+      "name": "CO",
+      "number": "14"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -30,
     "title": "7483"
    },
    "model": {
@@ -622,7 +1495,24 @@
    "aliases": [
     "7483",
     "74LS83",
-    "74HC83"
+    "74HC83",
+    "74F83"
+   ],
+   "cmPins": [
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "B3",
+    "B2",
+    "B1",
+    "B0",
+    "CI",
+    "S3",
+    "S2",
+    "S1",
+    "S0",
+    "CO"
    ],
    "label": "7483",
    "description": "4-bit binary full adder",
@@ -633,28 +1523,73 @@
    "name": "74283 4-bit binary full adder",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A0",
-     "A1",
-     "A2",
-     "A3",
-     "B0",
-     "B1",
-     "B2",
-     "B3",
-     "CI"
+     {
+      "name": "A3",
+      "number": "12"
+     },
+     {
+      "name": "A2",
+      "number": "14"
+     },
+     {
+      "name": "A1",
+      "number": "3"
+     },
+     {
+      "name": "A0",
+      "number": "5"
+     },
+     {
+      "name": "B3",
+      "number": "11"
+     },
+     {
+      "name": "B2",
+      "number": "15"
+     },
+     {
+      "name": "B1",
+      "number": "2"
+     },
+     {
+      "name": "B0",
+      "number": "6"
+     },
+     "",
+     {
+      "name": "CI",
+      "number": "7"
+     }
     ],
     "right": [
-     "S0",
-     "S1",
-     "S2",
-     "S3",
-     "CO"
+     {
+      "name": "S3",
+      "number": "10"
+     },
+     {
+      "name": "S2",
+      "number": "13"
+     },
+     {
+      "name": "S1",
+      "number": "1"
+     },
+     {
+      "name": "S0",
+      "number": "4"
+     },
+     "",
+     "",
+     {
+      "name": "CO",
+      "number": "9"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -30,
     "title": "74283"
    },
    "model": {
@@ -663,7 +1598,24 @@
    "aliases": [
     "74283",
     "74LS283",
-    "74HC283"
+    "74HC283",
+    "74F283"
+   ],
+   "cmPins": [
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "B3",
+    "B2",
+    "B1",
+    "B0",
+    "CI",
+    "S3",
+    "S2",
+    "S1",
+    "S0",
+    "CO"
    ],
    "label": "74283",
    "description": "4-bit binary full adder, fast carry",
@@ -674,28 +1626,75 @@
    "name": "7485 4-bit magnitude comparator",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A0",
-     "A1",
-     "A2",
-     "A3",
-     "B0",
-     "B1",
-     "B2",
-     "B3",
-     "I<",
-     "I=",
-     "I>"
+     {
+      "name": "A3",
+      "number": "15"
+     },
+     {
+      "name": "A2",
+      "number": "13"
+     },
+     {
+      "name": "A1",
+      "number": "12"
+     },
+     {
+      "name": "A0",
+      "number": "10"
+     },
+     {
+      "name": "B3",
+      "number": "1"
+     },
+     {
+      "name": "B2",
+      "number": "14"
+     },
+     {
+      "name": "B1",
+      "number": "11"
+     },
+     {
+      "name": "B0",
+      "number": "9"
+     }
     ],
     "right": [
-     "A<B",
-     "A=B",
-     "A>B"
+     {
+      "name": "I<",
+      "number": "2",
+      "dir": "in"
+     },
+     {
+      "name": "I=",
+      "number": "3",
+      "dir": "in"
+     },
+     {
+      "name": "I>",
+      "number": "4",
+      "dir": "in"
+     },
+     "",
+     "",
+     {
+      "name": "A<B",
+      "number": "7"
+     },
+     {
+      "name": "A=B",
+      "number": "6"
+     },
+     {
+      "name": "A>B",
+      "number": "5"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "7485"
    },
    "model": {
@@ -704,7 +1703,24 @@
    "aliases": [
     "7485",
     "74LS85",
-    "74HC85"
+    "74HC85",
+    "74F85"
+   ],
+   "cmPins": [
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "B3",
+    "B2",
+    "B1",
+    "B0",
+    "I<",
+    "I=",
+    "I>",
+    "A<B",
+    "A=B",
+    "A>B"
    ],
    "label": "7485",
    "description": "4-bit magnitude comparator",
@@ -715,31 +1731,72 @@
    "name": "74175 Quad D flip-flop with clear",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
+     {
+      "name": "~CLR",
+      "number": "1"
+     },
      {
       "name": "CLK",
+      "number": "9",
       "clock": true
      },
-     "~CLR"
+     "",
+     {
+      "name": "D3",
+      "number": "13"
+     },
+     {
+      "name": "D2",
+      "number": "12"
+     },
+     {
+      "name": "D1",
+      "number": "5"
+     },
+     {
+      "name": "D0",
+      "number": "4"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "~Q0",
-     "~Q1",
-     "~Q2",
-     "~Q3"
+     {
+      "name": "Q3",
+      "number": "15"
+     },
+     {
+      "name": "~Q3",
+      "number": "15"
+     },
+     {
+      "name": "Q2",
+      "number": "10"
+     },
+     {
+      "name": "~Q2",
+      "number": "10"
+     },
+     {
+      "name": "Q1",
+      "number": "7"
+     },
+     {
+      "name": "~Q1",
+      "number": "7"
+     },
+     {
+      "name": "Q0",
+      "number": "2"
+     },
+     {
+      "name": "~Q0",
+      "number": "2"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "74175"
    },
    "model": {
@@ -748,7 +1805,24 @@
    "aliases": [
     "74175",
     "74LS175",
-    "74HC175"
+    "74HC175",
+    "74F175"
+   ],
+   "cmPins": [
+    "~CLR",
+    "CLK",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "Q3",
+    "~Q3",
+    "Q2",
+    "~Q2",
+    "Q1",
+    "~Q1",
+    "Q0",
+    "~Q0"
    ],
    "label": "74175",
    "description": "Quad D flip-flop with clear",
@@ -759,35 +1833,87 @@
    "name": "74273 Octal D flip-flop with clear",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "D4",
-     "D5",
-     "D6",
-     "D7",
+     {
+      "name": "~CLR",
+      "number": "1"
+     },
      {
       "name": "CLK",
+      "number": "11",
       "clock": true
      },
-     "~CLR"
+     {
+      "name": "D7",
+      "number": "18"
+     },
+     {
+      "name": "D6",
+      "number": "17"
+     },
+     {
+      "name": "D5",
+      "number": "14"
+     },
+     {
+      "name": "D4",
+      "number": "13"
+     },
+     {
+      "name": "D3",
+      "number": "8"
+     },
+     {
+      "name": "D2",
+      "number": "7"
+     },
+     {
+      "name": "D1",
+      "number": "4"
+     },
+     {
+      "name": "D0",
+      "number": "3"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "Q4",
-     "Q5",
-     "Q6",
-     "Q7"
+     {
+      "name": "Q7",
+      "number": "19"
+     },
+     {
+      "name": "Q6",
+      "number": "16"
+     },
+     {
+      "name": "Q5",
+      "number": "15"
+     },
+     {
+      "name": "Q4",
+      "number": "12"
+     },
+     {
+      "name": "Q3",
+      "number": "9"
+     },
+     {
+      "name": "Q2",
+      "number": "6"
+     },
+     {
+      "name": "Q1",
+      "number": "5"
+     },
+     {
+      "name": "Q0",
+      "number": "2"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -60,
     "title": "74273"
    },
    "model": {
@@ -796,7 +1922,28 @@
    "aliases": [
     "74273",
     "74LS273",
-    "74HC273"
+    "74HC273",
+    "74F273"
+   ],
+   "cmPins": [
+    "~CLR",
+    "CLK",
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "Q7",
+    "Q6",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74273",
    "description": "Octal D flip-flop with clear",
@@ -807,35 +1954,88 @@
    "name": "74374 Octal D flip-flop",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "D4",
-     "D5",
-     "D6",
-     "D7",
      {
-      "name": "CLK",
-      "clock": true
+      "name": "~OE",
+      "number": "1"
      },
-     "~OE"
+     {
+      "name": "D7",
+      "number": "18"
+     },
+     {
+      "name": "D6",
+      "number": "17"
+     },
+     {
+      "name": "D5",
+      "number": "14"
+     },
+     {
+      "name": "D4",
+      "number": "13"
+     },
+     {
+      "name": "D3",
+      "number": "8"
+     },
+     {
+      "name": "D2",
+      "number": "7"
+     },
+     {
+      "name": "D1",
+      "number": "4"
+     },
+     {
+      "name": "D0",
+      "number": "3"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "Q4",
-     "Q5",
-     "Q6",
-     "Q7"
+     {
+      "name": "CLK",
+      "number": "11",
+      "dir": "in",
+      "clock": true
+     },
+     {
+      "name": "Q7",
+      "number": "19"
+     },
+     {
+      "name": "Q6",
+      "number": "16"
+     },
+     {
+      "name": "Q5",
+      "number": "15"
+     },
+     {
+      "name": "Q4",
+      "number": "12"
+     },
+     {
+      "name": "Q3",
+      "number": "9"
+     },
+     {
+      "name": "Q2",
+      "number": "6"
+     },
+     {
+      "name": "Q1",
+      "number": "5"
+     },
+     {
+      "name": "Q0",
+      "number": "2"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "74374"
    },
    "model": {
@@ -844,7 +2044,28 @@
    "aliases": [
     "74374",
     "74LS374",
-    "74HC374"
+    "74HC374",
+    "74F374"
+   ],
+   "cmPins": [
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "Q7",
+    "Q6",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0",
+    "~OE",
+    "CLK"
    ],
    "label": "74374",
    "description": "Octal D flip-flop, 3-state outputs",
@@ -855,32 +2076,87 @@
    "name": "74373 Octal transparent latch",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "D4",
-     "D5",
-     "D6",
-     "D7",
-     "LE",
-     "~OE"
+     {
+      "name": "~OE",
+      "number": "1"
+     },
+     {
+      "name": "D7",
+      "number": "18"
+     },
+     {
+      "name": "D6",
+      "number": "17"
+     },
+     {
+      "name": "D5",
+      "number": "14"
+     },
+     {
+      "name": "D4",
+      "number": "13"
+     },
+     {
+      "name": "D3",
+      "number": "8"
+     },
+     {
+      "name": "D2",
+      "number": "7"
+     },
+     {
+      "name": "D1",
+      "number": "4"
+     },
+     {
+      "name": "D0",
+      "number": "3"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "Q4",
-     "Q5",
-     "Q6",
-     "Q7"
+     {
+      "name": "LE",
+      "number": "11",
+      "dir": "in"
+     },
+     {
+      "name": "Q7",
+      "number": "19"
+     },
+     {
+      "name": "Q6",
+      "number": "16"
+     },
+     {
+      "name": "Q5",
+      "number": "15"
+     },
+     {
+      "name": "Q4",
+      "number": "12"
+     },
+     {
+      "name": "Q3",
+      "number": "9"
+     },
+     {
+      "name": "Q2",
+      "number": "6"
+     },
+     {
+      "name": "Q1",
+      "number": "5"
+     },
+     {
+      "name": "Q0",
+      "number": "2"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "74373"
    },
    "model": {
@@ -889,7 +2165,28 @@
    "aliases": [
     "74373",
     "74LS373",
-    "74HC373"
+    "74HC373",
+    "74F373"
+   ],
+   "cmPins": [
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "Q7",
+    "Q6",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0",
+    "~OE",
+    "LE"
    ],
    "label": "74373",
    "description": "Octal transparent latch, 3-state outputs",
@@ -900,29 +2197,65 @@
    "name": "74164 8-bit serial-in parallel-out shift register",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A",
-     "B",
+     {
+      "name": "A",
+      "number": "1"
+     },
+     {
+      "name": "B",
+      "number": "2"
+     },
+     "",
      {
       "name": "CLK",
+      "number": "8",
       "clock": true
      },
-     "~CLR"
+     "",
+     {
+      "name": "~CLR",
+      "number": "9"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3",
-     "Q4",
-     "Q5",
-     "Q6",
-     "Q7"
+     {
+      "name": "Q7",
+      "number": "13"
+     },
+     {
+      "name": "Q6",
+      "number": "12"
+     },
+     {
+      "name": "Q5",
+      "number": "11"
+     },
+     {
+      "name": "Q4",
+      "number": "10"
+     },
+     {
+      "name": "Q3",
+      "number": "6"
+     },
+     {
+      "name": "Q2",
+      "number": "5"
+     },
+     {
+      "name": "Q1",
+      "number": "4"
+     },
+     {
+      "name": "Q0",
+      "number": "3"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "74164"
    },
    "model": {
@@ -931,7 +2264,22 @@
    "aliases": [
     "74164",
     "74LS164",
-    "74HC164"
+    "74HC164",
+    "74F164"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "CLK",
+    "~CLR",
+    "Q7",
+    "Q6",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74164",
    "description": "8-bit serial-in parallel-out shift register",
@@ -942,31 +2290,79 @@
    "name": "74194 4-bit bidirectional universal shift register",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "SR",
-     "D0",
-     "D1",
-     "D2",
-     "D3",
-     "SL",
-     "S0",
-     "S1",
      {
       "name": "CLK",
+      "number": "11",
       "clock": true
      },
-     "~CLR"
+     "",
+     {
+      "name": "S1",
+      "number": "10"
+     },
+     {
+      "name": "S0",
+      "number": "9"
+     },
+     "",
+     {
+      "name": "SR",
+      "number": "2"
+     },
+     {
+      "name": "SL",
+      "number": "7"
+     },
+     "",
+     {
+      "name": "~CLR",
+      "number": "1"
+     }
     ],
     "right": [
-     "Q0",
-     "Q1",
-     "Q2",
-     "Q3"
+     {
+      "name": "D3",
+      "number": "6",
+      "dir": "in"
+     },
+     {
+      "name": "D2",
+      "number": "5",
+      "dir": "in"
+     },
+     {
+      "name": "D1",
+      "number": "4",
+      "dir": "in"
+     },
+     {
+      "name": "D0",
+      "number": "3",
+      "dir": "in"
+     },
+     "",
+     {
+      "name": "Q3",
+      "number": "12"
+     },
+     {
+      "name": "Q2",
+      "number": "13"
+     },
+     {
+      "name": "Q1",
+      "number": "14"
+     },
+     {
+      "name": "Q0",
+      "number": "15"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -120,
     "title": "74194"
    },
    "model": {
@@ -975,7 +2371,24 @@
    "aliases": [
     "74194",
     "74LS194",
-    "74HC194"
+    "74HC194",
+    "74F194"
+   ],
+   "cmPins": [
+    "CLK",
+    "S1",
+    "S0",
+    "SR",
+    "SL",
+    "~CLR",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
    ],
    "label": "74194",
    "description": "4-bit bidirectional universal shift register",
@@ -986,32 +2399,87 @@
    "name": "74244 Octal buffer",
    "shape": {
     "type": "box",
-    "width": 120,
-    "pitch": 20,
+    "width": 160,
+    "pitch": 30,
     "left": [
-     "A0",
-     "A1",
-     "A2",
-     "A3",
-     "A4",
-     "A5",
-     "A6",
-     "A7",
-     "~1G",
-     "~2G"
+     {
+      "name": "~1G",
+      "number": "1"
+     },
+     {
+      "name": "A3",
+      "number": "8"
+     },
+     {
+      "name": "A2",
+      "number": "6"
+     },
+     {
+      "name": "A1",
+      "number": "4"
+     },
+     {
+      "name": "A0",
+      "number": "2"
+     },
+     {
+      "name": "~2G",
+      "number": "19"
+     },
+     {
+      "name": "A4",
+      "number": "11"
+     },
+     {
+      "name": "A5",
+      "number": "13"
+     },
+     {
+      "name": "A6",
+      "number": "15"
+     },
+     {
+      "name": "A7",
+      "number": "17"
+     }
     ],
     "right": [
-     "Y0",
-     "Y1",
-     "Y2",
-     "Y3",
-     "Y4",
-     "Y5",
-     "Y6",
-     "Y7"
+     {
+      "name": "Y3",
+      "number": "12"
+     },
+     {
+      "name": "Y2",
+      "number": "14"
+     },
+     {
+      "name": "Y1",
+      "number": "16"
+     },
+     {
+      "name": "Y0",
+      "number": "18"
+     },
+     "",
+     {
+      "name": "Y4",
+      "number": "9"
+     },
+     {
+      "name": "Y5",
+      "number": "7"
+     },
+     {
+      "name": "Y6",
+      "number": "5"
+     },
+     {
+      "name": "Y7",
+      "number": "3"
+     }
     ],
-    "top": [],
-    "bottom": [],
+    "leftStart": -120,
+    "rightStart": -90,
     "title": "74244"
    },
    "model": {
@@ -1040,7 +2508,28 @@
    "aliases": [
     "74244",
     "74LS244",
-    "74HC244"
+    "74HC244",
+    "74F244"
+   ],
+   "cmPins": [
+    "A3",
+    "A2",
+    "A1",
+    "A0",
+    "A4",
+    "A5",
+    "A6",
+    "A7",
+    "Y3",
+    "Y2",
+    "Y1",
+    "Y0",
+    "Y4",
+    "Y5",
+    "Y6",
+    "Y7",
+    "~1G",
+    "~2G"
    ],
    "label": "74244",
    "description": "Octal buffer, 3-state",
@@ -1601,6 +3090,7 @@
      "",
      "B",
      "A",
+     "",
      "~2G",
      "~2C"
     ],
@@ -1733,12 +3223,13 @@
       "name": "I8",
       "dir": "in"
      },
+     "",
      {
-      "name": "EVEN",
+      "name": "ODD",
       "dir": "out"
      },
      {
-      "name": "ODD",
+      "name": "EVEN",
       "dir": "out"
      }
     ],
@@ -1787,18 +3278,32 @@
      "D3",
      "D2",
      "D1",
-     "D0",
-     "C",
-     "B",
-     "A",
-     "~G"
+     "D0"
     ],
     "right": [
+     {
+      "name": "C",
+      "dir": "in"
+     },
+     {
+      "name": "B",
+      "dir": "in"
+     },
+     {
+      "name": "A",
+      "dir": "in"
+     },
+     {
+      "name": "~G",
+      "dir": "in"
+     },
+     "",
+     "",
      "~W",
      "Y"
     ],
-    "leftStart": -150,
-    "rightStart": 0,
+    "leftStart": -90,
+    "rightStart": -90,
     "title": "74251"
    },
    "model": {
@@ -2093,9 +3598,10 @@
      "B2",
      "B1",
      "B0",
-     "I<",
+     "",
+     "I>",
      "I=",
-     "I>"
+     "I<"
     ],
     "right": [
      "A>B",
@@ -2122,9 +3628,9 @@
     "B2",
     "B1",
     "B0",
-    "I<",
-    "I=",
     "I>",
+    "I=",
+    "I<",
     "A<B",
     "A=B",
     "A>B"
@@ -2242,7 +3748,6 @@
      "",
      "",
      "",
-     "",
      "A4",
      "A3",
      "A2",
@@ -2292,6 +3797,196 @@
    "props": {
     "data": ""
    }
+  },
+  {
+   "id": "74LS74",
+   "name": "74LS74 Dual D flip-flop",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     {
+      "name": "1CLK",
+      "clock": true
+     },
+     "1D",
+     "~1PRE",
+     "~1CLR",
+     "",
+     {
+      "name": "2CLK",
+      "clock": true
+     },
+     "2D",
+     "~2PRE",
+     "~2CLR"
+    ],
+    "right": [
+     "1Q",
+     "~1Q",
+     "",
+     "",
+     "",
+     "2Q",
+     "~2Q"
+    ],
+    "leftStart": -120,
+    "rightStart": -90,
+    "title": "74LS74"
+   },
+   "model": {
+    "kind": "dual",
+    "inner": "dff"
+   },
+   "aliases": [
+    "74LS74",
+    "74HC74"
+   ],
+   "cmPins": [
+    "1CLK",
+    "1D",
+    "~1PRE",
+    "~1CLR",
+    "2CLK",
+    "2D",
+    "~2PRE",
+    "~2CLR",
+    "1Q",
+    "~1Q",
+    "2Q",
+    "~2Q"
+   ],
+   "label": "74LS74",
+   "description": "Dual D flip-flop, active-low preset/clear",
+   "floatInputs": 1
+  },
+  {
+   "id": "74LS73",
+   "name": "74LS73 Dual JK flip-flop",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "1J",
+     "1K",
+     {
+      "name": "~1CLK",
+      "clock": true
+     },
+     "~1CLR",
+     "2J",
+     "2K",
+     {
+      "name": "~2CLK",
+      "clock": true
+     },
+     "~2CLR"
+    ],
+    "right": [
+     "1Q",
+     "~1Q",
+     "",
+     "",
+     "2Q",
+     "~2Q"
+    ],
+    "leftStart": -90,
+    "rightStart": -60,
+    "title": "74LS73"
+   },
+   "model": {
+    "kind": "dual",
+    "inner": "jkff"
+   },
+   "aliases": [
+    "74LS73",
+    "74HC73"
+   ],
+   "cmPins": [
+    "1J",
+    "1K",
+    "~1CLK",
+    "~1CLR",
+    "2J",
+    "2K",
+    "~2CLK",
+    "~2CLR",
+    "1Q",
+    "~1Q",
+    "2Q",
+    "~2Q"
+   ],
+   "label": "74LS73",
+   "description": "Dual JK flip-flop, negative edge, active-low clear",
+   "floatInputs": 1
+  },
+  {
+   "id": "74LS112",
+   "name": "74LS112 Dual JK flip-flop",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "1J",
+     "1K",
+     {
+      "name": "~1CLK",
+      "clock": true
+     },
+     "~1PRE",
+     "~1CLR",
+     "2J",
+     "2K",
+     {
+      "name": "~2CLK",
+      "clock": true
+     },
+     "~2PRE",
+     "~2CLR"
+    ],
+    "right": [
+     "1Q",
+     "~1Q",
+     "",
+     "",
+     "",
+     "2Q",
+     "~2Q"
+    ],
+    "leftStart": -120,
+    "rightStart": -120,
+    "title": "74LS112"
+   },
+   "model": {
+    "kind": "dual",
+    "inner": "jkff"
+   },
+   "aliases": [
+    "74LS112",
+    "74HC112"
+   ],
+   "cmPins": [
+    "1J",
+    "1K",
+    "~1CLK",
+    "~1PRE",
+    "~1CLR",
+    "2J",
+    "2K",
+    "~2CLK",
+    "~2PRE",
+    "~2CLR",
+    "1Q",
+    "~1Q",
+    "2Q",
+    "~2Q"
+   ],
+   "label": "74LS112",
+   "description": "Dual JK flip-flop, negative edge, active-low preset/clear",
+   "floatInputs": 1
   }
  ]
 }
