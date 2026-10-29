@@ -44,6 +44,8 @@ private:
     bool save();
     bool saveAs();
     void exportImage();
+    void exportBom();
+    void findAndSelect();
     void print();
     void about();
 
@@ -56,6 +58,7 @@ private:
     SchematicView* m_view;
     LibraryBrowser* m_browser;
     QString m_path;
+    QString m_lastFind;
 
     QLabel* m_coords;
     QLabel* m_simStatus;
@@ -65,7 +68,8 @@ private:
     QAction *m_new, *m_open, *m_import, *m_save, *m_saveAs, *m_export, *m_print, *m_quit;
     QAction *m_undoAct, *m_redoAct, *m_cut, *m_copy, *m_paste, *m_delete, *m_selectAll, *m_rotate, *m_mirror, *m_props;
     QAction *m_zoomIn, *m_zoomOut, *m_zoomFit, *m_grid;
-    QAction *m_toolSelect, *m_toolWire, *m_toolText;
+    QAction *m_toolSelect, *m_toolWire, *m_toolBus, *m_toolNetLabel, *m_toolText;
+    QAction *m_find, *m_titleBlock, *m_showTitleBlock, *m_bom;
     QActionGroup* m_tools;
     QAction *m_run, *m_step, *m_reset, *m_stop;
     QAction* m_about;

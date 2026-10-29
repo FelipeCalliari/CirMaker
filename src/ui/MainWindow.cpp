@@ -1,5 +1,6 @@
 #include "ui/MainWindow.h"
 
+#include "core/Bom.h"
 #include "core/Circuit.h"
 #include "core/io/CktImporter.h"
 #include "core/io/NativeFormat.h"
@@ -15,7 +16,10 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QGraphicsItem>
 #include <QImage>
+#include <QInputDialog>
+#include <QSaveFile>
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -91,6 +95,8 @@ MainWindow::MainWindow()
     connect(m_scene, &SchematicScene::toolChanged, this, [this](SchematicScene::Tool t) {
         m_toolSelect->setChecked(t == SchematicScene::Tool::Select || t == SchematicScene::Tool::Place);
         m_toolWire->setChecked(t == SchematicScene::Tool::Wire);
+        m_toolBus->setChecked(t == SchematicScene::Tool::Bus);
+        m_toolNetLabel->setChecked(t == SchematicScene::Tool::NetLabel);
         m_toolText->setChecked(t == SchematicScene::Tool::Text);
     });
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &MainWindow::updateActions);
@@ -214,6 +220,26 @@ void MainWindow::createActions()
                              }),
                              tr("&Wire"), m_tools);
     m_toolWire->setShortcut(Qt::Key_W);
+    m_toolBus = new QAction(drawnIcon([](QPainter& p) {
+                                QPen pen = p.pen();
+                                pen.setWidthF(5);
+                                p.setPen(pen);
+                                p.drawLine(QPointF(4, 16), QPointF(28, 16));
+                            }),
+                            tr("&Bus"), m_tools);
+    m_toolBus->setShortcut(Qt::Key_B);
+    m_toolBus->setToolTip(tr("Bus: wires ending on it are joined by entry name"));
+    m_toolNetLabel = new QAction(drawnIcon([](QPainter& p) {
+                                     QFont f = p.font();
+                                     f.setPixelSize(13);
+                                     f.setBold(true);
+                                     p.setFont(f);
+                                     p.drawLine(QPointF(4, 24), QPointF(28, 24));
+                                     p.drawText(QRectF(0, 2, 32, 20), Qt::AlignCenter, QStringLiteral("N1"));
+                                 }),
+                                 tr("&Net Label"), m_tools);
+    m_toolNetLabel->setShortcut(Qt::Key_N);
+    m_toolNetLabel->setToolTip(tr("Net label: points with the same name are connected"));
     m_toolText = new QAction(drawnIcon([](QPainter& p) {
                                  QFont f = p.font();
                                  f.setPixelSize(24);
@@ -229,6 +255,23 @@ void MainWindow::createActions()
     connect(m_toolSelect, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Select); });
     connect(m_toolWire, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Wire); });
     connect(m_toolText, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Text); });
+    connect(m_toolBus, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::Bus); });
+    connect(m_toolNetLabel, &QAction::triggered, this, [this] { m_scene->setTool(SchematicScene::Tool::NetLabel); });
+
+    m_find = new QAction(themeIcon("edit-find", QStyle::SP_FileDialogContentsView), tr("&Find and Select..."), this);
+    m_find->setShortcut(QKeySequence::Find);
+    connect(m_find, &QAction::triggered, this, &MainWindow::findAndSelect);
+    m_titleBlock = new QAction(tr("Title &Block..."), this);
+    connect(m_titleBlock, &QAction::triggered, m_scene, &SchematicScene::editTitleBlock);
+    m_showTitleBlock = new QAction(tr("Show &Title Block"), this);
+    m_showTitleBlock->setCheckable(true);
+    connect(m_showTitleBlock, &QAction::toggled, m_scene, &SchematicScene::setTitleBlockVisible);
+    connect(m_circuit, &Circuit::titleBlockChanged, this, [this] {
+        const QSignalBlocker block(m_showTitleBlock);
+        m_showTitleBlock->setChecked(m_circuit->titleBlock().visible);
+    });
+    m_bom = new QAction(tr("&Bill of Materials (CSV)..."), this);
+    connect(m_bom, &QAction::triggered, this, &MainWindow::exportBom);
 
     m_run = new QAction(themeIcon("media-playback-start", QStyle::SP_MediaPlay), tr("&Run"), this);
     m_run->setShortcut(Qt::Key_F9);
@@ -257,22 +300,24 @@ void MainWindow::createMenus()
     file->addSeparator();
     file->addActions({m_save, m_saveAs});
     file->addSeparator();
-    file->addActions({m_export, m_print});
+    file->addActions({m_export, m_bom, m_print});
     file->addSeparator();
     file->addAction(m_quit);
 
     QMenu* edit = menuBar()->addMenu(tr("&Edit"));
     edit->addActions({m_undoAct, m_redoAct});
     edit->addSeparator();
-    edit->addActions({m_cut, m_copy, m_paste, m_delete, m_selectAll});
+    edit->addActions({m_cut, m_copy, m_paste, m_delete, m_selectAll, m_find});
     edit->addSeparator();
     edit->addActions({m_rotate, m_mirror, m_props});
+    edit->addSeparator();
+    edit->addAction(m_titleBlock);
 
     QMenu* view = menuBar()->addMenu(tr("&View"));
     view->setObjectName(QStringLiteral("viewMenu"));
     view->addActions({m_zoomIn, m_zoomOut, m_zoomFit});
     view->addSeparator();
-    view->addAction(m_grid);
+    view->addActions({m_grid, m_showTitleBlock});
     view->addSeparator();
 
     QMenu* tools = menuBar()->addMenu(tr("&Tools"));
@@ -316,7 +361,8 @@ void MainWindow::updateActions()
 {
     const bool simulating = m_scene->simulating();
     const bool hasSel = m_scene->hasSelection();
-    for (QAction* a : {m_new, m_open, m_import, m_cut, m_paste, m_delete, m_selectAll, m_props})
+    for (QAction* a : {m_new, m_open, m_import, m_cut, m_paste, m_delete, m_selectAll, m_props, m_find, m_titleBlock,
+                       m_showTitleBlock})
         a->setEnabled(!simulating);
     m_undoAct->setEnabled(!simulating && m_undo->canUndo());
     m_redoAct->setEnabled(!simulating && m_undo->canRedo());
@@ -495,6 +541,53 @@ void MainWindow::exportImage()
         QMessageBox::critical(this, tr("Export"), tr("Cannot write %1").arg(path));
     else
         statusBar()->showMessage(tr("Exported %1").arg(path), 4000);
+}
+
+void MainWindow::exportBom()
+{
+    const QVector<BomLine> lines = Bom::build(*m_circuit, LibraryRegistry::instance());
+    if (lines.isEmpty()) {
+        QMessageBox::information(this, tr("Bill of Materials"), tr("The circuit has no parts."));
+        return;
+    }
+    const QString base = m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName();
+    const QString path = QFileDialog::getSaveFileName(this, tr("Bill of Materials"), base + QStringLiteral(".csv"),
+                                                      tr("CSV file (*.csv)"));
+    if (path.isEmpty())
+        return;
+    QSaveFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::critical(this, tr("Bill of Materials"), tr("Cannot write %1:\n%2").arg(path, f.errorString()));
+        return;
+    }
+    f.write(Bom::toCsv(lines).toUtf8());
+    if (!f.commit()) {
+        QMessageBox::critical(this, tr("Bill of Materials"), tr("Cannot write %1:\n%2").arg(path, f.errorString()));
+        return;
+    }
+    statusBar()->showMessage(tr("Bill of materials written to %1 (%n line(s))", nullptr, int(lines.size())).arg(path), 5000);
+}
+
+void MainWindow::findAndSelect()
+{
+    bool ok = false;
+    const QString text = QInputDialog::getText(this, tr("Find and Select"),
+                                               tr("Designator, label or device name contains:"), QLineEdit::Normal,
+                                               m_lastFind, &ok);
+    if (!ok)
+        return;
+    m_lastFind = text;
+    const int count = m_scene->findAndSelect(text);
+    if (count == 0) {
+        statusBar()->showMessage(tr("Nothing matches \"%1\"").arg(text), 5000);
+        return;
+    }
+    QRectF r;
+    for (QGraphicsItem* it : m_scene->selectedItems())
+        r = r.united(it->sceneBoundingRect());
+    if (!m_view->mapToScene(m_view->viewport()->rect()).boundingRect().contains(r))
+        m_view->fitInView(r.adjusted(-200, -150, 200, 150), Qt::KeepAspectRatio);
+    statusBar()->showMessage(tr("%n item(s) selected", nullptr, count), 5000);
 }
 
 bool MainWindow::exportTo(const QString& path)

@@ -7,6 +7,7 @@
 #include "ui/ComponentItem.h"
 #include "ui/PropertiesDialog.h"
 #include "ui/TextNoteItem.h"
+#include "ui/TitleBlockItem.h"
 #include "ui/WireItem.h"
 
 #include <QApplication>
@@ -17,6 +18,7 @@
 #include <QKeyEvent>
 #include <QMimeData>
 #include <QPainter>
+#include <QRegularExpression>
 #include <QUndoStack>
 
 #include <cmath>
@@ -59,6 +61,7 @@ SchematicScene::SchematicScene(Circuit* circuit, QUndoStack* undo, const Library
     connect(circuit, &Circuit::textChanged, this, &SchematicScene::onTextChanged);
     connect(circuit, &Circuit::textRemoved, this, &SchematicScene::onTextRemoved);
     connect(circuit, &Circuit::cleared, this, &SchematicScene::onCleared);
+    connect(circuit, &Circuit::titleBlockChanged, this, &SchematicScene::onTitleBlockChanged);
     connect(circuit, &Circuit::modified, this, &SchematicScene::scheduleNetlist);
 
     m_timer.setInterval(30);
@@ -67,6 +70,7 @@ SchematicScene::SchematicScene(Circuit* circuit, QUndoStack* undo, const Library
     for (ItemId id : circuit->components().keys()) onComponentAdded(id);
     for (ItemId id : circuit->wires().keys()) onWireAdded(id);
     for (ItemId id : circuit->texts().keys()) onTextAdded(id);
+    onTitleBlockChanged();
     rebuildNetlist();
 }
 
@@ -154,6 +158,23 @@ void SchematicScene::onCleared()
     m_componentItems.clear();
     m_wireItems.clear();
     m_textItems.clear();
+    onTitleBlockChanged();
+}
+
+void SchematicScene::onTitleBlockChanged()
+{
+    const TitleBlock& tb = m_circuit->titleBlock();
+    if (!tb.visible) {
+        delete m_titleItem;
+        m_titleItem = nullptr;
+        return;
+    }
+    if (!m_titleItem) {
+        m_titleItem = new TitleBlockItem(tb);
+        addItem(m_titleItem);
+    } else {
+        m_titleItem->sync(tb);
+    }
 }
 
 void SchematicScene::scheduleNetlist()
@@ -182,7 +203,7 @@ void SchematicScene::setTool(Tool tool)
     m_tool = tool;
     for (QGraphicsView* v : views())
         v->viewport()->setCursor(tool == Tool::Select ? Qt::ArrowCursor
-                                 : tool == Tool::Text ? Qt::IBeamCursor : Qt::CrossCursor);
+                                 : tool == Tool::Text || tool == Tool::NetLabel ? Qt::IBeamCursor : Qt::CrossCursor);
     emit toolChanged(tool);
 }
 
@@ -266,14 +287,89 @@ void SchematicScene::wireClick(QPointF p)
 void SchematicScene::finishWire()
 {
     const QVector<QPointF> pts = simplify(m_wirePoints);
+    const bool bus = m_drawingBus;
     m_wirePoints.clear();
     m_wireFromSelect = false;
-    if (pts.size() >= 2) {
-        Selection sel;
-        sel.wires << Wire{0, pts};
-        m_undo->push(new AddItemsCommand(m_circuit, sel, tr("Add wire")));
+    m_drawingBus = false;
+    if (pts.size() < 2) {
+        update();
+        return;
     }
+    // an ordinary wire ending on a bus line becomes a named bus entry: the
+    // name connects it to every other entry and net label with that name
+    QVector<std::pair<QPointF, QString>> entries;
+    if (!bus) {
+        for (QPointF end : {pts.first(), pts.last()}) {
+            if (!onBus(end) || onConductor(end))
+                continue;
+            const QString name = askNetName(tr("Bus entry"), m_lastNetName);
+            if (name.isEmpty())
+                continue;
+            entries << std::pair{end, name};
+        }
+    }
+    m_undo->beginMacro(bus ? tr("Add bus") : tr("Add wire"));
+    Selection sel;
+    sel.wires << Wire{0, pts, bus};
+    m_undo->push(new AddItemsCommand(m_circuit, sel, {}));
+    for (const auto& [at, name] : entries) {
+        Selection label;
+        Component c;
+        c.symbolId = QStringLiteral("netlabel");
+        c.pos = at;
+        c.label = name;
+        label.components << c;
+        m_undo->push(new AddItemsCommand(m_circuit, label, {}));
+    }
+    m_undo->endMacro();
     update();
+}
+
+bool SchematicScene::onBus(QPointF p) const
+{
+    for (const WireItem* w : m_wireItems)
+        if (w->wire().bus && WireGeometry::onPolyline(p, w->wire().points))
+            return true;
+    return false;
+}
+
+bool SchematicScene::onConductor(QPointF p) const
+{
+    if (pinAt(p, nullptr))
+        return true;
+    for (const WireItem* w : m_wireItems)
+        if (!w->wire().bus && WireGeometry::onPolyline(p, w->wire().points))
+            return true;
+    return false;
+}
+
+// Suggests the next name after `suggestion` ("D3" -> "D4", "7" -> "8").
+QString SchematicScene::askNetName(const QString& title, const QString& suggestion)
+{
+    QString next = suggestion;
+    static const QRegularExpression trailing(QStringLiteral("^(.*?)(\\d+)$"));
+    if (const auto m = trailing.match(suggestion); m.hasMatch())
+        next = m.captured(1) + QString::number(m.captured(2).toInt() + 1);
+    bool ok = false;
+    const QString name = QInputDialog::getText(dialogParent(), title, tr("Net name:"), QLineEdit::Normal, next, &ok).trimmed();
+    if (!ok || name.isEmpty())
+        return {};
+    m_lastNetName = name;
+    return name;
+}
+
+void SchematicScene::placeNetLabel(QPointF p)
+{
+    const QString name = askNetName(tr("Net label"), m_lastNetName);
+    if (name.isEmpty())
+        return;
+    Selection sel;
+    Component c;
+    c.symbolId = QStringLiteral("netlabel");
+    c.pos = p;
+    c.label = name;
+    sel.components << c;
+    m_undo->push(new AddItemsCommand(m_circuit, sel, tr("Add net label")));
 }
 
 void SchematicScene::cancelWire()
@@ -295,8 +391,11 @@ void SchematicScene::beginDrag()
             m_drag.textStart.insert(t->id(), t->pos());
         else if (auto* w = qgraphicsitem_cast<WireItem*>(it))
             m_drag.wires << w->id();
+        else if (it == m_titleItem)
+            m_drag.titleStart = it->pos();
     }
-    m_drag.active = !m_drag.componentStart.isEmpty() || !m_drag.textStart.isEmpty() || !m_drag.wires.isEmpty();
+    m_drag.active = !m_drag.componentStart.isEmpty() || !m_drag.textStart.isEmpty() || !m_drag.wires.isEmpty()
+                 || m_drag.titleStart;
 }
 
 QHash<ItemId, QVector<QPointF>> SchematicScene::rubberBand() const
@@ -388,8 +487,18 @@ void SchematicScene::commitDrag()
     }
     for (WireItem* w : std::as_const(m_wireItems))
         w->clearPreview();
+    const bool titleMoved = m_titleItem && m_drag.titleStart && m_titleItem->pos() != *m_drag.titleStart;
+    if (after.isEmpty() && !titleMoved)
+        return;
+    m_undo->beginMacro(tr("Move"));
     if (!after.isEmpty())
-        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Move")));
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, {}));
+    if (titleMoved) {
+        TitleBlock tb = m_circuit->titleBlock();
+        tb.pos = m_titleItem->pos();
+        m_undo->push(new SetTitleBlockCommand(m_circuit, tb, {}));
+    }
+    m_undo->endMacro();
 }
 
 // ---------------------------------------------------------------- editing
@@ -552,6 +661,10 @@ void SchematicScene::editItem(QGraphicsItem* item)
 {
     if (simulating() || !item)
         return;
+    if (item == m_titleItem) {
+        editTitleBlock();
+        return;
+    }
     if (auto* c = qgraphicsitem_cast<ComponentItem*>(item)) {
         const Component before = *m_circuit->component(c->id());
         PropertiesDialog dlg(before, *c->symbol(), dialogParent());
@@ -577,6 +690,51 @@ void SchematicScene::editItem(QGraphicsItem* item)
         a.texts << after;
         m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Edit text")));
     }
+}
+
+int SchematicScene::findAndSelect(const QString& text)
+{
+    clearSelection();
+    const QString needle = text.trimmed();
+    if (needle.isEmpty())
+        return 0;
+    int count = 0;
+    for (ComponentItem* item : std::as_const(m_componentItems)) {
+        const Component& c = item->component();
+        if (c.designator.contains(needle, Qt::CaseInsensitive) || c.label.contains(needle, Qt::CaseInsensitive)
+            || item->symbol()->name.contains(needle, Qt::CaseInsensitive)) {
+            item->setSelected(true);
+            ++count;
+        }
+    }
+    return count;
+}
+
+void SchematicScene::editTitleBlock()
+{
+    if (simulating())
+        return;
+    TitleBlockDialog dlg(m_circuit->titleBlock(), dialogParent());
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+    TitleBlock tb = dlg.result();
+    if (!tb.visible) {
+        tb.visible = true;
+        if (tb.pos.isNull())
+            tb.pos = snap(contentsRect().bottomRight() - QPointF(TitleBlockItem::kWidth, -20));
+    }
+    m_undo->push(new SetTitleBlockCommand(m_circuit, tb, tr("Edit title block")));
+}
+
+void SchematicScene::setTitleBlockVisible(bool visible)
+{
+    if (simulating() || m_circuit->titleBlock().visible == visible)
+        return;
+    TitleBlock tb = m_circuit->titleBlock();
+    tb.visible = visible;
+    if (visible && tb.pos.isNull())
+        tb.pos = snap(contentsRect().bottomRight() - QPointF(TitleBlockItem::kWidth, -20));
+    m_undo->push(new SetTitleBlockCommand(m_circuit, tb, visible ? tr("Show title block") : tr("Hide title block")));
 }
 
 // ---------------------------------------------------------------- simulation
@@ -750,7 +908,13 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         }
         return;
     case Tool::Wire:
+    case Tool::Bus:
+        if (m_wirePoints.isEmpty())
+            m_drawingBus = m_tool == Tool::Bus;
         wireClick(p);
+        return;
+    case Tool::NetLabel:
+        placeNetLabel(p);
         return;
     case Tool::Text: {
         bool ok = false;
@@ -833,7 +997,7 @@ void SchematicScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
     if (m_tool != Tool::Select)
         return;
     for (QGraphicsItem* it : items(e->scenePos())) {
-        if (it->type() == ComponentItem::Type || it->type() == TextNoteItem::Type) {
+        if (it->type() == ComponentItem::Type || it->type() == TextNoteItem::Type || it->type() == TitleBlockItem::Type) {
             if (it == m_ghost)
                 continue;
             editItem(it);
@@ -891,12 +1055,12 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         const QPointF last = pts.last();
         const QPointF corner(m_cursor.x(), last.y());
         pts << corner << m_cursor;
-        QPen pen(QColor(0x00, 0x60, 0xff), 1.4, Qt::DashLine);
+        QPen pen(QColor(0x00, 0x60, 0xff), m_drawingBus ? 4 : 1.4, Qt::DashLine);
         p->setPen(pen);
         p->setBrush(Qt::NoBrush);
         p->drawPolyline(pts.constData(), int(pts.size()));
     }
-    if ((m_tool == Tool::Wire || !m_wirePoints.isEmpty()) && isConnectionPoint(m_cursor)) {
+    if ((m_tool == Tool::Wire || m_tool == Tool::Bus || !m_wirePoints.isEmpty()) && isConnectionPoint(m_cursor)) {
         p->setPen(QPen(QColor(0x00, 0xa0, 0x40), 1.2));
         p->setBrush(Qt::NoBrush);
         p->drawEllipse(m_cursor, 4, 4);

@@ -117,8 +117,17 @@ void Circuit::clear()
     m_wires.clear();
     m_texts.clear();
     m_nextId = 1;
-    titleBlock = {};
+    m_titleBlock = {};
     emit cleared();
+    emit modified();
+}
+
+void Circuit::setTitleBlock(const TitleBlock& tb)
+{
+    if (tb == m_titleBlock)
+        return;
+    m_titleBlock = tb;
+    emit titleBlockChanged();
     emit modified();
 }
 

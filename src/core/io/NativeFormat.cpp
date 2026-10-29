@@ -43,11 +43,12 @@ QByteArray serialize(const Circuit& circuit)
     for (const TextNote& t : circuit.texts())
         texts.append(QJsonObject{{u"pos"_s, point(t.pos)}, {u"text"_s, t.text}, {u"size"_s, t.pointSize}});
 
-    const TitleBlock& tb = circuit.titleBlock;
+    const TitleBlock& tb = circuit.titleBlock();
     QJsonObject root{
         {u"format"_s, u"cirmaker-qt"_s},
         {u"version"_s, kVersion},
-        {u"title"_s, QJsonObject{{u"title"_s, tb.title}, {u"author"_s, tb.author}, {u"date"_s, tb.date}, {u"revision"_s, tb.revision}}},
+        {u"title"_s, QJsonObject{{u"title"_s, tb.title}, {u"author"_s, tb.author}, {u"date"_s, tb.date},
+                                 {u"revision"_s, tb.revision}, {u"visible"_s, tb.visible}, {u"pos"_s, point(tb.pos)}}},
         {u"components"_s, comps},
         {u"wires"_s, wires},
         {u"texts"_s, texts},
@@ -71,8 +72,14 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
 
     circuit.clear();
     const QJsonObject tb = root.value(u"title").toObject();
-    circuit.titleBlock = {tb.value(u"title").toString(), tb.value(u"author").toString(), tb.value(u"date").toString(),
-                          tb.value(u"revision").toString()};
+    TitleBlock block;
+    block.title = tb.value(u"title").toString();
+    block.author = tb.value(u"author").toString();
+    block.date = tb.value(u"date").toString();
+    block.revision = tb.value(u"revision").toString();
+    block.visible = tb.value(u"visible").toBool();
+    block.pos = point(tb.value(u"pos"));
+    circuit.setTitleBlock(block);
     for (const QJsonValue& v : root.value(u"components").toArray()) {
         const QJsonObject o = v.toObject();
         Component c;

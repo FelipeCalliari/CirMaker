@@ -51,4 +51,15 @@ private:
     Selection m_before, m_after;
 };
 
+class SetTitleBlockCommand : public QUndoCommand {
+public:
+    SetTitleBlockCommand(Circuit* circuit, TitleBlock after, const QString& text);
+    void redo() override { m_circuit->setTitleBlock(m_after); }
+    void undo() override { m_circuit->setTitleBlock(m_before); }
+
+private:
+    Circuit* m_circuit;
+    TitleBlock m_before, m_after;
+};
+
 } // namespace cm

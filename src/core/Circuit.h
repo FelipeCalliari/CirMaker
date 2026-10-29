@@ -37,6 +37,9 @@ struct TextNote {
 
 struct TitleBlock {
     QString title, author, date, revision;
+    bool visible = false;
+    QPointF pos;                // top-left corner in scene coordinates
+    friend bool operator==(const TitleBlock&, const TitleBlock&) = default;
 };
 
 // The schematic document. Mutated only through these methods (normally via the
@@ -72,7 +75,8 @@ public:
     // First free designator for a prefix: "U" -> "U4" when U1..U3 exist.
     QString nextDesignator(const QString& prefix) const;
 
-    TitleBlock titleBlock;
+    const TitleBlock& titleBlock() const { return m_titleBlock; }
+    void setTitleBlock(const TitleBlock& tb);
 
 signals:
     void componentAdded(cm::ItemId id);
@@ -85,6 +89,7 @@ signals:
     void textChanged(cm::ItemId id);
     void textRemoved(cm::ItemId id);
     void cleared();
+    void titleBlockChanged();
     // Any change that affects connectivity or contents.
     void modified();
 
@@ -94,6 +99,7 @@ private:
     QMap<ItemId, Component> m_components;
     QMap<ItemId, Wire> m_wires;
     QMap<ItemId, TextNote> m_texts;
+    TitleBlock m_titleBlock;
     ItemId m_nextId = 1;
 };
 

@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include <memory>
+#include <optional>
 
 class QUndoStack;
 
@@ -18,6 +19,7 @@ namespace cm {
 class ComponentItem;
 class WireItem;
 class TextNoteItem;
+class TitleBlockItem;
 class LibraryRegistry;
 namespace sim { class EventSimulator; }
 
@@ -25,7 +27,7 @@ class SchematicScene : public QGraphicsScene {
     Q_OBJECT
 public:
     static constexpr double kGrid = 10;
-    enum class Tool { Select, Wire, Text, Place };
+    enum class Tool { Select, Wire, Bus, NetLabel, Text, Place };
 
     SchematicScene(Circuit* circuit, QUndoStack* undo, const LibraryRegistry& library, QObject* parent = nullptr);
     ~SchematicScene() override;
@@ -49,6 +51,13 @@ public:
     bool hasSelection() const { return !selectedItems().isEmpty(); }
     Selection selection() const;
     void editItem(QGraphicsItem* item);
+    // Selects components whose designator, label or device name contains
+    // text (case-insensitive); returns how many were selected.
+    int findAndSelect(const QString& text);
+
+    // title block (no-ops while simulating)
+    void editTitleBlock();
+    void setTitleBlockVisible(bool visible);
 
     // simulation
     bool simulating() const { return m_sim != nullptr; }
@@ -101,12 +110,17 @@ private:
     void onTextChanged(ItemId id);
     void onTextRemoved(ItemId id);
     void onCleared();
+    void onTitleBlockChanged();
     void scheduleNetlist();
     void rebuildNetlist();
 
     // wire tool
     void wireClick(QPointF p);
     void finishWire();
+    bool onBus(QPointF p) const;
+    bool onConductor(QPointF p) const;      // pin or ordinary wire
+    QString askNetName(const QString& title, const QString& suggestion);
+    void placeNetLabel(QPointF p);
     void cancelWire();
     bool isConnectionPoint(QPointF p) const;
     bool pinAt(QPointF p, QPointF* pinPos) const;
@@ -139,6 +153,8 @@ private:
 
     Tool m_tool = Tool::Select;
     bool m_wireFromSelect = false;      // wire started by dragging from a pin
+    bool m_drawingBus = false;
+    QString m_lastNetName;
     QVector<QPointF> m_wirePoints;
     QPointF m_cursor;
 
@@ -150,7 +166,10 @@ private:
         QHash<ItemId, QPointF> componentStart;
         QHash<ItemId, QPointF> textStart;
         QVector<ItemId> wires;
+        std::optional<QPointF> titleStart;
     } m_drag;
+
+    TitleBlockItem* m_titleItem = nullptr;
 
     std::unique_ptr<sim::EventSimulator> m_sim;
     QTimer m_timer;

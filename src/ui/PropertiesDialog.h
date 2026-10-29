@@ -27,4 +27,19 @@ private:
     QHash<QString, QLineEdit*> m_textProps;
 };
 
+// Title, author, date and revision of the drawing.
+class TitleBlockDialog : public QDialog {
+    Q_OBJECT
+public:
+    TitleBlockDialog(const TitleBlock& tb, QWidget* parent = nullptr);
+    TitleBlock result() const;
+
+private:
+    TitleBlock m_tb;
+    QLineEdit* m_title;
+    QLineEdit* m_author;
+    QLineEdit* m_date;
+    QLineEdit* m_revision;
+};
+
 } // namespace cm

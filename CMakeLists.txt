@@ -13,6 +13,7 @@ add_library(cmcore STATIC
     src/core/Circuit.h src/core/Circuit.cpp
     src/core/NetlistBuilder.h src/core/NetlistBuilder.cpp
     src/core/WireGeometry.h src/core/WireGeometry.cpp
+    src/core/Bom.h src/core/Bom.cpp
     src/core/UndoCommands.h src/core/UndoCommands.cpp
     src/core/io/NativeFormat.h src/core/io/NativeFormat.cpp
     src/core/io/CktImporter.h src/core/io/CktImporter.cpp
@@ -49,6 +50,7 @@ qt_add_executable(cirmaker
     src/ui/ComponentItem.h src/ui/ComponentItem.cpp
     src/ui/WireItem.h src/ui/WireItem.cpp
     src/ui/TextNoteItem.h src/ui/TextNoteItem.cpp
+    src/ui/TitleBlockItem.h src/ui/TitleBlockItem.cpp
     src/ui/SymbolPainter.h src/ui/SymbolPainter.cpp
     src/ui/LibraryBrowser.h src/ui/LibraryBrowser.cpp
     src/ui/PropertiesDialog.h src/ui/PropertiesDialog.cpp
@@ -73,3 +75,4 @@ cm_add_test(tst_netlist)
 cm_add_test(tst_simulator)
 cm_add_test(tst_ckt_import)
 cm_add_test(tst_chips)
+cm_add_test(tst_document)

@@ -2,6 +2,7 @@
 
 #include "library/SymbolDef.h"
 
+#include <QDate>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QLabel>
@@ -73,6 +74,35 @@ Component PropertiesDialog::result() const
     for (auto it = m_textProps.cbegin(); it != m_textProps.cend(); ++it)
         c.props.insert(it.key(), it.value()->text());
     return c;
+}
+
+TitleBlockDialog::TitleBlockDialog(const TitleBlock& tb, QWidget* parent) : QDialog(parent), m_tb(tb)
+{
+    setWindowTitle(tr("Title block"));
+    auto* form = new QFormLayout(this);
+    m_title = new QLineEdit(tb.title);
+    m_author = new QLineEdit(tb.author);
+    m_date = new QLineEdit(tb.date.isEmpty() ? QLocale().toString(QDate::currentDate(), QLocale::ShortFormat) : tb.date);
+    m_revision = new QLineEdit(tb.revision);
+    m_title->setMinimumWidth(320);
+    form->addRow(tr("&Title:"), m_title);
+    form->addRow(tr("&Author:"), m_author);
+    form->addRow(tr("&Date:"), m_date);
+    form->addRow(tr("&Revision:"), m_revision);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    form->addRow(buttons);
+}
+
+TitleBlock TitleBlockDialog::result() const
+{
+    TitleBlock tb = m_tb;
+    tb.title = m_title->text();
+    tb.author = m_author->text();
+    tb.date = m_date->text();
+    tb.revision = m_revision->text();
+    return tb;
 }
 
 } // namespace cm

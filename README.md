@@ -32,6 +32,14 @@ Wine e `~/Documents/github/_calliari_/tecdigi/CircuitMaker`.
   `R` gira e `M` espelha durante a colocação; Shift continua colocando.
 - **Fios**: ferramenta Fio (`W`) ou arraste a partir da ponta de um pino.
   Terminais com o mesmo rótulo ficam na mesma rede.
+- **Barramento** (`B`): desenhe a linha grossa; um fio que termina nela pede
+  o nome da entrada, e entradas com o mesmo nome ficam ligadas (a linha em si
+  não conduz). **Rótulo de rede** (`N`) liga pontos pelo nome em qualquer lugar.
+- **Localizar e selecionar** (`Ctrl+F`): por designador, rótulo ou dispositivo.
+- **Bloco de título**: Editar → Bloco de título; arraste para posicionar,
+  Exibir → Mostrar bloco de título liga e desliga. Sai na exportação e impressão.
+- **Lista de materiais**: Arquivo → Lista de materiais (CSV), agrupada por
+  dispositivo e valor.
 - **Simulação**: `F9` executa/pausa, `F10` avança até a próxima mudança,
   `Ctrl+F9` reinicia, `Shift+F9` volta à edição. Durante a simulação clique em
   Logic Switch, push buttons e Hex Key. Fios vermelhos = 1, azuis = 0,

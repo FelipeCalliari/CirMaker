@@ -11,6 +11,8 @@ private slots:
     void teeJunctionConnects();
     void netLabelsJoin();
     void unconnectedPinsGetOwnNet();
+    void busLinesDoNotConnect();
+    void busEntriesJoinByName();
 };
 
 void TestNetlist::wireJoinsPins()
@@ -64,6 +66,33 @@ void TestNetlist::unconnectedPinsGetOwnNet()
     const Netlist nl = NetlistBuilder::build(c, library());
     QCOMPARE(nl.nets.size(), 4);
     QVERIFY(nl.netOf(a, 3) >= 0);
+}
+
+void TestNetlist::busLinesDoNotConnect()
+{
+    // two wires ending on the same bus line stay separate
+    Circuit c;
+    c.addWire({0, {{0, 0}, {0, 400}}, true});
+    c.addWire({0, {{-100, 100}, {0, 100}}});
+    c.addWire({0, {{-100, 300}, {0, 300}}});
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QCOMPARE(nl.nets.size(), 2);
+    QVERIFY(nl.junctions.isEmpty());
+}
+
+void TestNetlist::busEntriesJoinByName()
+{
+    Circuit c;
+    c.addWire({0, {{0, 0}, {0, 400}}, true});
+    const ItemId w1 = c.addWire({0, {{-100, 100}, {0, 100}}});
+    const ItemId w2 = c.addWire({0, {{100, 300}, {0, 300}}});
+    const ItemId w3 = c.addWire({0, {{-100, 200}, {0, 200}}});
+    place(c, QStringLiteral("netlabel"), {0, 100}, {}, QStringLiteral("D0"));
+    place(c, QStringLiteral("netlabel"), {0, 300}, {}, QStringLiteral("D0"));
+    place(c, QStringLiteral("netlabel"), {0, 200}, {}, QStringLiteral("D1"));
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QCOMPARE(nl.wireNet[w1], nl.wireNet[w2]);
+    QVERIFY(nl.wireNet[w1] != nl.wireNet[w3]);
 }
 
 QTEST_GUILESS_MAIN(TestNetlist)

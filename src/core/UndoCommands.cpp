@@ -64,4 +64,7 @@ void ModifyItemsCommand::apply(Circuit* c, const Selection& s)
 void ModifyItemsCommand::redo() { apply(m_circuit, m_after); }
 void ModifyItemsCommand::undo() { apply(m_circuit, m_before); }
 
+SetTitleBlockCommand::SetTitleBlockCommand(Circuit* circuit, TitleBlock after, const QString& text)
+    : QUndoCommand(text), m_circuit(circuit), m_before(circuit->titleBlock()), m_after(std::move(after)) {}
+
 } // namespace cm
