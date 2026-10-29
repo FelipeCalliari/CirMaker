@@ -16,6 +16,7 @@ private slots:
     void rejectsOtherFiles();
     void importsAllCircuits();
     void importedCounterCounts();
+    void importsDataSequencer();
 
 private:
     static QStringList circuitFiles();
@@ -122,6 +123,45 @@ void TestCktImport::importedCounterCounts()
     }()));
     QCOMPARE(seen.size(), 16);
     QCOMPARE(increments, int(stable.size()) - 1);
+}
+
+// Led.ckt: a pulser clocks a Data Sequencer (external clock) whose ten words
+// walk a lit LED back and forth over six Logic Displays.
+void TestCktImport::importsDataSequencer()
+{
+    QString path;
+    for (const QString& f : circuitFiles())
+        if (f.endsWith(QStringLiteral("/Examples/Circuits/Led.ckt")))
+            path = f;
+    if (path.isEmpty())
+        QSKIP("Led.ckt not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    const Component* ds = nullptr;
+    for (const Component& comp : c.components())
+        if (comp.symbolId == u"dataseq")
+            ds = &comp;
+    QVERIFY(ds);
+    QCOMPARE(ds->props.value(QStringLiteral("data")).toString(), QStringLiteral("01 02 04 08 10 20 10 08 04 02"));
+    QCOMPARE(ds->props.value(QStringLiteral("lines")).toInt(), 10);
+    QCOMPARE(ds->props.value(QStringLiteral("start")).toInt(), 0);
+    QCOMPARE(ds->props.value(QStringLiteral("stop")).toInt(), 9);
+    QCOMPARE(ds->props.value(QStringLiteral("external")).toInt(), 1);
+
+    Bench bench(c);
+    QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(bench.sim.warnings().join(u'\n')));
+    QSet<int> addresses;
+    for (int i = 0; i < 2000; ++i) {
+        bench.sim.step(1);
+        addresses.insert(bench.sim.componentState(ds->id));
+    }
+    QCOMPARE(addresses.size(), 10);
+    // exactly one display lit at a time
+    int lit = 0;
+    for (const Component& comp : c.components())
+        if (comp.symbolId == u"logicdisplay")
+            lit += bench.sim.componentState(comp.id) == 1;
+    QCOMPARE(lit, 1);
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

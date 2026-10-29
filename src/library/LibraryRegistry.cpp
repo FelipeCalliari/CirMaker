@@ -475,14 +475,17 @@ bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
         m_order << s.id;
     for (const QString& a : std::as_const(s.aliases))
         m_aliases.insert(a.toLower(), s.id);
-    m_symbols.insert(s.id, s);
+    if (auto it = m_symbols.find(s.id); it != m_symbols.end())
+        **it = s;
+    else
+        m_symbols.insert(s.id, std::make_shared<SymbolDef>(s));
     return true;
 }
 
 const SymbolDef* LibraryRegistry::find(const QString& id) const
 {
     auto it = m_symbols.constFind(id);
-    return it == m_symbols.cend() ? nullptr : &*it;
+    return it == m_symbols.cend() ? nullptr : it->get();
 }
 
 const SymbolDef* LibraryRegistry::findByAlias(const QString& cmName) const
@@ -498,15 +501,23 @@ QList<const SymbolDef*> LibraryRegistry::all() const
 {
     QList<const SymbolDef*> out;
     for (const QString& id : m_order)
-        out << &*m_symbols.constFind(id);
+        out << m_symbols.constFind(id)->get();
     return out;
+}
+
+void LibraryRegistry::removeSymbol(const QString& id)
+{
+    m_symbols.remove(id);
+    m_order.removeAll(id);
+    for (auto it = m_aliases.begin(); it != m_aliases.end();)
+        it = it.value() == id ? m_aliases.erase(it) : std::next(it);
 }
 
 QStringList LibraryRegistry::categories() const
 {
     QStringList out;
     for (const QString& id : m_order) {
-        const QString& c = m_symbols.constFind(id)->category;
+        const QString& c = (*m_symbols.constFind(id))->category;
         if (!out.contains(c))
             out << c;
     }

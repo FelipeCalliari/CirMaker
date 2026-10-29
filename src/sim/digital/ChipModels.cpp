@@ -788,6 +788,63 @@ QVector<int> parseBytes(const QString& text)
     return out;
 }
 
+// Data Sequencer (word generator): outputs data[address] on Q0..Q7, from
+// start to stop, then again from start. The address advances every `tick`
+// ticks, or with the external clock on CP1 rising and CP2 falling edges.
+class DataSequencer : public Model {
+public:
+    DataSequencer(const Pins& p, QVector<int> data, int lines, int start, int stop, int tick, bool external)
+        : m_q(p.run(QStringLiteral("Q"))), m_cp1(p.at(QStringLiteral("CP1"))), m_cp2(p.at(QStringLiteral("CP2"))),
+          m_data(std::move(data)), m_tick(std::max(1, tick)), m_external(external)
+    {
+        m_data.resize(std::max<qsizetype>({1, lines, m_data.size()}));
+        m_start = std::clamp(start, 0, int(m_data.size()) - 1);
+        m_stop = std::clamp(stop, m_start, int(m_data.size()) - 1);
+        m_e2.falling = true;
+    }
+    void init(ModelContext& ctx) override
+    {
+        m_addr = m_start;
+        output(ctx, 0);
+        if (!m_external)
+            ctx.wakeAfter(m_tick);
+    }
+    void evaluate(ModelContext& ctx) override
+    {
+        if (!m_external)
+            return;
+        const bool rise = m_cp1 >= 0 && m_e1(ctx, m_cp1);
+        const bool fall = m_cp2 >= 0 && m_e2(ctx, m_cp2);
+        if (rise || fall) {
+            advance();
+            output(ctx, 1);
+        }
+    }
+    void wake(ModelContext& ctx) override
+    {
+        advance();
+        output(ctx, 0);
+        ctx.wakeAfter(m_tick);
+    }
+    int state() const override { return m_addr; }
+
+private:
+    void advance() { m_addr = m_addr >= m_stop ? m_start : m_addr + 1; }
+    void output(ModelContext& ctx, std::uint32_t delay)
+    {
+        const int word = m_data.value(m_addr);
+        for (int i = 0; i < m_q.size(); ++i)
+            if (m_q[i] >= 0) ctx.drive(m_q[i], strong(fromBool(word >> i & 1)), delay);
+    }
+
+    QVector<int> m_q;
+    int m_cp1, m_cp2;
+    QVector<int> m_data;
+    int m_start = 0, m_stop = 0, m_tick, m_addr = 0;
+    bool m_external;
+    Edge m_e1, m_e2;
+};
+
 // ROM (PROM32) and static RAM (1K RAM): address A0.., data D0..D7, ~CS;
 // RAM also has ~WE (low writes, high reads). Outputs float when deselected.
 class Memory : public Model {
@@ -877,10 +934,17 @@ std::unique_ptr<Model> createChipModel(const SymbolDef& s, const Component& c, Q
     if (kind == u"parity") return std::make_unique<Parity>(p);
     if (kind == u"transceiver") return std::make_unique<Transceiver>(p);
     if (kind == u"keymatrix") return std::make_unique<KeyMatrix>(p);
+    QVariantMap props = s.defaultProps;
+    for (auto it = c.props.cbegin(); it != c.props.cend(); ++it)
+        props.insert(it.key(), it.value());
+    if (kind == u"dataseq")
+        return std::make_unique<DataSequencer>(p, parseBytes(props.value(QStringLiteral("data")).toString()),
+                                               props.value(QStringLiteral("lines"), 32).toInt(),
+                                               props.value(QStringLiteral("start")).toInt(),
+                                               props.value(QStringLiteral("stop"), 31).toInt(),
+                                               props.value(QStringLiteral("tick"), 1).toInt(),
+                                               props.value(QStringLiteral("external")).toInt() != 0);
     if (kind == u"rom" || kind == u"ram") {
-        QVariantMap props = s.defaultProps;
-        for (auto it = c.props.cbegin(); it != c.props.cend(); ++it)
-            props.insert(it.key(), it.value());
         return std::make_unique<Memory>(p, kind == u"ram", parseBytes(props.value(QStringLiteral("data")).toString()));
     }
     if (error) *error = QStringLiteral("unknown model kind '%1'").arg(kind);

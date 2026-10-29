@@ -1,4 +1,5 @@
 #include "library/LibraryRegistry.h"
+#include "library/Macros.h"
 #include "ui/MainWindow.h"
 
 #include <QApplication>
@@ -41,6 +42,7 @@ int main(int argc, char* argv[])
     parser.process(app);
 
     cm::LibraryRegistry::instance().loadBuiltin();
+    cm::macros::loadUserLibrary();
 
     cm::MainWindow window;
     if (parser.isSet(sheetOption)) {

@@ -18,6 +18,7 @@ class QDockWidget;
 namespace cm {
 
 class Circuit;
+struct SymbolDef;
 class LibraryBrowser;
 class SchematicView;
 class WaveformView;
@@ -68,6 +69,13 @@ private:
     void showAnalogResults(const spice::Result& r);
     void showDigitalWaveforms();
     void applyPreferences();
+    // Macros menu
+    void newMacro();
+    void expandMacro();
+    bool saveMacro();
+    void editMacro();
+    void deleteMacro();
+    const SymbolDef* selectedMacro() const;
 
     void addRecent(const QString& path);
     void rebuildRecentMenu();
@@ -98,6 +106,8 @@ private:
     QActionGroup* m_tools;
     QAction *m_run, *m_step, *m_reset, *m_stop;
     QAction* m_about;
+    QAction *m_newMacro, *m_expandMacro, *m_saveMacro, *m_editMacro, *m_deleteMacro;
+    QString m_macroName;     // set while the document is a macro's circuit
     QAction* m_prefs;
     QAction *m_digitalMode, *m_analogMode, *m_analysisSetup, *m_toolProbe;
     WaveformView* m_waves;

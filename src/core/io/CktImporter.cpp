@@ -422,6 +422,20 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             for (int b : d.data)
                 bytes << QStringLiteral("%1").arg(b, 2, 16, QChar(u'0')).toUpper();
             c.props.insert(QStringLiteral("data"), bytes.join(u' '));
+        } else if (kind == u"dataseq" && d.nets.size() > 17) {
+            // nets[11..17]: present address, start, stop, tick increment, (pattern
+            // increment), external clock, line count + 1. Addresses count from 1;
+            // data byte 0 is unused.
+            QStringList bytes;
+            for (int b = 1; b < d.data.size(); ++b)
+                bytes << QStringLiteral("%1").arg(d.data[b], 2, 16, QChar(u'0')).toUpper();
+            const int lines = std::max(1, d.nets[17] - 1);
+            c.props.insert(QStringLiteral("data"), bytes.join(u' '));
+            c.props.insert(QStringLiteral("lines"), lines);
+            c.props.insert(QStringLiteral("start"), std::clamp(d.nets[12] - 1, 0, lines - 1));
+            c.props.insert(QStringLiteral("stop"), std::clamp(d.nets[13] - 1, 0, lines - 1));
+            c.props.insert(QStringLiteral("tick"), std::max(1, d.nets[14]));
+            c.props.insert(QStringLiteral("external"), d.nets[16] ? 1 : 0);
         } else if (kind == u"key" && d.nets.size() > 11 && d.nets[11] > 0) {
             const int code = d.nets[11];
             const int bits = s->model.value(u"bits").toInt(4);

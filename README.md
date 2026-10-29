@@ -40,6 +40,7 @@ Wine e `~/Documents/github/_calliari_/tecdigi/CircuitMaker`.
 | Ctrl+D | duplicar | F10 | executar |
 | Ctrl+F | localizar e selecionar | F11 | trace (cores nos fios) |
 | Ctrl+Q | reiniciar simulação | F1 | descrição do item |
+| Ctrl+H | nova macro | Ctrl+E | expandir macro |
 
 **Teclas de dispositivo**: 0–9, a–z e A–Z escolhem um dispositivo para
 colocar, como os HotKeys do CircuitMaker. Atribua no painel Dispositivos com
@@ -66,6 +67,19 @@ o botão *Tecla de atalho…*; a tecla aparece ao lado do nome. Começam com
   `Ctrl+Q` reinicia, `Shift+F10` volta à edição. Durante a simulação clique em
   Logic Switch, push buttons e Hex Key. Fios vermelhos = 1, azuis = 0,
   laranja = conflito (X), cinza = alta impedância.
+- **Macros** (menu Macros): desenhe o circuito e marque as ligações externas com
+  os dispositivos *Input* e *Output* (categoria General); o nome de cada um vira
+  um pino (entradas à esquerda, saídas à direita, de cima para baixo).
+  *Nova macro* (`Ctrl+H`) cria o dispositivo na categoria Macros; *Expandir
+  macro* (`Ctrl+E`) abre o circuito interno da macro selecionada para editar, e
+  *Salvar macro* grava a alteração. Macros podem conter macros. Ficam na
+  biblioteca do usuário (`macros.json` na pasta de dados do programa) e vão
+  junto dentro de cada `.cmq` que as usa.
+- **Data Sequencer**: gerador de palavras de 8 bits. Duplo clique abre a tabela
+  de palavras (clique nos bits ou digite em hex), endereços inicial/final,
+  incremento de ticks ou clock externo (CP1 na subida, CP2 na descida) e o
+  *Padrão…* (Pattern Editor: contagem, deslocamentos, tudo 0/1, aleatório, por
+  faixa de linhas e colunas). No modo analógico vira fontes PWL.
 
 ## Simulação analógica (SPICE)
 

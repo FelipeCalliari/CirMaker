@@ -6,6 +6,8 @@
 #include <QStringList>
 #include <QTransform>
 
+#include <memory>
+
 namespace cm {
 
 struct Component;
@@ -32,10 +34,16 @@ public:
     static QTransform placement(const Component& c);
     QPointF pinScenePos(const Component& c, int pin) const;
 
-private:
+    // Adds or replaces one symbol from its JSON description (as in the
+    // library files). A replaced symbol keeps its address.
     bool addSymbol(const QJsonObject& o, QString* error);
+    void removeSymbol(const QString& id);
 
-    QHash<QString, SymbolDef> m_symbols;
+private:
+
+    // Symbols live in stable storage: items keep SymbolDef pointers while
+    // macros are added or redefined at run time.
+    QHash<QString, std::shared_ptr<SymbolDef>> m_symbols;
     QHash<QString, QString> m_aliases;  // lower-case alias -> id
     QStringList m_order;
 };

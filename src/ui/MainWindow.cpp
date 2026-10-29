@@ -6,6 +6,7 @@
 #include "core/io/CktImporter.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
+#include "library/Macros.h"
 #include "ui/LibraryBrowser.h"
 #include "sim/digital/EventSimulator.h"
 #include "ui/AnalysisDialog.h"
@@ -396,14 +397,14 @@ void MainWindow::createActions()
     m_exportSpice = new QAction(tr("&SPICE Netlist..."), this);
     connect(m_exportSpice, &QAction::triggered, this, [this] {
         m_scene->refreshNetlist();
-        const spice::Deck deck = spice::build(*m_circuit, LibraryRegistry::instance(), m_scene->netlist());
+        const spice::Deck deck = spice::build(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist());
         writeTextFile(tr("Export SPICE netlist"), QStringLiteral("cir"), tr("SPICE netlist (*.cir *.sp)"), deck.text);
     });
     m_exportPcb = new QAction(tr("&PCB Netlist..."), this);
     connect(m_exportPcb, &QAction::triggered, this, [this] {
         m_scene->refreshNetlist();
         writeTextFile(tr("Export PCB netlist"), QStringLiteral("net"), tr("Protel netlist (*.net)"),
-                      PcbNetlist::write(*m_circuit, LibraryRegistry::instance(), m_scene->netlist()));
+                      PcbNetlist::write(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist()));
     });
     m_home = new QAction(tr("Center on Cursor"), this);
     m_home->setShortcut(Qt::Key_Home);
@@ -480,6 +481,23 @@ void MainWindow::createActions()
     m_prefs->setMenuRole(QAction::PreferencesRole);
     connect(m_prefs, &QAction::triggered, this, &MainWindow::editPreferences);
 
+    m_newMacro = new QAction(tr("&New Macro..."), this);
+    m_newMacro->setShortcut(Qt::CTRL | Qt::Key_H);
+    m_newMacro->setStatusTip(tr("Turn the circuit into a device; its Input and Output ports become the pins"));
+    connect(m_newMacro, &QAction::triggered, this, &MainWindow::newMacro);
+    m_expandMacro = new QAction(tr("&Expand Macro"), this);
+    m_expandMacro->setShortcut(Qt::CTRL | Qt::Key_E);
+    m_expandMacro->setStatusTip(tr("Open the circuit inside the selected macro device"));
+    connect(m_expandMacro, &QAction::triggered, this, &MainWindow::expandMacro);
+    m_saveMacro = new QAction(tr("&Save Macro"), this);
+    m_saveMacro->setStatusTip(tr("Save the work area as the macro being edited"));
+    connect(m_saveMacro, &QAction::triggered, this, &MainWindow::saveMacro);
+    m_editMacro = new QAction(tr("Edit &Macro..."), this);
+    m_editMacro->setStatusTip(tr("Rename the macro being edited; a new name saves a new macro"));
+    connect(m_editMacro, &QAction::triggered, this, &MainWindow::editMacro);
+    m_deleteMacro = new QAction(tr("&Delete Macro..."), this);
+    connect(m_deleteMacro, &QAction::triggered, this, &MainWindow::deleteMacro);
+
     m_about = new QAction(tr("&About CirMaker Qt"), this);
     connect(m_about, &QAction::triggered, this, &MainWindow::about);
 }
@@ -531,6 +549,11 @@ void MainWindow::createMenus()
     simulation->addActions({m_run, m_step, m_trace, m_reset, m_stop});
     simulation->addSeparator();
     simulation->addAction(m_analysisSetup);
+
+    QMenu* macrosMenu = menuBar()->addMenu(tr("&Macros"));
+    macrosMenu->addActions({m_newMacro, m_editMacro, m_saveMacro, m_expandMacro});
+    macrosMenu->addSeparator();
+    macrosMenu->addAction(m_deleteMacro);
 
     QMenu* help = menuBar()->addMenu(tr("&Help"));
     help->addAction(m_topicHelp);
@@ -586,6 +609,10 @@ void MainWindow::updateActions()
     for (QAction* a : {m_cut, m_copy, m_delete, m_rotate, m_mirror})
         a->setEnabled(!simulating && hasSel);
     m_props->setEnabled(!simulating && m_scene->selectedItems().size() == 1);
+    for (QAction* a : {m_newMacro, m_saveMacro, m_editMacro, m_deleteMacro})
+        a->setEnabled(!simulating);
+    m_editMacro->setEnabled(!simulating && !m_macroName.isEmpty());
+    m_expandMacro->setEnabled(!simulating && selectedMacro());
     m_tools->setEnabled(!simulating);
     m_step->setEnabled(!m_scene->running());
     m_reset->setEnabled(simulating);
@@ -617,7 +644,8 @@ void MainWindow::updateActions()
 
 void MainWindow::updateTitle()
 {
-    const QString name = m_path.isEmpty() ? tr("Untitled") : QFileInfo(m_path).fileName();
+    const QString name = !m_macroName.isEmpty() ? tr("Macro %1").arg(m_macroName)
+                       : m_path.isEmpty() ? tr("Untitled") : QFileInfo(m_path).fileName();
     setWindowTitle(QStringLiteral("%1[*] — CirMaker Qt").arg(name));
     setWindowModified(!m_undo->isClean());
 }
@@ -642,6 +670,7 @@ void MainWindow::newCircuit()
     m_circuit->clear();
     m_undo->clear();
     m_path.clear();
+    m_macroName.clear();
     updateTitle();
 }
 
@@ -681,6 +710,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
             return fail(tr("Import"), tr("Cannot import %1:\n%2").arg(QFileInfo(path).fileName(), error));
         }
         m_circuit->clear();
+        m_macroName.clear();
         NativeFormat::deserialize(NativeFormat::serialize(imported), *m_circuit, nullptr);
         m_undo->clear();
         m_undo->resetClean();
@@ -711,6 +741,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
             return fail(tr("Open"), tr("Cannot open %1:\n%2").arg(QFileInfo(path).fileName(), error));
         }
         m_circuit->clear();
+        m_macroName.clear();
         NativeFormat::deserialize(data, *m_circuit, nullptr);
         m_undo->clear();
         m_path = path;
@@ -761,6 +792,143 @@ bool MainWindow::saveAs()
         path += QStringLiteral(".cmq");
     m_path = path;
     return save();
+}
+
+// ---------------------------------------------------------------- macros
+
+const SymbolDef* MainWindow::selectedMacro() const
+{
+    const auto sel = m_scene->selectedItems();
+    if (sel.size() != 1)
+        return nullptr;
+    const auto* item = dynamic_cast<const ComponentItem*>(sel.first());
+    const SymbolDef* s = item ? LibraryRegistry::instance().find(item->component().symbolId) : nullptr;
+    return s && macros::isMacro(*s) ? s : nullptr;
+}
+
+void MainWindow::newMacro()
+{
+    m_scene->stopSimulation();
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, tr("New Macro"), tr("Macro name:"), QLineEdit::Normal,
+                                               m_macroName.isEmpty() ? tr("Macro1") : m_macroName, &ok).trimmed();
+    if (!ok || name.isEmpty())
+        return;
+    if (LibraryRegistry::instance().find(macros::idFor(name))
+        && QMessageBox::question(this, tr("New Macro"), tr("A macro named %1 already exists. Replace it?").arg(name))
+               != QMessageBox::Yes)
+        return;
+    if (!m_circuit->isEmpty()
+        && QMessageBox::question(this, tr("New Macro"), tr("Include the circuit in the work area inside the macro?"))
+               == QMessageBox::Yes) {
+        const QString previous = m_macroName;
+        m_macroName = name;
+        if (!saveMacro())
+            m_macroName = previous;
+        updateTitle();
+        return;
+    }
+    if (!maybeSave())
+        return;
+    m_circuit->clear();
+    m_undo->clear();
+    m_path.clear();
+    m_macroName = name;
+    updateTitle();
+    statusBar()->showMessage(tr("Draw the macro circuit with Input and Output ports, then choose Macros > Save Macro"), 10000);
+}
+
+bool MainWindow::saveMacro()
+{
+    if (m_macroName.isEmpty()) {
+        newMacro();
+        return !m_macroName.isEmpty();
+    }
+    m_scene->stopSimulation();
+    QString error;
+    const QString id = macros::define(m_macroName, *m_circuit, &error);
+    if (id.isEmpty()) {
+        QMessageBox::warning(this, tr("Save Macro"),
+                             tr("Cannot save macro %1: %2.\n\nPlace Input and Output devices "
+                                "(General category) where the macro's pins connect.").arg(m_macroName, error));
+        return false;
+    }
+    m_scene->refreshSymbols();
+    m_browser->reload();
+    if (m_path.isEmpty())
+        m_undo->setClean();     // the macro library holds the work
+    updateTitle();
+    statusBar()->showMessage(tr("Saved macro %1 (Macros category of the device library)").arg(m_macroName), 5000);
+    return true;
+}
+
+void MainWindow::expandMacro()
+{
+    const SymbolDef* s = selectedMacro();
+    if (!s) {
+        statusBar()->showMessage(tr("Select one macro device to expand"), 4000);
+        return;
+    }
+    const QString name = s->name;
+    Circuit inner;
+    QString error;
+    if (!macros::innerCircuit(*s, inner, &error)) {
+        QMessageBox::warning(this, tr("Expand Macro"), error);
+        return;
+    }
+    if (!maybeSave())
+        return;
+    m_circuit->clear();
+    NativeFormat::deserialize(NativeFormat::serialize(inner), *m_circuit, nullptr);
+    m_undo->clear();
+    m_path.clear();
+    m_macroName = name;
+    updateTitle();
+    m_view->zoomToFit();
+    statusBar()->showMessage(tr("Editing macro %1; choose Macros > Save Macro when done").arg(name), 8000);
+}
+
+void MainWindow::editMacro()
+{
+    if (m_macroName.isEmpty())
+        return;
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, tr("Edit Macro"),
+                                               tr("Macro name (a new name saves a new macro):"),
+                                               QLineEdit::Normal, m_macroName, &ok).trimmed();
+    if (!ok || name.isEmpty() || name == m_macroName)
+        return;
+    const QString previous = m_macroName;
+    m_macroName = name;
+    if (!saveMacro())
+        m_macroName = previous;
+    updateTitle();
+}
+
+void MainWindow::deleteMacro()
+{
+    QStringList names;
+    for (const SymbolDef* s : LibraryRegistry::instance().all())
+        if (macros::isMacro(*s))
+            names << s->name;
+    if (names.isEmpty()) {
+        QMessageBox::information(this, tr("Delete Macro"), tr("The library has no macros."));
+        return;
+    }
+    names.sort(Qt::CaseInsensitive);
+    bool ok = false;
+    const QString name = QInputDialog::getItem(this, tr("Delete Macro"), tr("Macro:"), names, 0, false, &ok);
+    if (!ok)
+        return;
+    const QString id = macros::idFor(name);
+    for (const Component& c : m_circuit->components())
+        if (c.symbolId == id) {
+            QMessageBox::warning(this, tr("Delete Macro"), tr("%1 is used in this circuit (%2).").arg(name, c.designator));
+            return;
+        }
+    macros::forget(id);
+    m_browser->reload();
+    statusBar()->showMessage(tr("Deleted macro %1").arg(name), 4000);
 }
 
 void MainWindow::exportImage()
@@ -998,7 +1166,7 @@ void MainWindow::runAnalog()
         return;
     }
     m_scene->refreshNetlist();
-    m_runningDeck = spice::build(*m_circuit, LibraryRegistry::instance(), m_scene->netlist());
+    m_runningDeck = spice::build(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist());
     if (!m_runningDeck.ok) {
         QMessageBox::warning(this, tr("Analog simulation"), m_runningDeck.warnings.join(u'\n'));
         return;

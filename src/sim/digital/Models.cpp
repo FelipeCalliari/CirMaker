@@ -378,7 +378,8 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
 {
     const QString kind = s.model.value(u"kind").toString();
     // analog-only parts have no digital behaviour
-    if (kind.isEmpty() || kind == u"siggen" || kind == u"pot" || kind == u"meter" || kind == u"scope")
+    if (kind.isEmpty() || kind == u"siggen" || kind == u"pot" || kind == u"meter" || kind == u"scope"
+        || kind == u"macro")   // macros run as their flattened contents
         return nullptr;
     const QVariantMap props = mergedProps(s, c);
     // CircuitMaker propagation delay: 1..14 ticks (Edit > Set Prop Delays)

@@ -11,6 +11,8 @@ private slots:
     void asyncJkCounterCounts();
     void pushButtonWithPullUp();
     void triStateBus();
+    void dataSequencerInternalClock();
+    void dataSequencerExternalClock();
 };
 
 void TestSimulator::pulserToggles()
@@ -114,6 +116,56 @@ void TestSimulator::triStateBus()
     bench.sim.interact(en1, QStringLiteral("toggle"));
     bench.sim.step(2);
     QCOMPARE(bench.value(c, b1, QStringLiteral("Y")), Logic::L0);
+}
+
+void TestSimulator::dataSequencerInternalClock()
+{
+    Circuit c;
+    Component d;
+    d.symbolId = QStringLiteral("dataseq");
+    d.props = {{QStringLiteral("data"), QStringLiteral("AA 55 0F F0")}, {QStringLiteral("lines"), 4},
+               {QStringLiteral("start"), 1}, {QStringLiteral("stop"), 3}, {QStringLiteral("tick"), 5}};
+    const ItemId id = c.addComponent(d);
+    Bench bench(c);
+    auto word = [&] {
+        int v = 0;
+        for (int b = 0; b < 8; ++b)
+            v |= int(bench.value(c, id, QStringLiteral("Q%1").arg(b)) == Logic::L1) << b;
+        return v;
+    };
+    // starts at the start address, advances every 5 ticks, wraps to start
+    for (int expected : {0x55, 0x0F, 0xF0, 0x55, 0x0F}) {
+        QCOMPARE(word(), expected);
+        bench.sim.step(5);
+    }
+}
+
+void TestSimulator::dataSequencerExternalClock()
+{
+    Circuit c;
+    Component d;
+    d.symbolId = QStringLiteral("dataseq");
+    d.props = {{QStringLiteral("data"), QStringLiteral("01 02 03")}, {QStringLiteral("lines"), 3},
+               {QStringLiteral("stop"), 2}, {QStringLiteral("external"), 1}};
+    const ItemId id = c.addComponent(d);
+    Component p;
+    p.symbolId = QStringLiteral("pulser");
+    p.pos = {-400, 0};
+    p.props = {{QStringLiteral("high"), 10}, {QStringLiteral("low"), 10}};
+    const ItemId clk = c.addComponent(p);
+    label(c, clk, QStringLiteral("Q"), QStringLiteral("CLK"));
+    label(c, id, QStringLiteral("CP1"), QStringLiteral("CLK"));
+    Bench bench(c);
+    QCOMPARE(bench.sim.componentState(id), 0);
+    bench.sim.step(9);
+    QCOMPARE(bench.sim.componentState(id), 0);  // no edge yet
+    bench.sim.step(3);
+    QCOMPARE(bench.sim.componentState(id), 1);  // rising edge at t = 10
+    bench.sim.step(20);
+    QCOMPARE(bench.sim.componentState(id), 2);
+    bench.sim.step(20);
+    QCOMPARE(bench.sim.componentState(id), 0);
+    QCOMPARE(bench.value(c, id, QStringLiteral("Q0")), Logic::L1);
 }
 
 QTEST_GUILESS_MAIN(TestSimulator)

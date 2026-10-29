@@ -6,6 +6,7 @@
 #include "ui/ComponentItem.h"
 #include "ui/MainWindow.h"
 #include "ui/PropertiesDialog.h"
+#include "ui/DataSequencerDialog.h"
 
 #include <QComboBox>
 #include "ui/SchematicScene.h"
@@ -35,6 +36,8 @@ private slots:
     void editMenuTools();
     void ledColourProperty_data();
     void ledColourProperty();
+    void patternEditorFills();
+    void dataSequencerDialogKeepsWords();
     void screenshot();
 };
 
@@ -296,6 +299,39 @@ void TestGui::screenshot()
         QTest::qWait(300);
     }
     QVERIFY(w.grab().save(out));
+}
+
+void TestGui::patternEditorFills()
+{
+    using P = PatternEditor::Pattern;
+    QVector<int> w(8, 0);
+    PatternEditor::fill(w, P::CountUp, 0, 7, 1, 0xff);
+    QCOMPARE(w, (QVector<int>{0, 1, 2, 3, 4, 5, 6, 7}));
+    // one column counting up alternates; other columns keep their bits
+    w.fill(0x01);
+    PatternEditor::fill(w, P::CountUp, 0, 3, 1, 0x08);
+    QCOMPARE(w, (QVector<int>{0x01, 0x09, 0x01, 0x09, 0x01, 0x01, 0x01, 0x01}));
+    w.fill(0);
+    PatternEditor::fill(w, P::Shift1Left, 0, 7, 2, 0x0f);
+    QCOMPARE(w, (QVector<int>{1, 1, 2, 2, 4, 4, 8, 8}));
+    PatternEditor::fill(w, P::Shift0Right, 0, 3, 1, 0xf0);
+    QCOMPARE(w.mid(0, 4), (QVector<int>{0x71, 0xb1, 0xd2, 0xe2}));
+    PatternEditor::fill(w, P::CountDown, 0, 2, 1, 0xff);
+    QCOMPARE(w.mid(0, 3), (QVector<int>{0xff, 0xfe, 0xfd}));
+}
+
+void TestGui::dataSequencerDialogKeepsWords()
+{
+    Component c;
+    c.symbolId = QStringLiteral("dataseq");
+    c.props = {{QStringLiteral("data"), QStringLiteral("01 02 04")}, {QStringLiteral("lines"), 16},
+               {QStringLiteral("stop"), 2}};
+    DataSequencerDialog dlg(c, *library().find(c.symbolId));
+    QCOMPARE(dlg.words().size(), 16);
+    const Component r = dlg.result();
+    QCOMPARE(r.props.value(QStringLiteral("data")).toString(), QStringLiteral("01 02 04"));
+    QCOMPARE(r.props.value(QStringLiteral("lines")).toInt(), 16);
+    QCOMPARE(r.props.value(QStringLiteral("stop")).toInt(), 2);
 }
 
 QTEST_MAIN(TestGui)

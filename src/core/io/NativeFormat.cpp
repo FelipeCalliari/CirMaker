@@ -6,6 +6,8 @@
 #include <QJsonObject>
 #include <QSaveFile>
 
+#include "library/Macros.h"
+
 using namespace Qt::StringLiterals;
 
 namespace cm::NativeFormat {
@@ -95,6 +97,8 @@ QByteArray serialize(const Circuit& circuit)
         {u"wires"_s, wires},
         {u"texts"_s, texts},
     };
+    if (const QJsonArray macros = macros::embeddedFor(circuit); !macros.isEmpty())
+        root.insert(u"macros", macros);
     return QJsonDocument(root).toJson(QJsonDocument::Indented);
 }
 
@@ -113,6 +117,7 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
     }
 
     circuit.clear();
+    macros::registerEmbedded(root.value(u"macros").toArray());
     const QJsonObject tb = root.value(u"title").toObject();
     TitleBlock block;
     block.title = tb.value(u"title").toString();

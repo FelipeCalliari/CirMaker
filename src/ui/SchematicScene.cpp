@@ -3,9 +3,11 @@
 #include "core/WireGeometry.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
+#include "library/Macros.h"
 #include "sim/digital/EventSimulator.h"
 #include "ui/ComponentItem.h"
 #include "ui/Hotkeys.h"
+#include "ui/DataSequencerDialog.h"
 #include "ui/PropertiesDialog.h"
 #include "ui/SymbolPainter.h"
 #include "ui/TextNoteItem.h"
@@ -184,6 +186,14 @@ void SchematicScene::onTitleBlockChanged()
     }
 }
 
+void SchematicScene::refreshSymbols()
+{
+    for (auto it = m_componentItems.cbegin(); it != m_componentItems.cend(); ++it)
+        if (const Component* c = m_circuit->component(it.key()))
+            it.value()->sync(*c);
+    rebuildNetlist();
+}
+
 void SchematicScene::scheduleNetlist()
 {
     if (m_netlistPending)
@@ -195,7 +205,9 @@ void SchematicScene::scheduleNetlist()
 void SchematicScene::rebuildNetlist()
 {
     m_netlistPending = false;
-    m_netlist = NetlistBuilder::build(*m_circuit, m_library);
+    m_flatWarnings.clear();
+    m_flat = macros::flatten(*m_circuit, m_library, &m_flatWarnings);
+    m_netlist = NetlistBuilder::build(simCircuit(), m_library);
     update();
 }
 
@@ -870,10 +882,18 @@ void SchematicScene::editItem(QGraphicsItem* item)
         if (!current)
             return;
         const Component before = *current;
-        PropertiesDialog dlg(before, *c->symbol(), dialogParent());
-        if (dlg.exec() != QDialog::Accepted)
-            return;
-        const Component after = dlg.result();
+        Component after;
+        if (c->symbol()->model.value(u"kind").toString() == u"dataseq") {
+            DataSequencerDialog dlg(before, *c->symbol(), dialogParent());
+            if (dlg.exec() != QDialog::Accepted)
+                return;
+            after = dlg.result();
+        } else {
+            PropertiesDialog dlg(before, *c->symbol(), dialogParent());
+            if (dlg.exec() != QDialog::Accepted)
+                return;
+            after = dlg.result();
+        }
         if (after.designator == before.designator && after.label == before.label && after.props == before.props)
             return;
         Selection b, a;
@@ -949,7 +969,7 @@ void SchematicScene::run()
         clearSelection();
         rebuildNetlist();
         m_sim = std::make_unique<sim::EventSimulator>();
-        m_sim->build(*m_circuit, m_library, m_netlist);
+        m_sim->build(simCircuit(), m_library, m_netlist);
         m_sim->reset();
         m_lanes.clear();
         for (const ComponentItem* item : std::as_const(m_componentItems)) {
@@ -965,9 +985,10 @@ void SchematicScene::run()
         QVector<int> nets;
         for (const Lane& l : std::as_const(m_lanes)) nets << l.net;
         m_sim->watch(nets);
-        if (!m_sim->warnings().isEmpty())
-            emit statusMessage(tr("Simulation: %n problem(s); first: %1", nullptr, int(m_sim->warnings().size()))
-                                   .arg(m_sim->warnings().first()));
+        const QStringList problems = m_flatWarnings + m_sim->warnings();
+        if (!problems.isEmpty())
+            emit statusMessage(tr("Simulation: %n problem(s); first: %1", nullptr, int(problems.size()))
+                                   .arg(problems.first()));
     }
     m_timer.start();
     update();

@@ -34,10 +34,11 @@ def gate(id, name, op, n, inv, aliases=(), desc='', **extra):
     return s
 
 
-def box(id, name, left=(), right=(), top=(), bottom=(), width=80, pitch=40, title=None, **extra):
+def box(id, name, left=(), right=(), top=(), bottom=(), width=80, pitch=40, title=None, title_y=None, **extra):
     shape = {'type': 'box', 'width': width, 'pitch': pitch, 'left': list(left), 'right': list(right),
              'top': list(top), 'bottom': list(bottom)}
     if title: shape['title'] = title
+    if title_y is not None: shape['titleY'] = title_y
     s = {'id': id, 'name': name, 'shape': shape}
     s.update(extra)
     return s
@@ -463,6 +464,15 @@ def inputs():
          'graphics': [L(-20, -11, -4, -11), C(-10, 10, 4), L(-20, 10, -14, 10), L(20, 0, 40, 0),
                       T('1', -24, -11, 7, 'right'), T('0', -24, 10, 7, 'right')],
          'pins': [pin('Y', 40, 0, 'out')]},
+        box('dataseq', 'Data Sequencer', left=[clk('CP1'), clk('CP2')], right=[f'Q{i}' for i in range(8)],
+            width=80, pitch=20, title='DATA SEQ', title_y=-88, prefix='DS', display='dataseq', aliases=['Data Seq'],
+            # CircuitMaker pin 1 is the most significant output
+            cmPins=[f'Q{i}' for i in range(7, -1, -1)] + ['CP1', 'CP2'],
+            model={'kind': 'dataseq'},
+            props={'data': '', 'lines': 32, 'start': 0, 'stop': 31, 'tick': 1, 'external': 0,
+                   'low': '0', 'high': '5', 'step': '1m'},
+            description='Word generator: outputs 8-bit words from address start to stop and repeats. '
+                        'Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock'),
         {'id': 'pulser', 'name': 'Pulser', 'prefix': 'P', 'display': 'pulser', 'aliases': ['Pulser'],
          'cmPins': ['', '', 'Q', '~Q'], 'model': {'kind': 'pulser'}, 'props': {'high': 10, 'low': 10},
          'description': 'Clock source; high and low durations in ticks',
@@ -582,8 +592,16 @@ def general():
         {'id': 'vcc', 'name': '+V', 'prefix': 'V', 'label': '5V', 'aliases': ['+V', '+5V', 'Vcc'], 'cmPins': ['VCC'],
          'model': {'kind': 'const', 'value': 1}, 'spice': sp('V{name} {VCC} 0 DC {value}'),
          'graphics': [L(0, 30, 0, 10), C(0, 0, 10), L(-5, 0, 5, 0), L(0, -5, 0, 5)], 'pins': [pin('VCC', 0, 30, 'out')]},
+        {'id': 'port_in', 'name': 'Input', 'prefix': '', 'netLabel': True, 'display': 'port', 'label': 'IN',
+         'aliases': ['Input'], 'cmPins': ['1'],
+         'description': 'Macro input: becomes a pin on the left of the macro symbol; connects by name like a terminal',
+         'graphics': [P('M -60 -10 L -10 -10 L 0 0 L -10 10 L -60 10 Z'), L(0, 0, 10, 0)], 'pins': [pin('1', 10, 0)]},
+        {'id': 'port_out', 'name': 'Output', 'prefix': '', 'netLabel': True, 'display': 'port', 'label': 'OUT',
+         'aliases': ['Output'], 'cmPins': ['1'],
+         'description': 'Macro output: becomes a pin on the right of the macro symbol; connects by name like a terminal',
+         'graphics': [P('M 0 -10 L 50 -10 L 60 0 L 50 10 L 0 10 Z'), L(-10, 0, 0, 0)], 'pins': [pin('1', -10, 0)]},
         {'id': 'terminal', 'name': 'Terminal', 'prefix': 'T', 'netLabel': True,
-         'aliases': ['Terminal', 'Input', 'Output'], 'cmPins': ['1'],
+         'aliases': ['Terminal'], 'cmPins': ['1'],
          'description': 'Connection point; terminals with the same label are connected',
          'graphics': [L(0, 30, 0, 8), C(0, 0, 8)], 'pins': [pin('1', 0, 30)]},
         {'id': 'netlabel', 'name': 'Net label', 'prefix': '', 'netLabel': True, 'hidden': True,

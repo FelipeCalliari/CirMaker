@@ -20,6 +20,7 @@ private slots:
     void lowPassAc();
     void invertingAmplifier();
     void mixedModeInverter();
+    void dataSequencerPwl();
     void importedExamplesSimulate();
 
 private:
@@ -260,6 +261,34 @@ void TestAnalog::mixedModeInverter()
 
 // Every CircuitMaker example that imports into analog mode must at least
 // produce a deck ngspice accepts, unless it uses parts without an equivalent.
+// Words 01 02 03, 1 ms each, repeating: at 4.5 ms the word is 02 again.
+void TestAnalog::dataSequencerPwl()
+{
+    requireEngine();
+    Circuit c;
+    const ItemId ds = part(c, QStringLiteral("dataseq"), QStringLiteral("DS1"), {},
+                           {{QStringLiteral("data"), QStringLiteral("01 02 03")}, {QStringLiteral("lines"), 3},
+                            {QStringLiteral("stop"), 2}, {QStringLiteral("step"), QStringLiteral("1m")}});
+    const ItemId r0 = part(c, QStringLiteral("resistor"), QStringLiteral("R1"), QStringLiteral("1k"));
+    const ItemId r1 = part(c, QStringLiteral("resistor"), QStringLiteral("R2"), QStringLiteral("1k"));
+    label(c, ds, QStringLiteral("Q0"), QStringLiteral("B0"));
+    label(c, ds, QStringLiteral("Q1"), QStringLiteral("B1"));
+    label(c, r0, QStringLiteral("1"), QStringLiteral("B0"));
+    label(c, r1, QStringLiteral("1"), QStringLiteral("B1"));
+    label(c, r0, QStringLiteral("2"), QStringLiteral("G"));
+    label(c, r1, QStringLiteral("2"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    AnalysisSettings a{true, AnalysisSettings::Type::Transient};
+    a.tranStop = QStringLiteral("4.5m");
+    a.tranStep = QStringLiteral("10u");
+    c.setAnalysis(a);
+    spice::Deck deck;
+    const spice::Result res = simulate(c, &deck);
+    QVERIFY2(res.ok, qPrintable(res.error + u'\n' + deck.text));
+    QVERIFY(qAbs(nodeVoltage(res, deck, c, ds, QStringLiteral("Q0")) - 0) < 0.01);
+    QVERIFY(qAbs(nodeVoltage(res, deck, c, ds, QStringLiteral("Q1")) - 5) < 0.01);
+}
+
 void TestAnalog::importedExamplesSimulate()
 {
     requireEngine();

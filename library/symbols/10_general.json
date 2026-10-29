@@ -125,14 +125,88 @@
    ]
   },
   {
+   "id": "port_in",
+   "name": "Input",
+   "prefix": "",
+   "netLabel": true,
+   "display": "port",
+   "label": "IN",
+   "aliases": [
+    "Input"
+   ],
+   "cmPins": [
+    "1"
+   ],
+   "description": "Macro input: becomes a pin on the left of the macro symbol; connects by name like a terminal",
+   "graphics": [
+    {
+     "path": "M -60 -10 L -10 -10 L 0 0 L -10 10 L -60 10 Z"
+    },
+    {
+     "line": [
+      0,
+      0,
+      10,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      10,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "port_out",
+   "name": "Output",
+   "prefix": "",
+   "netLabel": true,
+   "display": "port",
+   "label": "OUT",
+   "aliases": [
+    "Output"
+   ],
+   "cmPins": [
+    "1"
+   ],
+   "description": "Macro output: becomes a pin on the right of the macro symbol; connects by name like a terminal",
+   "graphics": [
+    {
+     "path": "M 0 -10 L 50 -10 L 60 0 L 50 10 L 0 10 Z"
+    },
+    {
+     "line": [
+      -10,
+      0,
+      0,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -10,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
    "id": "terminal",
    "name": "Terminal",
    "prefix": "T",
    "netLabel": true,
    "aliases": [
-    "Terminal",
-    "Input",
-    "Output"
+    "Terminal"
    ],
    "cmPins": [
     "1"

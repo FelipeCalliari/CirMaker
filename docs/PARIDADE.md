@@ -35,11 +35,11 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Navegador por categorias e busca | ✅ | |
 | Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS181 falta |
 | Entradas/saídas digitais (chaves, teclados, displays, pulser, SCOPE) | ✅ | |
-| Data Sequencer + Pattern Editor | ❌ | |
+| Data Sequencer + Pattern Editor | ✅ | clock interno/externo, níveis analógicos (fontes PWL); importado do `.ckt` |
 | 7-seg com decodificador, displays ASCII/hex | ✅ | |
 | Peças analógicas comuns | ✅ | R, C, L, diodos, BJT, MOSFET, amp-op, fontes, gerador, multímetro |
 | Relés, transformadores, válvulas, 555, optoacoplador, SCR/TRIAC | ❌ | importados como `?` |
-| Macros (subcircuitos com símbolo próprio, Expand Macro) | ❌ | |
+| Macros (subcircuitos com símbolo próprio, Expand Macro) | 🟡 | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`; símbolo gerado (caixa), sem editor de símbolo nem Macro Lock |
 
 ## Simulação digital
 

@@ -60,7 +60,7 @@ public:
         assignNodes();
         for (const Component& comp : m_c.components()) {
             const SymbolDef* s = m_lib.find(comp.symbolId);
-            if (!s || s->netLabel || s->hidden)
+            if (!s || s->netLabel || s->hidden || s->model.value(u"kind").toString() == u"macro")
                 continue;
             emitComponent(comp, *s);
         }
@@ -361,6 +361,34 @@ private:
             if (const int qn = s.pinIndex(QStringLiteral("~Q")); qn >= 0 && connected(m_nl.netOf(c.id, qn)))
                 m_lines << QStringLiteral("V%1n %2 0 ").arg(name, node(c, qn))
                                + shape.arg(u"5"_s, u"0"_s, formatNumber(low), formatNumber(high), formatNumber(high + low));
+            return;
+        }
+        if (kind == u"dataseq") {
+            // one repeating piecewise-linear source per output bit
+            QVector<int> data;
+            for (const QString& t : p.value(QStringLiteral("data")).toString().split(QRegularExpression(QStringLiteral("[\\s,;]+")), Qt::SkipEmptyParts))
+                data << (t.toInt(nullptr, 16) & 0xff);
+            const int lines = std::max<int>(1, std::max<qsizetype>(p.value(QStringLiteral("lines"), 32).toInt(), data.size()));
+            data.resize(lines);
+            const int start = std::clamp(p.value(QStringLiteral("start")).toInt(), 0, lines - 1);
+            const int stop = std::clamp(p.value(QStringLiteral("stop"), 31).toInt(), start, lines - 1);
+            const double step = parseNumber(p.value(QStringLiteral("step"), u"1m"_s).toString()).value_or(1e-3);
+            const QString low = formatNumber(parseNumber(p.value(QStringLiteral("low"), u"0"_s).toString()).value_or(0));
+            const QString high = formatNumber(parseNumber(p.value(QStringLiteral("high"), u"5"_s).toString()).value_or(5));
+            if (p.value(QStringLiteral("external")).toInt())
+                m_deck.warnings << QStringLiteral("%1: the external clock is not simulated in analog mode; using the step time").arg(c.designator);
+            const double edge = std::min(1e-9, step / 100);
+            for (int bit = 0; bit < 8; ++bit) {
+                const int pin = s.pinIndex(QStringLiteral("Q%1").arg(bit));
+                if (pin < 0 || !connected(m_nl.netOf(c.id, pin))) continue;
+                QStringList pts;
+                for (int a = start; a <= stop; ++a) {
+                    const QString v = (data[a] >> bit & 1) ? high : low;
+                    const double t0 = (a - start) * step;
+                    pts << formatNumber(a == start ? 0 : t0 + edge) << v << formatNumber(t0 + step) << v;
+                }
+                m_lines << QStringLiteral("V%1_%2 %3 0 PWL(%4) r=0").arg(name).arg(bit).arg(node(c, pin), pts.join(u' '));
+            }
             return;
         }
         if (kind == u"key") {

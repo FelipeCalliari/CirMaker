@@ -20,6 +20,7 @@ add_library(cmcore STATIC
     src/core/io/CktImporter.h src/core/io/CktImporter.cpp
     src/library/SymbolDef.h
     src/library/LibraryRegistry.h src/library/LibraryRegistry.cpp
+    src/library/Macros.h src/library/Macros.cpp
 )
 target_include_directories(cmcore PUBLIC src)
 target_link_libraries(cmcore PUBLIC Qt6::Core Qt6::Gui)
@@ -56,6 +57,7 @@ add_library(cmui STATIC
     src/ui/SymbolPainter.h src/ui/SymbolPainter.cpp
     src/ui/LibraryBrowser.h src/ui/LibraryBrowser.cpp
     src/ui/PropertiesDialog.h src/ui/PropertiesDialog.cpp
+    src/ui/DataSequencerDialog.h src/ui/DataSequencerDialog.cpp
     src/ui/PreferencesDialog.h src/ui/PreferencesDialog.cpp
     src/ui/WaveformView.h src/ui/WaveformView.cpp
     src/ui/AnalysisDialog.h src/ui/AnalysisDialog.cpp
@@ -88,6 +90,7 @@ cm_add_test(tst_ckt_import)
 cm_add_test(tst_chips)
 cm_add_test(tst_document)
 cm_add_test(tst_analog)
+cm_add_test(tst_macros)
 if(CM_BUILD_APP)
     qt_add_executable(tst_gui tests/tst_gui.cpp)
     target_link_libraries(tst_gui PRIVATE cmui cmlibdata Qt6::Test)

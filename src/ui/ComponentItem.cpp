@@ -147,7 +147,11 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     }
     if (m_showLabel)
     {
-        if (m_symbol->id == u"netlabel") {
+        if (m_symbol->display == u"port") {
+            // port name inside the arrow
+            const double cx = m_symbol->id == u"port_in" ? -32 : 28;
+            SymbolPainter::uprightText(p, QPointF(cx, 0), m_c.label, 11, 0, ink);
+        } else if (m_symbol->id == u"netlabel") {
             // bus entry / net label: name above the wire, on the wire's side
             const QString side = m_c.props.value(QStringLiteral("side"), QStringLiteral("right")).toString();
             const int align = side == u"left" ? 1 : -1;
@@ -325,6 +329,10 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setBrush(state == 1 ? kHigh : kLow);
             p->drawEllipse(body.topRight() + QPointF(-9, 9), 5, 5);
         }
+    } else if (d == u"dataseq") {
+        // present address while simulating
+        if (live && state >= 0)
+            SymbolPainter::uprightText(p, QPointF(0, 60), QStringLiteral("%1").arg(state, 2, 16, QChar(u'0')).toUpper(), 9, 0, kHigh);
     } else if (d == u"spst" || d == u"button") {
         const auto cs = circles();
         const QString type = m_symbol->model.value(u"type").toString();

@@ -82,6 +82,71 @@
    ]
   },
   {
+   "id": "dataseq",
+   "name": "Data Sequencer",
+   "shape": {
+    "type": "box",
+    "width": 80,
+    "pitch": 20,
+    "left": [
+     {
+      "name": "CP1",
+      "clock": true
+     },
+     {
+      "name": "CP2",
+      "clock": true
+     }
+    ],
+    "right": [
+     "Q0",
+     "Q1",
+     "Q2",
+     "Q3",
+     "Q4",
+     "Q5",
+     "Q6",
+     "Q7"
+    ],
+    "top": [],
+    "bottom": [],
+    "title": "DATA SEQ",
+    "titleY": -88
+   },
+   "prefix": "DS",
+   "display": "dataseq",
+   "aliases": [
+    "Data Seq"
+   ],
+   "cmPins": [
+    "Q7",
+    "Q6",
+    "Q5",
+    "Q4",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0",
+    "CP1",
+    "CP2"
+   ],
+   "model": {
+    "kind": "dataseq"
+   },
+   "props": {
+    "data": "",
+    "lines": 32,
+    "start": 0,
+    "stop": 31,
+    "tick": 1,
+    "external": 0,
+    "low": "0",
+    "high": "5",
+    "step": "1m"
+   },
+   "description": "Word generator: outputs 8-bit words from address start to stop and repeats. Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock"
+  },
+  {
    "id": "pulser",
    "name": "Pulser",
    "prefix": "P",

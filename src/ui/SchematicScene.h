@@ -35,6 +35,8 @@ public:
     Circuit* circuit() const { return m_circuit; }
     const LibraryRegistry& library() const { return m_library; }
     const Netlist& netlist() const { return m_netlist; }
+    // The circuit the netlist describes: the document with macros expanded.
+    const Circuit& simCircuit() const { return m_flat ? *m_flat : *m_circuit; }
 
     Tool tool() const { return m_tool; }
     void setTool(Tool tool);
@@ -83,6 +85,8 @@ public:
     // Net under each probe point (-1 when the probe sits on nothing).
     QVector<int> probeNets() const;
     void refreshNetlist() { rebuildNetlist(); }
+    // Re-reads symbols after a library change (a macro was redefined).
+    void refreshSymbols();
 
     // title block (no-ops while simulating)
     void editTitleBlock();
@@ -201,6 +205,8 @@ private:
     QHash<ItemId, TextNoteItem*> m_textItems;
 
     Netlist m_netlist;
+    std::unique_ptr<Circuit> m_flat;
+    QStringList m_flatWarnings;
     bool m_netlistPending = false;
 
     Tool m_tool = Tool::Select;
