@@ -1072,47 +1072,87 @@ Saída do SPICE:
 <context>
     <name>cm::PropertiesDialog</name>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="18"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="19"/>
         <source>High time (ticks)</source>
         <translation>Tempo em nível alto (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="19"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="20"/>
         <source>Low time (ticks)</source>
         <translation>Tempo em nível baixo (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="20"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="21"/>
         <source>Initial state (0/1)</source>
         <translation>Estado inicial (0/1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="21"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="22"/>
         <source>Closed (0/1)</source>
         <translation>Fechada (0/1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="22"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="23"/>
         <source>Value</source>
         <translation>Valor</translation>
     </message>
     <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="24"/>
+        <source>Colour</source>
+        <translation>Cor</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="25"/>
+        <source>Propagation delay (ticks)</source>
+        <translation>Atraso de propagação (ticks)</translation>
+    </message>
+    <message>
         <location filename="../src/ui/PropertiesDialog.cpp" line="31"/>
+        <source>Red</source>
+        <translation>Vermelho</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="32"/>
+        <source>Green</source>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="33"/>
+        <source>Yellow</source>
+        <translation>Amarelo</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="34"/>
+        <source>Blue</source>
+        <translation>Azul</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="35"/>
+        <source>Orange</source>
+        <translation>Laranja</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="36"/>
+        <source>White</source>
+        <translation>Branco</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="45"/>
         <source>%1 properties</source>
         <translation>Propriedades de %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="39"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="53"/>
         <source>&amp;Designator:</source>
         <translation>&amp;Designador:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="41"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="55"/>
         <source>&amp;Net name:</source>
         <translation>Nome da &amp;rede:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="41"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="55"/>
         <source>&amp;Label:</source>
         <translation>&amp;Rótulo:</translation>
     </message>
@@ -1300,27 +1340,27 @@ Saída do SPICE:
 <context>
     <name>cm::TitleBlockDialog</name>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="81"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="107"/>
         <source>Title block</source>
         <translation>Bloco de título</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="88"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="114"/>
         <source>&amp;Title:</source>
         <translation>&amp;Título:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="89"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="115"/>
         <source>&amp;Author:</source>
         <translation>&amp;Autor:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="90"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="116"/>
         <source>&amp;Date:</source>
         <translation>&amp;Data:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="91"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="117"/>
         <source>&amp;Revision:</source>
         <translation>&amp;Revisão:</translation>
     </message>

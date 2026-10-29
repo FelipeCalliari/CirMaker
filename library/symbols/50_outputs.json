@@ -190,6 +190,38 @@
       -30,
       80
      ]
+    },
+    {
+     "text": "8",
+     "at": [
+      -30,
+      40
+     ],
+     "size": 8
+    },
+    {
+     "text": "4",
+     "at": [
+      -10,
+      40
+     ],
+     "size": 8
+    },
+    {
+     "text": "2",
+     "at": [
+      10,
+      40
+     ],
+     "size": 8
+    },
+    {
+     "text": "1",
+     "at": [
+      30,
+      40
+     ],
+     "size": 8
     }
    ],
    "pins": [
@@ -476,50 +508,69 @@
      ".model DLED D(Is=1e-22 N=1.5 Rs=2 Bv=5 Ibv=10u)"
     ]
    },
-   "description": "Lights when the anode is high and the cathode low",
+   "props": {
+    "color": "red"
+   },
+   "choices": {
+    "color": [
+     "red",
+     "green",
+     "yellow",
+     "blue",
+     "orange",
+     "white"
+    ]
+   },
+   "description": "Lights when the anode is high and the cathode low; colour in the properties",
    "graphics": [
     {
      "line": [
       0,
       -30,
       0,
-      -12
+      -10
      ]
     },
     {
-     "path": "M -14 -12 L 14 -12 L 0 12 Z"
+     "path": "M -12 -10 L 12 -10 L 0 10 Z"
     },
     {
      "line": [
-      -14,
+      -12,
+      10,
       12,
-      14,
-      12
+      10
      ]
     },
     {
      "line": [
       0,
-      12,
+      10,
       0,
       30
      ]
     },
     {
      "line": [
-      18,
-      -8,
-      30,
-      -20
+      14,
+      -6,
+      26,
+      -18
      ]
     },
     {
+     "path": "M 21 -18 L 26 -18 L 26 -13"
+    },
+    {
      "line": [
-      22,
-      4,
-      34,
-      -8
+      18,
+      2,
+      30,
+      -10
      ]
+    },
+    {
+     "path": "M 25 -10 L 30 -10 L 30 -5"
     }
    ],
    "pins": [

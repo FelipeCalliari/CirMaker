@@ -76,11 +76,11 @@ void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     QColor color = sc && sc->simulating() ? sc->wireColor(m_w.id) : QColor(0x00, 0x30, 0xff);
     if (m_w.bus)
         color = Qt::black;
-    QPen pen(color, m_w.bus ? 5.0 : 1.6);
+    QPen pen(color, m_w.bus ? 8.0 : 1.6);
     if (isSelected()) {
         pen.setColor(QColor(0x00, 0x60, 0xff));
-        pen.setWidthF(2.2);
-    } else if (sc && sc->simulating()) {
+        pen.setWidthF(m_w.bus ? 8.0 : 2.2);
+    } else if (sc && sc->simulating() && !m_w.bus) {
         pen.setWidthF(2.0);
     }
     pen.setCapStyle(Qt::RoundCap);

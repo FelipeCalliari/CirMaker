@@ -5,6 +5,9 @@
 
 #include "ui/ComponentItem.h"
 #include "ui/MainWindow.h"
+#include "ui/PropertiesDialog.h"
+
+#include <QComboBox>
 #include "ui/SchematicScene.h"
 #include "ui/WireItem.h"
 
@@ -30,6 +33,7 @@ private slots:
     void buttonsAnimate();
     void circuitMakerShortcuts();
     void editMenuTools();
+    void ledColourProperty();
     void screenshot();
 };
 
@@ -249,6 +253,19 @@ void TestGui::editMenuTools()
     QVERIFY(f.scene.highlightedNet() >= 0);
     QCOMPARE(f.scene.netlist().wireNet.value(w1), f.scene.highlightedNet());
     QCOMPARE(f.scene.netlist().wireNet.value(w2), f.scene.highlightedNet());
+}
+
+void TestGui::ledColourProperty()
+{
+    Component led;
+    led.symbolId = QStringLiteral("led");
+    led.designator = QStringLiteral("D1");
+    PropertiesDialog dlg(led, *library().find(QStringLiteral("led")));
+    auto* combo = dlg.findChild<QComboBox*>();
+    QVERIFY(combo);
+    QCOMPARE(combo->currentData().toString(), QStringLiteral("red"));      // default
+    combo->setCurrentIndex(combo->findData(QStringLiteral("green")));
+    QCOMPARE(dlg.result().props.value(QStringLiteral("color")).toString(), QStringLiteral("green"));
 }
 
 // CM_SCREENSHOT=<png> [CM_SCREENSHOT_FILE=<circuit>] saves the main window.

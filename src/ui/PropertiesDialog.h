@@ -7,6 +7,7 @@
 
 class QLineEdit;
 class QSpinBox;
+class QComboBox;
 
 namespace cm {
 
@@ -25,6 +26,7 @@ private:
     QLineEdit* m_label;
     QHash<QString, QSpinBox*> m_intProps;
     QHash<QString, QLineEdit*> m_textProps;
+    QHash<QString, QComboBox*> m_choiceProps;
 };
 
 // Title, author, date and revision of the drawing.

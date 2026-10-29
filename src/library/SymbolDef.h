@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QJsonObject>
 #include <QPointF>
 #include <QRectF>
@@ -50,6 +51,7 @@ struct SymbolDef {
     QJsonObject model;      // {"kind": "gate", ...}; empty = no simulation behaviour
     QJsonObject spice;      // {"line": "R{name} {1} {2} {value}", "models": [...], "subckt": [...]}
     QVariantMap defaultProps;
+    QHash<QString, QStringList> propChoices;    // property -> allowed values (combo box in the dialog)
     QRectF bounds;
 
     int pinIndex(const QString& pinName) const

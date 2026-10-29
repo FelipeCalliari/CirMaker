@@ -385,6 +385,12 @@ bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
     s.model = o.value(u"model").toObject();
     s.spice = o.value(u"spice").toObject();
     s.defaultProps = o.value(u"props").toObject().toVariantMap();
+    const QJsonObject choices = o.value(u"choices").toObject();
+    for (auto it = choices.begin(); it != choices.end(); ++it) {
+        QStringList values;
+        for (const QJsonValue& v : it.value().toArray()) values << v.toString();
+        s.propChoices.insert(it.key(), values);
+    }
     for (const QJsonValue& a : o.value(u"aliases").toArray())
         s.aliases << a.toString();
     for (const QJsonValue& a : o.value(u"cmPins").toArray())

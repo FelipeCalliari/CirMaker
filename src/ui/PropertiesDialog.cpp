@@ -2,6 +2,7 @@
 
 #include "library/SymbolDef.h"
 
+#include <QComboBox>
 #include <QDate>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -20,7 +21,20 @@ QString propertyCaption(const QString& key)
     if (key == u"state") return PropertiesDialog::tr("Initial state (0/1)");
     if (key == u"closed") return PropertiesDialog::tr("Closed (0/1)");
     if (key == u"value") return PropertiesDialog::tr("Value");
+    if (key == u"color") return PropertiesDialog::tr("Colour");
+    if (key == u"delay") return PropertiesDialog::tr("Propagation delay (ticks)");
     return key;
+}
+
+QString choiceCaption(const QString& value)
+{
+    if (value == u"red") return PropertiesDialog::tr("Red");
+    if (value == u"green") return PropertiesDialog::tr("Green");
+    if (value == u"yellow") return PropertiesDialog::tr("Yellow");
+    if (value == u"blue") return PropertiesDialog::tr("Blue");
+    if (value == u"orange") return PropertiesDialog::tr("Orange");
+    if (value == u"white") return PropertiesDialog::tr("White");
+    return value;
 }
 
 } // namespace
@@ -45,6 +59,16 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         props.insert(it.key(), it.value());
     for (auto it = props.cbegin(); it != props.cend(); ++it) {
         const QVariant& v = it.value();
+        if (const QStringList choices = symbol.propChoices.value(it.key()); !choices.isEmpty()) {
+            auto* combo = new QComboBox;
+            for (const QString& c : choices) combo->addItem(choiceCaption(c), c);
+            combo->setCurrentIndex(std::max(0, combo->findData(v.toString())));
+            m_choiceProps.insert(it.key(), combo);
+            form->addRow(propertyCaption(it.key()) + u':', combo);
+            continue;
+        }
+        if (it.key() == u"travel")
+            continue;
         if (v.typeId() == QMetaType::Int || v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Double) {
             auto* spin = new QSpinBox;
             spin->setRange(0, 1000000);
@@ -73,6 +97,8 @@ Component PropertiesDialog::result() const
         c.props.insert(it.key(), it.value()->value());
     for (auto it = m_textProps.cbegin(); it != m_textProps.cend(); ++it)
         c.props.insert(it.key(), it.value()->text());
+    for (auto it = m_choiceProps.cbegin(); it != m_choiceProps.cend(); ++it)
+        c.props.insert(it.key(), it.value()->currentData().toString());
     return c;
 }
 

@@ -5,6 +5,7 @@
 #include "ui/SymbolPainter.h"
 
 #include <QPainter>
+#include <QRadialGradient>
 #include <QStyleOptionGraphicsItem>
 
 #include <climits>
@@ -23,6 +24,16 @@ const QColor kLow(0x10, 0x50, 0xc0);
 const QColor kLampOff(0xff, 0xff, 0xff);
 
 QString hexDigit(int v) { return v < 0 ? QStringLiteral("-") : QString::number(v, 16).toUpper(); }
+
+QColor ledColor(const QString& name)
+{
+    if (name == u"green") return {0x10, 0xc0, 0x30};
+    if (name == u"yellow") return {0xf5, 0xd0, 0x00};
+    if (name == u"blue") return {0x20, 0x70, 0xff};
+    if (name == u"orange") return {0xff, 0x80, 0x00};
+    if (name == u"white") return {0xd8, 0xe8, 0xff};
+    return {0xff, 0x20, 0x20};
+}
 
 } // namespace
 
@@ -186,8 +197,23 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         if (!fillFirst(Primitive::Type::Circle, c))
             fillFirst(Primitive::Type::Path, c);
     } else if (d == u"led") {
-        if (live && state == 1)
-            fillFirst(Primitive::Type::Path, kHigh);
+        const QString name = m_c.props.value(QStringLiteral("color"), m_symbol->defaultProps.value(QStringLiteral("color"))).toString();
+        const QColor color = ledColor(name);
+        const bool on = live && state == 1;
+        if (on) {
+            // glow around the lit LED
+            QRadialGradient glow(QPointF(0, 0), 26);
+            QColor halo = color;
+            halo.setAlpha(150);
+            glow.setColorAt(0, halo);
+            halo.setAlpha(0);
+            glow.setColorAt(1, halo);
+            p->setBrush(glow);
+            p->drawEllipse(QPointF(0, 0), 26, 26);
+        }
+        QColor body = on ? color : color.lighter(name == u"white" ? 100 : 175);
+        if (!on) body.setAlpha(name == u"white" ? 60 : 255);
+        fillFirst(Primitive::Type::Path, body);
     } else if (d == u"stoplight") {
         const QColor on[3] = {QColor(0xe0, 0x10, 0x10), QColor(0xf0, 0xc0, 0x00), QColor(0x10, 0xb0, 0x30)};
         const auto cs = circles();
@@ -200,11 +226,10 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         // red seven-segment digit; segments a..g = bits 0..6
         static constexpr int glyph[16] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07,
                                           0x7f, 0x6f, 0x77, 0x7c, 0x39, 0x5e, 0x79, 0x71};
-        const QRectF screen = body.adjusted(10, 10, -10, -10);
-        p->setBrush(Qt::white);
-        p->drawRect(screen);
+        // digit area above the 8-4-2-1 pin captions
+        const QRectF screen = body.adjusted(14, 10, -14, -24);
         const int lit = state == kIdle || state < 0 ? 0 : glyph[state & 15];
-        const double w = screen.width() * 0.32, h = screen.height() * 0.38;
+        const double w = screen.width() * 0.32, h = screen.height() * 0.21;
         const QPointF c = screen.center();
         const QLineF seg[7] = {
             {c + QPointF(-w, -2 * h), c + QPointF(w, -2 * h) * 1}, {c + QPointF(w, -2 * h), c + QPointF(w, 0)},
