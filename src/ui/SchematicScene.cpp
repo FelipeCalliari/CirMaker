@@ -212,6 +212,7 @@ void SchematicScene::beginPlace(const QString& symbolId)
     const SymbolDef* s = m_library.find(symbolId);
     if (!s || simulating())
         return;
+    cancelPlace();      // choosing another device while placing replaces the ghost
     setTool(Tool::Place);
     m_ghostComponent = Component{};
     m_ghostComponent.symbolId = symbolId;
@@ -666,7 +667,10 @@ void SchematicScene::editItem(QGraphicsItem* item)
         return;
     }
     if (auto* c = qgraphicsitem_cast<ComponentItem*>(item)) {
-        const Component before = *m_circuit->component(c->id());
+        const Component* current = m_circuit->component(c->id());
+        if (!current)
+            return;
+        const Component before = *current;
         PropertiesDialog dlg(before, *c->symbol(), dialogParent());
         if (dlg.exec() != QDialog::Accepted)
             return;
@@ -944,8 +948,89 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         update();
         return;
     }
+    if (beginWireEdit(e))
+        return;
     QGraphicsScene::mousePressEvent(e);
     beginDrag();
+}
+
+// A press on a lone wire edits its shape instead of moving it: near a free
+// end the end follows the mouse, elsewhere the segment slides sideways.
+bool SchematicScene::beginWireEdit(QGraphicsSceneMouseEvent* e)
+{
+    if (e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier))
+        return false;
+    WireItem* hit = nullptr;
+    for (QGraphicsItem* it : items(e->scenePos()))
+        if ((hit = qgraphicsitem_cast<WireItem*>(it)))
+            break;
+    if (!hit)
+        return false;
+    // part of a larger selection: move everything together
+    if (hit->isSelected() && selectedItems().size() > 1)
+        return false;
+
+    const QVector<QPointF>& pts = hit->wire().points;
+    const QPointF at = e->scenePos();
+    WireEdit edit;
+    edit.wire = hit->id();
+    edit.original = pts;
+    edit.start = snap(at);
+    if (near(at, pts.first(), 5) && !pinAt(pts.first(), nullptr)) {
+        edit.endpoint = 0;
+    } else if (near(at, pts.last(), 5) && !pinAt(pts.last(), nullptr)) {
+        edit.endpoint = int(pts.size()) - 1;
+    } else {
+        edit.segment = segmentAt(pts, at);
+        if (edit.segment < 0)
+            return false;
+    }
+    clearSelection();
+    hit->setSelected(true);
+    m_wireEdit = edit;
+    return true;
+}
+
+int SchematicScene::segmentAt(const QVector<QPointF>& pts, QPointF p)
+{
+    int best = -1;
+    double bestDist = 6;
+    for (int i = 0; i + 1 < pts.size(); ++i) {
+        const QLineF seg(pts[i], pts[i + 1]);
+        const QPointF ab = pts[i + 1] - pts[i];
+        const double len2 = QPointF::dotProduct(ab, ab);
+        const double t = len2 > 0 ? std::clamp(QPointF::dotProduct(p - pts[i], ab) / len2, 0.0, 1.0) : 0;
+        const double d = QLineF(p, pts[i] + t * ab).length();
+        if (d < bestDist) {
+            bestDist = d;
+            best = i;
+        }
+    }
+    return best;
+}
+
+QVector<QPointF> SchematicScene::editedWire(QPointF cursor) const
+{
+    QVector<QPointF> pts = m_wireEdit->original;
+    const QPointF delta = cursor - m_wireEdit->start;
+    if (m_wireEdit->endpoint >= 0) {
+        moveEnd(pts, m_wireEdit->endpoint, delta);
+        return pts;
+    }
+    int i = m_wireEdit->segment;
+    const bool horizontal = std::abs(pts[i].y() - pts[i + 1].y()) < 0.5;
+    const bool vertical = std::abs(pts[i].x() - pts[i + 1].x()) < 0.5;
+    const QPointF d = horizontal ? QPointF(0, delta.y()) : vertical ? QPointF(delta.x(), 0) : delta;
+    // keep the wire ends where they are: an end segment grows an elbow
+    if (i == 0) {
+        pts.prepend(pts.first());
+        ++i;
+    }
+    if (i + 1 == pts.size() - 1)
+        pts.append(pts.last());
+    pts[i] += d;
+    pts[i + 1] += d;
+    return pts;
 }
 
 void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
@@ -963,9 +1048,40 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
         update();
         return;
     }
+    if (m_wireEdit) {
+        if (WireItem* w = m_wireItems.value(m_wireEdit->wire))
+            w->setPreview(editedWire(m_cursor));
+        return;
+    }
     QGraphicsScene::mouseMoveEvent(e);
     if (m_drag.active && (e->buttons() & Qt::LeftButton))
         updateDragPreview();
+    else if (e->buttons() == Qt::NoButton)
+        updateHoverCursor(e->scenePos());
+}
+
+void SchematicScene::updateHoverCursor(QPointF p)
+{
+    if (m_tool != Tool::Select || views().isEmpty())
+        return;
+    Qt::CursorShape shape = Qt::ArrowCursor;
+    if (pinAt(p, nullptr)) {
+        shape = Qt::CrossCursor;
+    } else {
+        for (QGraphicsItem* it : items(p)) {
+            auto* w = qgraphicsitem_cast<WireItem*>(it);
+            if (!w)
+                continue;
+            const QVector<QPointF>& pts = w->wire().points;
+            const int seg = segmentAt(pts, p);
+            if (seg >= 0)
+                shape = std::abs(pts[seg].y() - pts[seg + 1].y()) < 0.5 ? Qt::SizeVerCursor : Qt::SizeHorCursor;
+            break;
+        }
+    }
+    for (QGraphicsView* v : views())
+        if (v->viewport()->cursor().shape() != shape)
+            v->viewport()->setCursor(shape);
 }
 
 void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
@@ -979,6 +1095,24 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
         const QPointF p = snap(e->scenePos());
         if (!near(p, m_wirePoints.first()))
             wireClick(p);
+        return;
+    }
+    if (m_wireEdit) {
+        const WireEdit edit = *m_wireEdit;
+        const QVector<QPointF> pts = simplify(editedWire(snap(e->scenePos())));
+        m_wireEdit.reset();
+        WireItem* item = m_wireItems.value(edit.wire);
+        if (!item)
+            return;
+        item->clearPreview();
+        if (pts != edit.original && pts.size() >= 2) {
+            Selection before, after;
+            before.wires << *m_circuit->wire(edit.wire);
+            Wire w = before.wires.first();
+            w.points = pts;
+            after.wires << w;
+            m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Reshape wire")));
+        }
         return;
     }
     QGraphicsScene::mouseReleaseEvent(e);
@@ -1029,17 +1163,42 @@ void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
     p->fillRect(rect, Qt::white);
     if (!m_gridVisible || m_exporting)
         return;
+    // minor step on the snap grid while it is at least 6 px apart; every
+    // fifth line is a major one
     const double scale = p->worldTransform().m11();
     double step = kGrid;
-    while (step * scale < 7)
+    while (step * scale < 6)
         step *= 5;
-    QVector<QPointF> dots;
+    const double major = step * 5;
     const double x0 = std::floor(rect.left() / step) * step, y0 = std::floor(rect.top() / step) * step;
+    auto isMajor = [&](double v) { return std::abs(std::remainder(v, major)) < step / 2; };
+
+    if (m_gridLines) {
+        QVector<QLineF> minorLines, majorLines;
+        for (double x = x0; x < rect.right(); x += step)
+            (isMajor(x) ? majorLines : minorLines) << QLineF(x, rect.top(), x, rect.bottom());
+        for (double y = y0; y < rect.bottom(); y += step)
+            (isMajor(y) ? majorLines : minorLines) << QLineF(rect.left(), y, rect.right(), y);
+        p->setPen(QPen(QColor(0xe6, 0xe8, 0xf0), 0));
+        p->drawLines(minorLines);
+        p->setPen(QPen(QColor(0xc8, 0xcc, 0xdc), 0));
+        p->drawLines(majorLines);
+        return;
+    }
+    QVector<QPointF> minorDots, majorDots;
     for (double y = y0; y < rect.bottom(); y += step)
         for (double x = x0; x < rect.right(); x += step)
-            dots << QPointF(x, y);
-    p->setPen(QPen(QColor(0xb8, 0xb8, 0xc8), 0));
-    p->drawPoints(dots.constData(), int(dots.size()));
+            (isMajor(x) && isMajor(y) ? majorDots : minorDots) << QPointF(x, y);
+    QPen pen(QColor(0xa8, 0xac, 0xbc));
+    pen.setCosmetic(true);
+    pen.setWidthF(1.5);
+    pen.setCapStyle(Qt::RoundCap);
+    p->setPen(pen);
+    p->drawPoints(minorDots.constData(), int(minorDots.size()));
+    pen.setColor(QColor(0x70, 0x74, 0x88));
+    pen.setWidthF(2.5);
+    p->setPen(pen);
+    p->drawPoints(majorDots.constData(), int(majorDots.size()));
 }
 
 void SchematicScene::drawForeground(QPainter* p, const QRectF&)

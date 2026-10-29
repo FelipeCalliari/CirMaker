@@ -11,6 +11,8 @@ public:
     explicit SchematicView(QGraphicsScene* scene, QWidget* parent = nullptr);
 
     void zoomBy(double factor);
+    // Initial zoom; "fit to window" never enlarges beyond it.
+    void setDefaultZoom(double zoom) { m_defaultZoom = zoom; }
     void zoomToFit();
     void resetZoom();
     double zoom() const { return transform().m11(); }
@@ -26,6 +28,7 @@ protected:
 
 private:
     bool m_panning = false;
+    double m_defaultZoom = 0.6;
     QPoint m_panStart;
 };
 

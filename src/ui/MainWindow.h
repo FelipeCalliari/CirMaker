@@ -20,12 +20,15 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     MainWindow();
+    ~MainWindow() override;
     // interactive = false reports problems on stderr instead of dialogs.
     bool openFile(const QString& path, bool interactive = true);
     // Renders the schematic to PNG, SVG or PDF (by extension).
     bool exportTo(const QString& path);
     // Replaces the document with one instance of every library symbol.
     void showLibrarySheet();
+    SchematicScene* scene() const { return m_scene; }
+    QAction* undoAction() const { return m_undoAct; }
 
 protected:
     void closeEvent(QCloseEvent* e) override;
@@ -48,6 +51,8 @@ private:
     void findAndSelect();
     void print();
     void about();
+    void editPreferences();
+    void applyPreferences();
 
     void addRecent(const QString& path);
     void rebuildRecentMenu();
@@ -73,6 +78,7 @@ private:
     QActionGroup* m_tools;
     QAction *m_run, *m_step, *m_reset, *m_stop;
     QAction* m_about;
+    QAction* m_prefs;
 };
 
 } // namespace cm

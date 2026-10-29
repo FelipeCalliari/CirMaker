@@ -78,6 +78,7 @@ public:
     // Items' scene bounds without the grid, for export/printing.
     QRectF contentsRect() const;
     void setGridVisible(bool on) { m_gridVisible = on; update(); }
+    void setGridLines(bool lines) { m_gridLines = lines; update(); }
     bool gridVisible() const { return m_gridVisible; }
     // Hides grid and selection while rendering to an export device.
     void setExporting(bool on);
@@ -125,6 +126,19 @@ private:
     bool isConnectionPoint(QPointF p) const;
     bool pinAt(QPointF p, QPointF* pinPos) const;
 
+    // reshaping a single wire
+    struct WireEdit {
+        ItemId wire = 0;
+        QVector<QPointF> original;
+        QPointF start;
+        int segment = -1;       // segment being slid, or
+        int endpoint = -1;      // free end being dragged
+    };
+    bool beginWireEdit(QGraphicsSceneMouseEvent* e);
+    static int segmentAt(const QVector<QPointF>& pts, QPointF p);
+    QVector<QPointF> editedWire(QPointF cursor) const;
+    void updateHoverCursor(QPointF p);
+
     // dragging
     void beginDrag();
     QHash<ItemId, QVector<QPointF>> rubberBand() const;
@@ -170,6 +184,7 @@ private:
     } m_drag;
 
     TitleBlockItem* m_titleItem = nullptr;
+    std::optional<WireEdit> m_wireEdit;
 
     std::unique_ptr<sim::EventSimulator> m_sim;
     QTimer m_timer;
@@ -177,6 +192,7 @@ private:
     ItemId m_heldButton = 0;
     QString m_heldRelease;
     bool m_gridVisible = true;
+    bool m_gridLines = false;
     bool m_exporting = false;
 };
 

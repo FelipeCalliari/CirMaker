@@ -5,6 +5,7 @@
 #include <QCommandLineParser>
 #include <QLibraryInfo>
 #include <QLocale>
+#include <QSettings>
 #include <QTranslator>
 
 int main(int argc, char* argv[])
@@ -13,6 +14,11 @@ int main(int argc, char* argv[])
     QApplication::setApplicationName(QStringLiteral("CirMaker Qt"));
     QApplication::setOrganizationName(QStringLiteral("cirmaker-qt"));
     QApplication::setApplicationVersion(QStringLiteral(PROJECT_VERSION));
+
+    // language preference (empty = system locale)
+    const QString language = QSettings().value(QStringLiteral("prefs/language")).toString();
+    if (!language.isEmpty())
+        QLocale::setDefault(QLocale(language));
 
     QTranslator qtTranslator, appTranslator;
     if (qtTranslator.load(QLocale(), QStringLiteral("qtbase"), QStringLiteral("_"),

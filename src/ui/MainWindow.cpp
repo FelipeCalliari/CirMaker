@@ -6,6 +6,7 @@
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "ui/LibraryBrowser.h"
+#include "ui/PreferencesDialog.h"
 #include "ui/SchematicView.h"
 
 #include <QAction>
@@ -106,9 +107,21 @@ MainWindow::MainWindow()
     restoreGeometry(settings.value(QStringLiteral("window/geometry")).toByteArray());
     restoreState(settings.value(QStringLiteral("window/state")).toByteArray());
     rebuildRecentMenu();
+    applyPreferences();
     updateActions();
     updateTitle();
+    m_view->resetZoom();
     m_view->centerOn(200, 150);
+}
+
+MainWindow::~MainWindow()
+{
+    // children (undo stack, scene) emit signals while being destroyed; this
+    // window is no longer a MainWindow by then
+    m_undo->disconnect(this);
+    m_scene->disconnect(this);
+    m_circuit->disconnect(this);
+    m_scene->stopSimulation();
 }
 
 void MainWindow::createActions()
@@ -144,12 +157,21 @@ void MainWindow::createActions()
     m_quit->setShortcut(QKeySequence::Quit);
     connect(m_quit, &QAction::triggered, this, &QWidget::close);
 
-    m_undoAct = m_undo->createUndoAction(this, tr("&Undo"));
+    // own actions instead of QUndoStack's, which re-enable themselves even
+    // while a simulation holds on to the circuit
+    m_undoAct = new QAction(themeIcon("edit-undo", QStyle::SP_ArrowBack), tr("&Undo"), this);
     m_undoAct->setShortcut(QKeySequence::Undo);
-    m_undoAct->setIcon(themeIcon("edit-undo", QStyle::SP_ArrowBack));
-    m_redoAct = m_undo->createRedoAction(this, tr("&Redo"));
+    connect(m_undoAct, &QAction::triggered, this, [this] {
+        if (!m_scene->simulating())
+            m_undo->undo();
+    });
+    m_redoAct = new QAction(themeIcon("edit-redo", QStyle::SP_ArrowForward), tr("&Redo"), this);
     m_redoAct->setShortcuts({QKeySequence::Redo, QKeySequence(Qt::CTRL | Qt::Key_Y)});
-    m_redoAct->setIcon(themeIcon("edit-redo", QStyle::SP_ArrowForward));
+    connect(m_redoAct, &QAction::triggered, this, [this] {
+        if (!m_scene->simulating())
+            m_undo->redo();
+    });
+    connect(m_undo, &QUndoStack::indexChanged, this, &MainWindow::updateActions);
 
     m_cut = new QAction(themeIcon("edit-cut", QStyle::SP_TrashIcon), tr("Cu&t"), this);
     m_cut->setShortcut(QKeySequence::Cut);
@@ -203,7 +225,12 @@ void MainWindow::createActions()
     m_grid = new QAction(tr("Show &Grid"), this);
     m_grid->setCheckable(true);
     m_grid->setChecked(true);
-    connect(m_grid, &QAction::toggled, m_scene, &SchematicScene::setGridVisible);
+    connect(m_grid, &QAction::toggled, this, [this](bool on) {
+        m_scene->setGridVisible(on);
+        Preferences p = Preferences::load();
+        p.gridVisible = on;
+        p.save();
+    });
 
     m_tools = new QActionGroup(this);
     m_toolSelect = new QAction(drawnIcon([](QPainter& p) {
@@ -287,6 +314,11 @@ void MainWindow::createActions()
     m_stop->setShortcut(Qt::SHIFT | Qt::Key_F9);
     connect(m_stop, &QAction::triggered, m_scene, &SchematicScene::stopSimulation);
 
+    m_prefs = new QAction(themeIcon("preferences-system", QStyle::SP_FileDialogDetailedView), tr("Pre&ferences..."), this);
+    m_prefs->setShortcuts({QKeySequence::Preferences, QKeySequence(Qt::CTRL | Qt::Key_Comma)});
+    m_prefs->setMenuRole(QAction::PreferencesRole);
+    connect(m_prefs, &QAction::triggered, this, &MainWindow::editPreferences);
+
     m_about = new QAction(tr("&About CirMaker Qt"), this);
     connect(m_about, &QAction::triggered, this, &MainWindow::about);
 }
@@ -312,6 +344,8 @@ void MainWindow::createMenus()
     edit->addActions({m_rotate, m_mirror, m_props});
     edit->addSeparator();
     edit->addAction(m_titleBlock);
+    edit->addSeparator();
+    edit->addAction(m_prefs);
 
     QMenu* view = menuBar()->addMenu(tr("&View"));
     view->setObjectName(QStringLiteral("viewMenu"));
@@ -366,6 +400,8 @@ void MainWindow::updateActions()
         a->setEnabled(!simulating);
     m_undoAct->setEnabled(!simulating && m_undo->canUndo());
     m_redoAct->setEnabled(!simulating && m_undo->canRedo());
+    m_undoAct->setText(m_undo->canUndo() ? tr("&Undo %1").arg(m_undo->undoText()) : tr("&Undo"));
+    m_redoAct->setText(m_undo->canRedo() ? tr("&Redo %1").arg(m_undo->redoText()) : tr("&Redo"));
     for (QAction* a : {m_cut, m_copy, m_delete, m_rotate, m_mirror})
         a->setEnabled(!simulating && hasSel);
     m_props->setEnabled(!simulating && m_scene->selectedItems().size() == 1);
@@ -674,6 +710,25 @@ void MainWindow::print()
     m_scene->render(&p, {}, src);
     p.end();
     m_scene->setExporting(false);
+}
+
+void MainWindow::editPreferences()
+{
+    PreferencesDialog dlg(Preferences::load(), this);
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+    dlg.result().save();
+    applyPreferences();
+}
+
+void MainWindow::applyPreferences()
+{
+    const Preferences p = Preferences::load();
+    m_scene->setGridLines(p.gridStyle == Preferences::GridStyle::Lines);
+    m_grid->setChecked(p.gridVisible);              // drives the scene through toggled()
+    m_scene->setGridVisible(p.gridVisible);
+    m_view->setDefaultZoom(p.zoomPercent / 100.0);
+    m_speed->setValue(p.ticksPerFrame);
 }
 
 void MainWindow::about()

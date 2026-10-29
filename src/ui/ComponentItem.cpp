@@ -65,7 +65,7 @@ void ComponentItem::updateLabelGeometry()
         m_labelAt = {r.right() + 2, r.center().y()};
     } else {
         m_designatorAt = {r.right() + 3, r.top() + 4};
-        m_labelAt = {r.right() + 3, r.top() + (m_showDesignator ? 18 : 4)};
+        m_labelAt = {r.right() + 3, r.top() + (m_showDesignator ? 21 : 4)};
     }
     const QRectF labels(r.right(), r.top() - 8, 160, std::max(r.height(), 40.0) + 8);
     m_bounds = m_symbol->bounds.united(transform().inverted().mapRect(labels)).adjusted(-3, -3, 3, 3);
@@ -120,9 +120,9 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator)
-        SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), m_c.designator, 9, -1, ink);
+        SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), m_c.designator, 11, -1, ink);
     if (m_showLabel)
-        SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, 9, -1, m_symbol->netLabel ? kLow : ink);
+        SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, 11, -1, m_symbol->netLabel ? kLow : ink);
 }
 
 void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor& ink)

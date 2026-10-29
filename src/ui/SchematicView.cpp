@@ -17,8 +17,7 @@ SchematicView::SchematicView(QGraphicsScene* scene, QWidget* parent) : QGraphics
     setTransformationAnchor(AnchorUnderMouse);
     setViewportUpdateMode(SmartViewportUpdate);
     setMouseTracking(true);
-    setBackgroundBrush(Qt::white);
-    scale(1, 1);
+    setTransform(QTransform::fromScale(m_defaultZoom, m_defaultZoom));
 }
 
 void SchematicView::zoomBy(double factor)
@@ -37,12 +36,16 @@ void SchematicView::zoomToFit()
     if (r.width() < 200 || r.height() < 150)
         r = QRectF(r.center() - QPointF(100, 75), QSizeF(200, 150)) | r;
     fitInView(r, Qt::KeepAspectRatio);
+    if (zoom() > m_defaultZoom) {
+        setTransform(QTransform::fromScale(m_defaultZoom, m_defaultZoom));
+        centerOn(r.center());
+    }
     emit zoomChanged(zoom());
 }
 
 void SchematicView::resetZoom()
 {
-    setTransform(QTransform());
+    setTransform(QTransform::fromScale(m_defaultZoom, m_defaultZoom));
     emit zoomChanged(zoom());
 }
 

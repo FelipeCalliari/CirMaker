@@ -286,6 +286,151 @@ def keypad():
             'pins': [pin(f'R{i}', -150, y) for i, y in enumerate(rows)] + [pin(f'C{i}', x, 150) for i, x in enumerate(rows)]}
 
 
+# ---------------------------------------------------------------- analog
+# "spice": {"line": template, "models": [...], "subckt": [...]} — {name} is the
+# component's unique suffix, {value} its label, {PIN} the node of pin PIN.
+# Kinds that need computed values (generator, potentiometer, meter, switches,
+# digital parts) are written by SpiceNetlister itself.
+
+MODELS = {
+    'D1N4148': '.model D1N4148 D(Is=2.52n Rs=.568 N=1.752 Cjo=4p M=.4 Tt=20n Bv=100 Ibv=100u)',
+    'D1N4001': '.model D1N4001 D(Is=14.11n N=1.984 Rs=33.89m Ikf=94.81 Cjo=25.89p M=.44 Vj=.3245 Bv=75 Ibv=10u Tt=5.7u)',
+    'DZ5V1': '.model DZ5V1 D(Is=1n Rs=5 N=1.5 Bv=5.1 Ibv=5m)',
+    'DLED': '.model DLED D(Is=1e-22 N=1.5 Rs=2 Bv=5 Ibv=10u)',
+    'Q2N3904': '.model Q2N3904 NPN(Is=6.734f Xti=3 Eg=1.11 Vaf=74.03 Bf=416.4 Ne=1.259 Ise=6.734f Ikf=66.78m '
+               'Xtb=1.5 Br=.7371 Nc=2 Rc=1 Cjc=3.638p Mjc=.3085 Vjc=.75 Fc=.5 Cje=4.493p Mje=.2593 Vje=.75 '
+               'Tr=239.5n Tf=301.2p Itf=.4 Vtf=4 Xtf=2 Rb=10)',
+    'Q2N3906': '.model Q2N3906 PNP(Is=1.41f Xti=3 Eg=1.11 Vaf=18.7 Bf=180.7 Ne=1.5 Ikf=80m Xtb=1.5 Br=4.977 '
+               'Nc=2 Rc=2.5 Cjc=9.728p Mjc=.5776 Vjc=.75 Fc=.5 Cje=8.063p Mje=.3677 Vje=.75 Tr=33.42n '
+               'Tf=179.3p Itf=.4 Vtf=4 Xtf=6 Rb=10)',
+    'NMOS_GEN': '.model NMOS_GEN NMOS(Level=1 Vto=2 Kp=0.5 Lambda=0.01)',
+    'PMOS_GEN': '.model PMOS_GEN PMOS(Level=1 Vto=-2 Kp=0.5 Lambda=0.01)',
+}
+
+# Behavioural op-amp: 100 dB gain, 1 MHz GBW, 2 Mohm input, output limited to
+# 1 V inside the rails.
+OPAMP = ['.subckt OPAMP_GEN inp inn vp vn out',
+         'Rin inp inn 2Meg',
+         'Gm 0 mid inp inn 1m',
+         'Rm mid 0 100Meg',
+         'Cm mid 0 159p',
+         'Bo outi 0 V = min(max(v(mid), v(vn)+1), v(vp)-1)',
+         'Ro outi out 50',
+         'Rs vp vn 100k',
+         '.ends OPAMP_GEN']
+
+
+def sp(line, *models, subckt=None):
+    d = {'line': line}
+    if models: d['models'] = [MODELS[m] for m in models]
+    if subckt: d['subckt'] = subckt
+    return d
+
+
+def analog():
+    A = 'Analog'
+    two_lead = lambda x: [L(-x, 0, -x + 30, 0), L(x - 30, 0, x, 0)]
+    return [
+        {'id': 'capacitor', 'name': 'Capacitor', 'prefix': 'C', 'label': '1uF', 'aliases': ['Capacitor'],
+         'cmPins': ['1', '2'], 'spice': sp('C{name} {1} {2} {value}'),
+         'graphics': [L(-30, 0, -5, 0), L(5, 0, 30, 0), L(-5, -15, -5, 15), L(5, -15, 5, 15)],
+         'pins': [pin('1', -30, 0), pin('2', 30, 0)]},
+        {'id': 'polarcap', 'name': 'Polar Cap', 'prefix': 'C', 'label': '10uF', 'aliases': ['Polar Cap'],
+         'cmPins': ['+', '-'], 'spice': sp('C{name} {+} {-} {value}'),
+         'graphics': [L(-40, 0, -15, 0), L(-15, -15, -15, 15), P('M -2 -15 Q -8 0 -2 15'), L(-5, 0, 20, 0),
+                      T('+', -25, -12, 8)],
+         'pins': [pin('+', -40, 0), pin('-', 20, 0)]},
+        {'id': 'inductor', 'name': 'Inductor', 'prefix': 'L', 'label': '1mH', 'aliases': ['Inductor', 'Coil'],
+         'cmPins': ['1', '2'], 'spice': sp('L{name} {1} {2} {value}'),
+         'graphics': [L(-60, 0, -40, 0), L(40, 0, 60, 0),
+                      P('M -40 0 Q -40 -14 -30 -14 Q -20 -14 -20 0 Q -20 -14 -10 -14 Q 0 -14 0 0 '
+                        'Q 0 -14 10 -14 Q 20 -14 20 0 Q 20 -14 30 -14 Q 40 -14 40 0')],
+         'pins': [pin('1', -60, 0), pin('2', 60, 0)]},
+        {'id': 'diode', 'name': 'Diode', 'prefix': 'D', 'label': '1N4148', 'aliases': ['Diode'],
+         'cmPins': ['A', 'K'], 'spice': sp('D{name} {A} {K} D1N4148', 'D1N4148'),
+         'graphics': [L(-30, 0, -10, 0), P('M -10 -12 L 10 0 L -10 12 Z'), L(10, -12, 10, 12), L(10, 0, 30, 0)],
+         'pins': [pin('A', -30, 0), pin('K', 30, 0)]},
+        {'id': 'rectifier', 'name': 'Rectifier Diode', 'prefix': 'D', 'label': '1N4001', 'aliases': [],
+         'spice': sp('D{name} {A} {K} D1N4001', 'D1N4001'),
+         'graphics': [L(-30, 0, -10, 0), P('M -10 -12 L 10 0 L -10 12 Z'), L(10, -12, 10, 12), L(10, 0, 30, 0)],
+         'pins': [pin('A', -30, 0), pin('K', 30, 0)]},
+        {'id': 'zener', 'name': 'Zener Diode', 'prefix': 'D', 'label': '5V1', 'aliases': ['Zener Diode'],
+         'cmPins': ['A', 'K'], 'spice': sp('D{name} {A} {K} DZ5V1', 'DZ5V1'),
+         'description': '5.1 V zener',
+         'graphics': [L(-30, 0, -10, 0), P('M -10 -12 L 10 0 L -10 12 Z'), P('M 15 -15 L 10 -12 L 10 12 L 5 15'),
+                      L(10, 0, 30, 0)],
+         'pins': [pin('A', -30, 0), pin('K', 30, 0)]},
+        {'id': 'npn', 'name': 'NPN Transistor', 'prefix': 'Q', 'label': '2N3904', 'aliases': ['NPN Trans:C', 'NPN Trans'],
+         'cmPins': ['C', 'B', 'E'], 'spice': sp('Q{name} {C} {B} {E} Q2N3904', 'Q2N3904'),
+         'graphics': [C(0, 0, 30), L(-60, 0, -10, 0), L(-10, -20, -10, 20), L(-10, -8, 20, -35), L(20, -35, 20, -60),
+                      L(-10, 8, 20, 35), L(20, 35, 20, 60), P('M 9 32 L 20 35 L 15 25 Z')],
+         'pins': [pin('C', 20, -60), pin('B', -60, 0), pin('E', 20, 60)]},
+        {'id': 'pnp', 'name': 'PNP Transistor', 'prefix': 'Q', 'label': '2N3906', 'aliases': ['PNP Trans:C', 'PNP Trans'],
+         'cmPins': ['C', 'B', 'E'], 'spice': sp('Q{name} {C} {B} {E} Q2N3906', 'Q2N3906'),
+         'graphics': [C(0, 0, 30), L(-60, 0, -10, 0), L(-10, -20, -10, 20), L(-10, -8, 20, -35), L(20, -35, 20, -60),
+                      L(-10, 8, 20, 35), L(20, 35, 20, 60), P('M -10 8 L 1 11 L -4 1 Z')],
+         'pins': [pin('C', 20, -60), pin('B', -60, 0), pin('E', 20, 60)]},
+        {'id': 'nmos', 'name': 'N-MOSFET', 'prefix': 'M', 'label': 'NMOS', 'aliases': ['N-EMOS 3T:A', 'N-MOSFET 3T'],
+         'cmPins': ['D', 'G', 'S'], 'spice': sp('M{name} {D} {G} {S} {S} NMOS_GEN', 'NMOS_GEN'),
+         'description': 'Enhancement N-channel MOSFET, Vth = 2 V',
+         'graphics': [L(-60, 30, -20, 30), L(-20, -25, -20, 30), L(-10, -30, -10, -12), L(-10, -8, -10, 8),
+                      L(-10, 12, -10, 30), L(-10, -20, 20, -20), L(20, -20, 20, -60), L(-10, 20, 20, 20), L(20, 20, 20, 60),
+                      L(-10, 0, 20, 0), L(20, 0, 20, 20), P('M -10 0 L -2 -5 L -2 5 Z')],
+         'pins': [pin('D', 20, -60), pin('G', -60, 30, 'in'), pin('S', 20, 60)]},
+        {'id': 'pmos', 'name': 'P-MOSFET', 'prefix': 'M', 'label': 'PMOS', 'aliases': ['P-EMOS 3T:A', 'P-MOSFET 3T'],
+         'cmPins': ['D', 'G', 'S'], 'spice': sp('M{name} {D} {G} {S} {S} PMOS_GEN', 'PMOS_GEN'),
+         'description': 'Enhancement P-channel MOSFET, Vth = -2 V',
+         'graphics': [L(-60, 30, -20, 30), L(-20, -25, -20, 30), L(-10, -30, -10, -12), L(-10, -8, -10, 8),
+                      L(-10, 12, -10, 30), L(-10, -20, 20, -20), L(20, -20, 20, -60), L(-10, 20, 20, 20), L(20, 20, 20, 60),
+                      L(-10, 0, 20, 0), L(20, 0, 20, 20), P('M 8 0 L 0 -5 L 0 5 Z')],
+         'pins': [pin('D', 20, -60), pin('G', -60, 30, 'in'), pin('S', 20, 60)]},
+        {'id': 'opamp', 'name': 'Op-Amp', 'prefix': 'U', 'label': 'OPAMP', 'aliases': ['Op-Amp5', 'Op-Amp7', 'Op-Amp'],
+         'cmPins': ['+', '-', 'V+', 'V-', 'OUT'], 'spice': sp('X{name} {+} {-} {V+} {V-} {OUT} OPAMP_GEN', subckt=OPAMP),
+         'description': 'Behavioural op-amp: 100 dB gain, 1 MHz GBW, output within 1 V of the rails',
+         'graphics': [P('M -40 -50 L 40 0 L -40 50 Z'), L(-60, 20, -40, 20), L(-60, -20, -40, -20),
+                      L(0, -40, 0, -25), L(0, 25, 0, 40), L(40, 0, 60, 0), T('+', -32, 20, 10), T('-', -32, -20, 10)],
+         'pins': [pin('+', -60, 20, 'in'), pin('-', -60, -20, 'in'), pin('V+', 0, -40), pin('V-', 0, 40),
+                  pin('OUT', 60, 0, 'out')]},
+        {'id': 'vsource', 'name': 'V Source', 'prefix': 'V', 'label': '5V', 'aliases': ['V Source'],
+         'cmPins': ['+', '-'], 'spice': sp('V{name} {+} {-} DC {value}'),
+         'graphics': [C(0, 0, 25), L(0, -70, 0, -25), L(0, 25, 0, 70), T('+', 0, -12, 10), T('-', 0, 12, 10)],
+         'pins': [pin('+', 0, -70), pin('-', 0, 70)]},
+        {'id': 'battery', 'name': 'Battery', 'prefix': 'V', 'label': '9V', 'aliases': ['Battery'],
+         'cmPins': ['+', '-'], 'spice': sp('V{name} {+} {-} DC {value}'),
+         'graphics': [L(0, -40, 0, -8), L(-20, -8, 20, -8), L(-10, 0, 10, 0), L(-20, 8, 20, 8), L(-10, 16, 10, 16),
+                      L(0, 16, 0, 40), T('+', 18, -18, 9)],
+         'pins': [pin('+', 0, -40), pin('-', 0, 40)]},
+        {'id': 'isource', 'name': 'I Source', 'prefix': 'I', 'label': '1mA', 'aliases': ['I Source'],
+         'cmPins': ['+', '-'], 'spice': sp('I{name} {+} {-} DC {value}'),
+         'description': 'Current flows out of the - terminal into the circuit',
+         'graphics': [C(0, 0, 25), L(0, -70, 0, -25), L(0, 25, 0, 70), L(0, -14, 0, 14), P('M -6 6 L 0 14 L 6 6')],
+         'pins': [pin('+', 0, -70), pin('-', 0, 70)]},
+        {'id': 'siggen', 'name': 'Signal Gen', 'prefix': 'V', 'label': '1kHz', 'aliases': ['Signal Gen'],
+         'cmPins': ['+', '-'], 'model': {'kind': 'siggen'},
+         'props': {'wave': 'sine', 'amplitude': '1', 'frequency': '1k', 'offset': '0'},
+         'description': 'Sine, square or triangle source (wave = sine/square/triangle); also the AC source',
+         'graphics': [R(-40, -40, 80, 80), P('M -28 0 Q -21 -22 -14 0 Q -7 22 0 0 Q 7 -22 14 0 Q 21 22 28 0'),
+                      L(40, -20, 100, -20), L(40, 20, 100, 20), T('+', 50, -28, 8), T('-', 50, 28, 8)],
+         'pins': [pin('+', 100, -20), pin('-', 100, 20)]},
+        {'id': 'pot', 'name': 'Potentiometer', 'prefix': 'R', 'label': '10k', 'aliases': ['Var Resistor'],
+         'cmPins': ['1', 'W', '2'], 'model': {'kind': 'pot'}, 'props': {'position': 50},
+         'description': 'Wiper position in percent from pin 1',
+         'graphics': [L(-60, 0, -30, 0), P('M -30 0 L -25 -10 L -15 10 L -5 -10 L 5 10 L 15 -10 L 25 10 L 30 0'),
+                      L(30, 0, 60, 0), L(0, -40, 0, -14), P('M -5 -22 L 0 -12 L 5 -22')],
+         'pins': [pin('1', -60, 0), pin('W', 0, -40), pin('2', 60, 0)]},
+        {'id': 'lamp', 'name': 'Lamp', 'prefix': 'L', 'label': '100', 'aliases': ['Lamp'], 'display': 'bulb',
+         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {2} {value}'),
+         'description': 'Resistive lamp; glows with the voltage across it',
+         'graphics': [C(0, 0, 25), L(-18, -18, 18, 18), L(-18, 18, 18, -18), L(-40, 40, -18, 18), L(18, 18, 40, 40)],
+         'pins': [pin('1', -40, 40), pin('2', 40, 40)]},
+        {'id': 'multimeter', 'name': 'Multimeter', 'prefix': 'M', 'label': 'V', 'aliases': ['Multimeter'],
+         'display': 'meter', 'cmPins': ['+', '', '', '-'], 'model': {'kind': 'meter'}, 'props': {'mode': 'V'},
+         'description': 'Voltmeter (mode V) or ammeter (mode A) between + and -',
+         'graphics': [R(-80, -50, 160, 100), L(-80, 50, -80, 80), L(80, 50, 80, 80), T('+', -70, 40, 9), T('-', 70, 40, 9)],
+         'pins': [pin('+', -80, 80), pin('-', 80, 80)]},
+    ]
+
+
 def inputs():
     return [
         {'id': 'logicswitch', 'name': 'Logic Switch', 'prefix': 'S', 'display': 'logicswitch',
@@ -371,7 +516,7 @@ def outputs():
                      + [T(f'D{i}', -96, -106 + 30 * i, 6) for i in range(8)],
          'pins': [pin(f'D{i}', -110, -100 + 30 * i, 'in') for i in range(8)]},
         {'id': 'led', 'name': 'LED', 'prefix': 'D', 'display': 'led', 'aliases': ['LED'], 'cmPins': ['A', 'K'],
-         'model': {'kind': 'led'}, 'description': 'Lights when the anode is high and the cathode low',
+         'model': {'kind': 'led'}, 'spice': sp('D{name} {A} {K} DLED', 'DLED'), 'description': 'Lights when the anode is high and the cathode low',
          'graphics': [L(0, -30, 0, -12), P('M -14 -12 L 14 -12 L 0 12 Z'), L(-14, 12, 14, 12), L(0, 12, 0, 30),
                       L(18, -8, 30, -20), L(22, 4, 34, -8)],
          'pins': [pin('A', 0, -30, 'in'), pin('K', 0, 30, 'in')]},
@@ -397,7 +542,7 @@ def general():
          'graphics': [L(0, -20, 0, 0), L(-20, 0, 20, 0), L(-13, 6, 13, 6), L(-6, 12, 6, 12)],
          'pins': [pin('GND', 0, -20, 'out')]},
         {'id': 'vcc', 'name': '+V', 'prefix': 'V', 'label': '+5V', 'aliases': ['+V', '+5V', 'Vcc'], 'cmPins': ['VCC'],
-         'model': {'kind': 'const', 'value': 1},
+         'model': {'kind': 'const', 'value': 1}, 'spice': sp('V{name} {VCC} 0 DC {value}'),
          'graphics': [L(0, 30, 0, 0), L(-15, 0, 15, 0), T('+5V', 0, -10, 8)], 'pins': [pin('VCC', 0, 30, 'out')]},
         {'id': 'terminal', 'name': 'Terminal', 'prefix': 'T', 'netLabel': True,
          'aliases': ['Terminal', 'Input', 'Output'], 'cmPins': ['1'],
@@ -410,7 +555,7 @@ def general():
          'description': 'Placeholder for an imported device that has no equivalent in the library',
          'graphics': [R(-40, -30, 80, 60), T('?', 0, 0, 24)], 'pins': []},
         {'id': 'resistor', 'name': 'Resistor', 'prefix': 'R', 'label': '1k', 'aliases': ['Resistor', 'ResistorWire'],
-         'cmPins': ['1', '2'], 'model': {'kind': 'link', 'type': 'resistor'},
+         'cmPins': ['1', '2'], 'model': {'kind': 'link', 'type': 'resistor'}, 'spice': sp('R{name} {1} {2} {value}'),
          'description': 'In digital mode, a weak (pull-up/pull-down) connection',
          'graphics': [L(-60, 0, -30, 0),
                       P('M -30 0 L -25 -10 L -15 10 L -5 -10 L 5 10 L 15 -10 L 25 10 L 30 0'),
@@ -439,4 +584,5 @@ if __name__ == '__main__':
     write('60_ttl_gates.json', 'Digital/74xx Gates', package_gates(TTL_GATES, ttl=True))
     write('70_ttl_msi.json', 'Digital/74xx MSI', msi() + cm_chips())
     write('80_cmos_gates.json', 'Digital/40xx CMOS', package_gates(CMOS_GATES, ttl=False))
+    write('90_analog.json', 'Analog', analog())
     print('library written to', os.path.normpath(OUT))

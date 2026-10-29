@@ -42,8 +42,7 @@ option(CM_BUILD_APP "Build the GUI application" ON)
 
 # --- application
 if(CM_BUILD_APP)
-qt_add_executable(cirmaker
-    src/main.cpp
+add_library(cmui STATIC
     src/ui/MainWindow.h src/ui/MainWindow.cpp
     src/ui/SchematicScene.h src/ui/SchematicScene.cpp
     src/ui/SchematicView.h src/ui/SchematicView.cpp
@@ -54,12 +53,18 @@ qt_add_executable(cirmaker
     src/ui/SymbolPainter.h src/ui/SymbolPainter.cpp
     src/ui/LibraryBrowser.h src/ui/LibraryBrowser.cpp
     src/ui/PropertiesDialog.h src/ui/PropertiesDialog.cpp
+    src/ui/PreferencesDialog.h src/ui/PreferencesDialog.cpp
 )
-target_link_libraries(cirmaker PRIVATE cmcore cmsim cmlibdata Qt6::Widgets Qt6::Svg Qt6::PrintSupport)
+target_link_libraries(cmui PUBLIC cmcore cmsim Qt6::Widgets Qt6::Svg Qt6::PrintSupport)
+target_compile_definitions(cmui PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
+set_target_properties(cmui PROPERTIES AUTOMOC ON)
+
+qt_add_executable(cirmaker src/main.cpp)
+target_link_libraries(cirmaker PRIVATE cmui cmlibdata)
 set_target_properties(cirmaker PROPERTIES WIN32_EXECUTABLE ON MACOSX_BUNDLE ON)
 target_compile_definitions(cirmaker PRIVATE PROJECT_VERSION="${PROJECT_VERSION}")
 
-qt_add_translations(cirmaker TS_FILES i18n/cirmaker_pt_BR.ts)
+qt_add_translations(cirmaker TS_FILES i18n/cirmaker_pt_BR.ts SOURCE_TARGETS cirmaker cmui)
 endif()
 
 # --- tests
@@ -76,3 +81,8 @@ cm_add_test(tst_simulator)
 cm_add_test(tst_ckt_import)
 cm_add_test(tst_chips)
 cm_add_test(tst_document)
+if(CM_BUILD_APP)
+    qt_add_executable(tst_gui tests/tst_gui.cpp)
+    target_link_libraries(tst_gui PRIVATE cmui cmlibdata Qt6::Test)
+    add_test(NAME tst_gui COMMAND tst_gui -platform offscreen)
+endif()
