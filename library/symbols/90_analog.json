@@ -147,7 +147,8 @@
    "label": "1mH",
    "aliases": [
     "Inductor",
-    "Coil"
+    "Coil",
+    "Coil 3T"
    ],
    "cmPins": [
     "1",
@@ -3389,7 +3390,7 @@
    "id": "solenoid",
    "name": "Solenoid",
    "prefix": "L",
-   "label": "50",
+   "label": "5VCOIL",
    "aliases": [
     "Solenoid"
    ],
@@ -3397,10 +3398,20 @@
     "1",
     "2"
    ],
-   "spice": {
-    "line": "R{name} {1} {name}_m {value}\nL{name} {name}_m {2} 10m"
+   "props": {
+    "relay": "K1",
+    "pullin": "4",
+    "dropoff": "0.1",
+    "resistance": "500",
+    "inductance": "10m"
    },
-   "description": "Solenoid coil (resistance from the label, 10 mH)",
+   "spice": {
+    "line": "L{name} {1} {name}_l {prop:inductance}\nR{name} {name}_l {2} {prop:resistance}\nB{name}v {name}_v 0 V=abs(v({1},{2}))\nV{name}one {name}_one 0 DC 1\nS{name} {name}_one rly_{prop:relay} {name}_v 0 {name}_SW\nR{name}k rly_{prop:relay} 0 1k",
+    "models": [
+     ".model {name}_SW sw vt={prop:pullin} vh={prop:dropoff}"
+    ]
+   },
+   "description": "Relay coil (resistance and inductance in the properties): above the pull-in voltage it operates the contacts with the same relay name",
    "graphics": [
     {
      "line": [
@@ -6937,6 +6948,898 @@
      "dir": "passive"
     }
    ]
+  },
+  {
+   "id": "trans_ratio",
+   "name": "Transformer (ratio)",
+   "prefix": "T",
+   "label": "1TO1",
+   "aliases": [
+    "Trans2"
+   ],
+   "cmPins": [
+    "P1",
+    "P2",
+    "S1",
+    "S2"
+   ],
+   "props": {
+    "ratio": "1",
+    "rp": "0.1",
+    "rs": "0.1"
+   },
+   "spice": {
+    "line": "R{name}p {P1} {name}_a {prop:rp}\nB{name}e0 {name}_c0 {name}_d0 V=({prop:ratio})*v({name}_a,{P2})\nV{name}0 {name}_d0 {S2} 0\nR{name}s0 {name}_c0 {S1} {prop:rs}\nB{name}f {name}_a {P2} I=-(({prop:ratio})*i(V{name}0))\nR{name}g {S2} 0 1G"
+   },
+   "description": "Ideal transformer: secondary voltage = ratio x primary (ratio = secondary/primary turns); 0.1 ohm windings",
+   "graphics": [
+    {
+     "path": "M -20 -30 Q -8 -22.5 -20 -15.0 Q -8 -7.5 -20 0.0 Q -8 7.5 -20 15.0 Q -8 22.5 -20 30.0"
+    },
+    {
+     "path": "M 20 -40 Q 8 -30.0 20 -20.0 Q 8 -10.0 20 0.0 Q 8 10.0 20 20.0 Q 8 30.0 20 40.0"
+    },
+    {
+     "line": [
+      -4,
+      -40,
+      -4,
+      40
+     ]
+    },
+    {
+     "line": [
+      4,
+      -40,
+      4,
+      40
+     ]
+    },
+    {
+     "line": [
+      -40,
+      -40,
+      -20,
+      -40
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -40,
+      -20,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -40,
+      40,
+      -20,
+      40
+     ]
+    },
+    {
+     "line": [
+      -20,
+      40,
+      -20,
+      30
+     ]
+    },
+    {
+     "line": [
+      20,
+      -60,
+      40,
+      -60
+     ]
+    },
+    {
+     "line": [
+      20,
+      -60,
+      20,
+      -40
+     ]
+    },
+    {
+     "line": [
+      20,
+      60,
+      40,
+      60
+     ]
+    },
+    {
+     "line": [
+      20,
+      60,
+      20,
+      40
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "P1",
+     "at": [
+      -40,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "P2",
+     "at": [
+      -40,
+      40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S1",
+     "at": [
+      40,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S2",
+     "at": [
+      40,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "trans_ct",
+   "name": "CT Transformer (ratio)",
+   "prefix": "T",
+   "label": "1TO1CT",
+   "aliases": [
+    "Trans3"
+   ],
+   "cmPins": [
+    "P1",
+    "P2",
+    "S1",
+    "CT",
+    "S2"
+   ],
+   "props": {
+    "ratio": "1",
+    "rp": "0.1",
+    "rs": "0.1"
+   },
+   "spice": {
+    "line": "R{name}p {P1} {name}_a {prop:rp}\nB{name}e0 {name}_c0 {name}_d0 V=({prop:ratio}/2)*v({name}_a,{P2})\nV{name}0 {name}_d0 {CT} 0\nR{name}s0 {name}_c0 {S1} {prop:rs}\nB{name}e1 {name}_c1 {name}_d1 V=({prop:ratio}/2)*v({name}_a,{P2})\nV{name}1 {name}_d1 {S2} 0\nR{name}s1 {name}_c1 {CT} {prop:rs}\nB{name}f {name}_a {P2} I=-(({prop:ratio}/2)*i(V{name}0)+({prop:ratio}/2)*i(V{name}1))\nR{name}g {CT} 0 1G"
+   },
+   "description": "Ideal centre-tapped transformer: S1-S2 = ratio x primary, half on each side of CT",
+   "graphics": [
+    {
+     "path": "M -20 -30 Q -8 -22.5 -20 -15.0 Q -8 -7.5 -20 0.0 Q -8 7.5 -20 15.0 Q -8 22.5 -20 30.0"
+    },
+    {
+     "path": "M 30 -50 Q 18 -37.5 30 -25.0 Q 18 -12.5 30 0.0 Q 18 12.5 30 25.0 Q 18 37.5 30 50.0"
+    },
+    {
+     "line": [
+      6,
+      -50,
+      6,
+      50
+     ]
+    },
+    {
+     "line": [
+      14,
+      -50,
+      14,
+      50
+     ]
+    },
+    {
+     "line": [
+      -40,
+      -40,
+      -20,
+      -40
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -40,
+      -20,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -40,
+      40,
+      -20,
+      40
+     ]
+    },
+    {
+     "line": [
+      -20,
+      40,
+      -20,
+      30
+     ]
+    },
+    {
+     "line": [
+      30,
+      -60,
+      50,
+      -60
+     ]
+    },
+    {
+     "line": [
+      30,
+      -60,
+      30,
+      -50
+     ]
+    },
+    {
+     "line": [
+      30,
+      60,
+      50,
+      60
+     ]
+    },
+    {
+     "line": [
+      30,
+      60,
+      30,
+      50
+     ]
+    },
+    {
+     "line": [
+      30,
+      0,
+      50,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "P1",
+     "at": [
+      -40,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "P2",
+     "at": [
+      -40,
+      40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S1",
+     "at": [
+      50,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "CT",
+     "at": [
+      50,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S2",
+     "at": [
+      50,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "xfmr",
+   "name": "Core Transformer",
+   "prefix": "T",
+   "label": "DEFAULT",
+   "aliases": [
+    "xfmr"
+   ],
+   "cmPins": [
+    "P1",
+    "P2",
+    "S1",
+    "S2"
+   ],
+   "props": {
+    "prit": "1",
+    "sect": "1",
+    "rp": "0.1",
+    "rs": "0.1"
+   },
+   "spice": {
+    "line": "R{name}p {P1} {name}_a {prop:rp}\nB{name}e0 {name}_c0 {name}_d0 V=(({prop:sect})/({prop:prit}))*v({name}_a,{P2})\nV{name}0 {name}_d0 {S2} 0\nR{name}s0 {name}_c0 {S1} {prop:rs}\nB{name}f {name}_a {P2} I=-((({prop:sect})/({prop:prit}))*i(V{name}0))\nR{name}g {S2} 0 1G"
+   },
+   "description": "Transformer given by its turns (prit primary, sect secondary), simulated as an ideal one",
+   "graphics": [
+    {
+     "path": "M -30 -40 Q -18 -30.0 -30 -20.0 Q -18 -10.0 -30 0.0 Q -18 10.0 -30 20.0 Q -18 30.0 -30 40.0"
+    },
+    {
+     "path": "M 40 -40 Q 28 -30.0 40 -20.0 Q 28 -10.0 40 0.0 Q 28 10.0 40 20.0 Q 28 30.0 40 40.0"
+    },
+    {
+     "line": [
+      0,
+      -50,
+      0,
+      50
+     ]
+    },
+    {
+     "line": [
+      10,
+      -50,
+      10,
+      50
+     ]
+    },
+    {
+     "line": [
+      -60,
+      -60,
+      -30,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -30,
+      -60,
+      -30,
+      -40
+     ]
+    },
+    {
+     "line": [
+      -60,
+      60,
+      -30,
+      60
+     ]
+    },
+    {
+     "line": [
+      -30,
+      60,
+      -30,
+      40
+     ]
+    },
+    {
+     "line": [
+      40,
+      60,
+      80,
+      60
+     ]
+    },
+    {
+     "line": [
+      40,
+      60,
+      40,
+      40
+     ]
+    },
+    {
+     "line": [
+      40,
+      -60,
+      80,
+      -60
+     ]
+    },
+    {
+     "line": [
+      40,
+      -60,
+      40,
+      -40
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "P1",
+     "at": [
+      -60,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "P2",
+     "at": [
+      -60,
+      60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S1",
+     "at": [
+      80,
+      60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S2",
+     "at": [
+      80,
+      -60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "relay_coil",
+   "name": "Relay Coil",
+   "prefix": "K",
+   "label": "5VCOIL",
+   "aliases": [
+    "Relay Coil:A"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "props": {
+    "relay": "K1",
+    "pullin": "4",
+    "dropoff": "0.1",
+    "resistance": "500",
+    "inductance": "10m"
+   },
+   "spice": {
+    "line": "L{name} {1} {name}_l {prop:inductance}\nR{name} {name}_l {2} {prop:resistance}\nB{name}v {name}_v 0 V=abs(v({1},{2}))\nV{name}one {name}_one 0 DC 1\nS{name} {name}_one rly_{prop:relay} {name}_v 0 {name}_SW\nR{name}k rly_{prop:relay} 0 1k",
+    "models": [
+     ".model {name}_SW sw vt={prop:pullin} vh={prop:dropoff}"
+    ]
+   },
+   "description": "Relay coil (resistance and inductance in the properties): above the pull-in voltage it operates the contacts with the same relay name",
+   "graphics": [
+    {
+     "rect": [
+      -45,
+      -20,
+      30,
+      40
+     ]
+    },
+    {
+     "line": [
+      -45,
+      20,
+      -15,
+      -20
+     ]
+    },
+    {
+     "line": [
+      -30,
+      -40,
+      -30,
+      -20
+     ]
+    },
+    {
+     "line": [
+      -30,
+      20,
+      -30,
+      40
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -30,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      -30,
+      40
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "contact_no",
+   "name": "Contacts NO",
+   "prefix": "K",
+   "label": "NORMAL",
+   "aliases": [
+    "Contacts:D"
+   ],
+   "cmPins": [
+    "C",
+    "",
+    "NO"
+   ],
+   "props": {
+    "relay": "K1",
+    "resistance": "0.1"
+   },
+   "spice": {
+    "line": "S{name} {C} {NO} rly_{prop:relay} 0 {name}_SW\nR{name}k rly_{prop:relay} 0 1G",
+    "models": [
+     ".model {name}_SW sw vt=0.5 ron={prop:resistance} roff=1G"
+    ]
+   },
+   "description": "Relay contact, open until the coil with the same relay name pulls in",
+   "graphics": [
+    {
+     "line": [
+      -40,
+      0,
+      -8,
+      0
+     ]
+    },
+    {
+     "line": [
+      -8,
+      -12,
+      -8,
+      12
+     ]
+    },
+    {
+     "line": [
+      8,
+      -12,
+      8,
+      12
+     ]
+    },
+    {
+     "line": [
+      8,
+      0,
+      40,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      40,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NO",
+     "at": [
+      -40,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "contact_nc",
+   "name": "Contacts NC",
+   "prefix": "K",
+   "label": "NORMAL",
+   "aliases": [
+    "Contacts:E"
+   ],
+   "cmPins": [
+    "C",
+    "NC",
+    ""
+   ],
+   "props": {
+    "relay": "K1",
+    "resistance": "0.1"
+   },
+   "spice": {
+    "line": "S{name} {C} {NC} rly_{prop:relay} 0 {name}_SW\nR{name}k rly_{prop:relay} 0 1G",
+    "models": [
+     ".model {name}_SW sw vt=0.5 ron=1G roff={prop:resistance}"
+    ]
+   },
+   "description": "Relay contact, closed until the coil with the same relay name pulls in",
+   "graphics": [
+    {
+     "line": [
+      -40,
+      0,
+      -8,
+      0
+     ]
+    },
+    {
+     "line": [
+      -8,
+      -12,
+      -8,
+      12
+     ]
+    },
+    {
+     "line": [
+      8,
+      -12,
+      8,
+      12
+     ]
+    },
+    {
+     "line": [
+      8,
+      0,
+      40,
+      0
+     ]
+    },
+    {
+     "line": [
+      -14,
+      14,
+      14,
+      -14
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      40,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NC",
+     "at": [
+      -40,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "adc0800",
+   "name": "ADC0800",
+   "prefix": "U",
+   "label": "ADC0800",
+   "aliases": [
+    "ADC0800"
+   ],
+   "package": "DIP18",
+   "cmPins": [
+    "D4",
+    "D5",
+    "D6",
+    "D7",
+    "VREF-",
+    "SC",
+    "OE",
+    "VGG",
+    "EOC",
+    "VSS",
+    "CLK",
+    "Vin",
+    "D0",
+    "D1",
+    "VREF+",
+    "D2",
+    "D3",
+    "VDD"
+   ],
+   "shape": {
+    "type": "box",
+    "width": 140,
+    "pitch": 30,
+    "left": [
+     {
+      "name": "D4",
+      "dir": "out"
+     },
+     {
+      "name": "D5",
+      "dir": "out"
+     },
+     {
+      "name": "D6",
+      "dir": "out"
+     },
+     {
+      "name": "D7",
+      "dir": "out"
+     },
+     "VREF-",
+     "SC",
+     "OE",
+     "VGG",
+     {
+      "name": "EOC",
+      "dir": "out"
+     }
+    ],
+    "right": [
+     "VDD",
+     {
+      "name": "D3",
+      "dir": "out"
+     },
+     {
+      "name": "D2",
+      "dir": "out"
+     },
+     "VREF+",
+     {
+      "name": "D1",
+      "dir": "out"
+     },
+     {
+      "name": "D0",
+      "dir": "out"
+     },
+     "Vin",
+     "CLK",
+     "VSS"
+    ],
+    "leftStart": -90,
+    "rightStart": -90,
+    "title": "ADC0800"
+   },
+   "spice": {
+    "line": "R{name}in {Vin} {VREF-} 1Meg\nB{name}eoc {EOC} 0 V=5\nB{name}0 {D0} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/1)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/2))\nB{name}1 {D1} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/2)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/4))\nB{name}2 {D2} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/4)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/8))\nB{name}3 {D3} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/8)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/16))\nB{name}4 {D4} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/16)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/32))\nB{name}5 {D5} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/32)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/64))\nB{name}6 {D6} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/64)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/128))\nB{name}7 {D7} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/128)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/256))"
+   },
+   "description": "8-bit analog-to-digital converter with the ADC0800 pinout (analog simulation): D = (Vin - VREF-) / (VREF+ - VREF-) x 256, converting continuously"
+  },
+  {
+   "id": "sip2",
+   "name": "SIP2",
+   "prefix": "J",
+   "aliases": [
+    "SIP2"
+   ],
+   "package": "SIP2",
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "description": "Two-pin connector (for the PCB netlist; no electrical model)",
+   "graphics": [
+    {
+     "rect": [
+      -10,
+      -20,
+      20,
+      50
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -10,
+      -10,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -20,
+      20,
+      -10,
+      20
+     ]
+    },
+    {
+     "circle": [
+      0,
+      -10,
+      3
+     ]
+    },
+    {
+     "circle": [
+      0,
+      20,
+      3
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -20,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      -20,
+      20
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "caution",
+   "name": "Caution",
+   "prefix": "X",
+   "aliases": [
+    "Caution"
+   ],
+   "cmPins": [],
+   "description": "Caution sign (drawing only)",
+   "graphics": [
+    {
+     "path": "M 0 -30 L 32 26 L -32 26 Z"
+    },
+    {
+     "line": [
+      0,
+      -12,
+      0,
+      10
+     ]
+    },
+    {
+     "circle": [
+      0,
+      17,
+      2
+     ],
+     "fill": true
+    }
+   ],
+   "pins": []
   }
  ]
 }

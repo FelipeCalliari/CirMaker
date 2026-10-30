@@ -375,9 +375,11 @@ private:
         const QVariantMap p = props(c, s);
         auto r = [](bool closed) { return closed ? QStringLiteral("1m") : QStringLiteral("1T"); };
         if (type == u"spdt") {
+            // "closed": a toggle switch thrown to NO
+            const bool thrown = p.value(QStringLiteral("closed")).toInt() != 0;
             const QString com = node(c, s, QStringLiteral("C"));
-            m_lines << QStringLiteral("R%1nc %2 %3 %4").arg(name, com, node(c, s, QStringLiteral("NC")), r(true));
-            m_lines << QStringLiteral("R%1no %2 %3 %4").arg(name, com, node(c, s, QStringLiteral("NO")), r(false));
+            m_lines << QStringLiteral("R%1nc %2 %3 %4").arg(name, com, node(c, s, QStringLiteral("NC")), r(!thrown));
+            m_lines << QStringLiteral("R%1no %2 %3 %4").arg(name, com, node(c, s, QStringLiteral("NO")), r(thrown));
             return;
         }
         bool closed = false;

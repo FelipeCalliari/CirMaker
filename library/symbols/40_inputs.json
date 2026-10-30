@@ -805,6 +805,101 @@
    ]
   },
   {
+   "id": "spdt",
+   "name": "SPDT Switch",
+   "prefix": "S",
+   "display": "spst",
+   "aliases": [
+    "SPDT Switch"
+   ],
+   "cmPins": [
+    "C",
+    "NC",
+    "NO"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "spdt"
+   },
+   "props": {
+    "closed": 0
+   },
+   "description": "Change-over switch: click during simulation to move C from NC to NO and back",
+   "graphics": [
+    {
+     "circle": [
+      15,
+      0,
+      3
+     ]
+    },
+    {
+     "line": [
+      18,
+      0,
+      30,
+      0
+     ]
+    },
+    {
+     "circle": [
+      -15,
+      -10,
+      3
+     ]
+    },
+    {
+     "line": [
+      -30,
+      -10,
+      -18,
+      -10
+     ]
+    },
+    {
+     "circle": [
+      -15,
+      10,
+      3
+     ]
+    },
+    {
+     "line": [
+      -30,
+      10,
+      -18,
+      10
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      30,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NC",
+     "at": [
+      -30,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NO",
+     "at": [
+      -30,
+      10
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
    "id": "spst",
    "name": "SPST Switch",
    "prefix": "S",

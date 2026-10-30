@@ -47,6 +47,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Fontes controladas V→V, V→I, I→V, I→I e chaves controladas por V/I | ✅ | modelos E, G, H, F, S e W do SPICE |
 | UJT, PUT, fontes não lineares (NLV/NLI), ADC8/DAC8, linha sem perdas, coaxial, par trançado, blocos gain/divider | ✅ | na simulação analógica; ADC/DAC comportamentais (0/5 V) |
 | PLL, VCO, V-Math, blocos diferenciais (gain:A) | ✅ | V-Math1/2 e versões Ref (o rótulo escolhe a função: ABSV, SQRTV, ADDV, MULTV...); gain:A e divider:A com entrada diferencial; VCO senoidal/quadrada/triangular (XSPICE); PLL tipo CD4046 (comparador XOR, VCO de Fc−Fr a Fc+Fr, saída demodulada), com Fc/Fr lidos e gravados no `.ckt` |
+| Chave SPDT, relé de diagrama ladder (bobina + contatos NA/NF pelo nome do relé), transformadores por relação de espiras (Trans2, Trans3 com derivação central, xfmr por número de espiras), ADC0800, conector SIP2, placa Caution | ✅ | bobinas (Relay Coil:A, Solenoid) acionam os contatos com o mesmo nome de relé (o terceiro rótulo do CM), com tensão de atracação e de soltura; transformadores ideais (SPICE). Ainda sem equivalente: dispositivos multimídia animados (Window, Car, Rocket, Stepper), F->V Source, MC1496 e macros guardadas no `User.lib` do CM (Delay, Timer, Lock) |
 | Macros (subcircuitos com símbolo próprio, Expand Macro) | ✅ | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`, Macro Lock com senha; símbolo em caixa com editor de pinos (lados, ordem, espaços, largura, título) |
 
 ## Simulação digital

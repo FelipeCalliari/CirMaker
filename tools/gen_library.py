@@ -65,7 +65,7 @@ GATE_KINDS = {  # id: (op, inputs, invert, display name)
     'nor4': ('or', 4, True, '4-In NOR'), 'nor8': ('or', 8, True, '8-In NOR'),
     'xor2': ('xor', 2, False, '2-In XOR'), 'xnor2': ('xor', 2, True, '2-In XNOR'),
 }
-CM_GATE_ALIASES = {'nor2': ['2-In NOR:DM'], 'nand2': ['2-In NAND:DM']}
+CM_GATE_ALIASES = {'nor2': ['2-In NOR:DM'], 'nand2': ['2-In NAND:DM'], 'and2': ['2-Input AND'], 'or2': ['2-Input OR']}
 
 
 def generic_gates():
@@ -545,7 +545,7 @@ def analog():
          'graphics': [L(-40, 0, -15, 0), L(-15, -15, -15, 15), P('M -2 -15 Q -8 0 -2 15'), L(-5, 0, 20, 0),
                       T('+', -25, -12, 8)],
          'pins': [pin('+', -40, 0), pin('-', 20, 0)]},
-        {'id': 'inductor', 'name': 'Inductor', 'prefix': 'L', 'label': '1mH', 'aliases': ['Inductor', 'Coil'],
+        {'id': 'inductor', 'name': 'Inductor', 'prefix': 'L', 'label': '1mH', 'aliases': ['Inductor', 'Coil', 'Coil 3T'],
          'cmPins': ['1', '2'], 'spice': sp('L{name} {1} {2} {value}'),
          'graphics': [L(-60, 0, -40, 0), L(40, 0, 60, 0),
                       P('M -40 0 Q -40 -14 -30 -14 Q -20 -14 -20 0 Q -20 -14 -10 -14 Q 0 -14 0 0 '
@@ -717,9 +717,9 @@ def misc_parts():
          'description': 'DC motor, simulated as its winding (resistance from the label, 1 mH)',
          'graphics': [C(0, 0, 30), T('M', 0, 0, 14), L(-80, 0, -30, 0), L(30, 0, 80, 0)],
          'pins': [pin('1', -80, 0), pin('2', 80, 0)]},
-        {'id': 'solenoid', 'name': 'Solenoid', 'prefix': 'L', 'label': '50', 'aliases': ['Solenoid'],
-         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {name}_m {value}' + N + 'L{name} {name}_m {2} 10m'),
-         'description': 'Solenoid coil (resistance from the label, 10 mH)',
+        {'id': 'solenoid', 'name': 'Solenoid', 'prefix': 'L', 'label': '5VCOIL', 'aliases': ['Solenoid'],
+         'cmPins': ['1', '2'], 'props': dict(COIL_PROPS), 'spice': COIL_SPICE,
+         'description': COIL_DESCRIPTION,
          'graphics': [L(-70, 0, -40, 0), P('M -40 0 Q -30 -16 -20 0 Q -10 -16 0 0 Q 10 -16 20 0 Q 30 -16 40 0'),
                       L(40, 0, 70, 0), R(-40, 8, 80, 8)],
          'pins': [pin('1', -70, 0), pin('2', 70, 0)]},
@@ -802,14 +802,18 @@ PUT = ['.subckt PUT_GEN a g k',
        '.ends PUT_GEN']
 
 
+def _bit(i): return f'(floor(c/{2 ** i})-2*floor(c/{2 ** (i + 1)}))'
+
+
+# ADC: code = (Vin - Vref-)/(Vref+ - Vref-) x 256, clamped; outputs 0/5 V
+_ADC_CODE = 'min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)'
+ADC_LINES = ['R{name}in {Vin} {VREF-} 1Meg', 'B{name}eoc {EOC} 0 V=5'] + [
+    f'B{{name}}{i} {{D{i}}} 0 V=5*{_bit(i).replace("c", _ADC_CODE)}' for i in range(8)]
+
+
 def rare_parts():
     D = lambda n, p='D': [f'{p}{i}' for i in range(n)]
-    bit = lambda i: f'(floor(c/{2 ** i})-2*floor(c/{2 ** (i + 1)}))'
-    # ADC: code = (Vin - Vref-)/(Vref+ - Vref-) x 256, clamped; outputs 0/5 V
-    code = 'min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)'
-    adc_lines = ['R{name}in {Vin} {VREF-} 1Meg', 'B{name}eoc {EOC} 0 V=5']
-    for i in range(8):
-        adc_lines.append(f'B{{name}}{i} {{D{i}}} 0 V=5*{bit(i).replace("c", code)}')
+    adc_lines = ADC_LINES
     dac_code = '+'.join(f'(v({{D{i}}})>2.5?{2 ** i}:0)' for i in range(8))
     return [
         {'id': 'ujt', 'name': 'N-UJT', 'prefix': 'Q', 'label': '2N2646', 'aliases': ['N-UJT'],
@@ -1070,6 +1074,110 @@ TRIAC = ['.subckt TRIAC_GEN mt2 g mt1',
 MODELS['RELAY_NO'] = '.model RELAY_NO sw vt=2.5 vh=0.5 ron=50m roff=1G'
 MODELS['RELAY_NC'] = '.model RELAY_NC sw vt=2.5 vh=0.5 ron=1G roff=50m'
 
+# relay coils: past the pull-in voltage they close a switch from 1 V onto
+# the node their contacts read (rly_<relay name>); below pull-in minus
+# drop-off it opens again
+COIL_PROPS = {'relay': 'K1', 'pullin': '4', 'dropoff': '0.1', 'resistance': '500', 'inductance': '10m'}
+COIL_SPICE = {'line': N.join(['L{name} {1} {name}_l {prop:inductance}', 'R{name} {name}_l {2} {prop:resistance}',
+                              'B{name}v {name}_v 0 V=abs(v({1},{2}))', 'V{name}one {name}_one 0 DC 1',
+                              'S{name} {name}_one rly_{prop:relay} {name}_v 0 {name}_SW',
+                              'R{name}k rly_{prop:relay} 0 1k']),
+              'models': ['.model {name}_SW sw vt={prop:pullin} vh={prop:dropoff}']}
+COIL_DESCRIPTION = ('Relay coil (resistance and inductance in the properties): above the pull-in voltage it '
+                    'operates the contacts with the same relay name')
+
+
+def contacts(id, name, alias, closed_at_rest):
+    on, off = ('1G', '{prop:resistance}') if closed_at_rest else ('{prop:resistance}', '1G')
+    other = 'NC' if closed_at_rest else 'NO'
+    return {'id': id, 'name': name, 'prefix': 'K', 'label': 'NORMAL', 'aliases': [alias],
+            'cmPins': ['C', 'NC', ''] if closed_at_rest else ['C', '', 'NO'],
+            'props': {'relay': 'K1', 'resistance': '0.1'},
+            'spice': {'line': N.join([f'S{{name}} {{C}} {{{other}}} rly_{{prop:relay}} 0 {{name}}_SW',
+                                      'R{name}k rly_{prop:relay} 0 1G']),
+                      'models': [f'.model {{name}}_SW sw vt=0.5 ron={on} roff={off}']},
+            'description': ('Relay contact, closed until' if closed_at_rest else 'Relay contact, open until')
+                           + ' the coil with the same relay name pulls in',
+            'graphics': [L(-40, 0, -8, 0), L(-8, -12, -8, 12), L(8, -12, 8, 12), L(8, 0, 40, 0)]
+                        + ([L(-14, 14, 14, -14)] if closed_at_rest else []),
+            'pins': [pin('C', 40, 0), pin(other, -40, 0)]}
+
+
+def transformer_lines(secondaries):
+    """Ideal transformer: each secondary (S+, S-, gain) is gain x the primary
+    voltage, and its current reflects into the primary."""
+    lines = ['R{name}p {P1} {name}_a {prop:rp}']
+    reflect = []
+    for k, (plus, minus, gain) in enumerate(secondaries):
+        lines += [f'B{{name}}e{k} {{name}}_c{k} {{name}}_d{k} V=({gain})*v({{name}}_a,{{P2}})',
+                  f'V{{name}}{k} {{name}}_d{k} {{{minus}}} 0',
+                  f'R{{name}}s{k} {{name}}_c{k} {{{plus}}} {{prop:rs}}']
+        reflect.append(f'({gain})*i(V{{name}}{k})')
+    lines += ['B{name}f {name}_a {P2} I=-(' + '+'.join(reflect) + ')',
+              'R{name}g {' + secondaries[0][1] + '} 0 1G']
+    return N.join(lines)
+
+
+def cm_devices():
+    winding = lambda x0, y0, y1, dx: [P(f'M {x0} {y0} ' + ' '.join(
+        f'Q {x0 + dx} {y0 + (i + .5) * (y1 - y0) / 4} {x0} {y0 + (i + 1) * (y1 - y0) / 4}' for i in range(4)))]
+    return [
+        {'id': 'trans_ratio', 'name': 'Transformer (ratio)', 'prefix': 'T', 'label': '1TO1', 'aliases': ['Trans2'],
+         'cmPins': ['P1', 'P2', 'S1', 'S2'], 'props': {'ratio': '1', 'rp': '0.1', 'rs': '0.1'},
+         'spice': sp(transformer_lines([('S1', 'S2', '{prop:ratio}')])),
+         'description': 'Ideal transformer: secondary voltage = ratio x primary (ratio = secondary/primary turns); '
+                        '0.1 ohm windings',
+         'graphics': winding(-20, -30, 30, 12) + winding(20, -40, 40, -12)
+                     + [L(-4, -40, -4, 40), L(4, -40, 4, 40), L(-40, -40, -20, -40), L(-20, -40, -20, -30),
+                        L(-40, 40, -20, 40), L(-20, 40, -20, 30), L(20, -60, 40, -60), L(20, -60, 20, -40),
+                        L(20, 60, 40, 60), L(20, 60, 20, 40)],
+         'pins': [pin('P1', -40, -40), pin('P2', -40, 40), pin('S1', 40, -60), pin('S2', 40, 60)]},
+        {'id': 'trans_ct', 'name': 'CT Transformer (ratio)', 'prefix': 'T', 'label': '1TO1CT', 'aliases': ['Trans3'],
+         'cmPins': ['P1', 'P2', 'S1', 'CT', 'S2'], 'props': {'ratio': '1', 'rp': '0.1', 'rs': '0.1'},
+         'spice': sp(transformer_lines([('S1', 'CT', '{prop:ratio}/2'), ('CT', 'S2', '{prop:ratio}/2')])),
+         'description': 'Ideal centre-tapped transformer: S1-S2 = ratio x primary, half on each side of CT',
+         'graphics': winding(-20, -30, 30, 12) + winding(30, -50, 50, -12)
+                     + [L(6, -50, 6, 50), L(14, -50, 14, 50), L(-40, -40, -20, -40), L(-20, -40, -20, -30),
+                        L(-40, 40, -20, 40), L(-20, 40, -20, 30), L(30, -60, 50, -60), L(30, -60, 30, -50),
+                        L(30, 60, 50, 60), L(30, 60, 30, 50), L(30, 0, 50, 0)],
+         'pins': [pin('P1', -40, -40), pin('P2', -40, 40), pin('S1', 50, -60), pin('CT', 50, 0), pin('S2', 50, 60)]},
+        {'id': 'xfmr', 'name': 'Core Transformer', 'prefix': 'T', 'label': 'DEFAULT', 'aliases': ['xfmr'],
+         'cmPins': ['P1', 'P2', 'S1', 'S2'], 'props': {'prit': '1', 'sect': '1', 'rp': '0.1', 'rs': '0.1'},
+         'spice': sp(transformer_lines([('S1', 'S2', '({prop:sect})/({prop:prit})')])),
+         'description': 'Transformer given by its turns (prit primary, sect secondary), simulated as an ideal one',
+         'graphics': winding(-30, -40, 40, 12) + winding(40, -40, 40, -12)
+                     + [L(0, -50, 0, 50), L(10, -50, 10, 50), L(-60, -60, -30, -60), L(-30, -60, -30, -40),
+                        L(-60, 60, -30, 60), L(-30, 60, -30, 40), L(40, 60, 80, 60), L(40, 60, 40, 40),
+                        L(40, -60, 80, -60), L(40, -60, 40, -40)],
+         'pins': [pin('P1', -60, -60), pin('P2', -60, 60), pin('S1', 80, 60), pin('S2', 80, -60)]},
+        {'id': 'relay_coil', 'name': 'Relay Coil', 'prefix': 'K', 'label': '5VCOIL', 'aliases': ['Relay Coil:A'],
+         'cmPins': ['1', '2'], 'props': dict(COIL_PROPS), 'spice': COIL_SPICE, 'description': COIL_DESCRIPTION,
+         'graphics': [R(-45, -20, 30, 40), L(-45, 20, -15, -20), L(-30, -40, -30, -20), L(-30, 20, -30, 40)],
+         'pins': [pin('1', -30, -40), pin('2', -30, 40)]},
+        contacts('contact_no', 'Contacts NO', 'Contacts:D', False),
+        contacts('contact_nc', 'Contacts NC', 'Contacts:E', True),
+        {'id': 'adc0800', 'name': 'ADC0800', 'prefix': 'U', 'label': 'ADC0800', 'aliases': ['ADC0800'],
+         'package': 'DIP18',
+         'cmPins': ['D4', 'D5', 'D6', 'D7', 'VREF-', 'SC', 'OE', 'VGG', 'EOC', 'VSS', 'CLK', 'Vin', 'D0', 'D1', 'VREF+',
+                    'D2', 'D3', 'VDD'],
+         'shape': {'type': 'box', 'width': 140, 'pitch': 30,
+                   'left': [{'name': f'D{i}', 'dir': 'out'} for i in (4, 5, 6, 7)] + ['VREF-', 'SC', 'OE', 'VGG',
+                                                                                     {'name': 'EOC', 'dir': 'out'}],
+                   'right': ['VDD', {'name': 'D3', 'dir': 'out'}, {'name': 'D2', 'dir': 'out'}, 'VREF+',
+                             {'name': 'D1', 'dir': 'out'}, {'name': 'D0', 'dir': 'out'}, 'Vin', 'CLK', 'VSS'],
+                   'leftStart': -90, 'rightStart': -90, 'title': 'ADC0800'},
+         'spice': sp(N.join(ADC_LINES)),
+         'description': '8-bit analog-to-digital converter with the ADC0800 pinout (analog simulation): '
+                        'D = (Vin - VREF-) / (VREF+ - VREF-) x 256, converting continuously'},
+        {'id': 'sip2', 'name': 'SIP2', 'prefix': 'J', 'aliases': ['SIP2'], 'package': 'SIP2', 'cmPins': ['1', '2'],
+         'description': 'Two-pin connector (for the PCB netlist; no electrical model)',
+         'graphics': [R(-10, -20, 20, 50), L(-20, -10, -10, -10), L(-20, 20, -10, 20), C(0, -10, 3), C(0, 20, 3)],
+         'pins': [pin('1', -20, -10), pin('2', -20, 20)]},
+        {'id': 'caution', 'name': 'Caution', 'prefix': 'X', 'aliases': ['Caution'], 'cmPins': [],
+         'description': 'Caution sign (drawing only)',
+         'graphics': [P('M 0 -30 L 32 26 L -32 26 Z'), L(0, -12, 0, 10), C(0, 17, 2, fill=True)], 'pins': []},
+    ]
+
 
 def power_parts():
     coil = lambda x0, y0, y1: [P(f'M {x0} {y0} ' + ' '.join(f'Q {x0 + 12} {y0 + (i + .5) * (y1 - y0) / 4} {x0} {y0 + (i + 1) * (y1 - y0) / 4}'
@@ -1201,6 +1309,12 @@ def inputs():
          'graphics': [C(15, 0, 3), L(18, 0, 40, 0), C(-15, 0, 3), L(-30, 0, -18, 0), C(-15, 20, 3), L(-30, 20, -18, 20),
                       T('NC', -15, -9, 6), T('NO', -15, 29, 6)],
          'pins': [pin('C', 40, 0), pin('NC', -30, 0), pin('NO', -30, 20)]},
+        {'id': 'spdt', 'name': 'SPDT Switch', 'prefix': 'S', 'display': 'spst', 'aliases': ['SPDT Switch'],
+         'cmPins': ['C', 'NC', 'NO'], 'model': {'kind': 'link', 'type': 'spdt'}, 'props': {'closed': 0},
+         'description': 'Change-over switch: click during simulation to move C from NC to NO and back',
+         'graphics': [C(15, 0, 3), L(18, 0, 30, 0), C(-15, -10, 3), L(-30, -10, -18, -10), C(-15, 10, 3),
+                      L(-30, 10, -18, 10)],
+         'pins': [pin('C', 30, 0), pin('NC', -30, -10), pin('NO', -30, 10)]},
         {'id': 'spst', 'name': 'SPST Switch', 'prefix': 'S', 'display': 'spst', 'aliases': ['SPST Switch'],
          'cmPins': ['1', '2'], 'model': {'kind': 'link', 'type': 'toggle'}, 'props': {'closed': 0},
          'description': 'Click during simulation to open/close',
@@ -1331,5 +1445,5 @@ if __name__ == '__main__':
     write('60_ttl_gates.json', 'Digital/74xx Gates', package_gates(TTL_GATES, ttl=True))
     write('70_ttl_msi.json', 'Digital/74xx MSI', msi() + cm_chips())
     write('80_cmos_gates.json', 'Digital/40xx CMOS', package_gates(CMOS_GATES, ttl=False))
-    write('90_analog.json', 'Analog', analog() + math_blocks())
+    write('90_analog.json', 'Analog', analog() + math_blocks() + cm_devices())
     print('library written to', os.path.normpath(OUT))

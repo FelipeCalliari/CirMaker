@@ -513,7 +513,13 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         if (!value.isEmpty()) rec << rect(textRect(value, c.labelAt, labelAnchor));
         rec << str(designator);
         if (!designator.isEmpty()) rec << rect(textRect(designator, c.designatorAt, designatorAnchor));
-        rec << QStringLiteral("0") << str(l.power) << str(spice) << QStringLiteral("0") << str(modelKind) << str(l.package);
+        // third label: the relay of a coil or contact
+        const QString tag = s.defaultProps.contains(QStringLiteral("relay"))
+                                ? c.props.value(QStringLiteral("relay"), s.defaultProps.value(QStringLiteral("relay"))).toString()
+                                : QString();
+        rec << str(tag);
+        if (!tag.isEmpty()) rec << rect(textRect(tag, std::nullopt, QPointF(r.right() + 3, r.top() + 46)));
+        rec << str(l.power) << str(spice) << QStringLiteral("0") << str(modelKind) << str(l.package);
         rec << QString::number(pkg.size() - 1) << join(pkg);
         rec << join({l.code & 0xffff, 0, 0, 0, l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);

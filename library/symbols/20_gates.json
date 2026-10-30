@@ -99,7 +99,8 @@
     "invert": false
    },
    "aliases": [
-    "2-In AND"
+    "2-In AND",
+    "2-Input AND"
    ],
    "cmPins": [
     "A",
@@ -412,7 +413,8 @@
     "invert": false
    },
    "aliases": [
-    "2-In OR"
+    "2-In OR",
+    "2-Input OR"
    ],
    "cmPins": [
     "A",

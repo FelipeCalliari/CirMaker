@@ -98,6 +98,7 @@ struct Device {
     QVector<int> nets;
     QString value, designator, prefix;
     QString kind;               // "type:digital", "alias:XPLLX {Fc=100k Fr=50k}"
+    QString tag;                // third label: the relay a coil or contact belongs to ("K1")
     QVector<int> data;
     QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
 };
@@ -183,7 +184,8 @@ Device readDevice(Reader& r, double version)
     if (!d.value.isEmpty()) d.valueRect = rect();
     d.designator = r.string();
     if (!d.designator.isEmpty()) d.designatorRect = rect();
-    if (!r.string().isEmpty()) r.ints(4);
+    d.tag = r.string();
+    if (!d.tag.isEmpty()) r.ints(4);
     r.string();                                 // power pins, e.g. "DVCC=14;DGND=7;"
     r.string();                                 // SPICE template
     r.string();
@@ -442,6 +444,8 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             }
         }
 
+        if (!d.tag.isEmpty() && s->defaultProps.contains(QStringLiteral("relay")))
+            c.props.insert(QStringLiteral("relay"), d.tag.trimmed());
         const QString kind = s->model.value(u"kind").toString();
         if (kind == u"logicswitch")
             c.props.insert(QStringLiteral("state"), int(d.value.trimmed() == u"5V"));

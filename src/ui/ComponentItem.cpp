@@ -343,15 +343,17 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
     } else if (d == u"spst" || d == u"button") {
         const auto cs = circles();
         const QString type = m_symbol->model.value(u"type").toString();
-        if (d == u"spst" && cs.size() >= 2) {
+        if (d == u"spst" && type != u"spdt" && cs.size() >= 2) {
             const QPointF a(cs[0]->v[0], cs[0]->v[1]), b(cs[1]->v[0], cs[1]->v[1]);
             p->setPen(QPen(live && state == 1 ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(a, state == 1 ? b : a + (b - a) * 0.85 + QPointF(0, -(b - a).manhattanLength() * 0.45));
         } else if (type == u"spdt" && cs.size() >= 3) {
             // lever from the common contact to NC at rest, to NO while held
+            // (a toggle switch keeps its position)
+            const bool thrown = state == 1 && (live || d == u"spst");
             const QPointF com(cs[0]->v[0], cs[0]->v[1]);
-            const QPointF to = live && state == 1 ? QPointF(cs[2]->v[0], cs[2]->v[1]) : QPointF(cs[1]->v[0], cs[1]->v[1]);
-            p->setPen(QPen(live && state == 1 ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
+            const QPointF to = thrown ? QPointF(cs[2]->v[0], cs[2]->v[1]) : QPointF(cs[1]->v[0], cs[1]->v[1]);
+            p->setPen(QPen(live && thrown ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(com, com + (to - com) * 0.88);
         }
     } else if (d == u"hexkey") {

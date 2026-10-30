@@ -48,6 +48,7 @@ private slots:
     void blocksAndExpressions();
     void mathBlocks();
     void vcoAndPll();
+    void cmDevices();
     void transmissionLineDelay();
     void unijunctions();
     void ownSpiceLine();
@@ -1085,6 +1086,77 @@ void TestAnalog::mathBlocks()
         QVERIFY2(qAbs(r.last(node).value_or(1e9) - v) < 1e-6, qPrintable(node + u' ' + QString::number(r.last(node).value_or(1e9))));
 }
 
+// Transformers reflect their load (a 1:10 ratio through 1k: 9.09 V on the
+// primary), the centre tap splits the secondary, a core transformer follows
+// its turns; relay contacts follow the coil of the same name; a thrown SPDT
+// switch connects C to NO.
+void TestAnalog::cmDevices()
+{
+    requireEngine();
+    Circuit c;
+    supply(c, QStringLiteral("A"), QStringLiteral("10"));
+    supply(c, QStringLiteral("B"), QStringLiteral("2"));
+    supply(c, QStringLiteral("ONE"), QStringLiteral("1"));
+    ground(c, QStringLiteral("G"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("A"), QStringLiteral("P"));
+    const ItemId t = part(c, QStringLiteral("trans_ratio"), QStringLiteral("T1"), {}, {{QStringLiteral("ratio"), QStringLiteral("0.1")}});
+    wire(c, t, QStringLiteral("P1"), QStringLiteral("P"));
+    wire(c, t, QStringLiteral("P2"), QStringLiteral("G"));
+    wire(c, t, QStringLiteral("S1"), QStringLiteral("SEC"));
+    wire(c, t, QStringLiteral("S2"), QStringLiteral("G"));
+    resistor(c, QStringLiteral("100"), QStringLiteral("SEC"), QStringLiteral("G"));
+    const ItemId ct = part(c, QStringLiteral("trans_ct"), QStringLiteral("T2"), {}, {{QStringLiteral("ratio"), QStringLiteral("0.2")}});
+    wire(c, ct, QStringLiteral("P1"), QStringLiteral("A"));
+    wire(c, ct, QStringLiteral("P2"), QStringLiteral("G"));
+    wire(c, ct, QStringLiteral("S1"), QStringLiteral("TOP"));
+    wire(c, ct, QStringLiteral("CT"), QStringLiteral("G"));
+    wire(c, ct, QStringLiteral("S2"), QStringLiteral("BOT"));
+    const ItemId x = part(c, QStringLiteral("xfmr"), QStringLiteral("T3"), {},
+                          {{QStringLiteral("prit"), QStringLiteral("10")}, {QStringLiteral("sect"), QStringLiteral("100")}});
+    wire(c, x, QStringLiteral("P1"), QStringLiteral("ONE"));
+    wire(c, x, QStringLiteral("P2"), QStringLiteral("G"));
+    wire(c, x, QStringLiteral("S1"), QStringLiteral("UP"));
+    wire(c, x, QStringLiteral("S2"), QStringLiteral("G"));
+    for (const QString& n : {QStringLiteral("TOP"), QStringLiteral("BOT"), QStringLiteral("UP")})
+        resistor(c, QStringLiteral("1k"), n, QStringLiteral("G"));
+
+    // K1 pulled in by 10 V, K2 not by 1 V
+    const QPair<QString, QString> coils[] = {{QStringLiteral("K1"), QStringLiteral("A")}, {QStringLiteral("K2"), QStringLiteral("ONE")}};
+    for (const auto& [relay, from] : coils) {
+        const ItemId k = part(c, QStringLiteral("relay_coil"), QStringLiteral("K") + relay, {}, {{QStringLiteral("relay"), relay}});
+        wire(c, k, QStringLiteral("1"), from);
+        wire(c, k, QStringLiteral("2"), QStringLiteral("G"));
+    }
+    const struct { const char* id; const char* relay; const char* out; } contacts[] = {
+        {"contact_no", "K1", "NO1"}, {"contact_nc", "K1", "NC1"}, {"contact_no", "K2", "NO2"}};
+    int n = 0;
+    for (const auto& k : contacts) {
+        const QString id = QString::fromLatin1(k.id), out = QString::fromLatin1(k.out);
+        const ItemId ck = part(c, id, QStringLiteral("KC%1").arg(++n), {}, {{QStringLiteral("relay"), QString::fromLatin1(k.relay)}});
+        wire(c, ck, QStringLiteral("C"), QStringLiteral("B"));
+        wire(c, ck, id == u"contact_no" ? QStringLiteral("NO") : QStringLiteral("NC"), out);
+        resistor(c, QStringLiteral("1k"), out, QStringLiteral("G"));
+    }
+    const ItemId sw = part(c, QStringLiteral("spdt"), QStringLiteral("S1"), {}, {{QStringLiteral("closed"), 1}});
+    wire(c, sw, QStringLiteral("C"), QStringLiteral("B"));
+    wire(c, sw, QStringLiteral("NC"), QStringLiteral("SWNC"));
+    wire(c, sw, QStringLiteral("NO"), QStringLiteral("SWNO"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("SWNC"), QStringLiteral("G"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("SWNO"), QStringLiteral("G"));
+
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const QPair<QString, double> expected[] = {
+        {QStringLiteral("p"), 9.09}, {QStringLiteral("sec"), 0.909}, {QStringLiteral("top"), 1}, {QStringLiteral("bot"), -1},
+        {QStringLiteral("up"), 10}, {QStringLiteral("no1"), 2}, {QStringLiteral("nc1"), 0}, {QStringLiteral("no2"), 0},
+        {QStringLiteral("swno"), 2}, {QStringLiteral("swnc"), 0}};
+    for (const auto& [node, v] : expected)
+        QVERIFY2(qAbs(r.last(node).value_or(1e9) - v) < 0.02 * std::max(1.0, qAbs(v)),
+                 qPrintable(node + u' ' + QString::number(r.last(node).value_or(1e9)) + u'\n' + deck.text));
+}
+
 // A square-wave VCO at 2 V runs at 2 kHz; a PLL locks its VCO onto a 12 kHz input.
 void TestAnalog::vcoAndPll()
 {
@@ -1291,9 +1363,13 @@ void TestAnalog::importedExamplesSimulate()
         a.tranStep = QStringLiteral("2u");
         c.setAnalysis(a);
         ++ran;
-        const spice::Result r = simulate(c);
+        spice::Deck deck;
+        const spice::Result r = simulate(c, &deck);
         if (r.ok) ++okCount;
         else failures << QFileInfo(path).fileName() + QStringLiteral(": ") + r.error;
+        // CM_EXAMPLE_DECK=<file name>: print that example's deck
+        if (QFileInfo(path).fileName() == qEnvironmentVariable("CM_EXAMPLE_DECK"))
+            qInfo("%s", qPrintable(deck.text));
     }
     qInfo("analog examples: %d simulated, %d ok, %d skipped (parts without equivalent)", ran, okCount, skipped);
     for (const QString& f : std::as_const(failures))

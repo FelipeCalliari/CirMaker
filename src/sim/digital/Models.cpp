@@ -504,7 +504,8 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
                       no = s.pinIndex(QStringLiteral("NO"));
             if (com < 0 || nc < 0 || no < 0)
                 return fail(QStringLiteral("SPDT needs C, NC and NO"));
-            return std::make_unique<LinkModel>(LinkModel::Kind::ChangeOver, com, nc, no, false);
+            return std::make_unique<LinkModel>(LinkModel::Kind::ChangeOver, com, nc, no,
+                                               props.value(QStringLiteral("closed")).toInt() != 0);
         }
         const LinkModel::Kind k = type == u"no" ? LinkModel::Kind::NormallyOpen
                                 : type == u"nc" ? LinkModel::Kind::NormallyClosed
