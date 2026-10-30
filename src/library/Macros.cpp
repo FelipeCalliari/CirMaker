@@ -96,15 +96,33 @@ QString registerMacro(const QString& name, const QJsonObject& circuitJson, QStri
     return sym.value(u"id").toString();
 }
 
-QString define(const QString& name, const Circuit& inner, QString* error)
+QString define(const QString& name, const Circuit& inner, QString* error, const QString& lock)
 {
-    const QJsonObject doc = QJsonDocument::fromJson(NativeFormat::serialize(inner)).object();
+    QJsonObject doc = QJsonDocument::fromJson(NativeFormat::serialize(inner)).object();
+    if (!lock.isEmpty()) doc.insert(u"lock", lock);
     const QString id = registerMacro(name, doc, error);
     if (id.isEmpty())
         return {};
     userIds().insert(id);
     saveUserLibrary(error);
     return id;
+}
+
+QString lockOf(const SymbolDef& s) { return s.model.value(u"circuit").toObject().value(u"lock").toString(); }
+
+bool setLock(const QString& id, const QString& digest, QString* error)
+{
+    const SymbolDef* s = LibraryRegistry::instance().find(id);
+    if (!s || !isMacro(*s)) {
+        if (error) *error = QStringLiteral("%1 is not a macro").arg(id);
+        return false;
+    }
+    QJsonObject doc = s->model.value(u"circuit").toObject();
+    if (digest.isEmpty()) doc.remove(u"lock");
+    else doc.insert(u"lock", digest);
+    if (registerMacro(s->name, doc, error).isEmpty())
+        return false;
+    return !userIds().contains(id) || saveUserLibrary(error);
 }
 
 bool innerCircuit(const SymbolDef& s, Circuit& out, QString* error)

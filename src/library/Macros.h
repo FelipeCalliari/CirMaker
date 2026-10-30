@@ -29,8 +29,13 @@ QJsonObject symbolJson(const QString& name, const QJsonObject& circuitJson, QStr
 // Registers (or redefines) a macro. Returns its symbol id, empty on error
 // (no ports, bad document...).
 QString registerMacro(const QString& name, const QJsonObject& circuitJson, QString* error = nullptr);
-// Defines a macro from a circuit and keeps it in the user library.
-QString define(const QString& name, const Circuit& inner, QString* error = nullptr);
+// Defines a macro from a circuit and keeps it in the user library; `lock`
+// is the Macro Lock password digest, if any.
+QString define(const QString& name, const Circuit& inner, QString* error = nullptr, const QString& lock = {});
+// Macro Lock: a password digest (faults::hashPassword) that guards
+// expanding the macro; it travels in the definition. Empty = unlocked.
+QString lockOf(const SymbolDef& s);
+bool setLock(const QString& id, const QString& digest, QString* error = nullptr);
 bool innerCircuit(const SymbolDef& s, Circuit& out, QString* error = nullptr);
 
 // User library: macros defined on this machine (app data folder).

@@ -575,6 +575,9 @@ void MainWindow::createActions()
     m_editMacro = new QAction(tr("Edit &Macro..."), this);
     m_editMacro->setStatusTip(tr("Rename the macro being edited; a new name saves a new macro"));
     connect(m_editMacro, &QAction::triggered, this, &MainWindow::editMacro);
+    m_lockMacro = new QAction(tr("Macro &Lock..."), this);
+    m_lockMacro->setStatusTip(tr("Protects the selected macro with a password: it cannot be expanded without it"));
+    connect(m_lockMacro, &QAction::triggered, this, &MainWindow::lockMacro);
     m_deleteMacro = new QAction(tr("&Delete Macro..."), this);
     connect(m_deleteMacro, &QAction::triggered, this, &MainWindow::deleteMacro);
 
@@ -658,7 +661,7 @@ void MainWindow::createMenus()
     simulation->addAction(m_analysisSetup);
 
     QMenu* macrosMenu = menuBar()->addMenu(tr("&Macros"));
-    macrosMenu->addActions({m_newMacro, m_editMacro, m_saveMacro, m_expandMacro});
+    macrosMenu->addActions({m_newMacro, m_editMacro, m_saveMacro, m_expandMacro, m_lockMacro});
     macrosMenu->addSeparator();
     macrosMenu->addAction(m_deleteMacro);
 
@@ -720,6 +723,7 @@ void MainWindow::updateActions()
         a->setEnabled(!simulating);
     m_editMacro->setEnabled(!simulating && !m_macroName.isEmpty());
     m_expandMacro->setEnabled(!simulating && selectedMacro());
+    m_lockMacro->setEnabled(!simulating && selectedMacro());
     for (QAction* a : m_tools->actions())
         a->setEnabled(!simulating || a == m_toolSelect || a == m_toolProbe);
     m_step->setEnabled(!m_scene->running());
@@ -923,6 +927,7 @@ void MainWindow::newCircuit()
     m_undo->clear();
     m_path.clear();
     m_macroName.clear();
+    m_macroLock.clear();
     m_faultsUnlocked = false;
     applyRestrictions();
     updateTitle();
@@ -965,6 +970,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         }
         m_circuit->clear();
         m_macroName.clear();
+        m_macroLock.clear();
         NativeFormat::deserialize(NativeFormat::serialize(imported), *m_circuit, nullptr);
         m_undo->clear();
         m_undo->resetClean();
@@ -997,6 +1003,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         }
         m_circuit->clear();
         m_macroName.clear();
+        m_macroLock.clear();
         NativeFormat::deserialize(data, *m_circuit, nullptr);
         m_undo->clear();
         m_path = path;
@@ -1071,6 +1078,12 @@ void MainWindow::newMacro()
                                                m_macroName.isEmpty() ? tr("Macro1") : m_macroName, &ok).trimmed();
     if (!ok || name.isEmpty())
         return;
+    if (const SymbolDef* existing = LibraryRegistry::instance().find(macros::idFor(name));
+        existing && !macros::lockOf(*existing).isEmpty()) {
+        QMessageBox::warning(this, tr("New Macro"), tr("%1 is locked; unlock it with Macro Lock before replacing it.").arg(name));
+        return;
+    }
+    m_macroLock.clear();
     if (LibraryRegistry::instance().find(macros::idFor(name))
         && QMessageBox::question(this, tr("New Macro"), tr("A macro named %1 already exists. Replace it?").arg(name))
                != QMessageBox::Yes)
@@ -1103,7 +1116,7 @@ bool MainWindow::saveMacro()
     }
     m_scene->stopSimulation();
     QString error;
-    const QString id = macros::define(m_macroName, *m_circuit, &error);
+    const QString id = macros::define(m_macroName, *m_circuit, &error, m_macroLock);
     if (id.isEmpty()) {
         QMessageBox::warning(this, tr("Save Macro"),
                              tr("Cannot save macro %1: %2.\n\nPlace Input and Output devices "
@@ -1169,6 +1182,47 @@ void MainWindow::showContextMenu(QGraphicsItem* item, QPoint screenPos)
     menu.exec(screenPos);
 }
 
+// CircuitMaker's Macro Lock: set a password, or remove it with the password
+void MainWindow::lockMacro()
+{
+    const SymbolDef* s = selectedMacro();
+    if (!s) {
+        statusBar()->showMessage(tr("Select one macro device to lock"), 4000);
+        return;
+    }
+    const QString id = s->id, name = s->name, lock = macros::lockOf(*s);
+    bool ok = false;
+    QString digest;
+    if (lock.isEmpty()) {
+        const QString pw = QInputDialog::getText(this, tr("Macro Lock"), tr("Password to lock %1:").arg(name),
+                                                 QLineEdit::Password, {}, &ok);
+        if (!ok || pw.isEmpty()) return;
+        const QString again = QInputDialog::getText(this, tr("Macro Lock"), tr("Type it again:"), QLineEdit::Password, {}, &ok);
+        if (!ok) return;
+        if (again != pw) {
+            QMessageBox::warning(this, tr("Macro Lock"), tr("The passwords differ."));
+            return;
+        }
+        digest = faults::hashPassword(pw);
+    } else {
+        const QString pw = QInputDialog::getText(this, tr("Macro Lock"), tr("%1 is locked. Password to unlock it:").arg(name),
+                                                 QLineEdit::Password, {}, &ok);
+        if (!ok) return;
+        if (faults::hashPassword(pw) != lock) {
+            QMessageBox::warning(this, tr("Macro Lock"), tr("Wrong password."));
+            return;
+        }
+    }
+    QString error;
+    if (!macros::setLock(id, digest, &error)) {
+        QMessageBox::warning(this, tr("Macro Lock"), error);
+        return;
+    }
+    m_scene->refreshSymbols();
+    setWindowModified(true);        // the document embeds the definition
+    statusBar()->showMessage(digest.isEmpty() ? tr("%1 unlocked").arg(name) : tr("%1 locked").arg(name), 5000);
+}
+
 void MainWindow::expandMacro()
 {
     const SymbolDef* s = selectedMacro();
@@ -1177,6 +1231,17 @@ void MainWindow::expandMacro()
         return;
     }
     const QString name = s->name;
+    const QString lock = macros::lockOf(*s);
+    if (!lock.isEmpty()) {
+        bool ok = false;
+        const QString pw = QInputDialog::getText(this, tr("Expand Macro"), tr("%1 is locked. Password:").arg(name),
+                                                 QLineEdit::Password, {}, &ok);
+        if (!ok) return;
+        if (faults::hashPassword(pw) != lock) {
+            QMessageBox::warning(this, tr("Expand Macro"), tr("Wrong password."));
+            return;
+        }
+    }
     Circuit inner;
     QString error;
     if (!macros::innerCircuit(*s, inner, &error)) {
@@ -1190,6 +1255,7 @@ void MainWindow::expandMacro()
     m_undo->clear();
     m_path.clear();
     m_macroName = name;
+    m_macroLock = lock;
     updateTitle();
     m_view->zoomToFit();
     statusBar()->showMessage(tr("Editing macro %1; choose Macros > Save Macro when done").arg(name), 8000);
@@ -1205,6 +1271,11 @@ void MainWindow::editMacro()
                                                QLineEdit::Normal, m_macroName, &ok).trimmed();
     if (!ok || name.isEmpty() || name == m_macroName)
         return;
+    if (const SymbolDef* existing = LibraryRegistry::instance().find(macros::idFor(name));
+        existing && !macros::lockOf(*existing).isEmpty()) {
+        QMessageBox::warning(this, tr("Edit Macro"), tr("%1 is locked; unlock it with Macro Lock before replacing it.").arg(name));
+        return;
+    }
     const QString previous = m_macroName;
     m_macroName = name;
     if (!saveMacro())
@@ -1233,6 +1304,10 @@ void MainWindow::deleteMacro()
             QMessageBox::warning(this, tr("Delete Macro"), tr("%1 is used in this circuit (%2).").arg(name, c.designator));
             return;
         }
+    if (const SymbolDef* s = LibraryRegistry::instance().find(id); s && !macros::lockOf(*s).isEmpty()) {
+        QMessageBox::warning(this, tr("Delete Macro"), tr("%1 is locked; unlock it with Macro Lock first.").arg(name));
+        return;
+    }
     macros::forget(id);
     m_browser->reload();
     statusBar()->showMessage(tr("Deleted macro %1").arg(name), 4000);

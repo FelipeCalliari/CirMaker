@@ -2,6 +2,7 @@
 
 #include "core/io/NativeFormat.h"
 #include "library/Macros.h"
+#include "core/Faults.h"
 
 #include <QJsonDocument>
 
@@ -97,7 +98,26 @@ private slots:
     void nestedMacros();
     void documentCarriesDefinitions();
     void noMacrosNoCopy();
+    void macroLock();
 };
+
+void TestMacros::macroLock()
+{
+    const QString id = defineHalfAdder();
+    QVERIFY(macros::lockOf(*library().find(id)).isEmpty());
+    const QString digest = faults::hashPassword(QStringLiteral("segredo"));
+    QVERIFY(macros::setLock(id, digest));
+    QCOMPARE(macros::lockOf(*library().find(id)), digest);
+    // the lock travels with documents that use the macro
+    Circuit c;
+    place(c, id, {0, 0}, QStringLiteral("U1"));
+    const QJsonArray embedded = macros::embeddedFor(c);
+    QCOMPARE(embedded.first().toObject().value(u"circuit").toObject().value(u"lock").toString(), digest);
+    // still simulates
+    QCOMPARE(evaluate(id, {1, 1}, {QStringLiteral("S"), QStringLiteral("C")}), (QVector<Logic>{Logic::L0, Logic::L1}));
+    QVERIFY(macros::setLock(id, {}));
+    QVERIFY(macros::lockOf(*library().find(id)).isEmpty());
+}
 
 void TestMacros::symbolFromPorts()
 {
