@@ -38,7 +38,11 @@ public:
     const LibraryRegistry& library() const { return m_library; }
     const Netlist& netlist() const { return m_netlist; }
     // The circuit the netlist describes: the document with macros expanded.
-    const Circuit& simCircuit() const { return m_flat ? *m_flat : *m_circuit; }
+    // While simulating with faults: the faulted copy.
+    const Circuit& simCircuit() const { return m_faulted ? *m_faulted : m_flat ? *m_flat : *m_circuit; }
+    // Circuit and netlist for an analog run, with the analog faults applied.
+    struct AnalogInput { std::unique_ptr<Circuit> circuit; Netlist netlist; };
+    AnalogInput analogInput() const;
 
     Tool tool() const { return m_tool; }
     void setTool(Tool tool);
@@ -62,10 +66,14 @@ public:
     int highlightedNet() const { return m_highlightNet; }
     // Node under the probe tool while simulating (-1: none).
     int probedNet() const { return m_probeNet; }
-    void setShowNodeNames(bool on) { m_showNodeNames = on; update(); }
+    void setShowNodeNames(bool on) { m_showNodeNames = on && !restricted(QStringLiteral("nodeNames")); update(); }
     void setShowPinDots(bool on) { m_showPinDots = on; update(); }
     // CircuitMaker "Trace": colour wires by logic level while simulating
-    void setTrace(bool on) { m_trace = on; update(); }
+    void setTrace(bool on) { m_trace = on && !restricted(QStringLiteral("trace")); update(); }
+    // Fault lock: CircuitMaker's disabled circuit options ("edit", "delete",
+    // "wire", "library", "properties", "trace"...) in force for the student.
+    void setRestrictions(const QStringList& options);
+    bool restricted(const QString& option) const { return m_restrictions.contains(option); }
     bool trace() const { return m_trace; }
     void paste();
     // Adds a copy of `source` moved by offset, selected, as one undo step.
@@ -224,6 +232,7 @@ private:
 
     Netlist m_netlist;
     std::unique_ptr<Circuit> m_flat;
+    std::unique_ptr<Circuit> m_faulted;     // simulation copy with the faults applied
     QStringList m_flatWarnings;
     bool m_netlistPending = false;
 
@@ -263,6 +272,7 @@ private:
     int m_highlightNet = -1;
     bool m_exporting = false;
     bool m_suppressMenu = false;
+    QStringList m_restrictions;
     QHash<ItemId, int> m_breaks;        // SCOPE breakpoints while simulating
     QHash<int, sim::Logic> m_breakPrev; // break nets' values one tick earlier
     bool m_breakMet = false;            // level breakpoints: condition held last tick

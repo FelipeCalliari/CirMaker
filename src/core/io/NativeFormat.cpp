@@ -32,6 +32,24 @@ QJsonObject analysisToJson(const AnalysisSettings& a)
             {u"breakEdge"_s, a.breakEdge}, {u"breakAll"_s, a.breakAll}};
 }
 
+QJsonObject faultsToJson(const FaultSettings& f)
+{
+    return {{u"password"_s, f.password}, {u"disabled"_s, QJsonArray::fromStringList(f.disabled)},
+            {u"high"_s, f.high}, {u"low"_s, f.low}, {u"open"_s, f.open}, {u"short"_s, f.shorted}};
+}
+
+FaultSettings faultsFromJson(const QJsonObject& o)
+{
+    FaultSettings f;
+    f.password = o.value(u"password").toString();
+    for (const QJsonValue& v : o.value(u"disabled").toArray()) f.disabled << v.toString();
+    f.high = o.value(u"high").toString(f.high);
+    f.low = o.value(u"low").toString(f.low);
+    f.open = o.value(u"open").toString(f.open);
+    f.shorted = o.value(u"short").toString(f.shorted);
+    return f;
+}
+
 AnalysisSettings analysisFromJson(const QJsonObject& o)
 {
     AnalysisSettings a;
@@ -96,6 +114,7 @@ QByteArray serialize(const Circuit& circuit)
                                  {u"revision"_s, tb.revision}, {u"visible"_s, tb.visible}, {u"pos"_s, point(tb.pos)}}},
         {u"analysis"_s, analysisToJson(circuit.analysis())},
         {u"probes"_s, probes},
+        {u"faults"_s, faultsToJson(circuit.faultSettings())},
         {u"components"_s, comps},
         {u"wires"_s, wires},
         {u"texts"_s, texts},
@@ -135,6 +154,7 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
     for (const QJsonValue& v : root.value(u"probes").toArray())
         probes << point(v);
     circuit.setProbes(probes);
+    circuit.setFaultSettings(faultsFromJson(root.value(u"faults").toObject()));
     for (const QJsonValue& v : root.value(u"components").toArray()) {
         const QJsonObject o = v.toObject();
         Component c;

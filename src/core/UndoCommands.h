@@ -74,6 +74,18 @@ private:
     AnalysisSettings m_before, m_after;
 };
 
+class SetFaultSettingsCommand : public QUndoCommand {
+public:
+    SetFaultSettingsCommand(Circuit* circuit, FaultSettings after, const QString& text)
+        : QUndoCommand(text), m_circuit(circuit), m_before(circuit->faultSettings()), m_after(std::move(after)) {}
+    void redo() override { m_circuit->setFaultSettings(m_after); }
+    void undo() override { m_circuit->setFaultSettings(m_before); }
+
+private:
+    Circuit* m_circuit;
+    FaultSettings m_before, m_after;
+};
+
 class SetProbesCommand : public QUndoCommand {
 public:
     SetProbesCommand(Circuit* circuit, QVector<QPointF> after, const QString& text)

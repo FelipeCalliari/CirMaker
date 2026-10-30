@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QPointF>
 #include <QString>
+#include <QStringList>
 #include <QVariantMap>
 #include <QVector>
 
@@ -64,6 +65,21 @@ struct AnalysisSettings {
     friend bool operator==(const AnalysisSettings&, const AnalysisSettings&) = default;
 };
 
+// CircuitMaker "Circuit Fault Data": the fault lock and what a student may
+// not do while it is locked, plus the analog fault element values.
+struct FaultSettings {
+    QString password;               // faults::hashPassword() digest; empty = not locked
+    // "edit" (cut/copy/paste/move), "delete", "wire", "library", "properties",
+    // "hints", "replace", "replaceStatus", "trace", "nodeNames"
+    QStringList disabled;
+    QString high = QStringLiteral("5"), low = QStringLiteral("0");
+    QString open = QStringLiteral("1G"), shorted = QStringLiteral("1m");
+    bool locked() const { return !password.isEmpty(); }
+    // A student restriction is in force (only while locked).
+    bool disables(const QString& option) const { return locked() && disabled.contains(option); }
+    friend bool operator==(const FaultSettings&, const FaultSettings&) = default;
+};
+
 // The schematic document. Mutated only through these methods (normally via the
 // undo commands), which emit the signals the scene uses to stay in sync.
 class Circuit : public QObject {
@@ -105,6 +121,8 @@ public:
     // Waveform probe points; each one plots the net under it.
     const QVector<QPointF>& probes() const { return m_probes; }
     void setProbes(const QVector<QPointF>& probes);
+    const FaultSettings& faultSettings() const { return m_faults; }
+    void setFaultSettings(const FaultSettings& f);
 
 signals:
     void componentAdded(cm::ItemId id);
@@ -120,6 +138,7 @@ signals:
     void titleBlockChanged();
     void analysisChanged();
     void probesChanged();
+    void faultSettingsChanged();
     // Any change that affects connectivity or contents.
     void modified();
 
@@ -132,6 +151,7 @@ private:
     TitleBlock m_titleBlock;
     AnalysisSettings m_analysis;
     QVector<QPointF> m_probes;
+    FaultSettings m_faults;
     ItemId m_nextId = 1;
 };
 

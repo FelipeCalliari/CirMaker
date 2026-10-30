@@ -81,6 +81,10 @@ private:
     void deleteMacro();
     const SymbolDef* selectedMacro() const;
     void showContextMenu(QGraphicsItem* item, QPoint screenPos);
+    // fault simulation
+    void deviceFaults(ItemId id);
+    void circuitFaults();
+    void applyRestrictions();
 
     void addRecent(const QString& path);
     void rebuildRecentMenu();
@@ -114,6 +118,8 @@ private:
     QAction *m_newMacro, *m_expandMacro, *m_saveMacro, *m_editMacro, *m_deleteMacro;
     QString m_macroName;     // set while the document is a macro's circuit
     QAction* m_prefs;
+    QAction* m_circuitFaults;
+    bool m_faultsUnlocked = false;      // the fault lock password was entered this session
     QAction *m_digitalMode, *m_analogMode, *m_analysisSetup, *m_toolProbe;
     WaveformView* m_waves;
     QDockWidget* m_wavesDock;

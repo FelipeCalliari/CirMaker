@@ -25,8 +25,8 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Borda com zonas (Borders) | ❌ | |
 | Auto Wire Routing / Quick Connect / Single Click Connect | 🟡 | arrastar a partir do pino; sem roteamento automático |
 | Set Label Positions, Group Items | ❌ | |
-| Merge (inserir outro circuito) | ❌ | |
-| Copiar esquemático/formas de onda para a área de transferência como imagem | ❌ | |
+| Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |
+| Copiar esquemático/formas de onda para a área de transferência como imagem | 🟡 | esquemático sim (Ctrl+Shift+C); formas de onda não |
 | Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | 🟡 | designador, rótulo, parâmetros e visibilidade dos textos |
 | Cores e fontes configuráveis (Colors, Device/Text Font) | ❌ | cores fixas no estilo do CM |
 
@@ -49,10 +49,10 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Recurso | Estado | Observação |
 | --- | --- | --- |
 | Run/Pause, Step, Reset, Trace | ✅ | F10, F9, Ctrl+Q, F11 |
-| Probe Tool (estado do nó) | 🟡 | pontas de prova alimentam as ondas; sem lâmpada de leitura no cursor |
+| Probe Tool (estado do nó) | ✅ | lâmpada H/L/X/Z no cursor durante a simulação; pontas de prova alimentam as ondas |
 | Formas de onda digitais (SCOPE / Active Probe) | ✅ | |
 | Atrasos de propagação por dispositivo | ✅ | 1–14 ticks |
-| Breakpoints | ❌ | |
+| Breakpoints | ✅ | caixinhas dos SCOPEs nas formas de onda (0/1); Nível/Borda × E/Ou |
 | Digital Options (tick em tempo real etc.) | 🟡 | velocidade em ticks/quadro |
 
 ## Simulação analógica / mista
@@ -82,5 +82,5 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 
 | Recurso | Estado |
 | --- | --- |
-| Pinos presos em alto/baixo, abertos, curto, valor errado | ❌ |
-| Senha de falhas, dicas, desabilitar opções do circuito | ❌ |
+| Pinos presos em alto/baixo, abertos, curto, valor errado | ✅ |
+| Senha de falhas, dicas, trocar dispositivo, desabilitar opções do circuito | ✅ |

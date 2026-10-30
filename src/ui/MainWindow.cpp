@@ -3,10 +3,13 @@
 #include "core/Bom.h"
 #include "core/PcbNetlist.h"
 #include "core/Circuit.h"
+#include "core/Faults.h"
+#include "core/UndoCommands.h"
 #include "core/io/CktImporter.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "library/Macros.h"
+#include "ui/FaultDialogs.h"
 #include "ui/LibraryBrowser.h"
 #include "sim/digital/EventSimulator.h"
 #include "ui/AnalysisDialog.h"
@@ -494,6 +497,11 @@ void MainWindow::createActions()
     m_stop->setShortcut(Qt::SHIFT | Qt::Key_F10);
     connect(m_stop, &QAction::triggered, m_scene, &SchematicScene::stopSimulation);
 
+    m_circuitFaults = new QAction(tr("Circuit &Fault Data..."), this);
+    m_circuitFaults->setStatusTip(tr("Fault lock password, options disabled for students, analog fault values"));
+    connect(m_circuitFaults, &QAction::triggered, this, &MainWindow::circuitFaults);
+    connect(m_circuit, &Circuit::faultSettingsChanged, this, &MainWindow::applyRestrictions);
+
     m_prefs = new QAction(themeIcon("preferences-system", QStyle::SP_FileDialogDetailedView), tr("Pre&ferences..."), this);
     m_prefs->setShortcuts({QKeySequence(Qt::Key_F5), QKeySequence(Qt::CTRL | Qt::Key_Comma)});
     m_prefs->setMenuRole(QAction::PreferencesRole);
@@ -559,6 +567,7 @@ void MainWindow::createMenus()
     tools->addSeparator();
     tools->addActions({m_showNodeNames, m_showPinDots});
     tools->addSeparator();
+    tools->addAction(m_circuitFaults);
     tools->addAction(m_prefs);
 
     QMenu* simulation = menuBar()->addMenu(tr("&Simulation"));
@@ -685,6 +694,149 @@ void MainWindow::updateActions()
         m_simStatus->setText(analog ? tr("Analog mode") : tr("Editing"));
     else
         m_simStatus->setText(tr("t = %1 ticks").arg(m_scene->simTime()));
+
+    // fault lock: the circuit options the instructor disabled
+    auto off = [this](const char* option) { return m_scene->restricted(QString::fromLatin1(option)); };
+    if (off("edit"))
+        for (QAction* a : {m_cut, m_copy, m_paste, m_duplicate, m_rotate, m_mirror, m_merge, m_straighten, m_designations,
+                           m_propDelays})
+            a->setEnabled(false);
+    if (off("delete")) {
+        m_delete->setEnabled(false);
+        if (m_toolDelete) m_toolDelete->setEnabled(false);
+    }
+    if (off("wire"))
+        for (QAction* a : {m_toolWire, m_toolBus, m_toolNetLabel}) a->setEnabled(false);
+    if (off("properties"))
+        m_props->setEnabled(false);
+    m_browser->setEnabled(!simulating && !off("library"));
+    m_trace->setEnabled(!off("trace"));
+    m_showNodeNames->setEnabled(!off("nodeNames"));
+}
+
+void MainWindow::applyRestrictions()
+{
+    const FaultSettings& f = m_circuit->faultSettings();
+    m_scene->setRestrictions(f.locked() && !m_faultsUnlocked ? f.disabled : QStringList());
+    if (m_scene->restricted(QStringLiteral("trace")) && m_trace->isChecked()) m_trace->setChecked(false);
+    if (m_scene->restricted(QStringLiteral("nodeNames")) && m_showNodeNames->isChecked()) m_showNodeNames->setChecked(false);
+    updateActions();
+}
+
+void MainWindow::deviceFaults(ItemId id)
+{
+    const Component* c = m_circuit->component(id);
+    const SymbolDef* s = c ? LibraryRegistry::instance().find(c->symbolId) : nullptr;
+    if (!c || !s || m_scene->simulating())
+        return;
+    const FaultSettings& settings = m_circuit->faultSettings();
+    const QString name = c->designator.isEmpty() ? s->name : c->designator;
+    faults::DeviceFaults f = faults::read(*c);
+    if (settings.locked() && !m_faultsUnlocked) {
+        AccessFaultsDialog access(name, !settings.disables(QStringLiteral("hints")),
+                                  !settings.disables(QStringLiteral("replace")), settings.password, this);
+        const int r = access.exec();
+        if (r == AccessFaultsDialog::Unlocked) {
+            m_faultsUnlocked = true;
+            applyRestrictions();
+        } else if (r == AccessFaultsDialog::ShowHint) {
+            QMessageBox::information(this, tr("Hint: %1").arg(name), f.hint.isEmpty() ? tr("No hint for this device.") : f.hint);
+            if (f.hint.isEmpty() || f.hinted) return;
+            f.hinted = true;
+        } else if (r == AccessFaultsDialog::Replace) {
+            if (f.replaced) {
+                QMessageBox::information(this, tr("Replace device"), tr("%1 was already replaced.").arg(name));
+                return;
+            }
+            if (!settings.disables(QStringLiteral("replaceStatus")))
+                QMessageBox::information(this, tr("Replace device"),
+                                         f.active() ? tr("%1 was faulty and has been replaced.").arg(name)
+                                                    : tr("%1 was not faulty; it has been replaced anyway.").arg(name));
+            f.replaced = true;
+        } else {
+            return;
+        }
+        if (r != AccessFaultsDialog::Unlocked) {
+            Component after = *c;
+            faults::write(after, f);
+            Selection b, a;
+            b.components << *c;
+            a.components << after;
+            m_undo->push(new ModifyItemsCommand(m_circuit, b, a,
+                                                r == AccessFaultsDialog::Replace ? tr("Replace %1").arg(name) : tr("Hint")));
+            return;
+        }
+    }
+    DeviceFaultsDialog dlg(*c, *s, this);
+    if (dlg.exec() != QDialog::Accepted || dlg.result() == f)
+        return;
+    Component after = *c;
+    faults::write(after, dlg.result());
+    Selection b, a;
+    b.components << *c;
+    a.components << after;
+    m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Faults of %1").arg(name)));
+}
+
+void MainWindow::circuitFaults()
+{
+    const FaultSettings& settings = m_circuit->faultSettings();
+    if (settings.locked() && !m_faultsUnlocked) {
+        bool ok = false;
+        const QString pw = QInputDialog::getText(this, tr("Circuit fault data"), tr("Fault lock password:"),
+                                                 QLineEdit::Password, {}, &ok);
+        if (!ok)
+            return;
+        if (faults::hashPassword(pw) != settings.password) {
+            QMessageBox::warning(this, tr("Circuit fault data"), tr("Wrong password."));
+            return;
+        }
+        m_faultsUnlocked = true;
+        applyRestrictions();
+    }
+    CircuitFaultsDialog::Counts counts;
+    for (const Component& c : m_circuit->components()) {
+        const faults::DeviceFaults f = faults::read(c);
+        counts.faulty += f.hasData();
+        counts.replaced += f.replaced;
+        counts.hinted += f.hinted;
+    }
+    CircuitFaultsDialog dlg(settings, counts, this);
+    const int r = dlg.exec();
+    if (r >= CircuitFaultsDialog::SelectFaulty) {
+        m_scene->clearSelection();
+        for (QGraphicsItem* it : m_scene->items()) {
+            auto* item = qgraphicsitem_cast<ComponentItem*>(it);
+            if (!item) continue;
+            const faults::DeviceFaults f = faults::read(item->component());
+            item->setSelected(r == CircuitFaultsDialog::SelectFaulty ? f.hasData()
+                              : r == CircuitFaultsDialog::SelectReplaced ? f.replaced : f.hinted);
+        }
+        return;
+    }
+    if (r != QDialog::Accepted)
+        return;
+    m_undo->beginMacro(tr("Circuit fault data"));
+    if (dlg.clearMarks()) {
+        Selection b, a;
+        for (const Component& c : m_circuit->components()) {
+            faults::DeviceFaults f = faults::read(c);
+            if (!f.replaced && !f.hinted) continue;
+            f.replaced = f.hinted = false;
+            Component after = c;
+            faults::write(after, f);
+            b.components << c;
+            a.components << after;
+        }
+        if (!a.isEmpty())
+            m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Clear hints/replacements")));
+    }
+    if (dlg.result() != settings) {
+        // whoever set a new password knows it
+        m_faultsUnlocked = true;
+        m_undo->push(new SetFaultSettingsCommand(m_circuit, dlg.result(), tr("Circuit fault data")));
+    }
+    m_undo->endMacro();
 }
 
 void MainWindow::updateTitle()
@@ -716,6 +868,8 @@ void MainWindow::newCircuit()
     m_undo->clear();
     m_path.clear();
     m_macroName.clear();
+    m_faultsUnlocked = false;
+    applyRestrictions();
     updateTitle();
 }
 
@@ -794,6 +948,8 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         updateTitle();
         addRecent(path);
     }
+    m_faultsUnlocked = false;
+    applyRestrictions();
     m_view->zoomToFit();
     return true;
 }
@@ -932,6 +1088,8 @@ void MainWindow::showContextMenu(QGraphicsItem* item, QPoint screenPos)
                            : tr("Device &Properties...");
         QAction* props = menu.addAction(edit, this, [this, item] { m_scene->editItem(item); });
         menu.setDefaultAction(memory ? menu.actions().first() : props);
+        if (!comp->symbol()->netLabel)
+            menu.addAction(tr("Device &Faults..."), this, [this, id = comp->id()] { deviceFaults(id); });
         if (selectedMacro())
             menu.addAction(m_expandMacro);
         menu.addAction(m_topicHelp);
@@ -1305,7 +1463,8 @@ void MainWindow::runAnalog()
         return;
     }
     m_scene->refreshNetlist();
-    m_runningDeck = spice::build(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist());
+    const SchematicScene::AnalogInput input = m_scene->analogInput();
+    m_runningDeck = spice::build(*input.circuit, LibraryRegistry::instance(), input.netlist);
     if (!m_runningDeck.ok) {
         QMessageBox::warning(this, tr("Analog simulation"), m_runningDeck.warnings.join(u'\n'));
         return;

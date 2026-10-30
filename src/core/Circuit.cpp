@@ -120,6 +120,7 @@ void Circuit::clear()
     m_titleBlock = {};
     m_analysis = {};
     m_probes.clear();
+    m_faults = {};
     emit cleared();
     emit modified();
 }
@@ -139,6 +140,15 @@ void Circuit::setAnalysis(const AnalysisSettings& a)
         return;
     m_analysis = a;
     emit analysisChanged();
+    emit modified();
+}
+
+void Circuit::setFaultSettings(const FaultSettings& f)
+{
+    if (f == m_faults)
+        return;
+    m_faults = f;
+    emit faultSettingsChanged();
     emit modified();
 }
 

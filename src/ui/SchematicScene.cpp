@@ -1,5 +1,6 @@
 #include "ui/SchematicScene.h"
 
+#include "core/Faults.h"
 #include "core/WireGeometry.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
@@ -204,12 +205,25 @@ void SchematicScene::scheduleNetlist()
     QTimer::singleShot(0, this, &SchematicScene::rebuildNetlist);
 }
 
+SchematicScene::AnalogInput SchematicScene::analogInput() const
+{
+    AnalogInput in{faults::copy(simCircuit()), m_netlist};
+    faults::apply(*in.circuit, in.netlist, m_library, true);
+    return in;
+}
+
 void SchematicScene::rebuildNetlist()
 {
     m_netlistPending = false;
     m_flatWarnings.clear();
     m_flat = macros::flatten(*m_circuit, m_library, &m_flatWarnings);
+    const bool faulted = m_faulted != nullptr;
+    m_faulted.reset();
     m_netlist = NetlistBuilder::build(simCircuit(), m_library);
+    if (faulted && m_sim) {       // keep the running simulation's rewiring
+        m_faulted = faults::copy(simCircuit());
+        faults::apply(*m_faulted, m_netlist, m_library, false);
+    }
     updateSceneRect();
     update();
 }
@@ -227,8 +241,24 @@ void SchematicScene::updateSceneRect()
 
 // ---------------------------------------------------------------- tools
 
+void SchematicScene::setRestrictions(const QStringList& options)
+{
+    m_restrictions = options;
+    if (restricted(QStringLiteral("trace")))
+        m_trace = false;
+    if (restricted(QStringLiteral("nodeNames")))
+        m_showNodeNames = false;
+    if ((m_tool == Tool::Wire || m_tool == Tool::Bus || m_tool == Tool::NetLabel || m_tool == Tool::Delete
+         || m_tool == Tool::Place) && !options.isEmpty())
+        setTool(Tool::Select);
+    update();
+}
+
 void SchematicScene::setTool(Tool tool)
 {
+    if (((tool == Tool::Wire || tool == Tool::Bus || tool == Tool::NetLabel) && restricted(QStringLiteral("wire")))
+        || (tool == Tool::Delete && restricted(QStringLiteral("delete"))))
+        return;
     if (tool != Tool::Place && m_ghost)
         cancelPlace();
     if (!m_wirePoints.isEmpty())
@@ -245,6 +275,8 @@ void SchematicScene::setTool(Tool tool)
 
 void SchematicScene::beginPlace(const QString& symbolId)
 {
+    if (restricted(QStringLiteral("library")))
+        return;
     const SymbolDef* s = m_library.find(symbolId);
     if (!s || simulating())
         return;
@@ -418,6 +450,8 @@ void SchematicScene::cancelWire()
 
 void SchematicScene::deleteAt(QPointF p, bool snipWire)
 {
+    if (restricted(QStringLiteral("delete")))
+        return;
     for (QGraphicsItem* it : items(p)) {
         if (it == m_ghost) continue;
         Selection sel;
@@ -452,6 +486,8 @@ void SchematicScene::deleteAt(QPointF p, bool snipWire)
 
 void SchematicScene::nudgeSelection(QPointF delta)
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     const Selection before = selection();
     if (before.components.isEmpty())
         return;
@@ -467,6 +503,8 @@ void SchematicScene::nudgeSelection(QPointF delta)
 
 void SchematicScene::straightenWires()
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     if (simulating())
         return;
     Selection sel = selection();
@@ -544,6 +582,8 @@ void SchematicScene::setPropDelays(int ticks)
 
 void SchematicScene::duplicateSelection()
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     if (simulating() || selection().isEmpty())
         return;
     copySelection();
@@ -765,6 +805,8 @@ void SchematicScene::mirrorSelection()
 
 void SchematicScene::transformSelection(bool rotate)
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     if (simulating())
         return;
     const Selection before = selection();
@@ -799,6 +841,8 @@ void SchematicScene::transformSelection(bool rotate)
 
 void SchematicScene::deleteSelection()
 {
+    if (restricted(QStringLiteral("delete")))
+        return;
     if (simulating())
         return;
     const Selection sel = selection();
@@ -815,6 +859,8 @@ void SchematicScene::selectAll()
 
 void SchematicScene::copySelection()
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     const Selection sel = selection();
     if (sel.isEmpty())
         return;
@@ -829,6 +875,8 @@ void SchematicScene::copySelection()
 
 void SchematicScene::cutSelection()
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     copySelection();
     const Selection sel = selection();
     if (!sel.isEmpty())
@@ -837,6 +885,8 @@ void SchematicScene::cutSelection()
 
 void SchematicScene::paste()
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     if (simulating())
         return;
     const QMimeData* mime = QApplication::clipboard()->mimeData();
@@ -849,6 +899,8 @@ void SchematicScene::paste()
 
 void SchematicScene::insertCircuit(const Circuit& source, QPointF offset, const QString& undoText)
 {
+    if (restricted(QStringLiteral("edit")))
+        return;
     if (simulating())
         return;
     Selection sel = fromCircuit(source);
@@ -918,6 +970,8 @@ void SchematicScene::editItem(QGraphicsItem* item)
         return;
     }
     if (auto* c = qgraphicsitem_cast<ComponentItem*>(item)) {
+        if (restricted(QStringLiteral("properties")))
+            return;
         const Component* current = m_circuit->component(c->id());
         if (!current)
             return;
@@ -1052,6 +1106,11 @@ void SchematicScene::run()
             setTool(Tool::Select);      // the probe tool reads nodes while simulating
         clearSelection();
         rebuildNetlist();
+        m_faulted.reset();
+        if (faults::anyActive(simCircuit())) {
+            m_faulted = faults::copy(simCircuit());
+            faults::apply(*m_faulted, m_netlist, m_library, false);
+        }
         m_sim = std::make_unique<sim::EventSimulator>();
         m_sim->build(simCircuit(), m_library, m_netlist);
         m_sim->reset();
@@ -1119,6 +1178,8 @@ void SchematicScene::stopSimulation()
     m_timer.stop();
     persistSimProps();
     m_sim.reset();
+    if (m_faulted)
+        rebuildNetlist();       // without the faults' rewiring
     update();
     emit simulationChanged();
 }
@@ -1344,7 +1405,8 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
     }
     // pressing on a pin end starts a wire, as in CircuitMaker
     QPointF pin;
-    if (!(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) && pinAt(e->scenePos(), &pin)) {
+    if (!(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) && !restricted(QStringLiteral("wire"))
+        && pinAt(e->scenePos(), &pin)) {
         clearSelection();
         m_wireFromSelect = true;
         m_wirePoints = {pin};
@@ -1368,10 +1430,11 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
     }
     if (previousHighlight >= 0)
         update();
-    if (beginWireEdit(e))
+    if (!restricted(QStringLiteral("wire")) && !restricted(QStringLiteral("edit")) && beginWireEdit(e))
         return;
     QGraphicsScene::mousePressEvent(e);
-    beginDrag();
+    if (!restricted(QStringLiteral("edit")))
+        beginDrag();
 }
 
 // A press on a lone wire edits its shape instead of moving it: near a free
@@ -1481,6 +1544,8 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
             w->setPreview(editedWire(m_cursor));
         return;
     }
+    if (restricted(QStringLiteral("edit")) && (e->buttons() & Qt::LeftButton))
+        return;     // the circuit is locked against moving
     QGraphicsScene::mouseMoveEvent(e);
     if (m_drag.active && (e->buttons() & Qt::LeftButton))
         updateDragPreview();

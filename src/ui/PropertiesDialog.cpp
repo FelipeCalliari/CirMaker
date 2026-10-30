@@ -1,5 +1,6 @@
 #include "ui/PropertiesDialog.h"
 
+#include "core/Faults.h"
 #include "library/SymbolDef.h"
 
 #include <QComboBox>
@@ -67,7 +68,7 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
             form->addRow(propertyCaption(it.key()) + u':', combo);
             continue;
         }
-        if (it.key() == u"travel")
+        if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM

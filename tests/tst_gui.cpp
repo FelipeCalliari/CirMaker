@@ -46,6 +46,8 @@ private slots:
     void breakpointStopsSimulation();
     void mergePlacesBelow();
     void probeToolSurvivesRun();
+    void faultLockRestrictsScene();
+    void simulationAppliesFaults();
     void screenshot();
 };
 
@@ -459,6 +461,41 @@ void TestGui::probeToolSurvivesRun()
     scene.run();
     QCOMPARE(scene.tool(), SchematicScene::Tool::Probe);
     scene.stopSimulation();
+}
+
+void TestGui::faultLockRestrictsScene()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    place(circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    scene.selectAll();
+    scene.setRestrictions({QStringLiteral("delete"), QStringLiteral("wire"), QStringLiteral("edit")});
+    scene.deleteSelection();
+    scene.duplicateSelection();
+    QCOMPARE(circuit.components().size(), 1);
+    scene.setTool(SchematicScene::Tool::Wire);
+    QCOMPARE(scene.tool(), SchematicScene::Tool::Select);
+    scene.setRestrictions({});
+    scene.deleteSelection();
+    QCOMPARE(circuit.components().size(), 0);
+}
+
+void TestGui::simulationAppliesFaults()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    const ItemId g = place(circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    Component c = *circuit.component(g);
+    c.props = {{QStringLiteral("fault.on"), true}, {QStringLiteral("fault.low"), QStringLiteral("Y")}};
+    circuit.updateComponent(c);
+    scene.run();
+    scene.pause();
+    QCOMPARE(scene.simCircuit().components().size(), 3);      // the gate, LOW on its pin and on its node
+    scene.stopSimulation();
+    QCOMPARE(scene.simCircuit().components().size(), 1);
+    QCOMPARE(scene.netlist().nets.size(), NetlistBuilder::build(circuit, library()).nets.size());
 }
 
 QTEST_MAIN(TestGui)
