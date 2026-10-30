@@ -122,7 +122,7 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
         state = sc->simState(m_c.id);
     } else if (m_symbol->display == u"logicswitch") {
         state = m_c.props.value(QStringLiteral("state"), m_symbol->defaultProps.value(QStringLiteral("state"))).toInt();
-    } else if (m_symbol->display == u"spst") {
+    } else if (m_symbol->display == u"spst" || m_symbol->display == u"window") {
         state = m_c.props.value(QStringLiteral("closed"), m_symbol->defaultProps.value(QStringLiteral("closed"))).toInt();
     } else if (m_symbol->display == u"hexkey" || m_symbol->display == u"asciikey") {
         state = m_c.props.value(QStringLiteral("value"), m_symbol->defaultProps.value(QStringLiteral("value"))).toInt();
@@ -380,6 +380,30 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         if (live && state > 0) {
             p->setBrush(QColor(0xff, 0xe0, 0x40));
             fillFirst(Primitive::Type::Circle, QColor(0xff, 0xe0, 0x40));
+        }
+    } else if (d == u"window") {
+        // a sash window: the lower sash slides up over the upper one when open
+        const bool open = state == 1;
+        auto sash = [&](double top) {
+            const QRectF r(-80, top, 140, 95);
+            p->setPen(QPen(ink, 2.5));
+            p->setBrush(Qt::NoBrush);
+            p->drawRect(r);
+            p->setPen(QPen(ink, 1.5));
+            p->drawRect(r.adjusted(8, 8, -8, -8));
+            p->drawLine(QPointF(r.center().x(), r.top() + 8), QPointF(r.center().x(), r.bottom() - 8));
+            p->drawLine(QPointF(r.left() + 8, r.center().y()), QPointF(r.right() - 8, r.center().y()));
+        };
+        sash(-100);
+        if (!open) {
+            p->setPen(QPen(ink, 1.5));
+            p->drawLine(QPointF(-64, -70), QPointF(-50, -84));         // the glass shines while shut
+            p->drawLine(QPointF(-58, -66), QPointF(-44, -80));
+        }
+        sash(open ? -90 : 0);
+        if (live && open) {
+            p->setPen(QPen(theme().high, 2));
+            p->drawRect(QRectF(-80, 5, 140, 90));
         }
     } else if (d == u"asciikey") {
         const QString text = state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");

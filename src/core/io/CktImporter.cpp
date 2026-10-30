@@ -819,15 +819,27 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     struct Member { int ourNet; QPointF at; bool pin; };
     QMap<int, QVector<Member>> byCmNet;          // ordered: imports come out the same every time
     QHash<int, QString> netName;                // CM net -> terminal label on it
+    QSet<int> throughContacts;                  // nets CircuitMaker joined across a closed contact
     for (int i = 0; i < placed.size(); ++i) {
         if (!placed[i].id) continue;
         const Device& d = file.devices[i];
         const SymbolDef& s = *placed[i].symbol;
         const Component* c = circuit.component(placed[i].id);
+        // CircuitMaker saves the two sides of a closed contact (switch,
+        // relay, window) as one net; only the wires tell those pins apart
+        const QString kind = s.model.value(u"kind").toString();
+        QHash<int, int> netUse;
+        if (kind == u"link" || kind == u"relay")
+            for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin)
+                if (ourPin(s, d, cmPin) >= 0 && d.nets[cmPin] > 0) netUse[d.nets[cmPin]]++;
         for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin) {
             const int net = d.nets[cmPin];
             const int pin = ourPin(s, d, cmPin);
             if (net <= 0 || pin < 0) continue;
+            if (netUse.value(net) > 1) {
+                throughContacts << net;
+                continue;
+            }
             byCmNet[net] << Member{nl.netOf(c->id, pin), library.pinScenePos(*c, pin), true};
             if (s.netLabel && !c->label.isEmpty())
                 netName.insert(net, c->label);
@@ -891,6 +903,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
 
     int drawn = 0, labelled = 0;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it) {
+        if (throughContacts.contains(it.key())) continue;      // the wires decide
         QMap<int, QVector<QPointF>> groups;    // our net -> member points
         for (const Spot& sp : std::as_const(spots)) {
             // a spot belongs to this CM net if its net holds one of the members

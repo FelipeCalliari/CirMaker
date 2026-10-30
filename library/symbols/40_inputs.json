@@ -900,6 +900,149 @@
    ]
   },
   {
+   "id": "window",
+   "name": "Window",
+   "prefix": "W",
+   "display": "window",
+   "aliases": [
+    "Window"
+   ],
+   "cmPins": [
+    "C",
+    "NO",
+    "NC",
+    "OC"
+   ],
+   "model": {
+    "kind": "link",
+    "type": "spdt"
+   },
+   "props": {
+    "closed": 0
+   },
+   "description": "Burglar-alarm window: click during simulation to open or shut it; shut, C connects to NC, open, to NO (OC is not connected)",
+   "graphics": [
+    {
+     "rect": [
+      -110,
+      -130,
+      220,
+      250
+     ]
+    },
+    {
+     "rect": [
+      -95,
+      -115,
+      170,
+      220
+     ]
+    },
+    {
+     "line": [
+      110,
+      -100,
+      130,
+      -100
+     ]
+    },
+    {
+     "line": [
+      110,
+      30,
+      130,
+      30
+     ]
+    },
+    {
+     "line": [
+      110,
+      60,
+      130,
+      60
+     ]
+    },
+    {
+     "line": [
+      110,
+      90,
+      130,
+      90
+     ]
+    },
+    {
+     "text": "OC",
+     "at": [
+      104,
+      -100
+     ],
+     "size": 8,
+     "align": "right"
+    },
+    {
+     "text": "NO",
+     "at": [
+      104,
+      30
+     ],
+     "size": 8,
+     "align": "right"
+    },
+    {
+     "text": "C",
+     "at": [
+      104,
+      60
+     ],
+     "size": 8,
+     "align": "right"
+    },
+    {
+     "text": "NC",
+     "at": [
+      104,
+      90
+     ],
+     "size": 8,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      130,
+      60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NO",
+     "at": [
+      130,
+      30
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NC",
+     "at": [
+      130,
+      90
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "OC",
+     "at": [
+      130,
+      -100
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
    "id": "spst",
    "name": "SPST Switch",
    "prefix": "S",

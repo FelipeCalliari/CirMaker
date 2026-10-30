@@ -25,6 +25,7 @@ private slots:
     void importsPackageParts();
     void exportRoundTrip();
     void userLibMacros();
+    void closedContacts();
 
 private:
     static QStringList circuitFiles();
@@ -348,6 +349,29 @@ void TestCktImport::userLibMacros()
     int ports = 0;
     for (const Component& comp : inner.components()) ports += comp.symbolId == u"port_in" || comp.symbolId == u"port_out";
     QCOMPARE(ports, 11);
+}
+
+// CircuitMaker saves both sides of a shut window's contact as one net; the
+// import must not wire them together.
+void TestCktImport::closedContacts()
+{
+    const QString file = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Alarm.ckt");
+    if (!QFileInfo::exists(file))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    CktImportReport report;
+    QVERIFY(CktImporter::import(file, c, library(), &report, nullptr));
+    QVERIFY(report.unmapped.isEmpty());
+    const Netlist nl = NetlistBuilder::build(c, library());
+    const SymbolDef* w = library().find(QStringLiteral("window"));
+    QVERIFY(w);
+    int windows = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId != u"window") continue;
+        ++windows;
+        QVERIFY(nl.netOf(comp.id, w->pinIndex(QStringLiteral("C"))) != nl.netOf(comp.id, w->pinIndex(QStringLiteral("NC"))));
+    }
+    QCOMPARE(windows, 6);
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

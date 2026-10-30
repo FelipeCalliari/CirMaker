@@ -1482,7 +1482,7 @@ void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
     const QString& d = hit->symbol()->display;
     // a click on a hex or ASCII key gives it the keyboard
     setKeyFocus(d == u"hexkey" || d == u"asciikey" ? hit->id() : 0);
-    if (d == u"logicswitch" || d == u"spst") {
+    if (d == u"logicswitch" || d == u"spst" || d == u"window") {
         m_sim->interact(hit->id(), QStringLiteral("toggle"));
     } else if (d == u"button") {
         m_sim->interact(hit->id(), QStringLiteral("press"));
