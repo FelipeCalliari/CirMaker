@@ -4,6 +4,7 @@
 #include <QPoint>
 #include <QRect>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 namespace cm {
@@ -14,6 +15,7 @@ struct CmLibDevice {
     int type = 0;
     int pinCount = 0;           // the schematic pins, CircuitMaker pin 1..pinCount
     QVector<QPoint> pins;       // pin positions relative to the origin, index 0 = pin 1
+    QStringList pinNames;       // as drawn, often empty
     QVector<int> packageMap;    // 0, the pins of part A, then every part's pins (gates), ...
     int parts = 0;              // gates in one package (0 or 1: not a multi-part package)
     int code = 0;               // the letter stored in each instance ('A', 'R', 'V', ...)
@@ -38,6 +40,7 @@ public:
     // The device whose default value is this part number ("7400" -> "2-In NAND~").
     const CmLibDevice* findByValue(const QString& value) const;
     int size() const { return int(m_devices.size()); }
+    const QVector<CmLibDevice>& devices() const { return m_devices; }
 
     // Device.lib of a CircuitMaker 2000 installation: the configured folder,
     // else the usual Wine and Windows install locations; empty if none.

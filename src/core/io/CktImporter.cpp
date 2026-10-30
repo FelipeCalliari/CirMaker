@@ -21,11 +21,18 @@
 #include "core/io/CktImporter.h"
 
 #include "core/NetlistBuilder.h"
+#include "core/io/CktFile.h"
+#include "core/io/CmUserLib.h"
 #include "core/WireGeometry.h"
+#include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
+#include "library/Macros.h"
 
 #include <QFile>
 #include <QHash>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QSettings>
 #include <QLineF>
 #include <QMap>
 #include <QRegularExpression>
@@ -38,6 +45,8 @@
 namespace cm::CktImporter {
 
 namespace {
+
+using namespace cm::ckt;
 
 // CircuitMaker's 3-unit grid maps onto our 10-unit grid.
 constexpr double kScale = 10.0 / 3.0;
@@ -91,29 +100,6 @@ private:
     int m_p;
 };
 
-struct Device {
-    QString name;
-    int type = 0, x = 0, y = 0, angle = 0, flags = 0;
-    std::optional<QRectF> valueRect, designatorRect;
-    QVector<int> nets;
-    QString value, designator, prefix;
-    QString kind;               // "type:digital", "alias:XPLLX {Fc=100k Fr=50k}"
-    QString tag;                // third label: the relay a coil or contact belongs to ("K1")
-    QVector<int> data;
-    QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
-};
-
-struct CktWire {
-    QVector<int> h;
-    QVector<QPointF> points;
-    // a bus line is attached to no device, carries its name in h[0] (some
-    // files repeat it in h[1]) and has flag 0x20; names may be plain numbers
-    bool isBus() const
-    {
-        return h[7] == 0 && h[8] == 0 && ((h[5] & 0x20) || (h[0] < 0 && (h[1] == 0 || h[1] == h[0])));
-    }
-};
-
 // Bus and bus-entry names are stored as negative numbers: the name read as
 // base-64 digits (0-9, A-Z, a-z) minus 64^length. -31 = "X", -2431 = "Q1",
 // -54 = "A".
@@ -138,19 +124,6 @@ QString decodeName(int value)
     }
     return out;
 }
-
-struct CktText {
-    QRectF rect;
-    QString text;
-    int fontHeight = 13;
-};
-
-struct CktFile {
-    double version = 0;
-    QVector<Device> devices;
-    QVector<CktWire> wires;
-    QVector<CktText> texts;
-};
 
 Device readDevice(Reader& r, double version)
 {
@@ -371,6 +344,88 @@ bool import(const QString& path, Circuit& circuit, const LibraryRegistry& librar
     return importData(f.readAll(), circuit, library, report, error);
 }
 
+namespace {
+
+bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report, int depth);
+
+// The macros of CircuitMaker's User.lib, read once.
+const CmUserLib& userLib()
+{
+    static const CmUserLib lib = [] {
+        CmUserLib l;
+        const QString path = CmUserLib::locate(QSettings().value(QStringLiteral("cm/folder")).toString());
+        if (!path.isEmpty()) l.load(path);
+        return l;
+    }();
+    return lib;
+}
+
+// A macro of User.lib as one of ours: its circuit, with an Input or Output
+// port on the net each pin reaches (left and right of the circuit, joined by
+// the importer like any connection the redrawn symbols lost), and the
+// CircuitMaker pin order. Nested macros are defined on the way.
+bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
+{
+    CktFile inner = m.body;
+    // wire ends on device pins whose nets disagree: the nets decide
+    for (CktWire& w : inner.wires) {
+        const int a = w.h[7] - 1, b = w.h[8] - 1;
+        if (a < 0 || b < 0 || a >= inner.devices.size() || b >= inner.devices.size()) continue;
+        if (inner.devices[a].nets.value(w.h[0], -1) != inner.devices[b].nets.value(w.h[1], -2))
+            w.h[0] = w.h[1] = w.h[7] = w.h[8] = 0;
+    }
+    int left = 0, right = 0, top = 0;
+    for (int i = 0; i < inner.devices.size(); ++i) {
+        const Device& d = inner.devices[i];
+        if (i == 0 || d.x < left) left = d.x;
+        if (i == 0 || d.x > right) right = d.x;
+        if (i == 0 || d.y < top) top = d.y;
+    }
+    int rows[2] = {0, 0};
+    for (int k = 0; k < m.pins.size(); ++k) {
+        const bool out = m.outputs.value(k);
+        Device port;
+        port.name = out ? QStringLiteral("Output") : QStringLiteral("Input");
+        port.nets.fill(0, 10);
+        port.nets[1] = m.pinNets.value(k);
+        for (QChar c : m.pins[k]) port.nets << (c.unicode() < 128 ? c.unicode() : '_');
+        port.nets << 0;
+        port.x = out ? right + 45 : left - 45;
+        port.y = top + 12 * rows[out]++;
+        inner.devices << port;
+    }
+    Circuit c;
+    CktImportReport rep;
+    if (!importFile(inner, c, library, &rep, depth + 1)) return false;
+    QString error;
+    QJsonObject sym = macros::symbolJson(m.name.endsWith(u'~') ? m.name.chopped(1) : m.name,
+                                         QJsonDocument::fromJson(NativeFormat::serialize(c)).object(), &error);
+    if (sym.isEmpty()) return false;
+    sym.insert(QStringLiteral("cmPins"), QJsonArray::fromStringList(m.pins));
+    // pins where CircuitMaker's symbol has them, so its wiring meets them:
+    // rows on a 10-unit pitch with gaps between
+    QJsonObject shape = sym.value(u"shape").toObject();
+    for (const bool right : {false, true}) {
+        QMap<int, QString> rows;
+        for (int k = 0; k < m.pins.size(); ++k)
+            if (m.outputs.value(k) == right) rows.insert(int(std::lround(m.at.value(k).y() * kScale / 10)) * 10, m.pins[k]);
+        QJsonArray column;
+        if (!rows.isEmpty())
+            for (int y = rows.firstKey(); y <= rows.lastKey(); y += 10) column.append(rows.value(y));
+        shape.insert(right ? QStringLiteral("right") : QStringLiteral("left"), column);
+        shape.insert(right ? QStringLiteral("rightStart") : QStringLiteral("leftStart"), rows.isEmpty() ? 0 : rows.firstKey());
+    }
+    shape.insert(QStringLiteral("pitch"), 10);
+    shape.insert(QStringLiteral("lead"), 30);
+    shape.insert(QStringLiteral("width"), 160);       // pin ends 32 CM units out, past the drawn pins
+    shape.insert(QStringLiteral("titleY"), 0);
+    sym.insert(QStringLiteral("shape"), shape);
+    sym.insert(QStringLiteral("description"), QStringLiteral("CircuitMaker macro %1 (from its User.lib)").arg(m.name));
+    return LibraryRegistry::instance().addSymbol(sym, &error);
+}
+
+} // namespace
+
 bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report,
                 QString* error)
 {
@@ -381,6 +436,13 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         if (error) *error = QString::fromUtf8(e.what());
         return false;
     }
+    return importFile(file, circuit, library, report, 0);
+}
+
+namespace {
+
+bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report, int depth)
+{
     CktImportReport local;
     CktImportReport& rep = report ? *report : local;
     rep = {};
@@ -389,6 +451,15 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
     circuit.clear();
     const SymbolDef* unknown = library.find(QStringLiteral("unknown"));
     const SymbolDef* netLabel = library.find(QStringLiteral("netlabel"));
+
+    // macros of CircuitMaker's own User.lib become ours
+    if (depth < 8)
+        for (const Device& d : file.devices) {
+            QString cmName = d.name;
+            if (cmName.endsWith(u'~')) cmName.chop(1);
+            if (library.findByAlias(cmName)) continue;
+            if (const CmMacro* m = userLib().find(cmName)) defineMacro(*m, library, depth);
+        }
 
     // ---- components: symbol, orientation, properties
     struct Placed { ItemId id = 0; const SymbolDef* symbol = nullptr; Component comp; };
@@ -420,6 +491,9 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         const bool valid = angle == 0 || angle == 90 || angle == 180 || angle == 270;
         c.mirrored = valid && (d.angle & 0x200);
         c.rotation = valid ? rotationFromAngle(angle) : 0;
+        // CircuitMaker mirrors after turning: a mirrored quarter turn is
+        // our mirror with the opposite turn
+        if (c.mirrored && (angle == 90 || angle == 270)) c.rotation = (c.rotation + 2) % 4;
         c.pos = scaled(QPointF(d.x, d.y));
         if (!s) {
             rep.unmapped[cmName]++;
@@ -885,5 +959,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         rep.warnings << QStringLiteral("%1 places where redrawn symbols touch wires of another net; check them").arg(shorts);
     return true;
 }
+
+} // namespace
 
 } // namespace cm::CktImporter

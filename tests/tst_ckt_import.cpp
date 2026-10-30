@@ -3,6 +3,8 @@
 #include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
 #include "core/io/CmDeviceLib.h"
+#include "core/io/CmUserLib.h"
+#include "library/Macros.h"
 
 #include <QDirIterator>
 
@@ -22,6 +24,7 @@ private slots:
     void challengeCounterStops();
     void importsPackageParts();
     void exportRoundTrip();
+    void userLibMacros();
 
 private:
     static QStringList circuitFiles();
@@ -83,6 +86,8 @@ void TestCktImport::importsAllCircuits()
         for (const Component& comp : c.components())
             labels += comp.symbolId == u"netlabel";
         shorts += report.shorts;
+        if (report.shorts && qEnvironmentVariableIsSet("CM_CKT_SHORTS"))
+            qInfo("%s: %d shorts (%s)", qPrintable(QFileInfo(path).fileName()), report.shorts, qPrintable(report.warnings.join(u"; ")));
         // every imported model must build and run
         Bench bench(c);
         QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(path + u": " + bench.sim.warnings().join(u"; ")));
@@ -309,6 +314,40 @@ void TestCktImport::exportRoundTrip()
         }
     }
     qInfo("%d files written, %d with the same connections; differing: %s", files, same, qPrintable(different.join(u", ")));
+}
+
+// Macros of CircuitMaker's own User.lib: Delay's circuit and pins, and a
+// circuit using it imports with the macro as one of ours.
+void TestCktImport::userLibMacros()
+{
+    const QString path = CmUserLib::locate();
+    if (path.isEmpty())
+        QSKIP("CircuitMaker's User.lib not installed");
+    CmUserLib lib;
+    QVERIFY(lib.load(path));
+    const CmMacro* delay = lib.find(QStringLiteral("Delay"));
+    QVERIFY(delay);
+    QCOMPARE(delay->pins.size(), 11);
+    QCOMPARE(delay->pins.first(), QStringLiteral("B4"));
+    QVERIFY(delay->pins.contains(QStringLiteral("A1_2")));          // a repeated name made unique
+    QCOMPARE(delay->body.devices.size(), 12);
+    QCOMPARE(delay->body.wires.size(), 40);
+    QVERIFY(lib.find(QStringLiteral("Timer~")) && lib.find(QStringLiteral("Lock")));
+
+    const QString file = QFileInfo(path).absolutePath() + QStringLiteral("/Examples/Circuits/Delay.ckt");
+    if (!QFileInfo::exists(file)) return;
+    Circuit c;
+    CktImportReport report;
+    QVERIFY(CktImporter::import(file, c, library(), &report, nullptr));
+    QVERIFY2(!report.unmapped.contains(QStringLiteral("Delay")), "Delay not mapped");
+    const SymbolDef* s = library().find(macros::idFor(QStringLiteral("Delay")));
+    QVERIFY(s && macros::isMacro(*s));
+    QCOMPARE(s->cmPins.size(), 11);
+    Circuit inner;
+    QVERIFY(macros::innerCircuit(*s, inner));
+    int ports = 0;
+    for (const Component& comp : inner.components()) ports += comp.symbolId == u"port_in" || comp.symbolId == u"port_out";
+    QCOMPARE(ports, 11);
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

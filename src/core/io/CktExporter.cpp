@@ -124,7 +124,9 @@ QVector<int> pinMapping(const Device& d)
 int cmAngle(const Component& c)
 {
     static const int angles[4] = {0, 270, 180, 90};     // CircuitMaker turns counter-clockwise
-    return angles[((c.rotation % 4) + 4) % 4] | (c.mirrored ? 0x200 : 0);
+    // it mirrors after turning: a mirrored quarter turn is the opposite one
+    const int r = ((c.rotation % 4) + 4) % 4;
+    return angles[c.mirrored && r % 2 ? (r + 2) % 4 : r] | (c.mirrored ? 0x200 : 0);
 }
 
 QString hexBytes(const QVector<int>& bytes)

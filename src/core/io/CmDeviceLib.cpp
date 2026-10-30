@@ -53,6 +53,7 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     if (name.isEmpty()) return false;
     qsizetype p = L + kHeader;
     QVector<QPoint> pins;
+    QStringList names;
     for (int k = 0; k < pinTotal; ++k) {
         if (!b.has(p, 0x18)) return false;
         const QPoint at(b.i32(p), b.i32(p + 4));
@@ -60,6 +61,7 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
         p += 0x18;
         if (len < 0 || len > 64 || !b.has(p, len)) return false;
         if (k == 0 && len != 0) return false;           // pin 0 is an unnamed placeholder
+        names << QString::fromLatin1(b.mid(p, len));
         p += len;
         pins << at;
     }
@@ -92,6 +94,7 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     out.type = type;
     out.pinCount = std::max(0, pinTotal - 2);
     out.pins = pins.mid(1, out.pinCount);
+    out.pinNames = names.mid(1, out.pinCount);
     out.packageMap = map;
     out.parts = b.i16(L + 0xb6);
     out.code = b.i16(L + 0xa4);
