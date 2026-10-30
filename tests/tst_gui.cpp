@@ -8,6 +8,11 @@
 #include "ui/PropertiesDialog.h"
 #include "ui/DataSequencerDialog.h"
 #include "ui/MemoryEditorDialog.h"
+#include "ui/MacroSymbolDialog.h"
+#include "library/Macros.h"
+#include "core/io/NativeFormat.h"
+#include <QJsonArray>
+#include <QJsonDocument>
 #include "ui/SignalGenDialog.h"
 #include "ui/PreferencesDialog.h"
 #include "ui/Theme.h"
@@ -62,6 +67,7 @@ private slots:
     void propertiesVisibility();
     void stepSize();
     void wireAutoRoutes();
+    void macroSymbolLayout();
     void screenshot();
 };
 
@@ -700,6 +706,29 @@ void TestGui::wireAutoRoutes()
     QCOMPARE(nl.netOf(b, g.pinIndex(QStringLiteral("B"))), net);
     for (int i = 0; i < g.pins.size(); ++i)
         QVERIFY2(nl.netOf(mid, i) != net, "touches the device in between");
+}
+
+void TestGui::macroSymbolLayout()
+{
+    // a macro with inputs A, B and output Y
+    Circuit inner;
+    const ItemId g = place(inner, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    for (const auto& [pin, port, in] : {std::tuple{"A", "A", true}, {"B", "B", true}, {"Y", "Y", false}}) {
+        const QString id = in ? QStringLiteral("port_in") : QStringLiteral("port_out");
+        place(inner, id, pinPos(inner, g, QString::fromLatin1(pin)) - library().find(id)->pins[0].pos, {},
+              QString::fromLatin1(port));
+    }
+    const QString id = macros::registerMacro(QStringLiteral("Sym Test"),
+                                             QJsonDocument::fromJson(NativeFormat::serialize(inner)).object());
+    QVERIFY(!id.isEmpty());
+    MacroSymbolDialog dlg(*library().find(id));
+    dlg.movePin(QStringLiteral("B"), 3);                  // B to the bottom
+    QVERIFY(macros::setSymbolLayout(id, dlg.layout()));
+    const SymbolDef& s = *library().find(id);
+    const SymbolPin& b = s.pins[s.pinIndex(QStringLiteral("B"))];
+    const SymbolPin& a = s.pins[s.pinIndex(QStringLiteral("A"))];
+    QVERIFY2(b.pos.y() > a.pos.y() && std::abs(b.pos.x()) < std::abs(a.pos.x()), "B is not on the bottom");
+    QCOMPARE(macros::symbolLayout(s).value(u"bottom").toArray().first().toString(), QStringLiteral("B"));
 }
 
 QTEST_MAIN(TestGui)

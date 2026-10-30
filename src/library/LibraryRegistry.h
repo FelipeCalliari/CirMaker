@@ -44,6 +44,8 @@ public:
     // Adds or replaces one symbol from its JSON description (as in the
     // library files). A replaced symbol keeps its address.
     bool addSymbol(const QJsonObject& o, QString* error);
+    // The symbol a JSON description makes, without registering it.
+    static bool parseSymbol(const QJsonObject& o, SymbolDef& s, QString* error);
     void removeSymbol(const QString& id);
 
 private:

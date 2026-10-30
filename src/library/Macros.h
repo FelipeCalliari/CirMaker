@@ -36,6 +36,10 @@ QString define(const QString& name, const Circuit& inner, QString* error = nullp
 // expanding the macro; it travels in the definition. Empty = unlocked.
 QString lockOf(const SymbolDef& s);
 bool setLock(const QString& id, const QString& digest, QString* error = nullptr);
+// Edit Macro Symbol: {"left"|"right"|"top"|"bottom": [port names, "" = gap],
+// "width": n (0 = automatic), "title": "..."}; travels in the definition.
+QJsonObject symbolLayout(const SymbolDef& s);
+bool setSymbolLayout(const QString& id, const QJsonObject& layout, QString* error = nullptr);
 bool innerCircuit(const SymbolDef& s, Circuit& out, QString* error = nullptr);
 
 // User library: macros defined on this machine (app data folder).

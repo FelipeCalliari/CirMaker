@@ -63,18 +63,40 @@ QJsonObject symbolJson(const QString& name, const QJsonObject& circuitJson, QStr
     std::stable_sort(ins.begin(), ins.end(), byY);
     std::stable_sort(outs.begin(), outs.end(), byY);
 
-    QJsonArray left, right;
-    qsizetype longest = 0, longestLeft = 0, longestRight = 0;
-    for (const Port& p : std::as_const(ins)) { left.append(p.name); longestLeft = std::max(longestLeft, p.name.size()); }
-    for (const Port& p : std::as_const(outs)) { right.append(p.name); longestRight = std::max(longestRight, p.name.size()); }
-    longest = longestLeft + longestRight;
-    const double width = std::max(60.0, std::ceil((longest * 7 + 24) / 20.0) * 20);
-    const qsizetype rows = std::max<qsizetype>({ins.size(), outs.size(), 1});
+    // the drawn layout (Edit Macro Symbol): sides, order and gaps of the
+    // pins; ports it does not place keep the default side
+    const QJsonObject layout = circuitJson.value(u"symbol").toObject();
+    QSet<QString> placed;
+    QJsonArray sides[4];                    // left, right, top, bottom
+    const char* const keys[4] = {"left", "right", "top", "bottom"};
+    auto isPort = [&](const QString& n) {
+        return std::any_of(ins.cbegin(), ins.cend(), [&](const Port& p) { return p.name == n; })
+            || std::any_of(outs.cbegin(), outs.cend(), [&](const Port& p) { return p.name == n; });
+    };
+    for (int k = 0; k < 4; ++k)
+        for (const QJsonValue& v : layout.value(QLatin1String(keys[k])).toArray()) {
+            const QString n = v.toString();
+            if (n.isEmpty()) sides[k].append(QString());
+            else if (isPort(n) && !placed.contains(n)) { sides[k].append(n); placed.insert(n); }
+        }
+    for (const Port& p : std::as_const(ins)) if (!placed.contains(p.name)) sides[0].append(p.name);
+    for (const Port& p : std::as_const(outs)) if (!placed.contains(p.name)) sides[1].append(p.name);
+    auto longestOf = [](const QJsonArray& a) {
+        qsizetype n = 0;
+        for (const QJsonValue& v : a) n = std::max(n, v.toString().size());
+        return n;
+    };
     const double pitch = 20;
+    const qsizetype across = std::max(sides[2].size(), sides[3].size());
+    const double autoWidth = std::max({60.0, std::ceil(((longestOf(sides[0]) + longestOf(sides[1])) * 7 + 24) / 20.0) * 20,
+                                       (across + 1) * pitch});
+    const double width = layout.value(u"width").toDouble() > 0 ? layout.value(u"width").toDouble() : autoWidth;
+    const qsizetype rows = std::max<qsizetype>({sides[0].size(), sides[1].size(), 1});
     const double height = std::max(rows * pitch, 2 * pitch);
+    const QString title = layout.value(u"title").toString(name.trimmed());
     QJsonObject shape{{u"type"_s, u"box"_s}, {u"width"_s, width}, {u"pitch"_s, pitch}, {u"lead"_s, 20},
-                      {u"left"_s, left}, {u"right"_s, right}, {u"title"_s, name.trimmed()},
-                      {u"titleY"_s, -height / 2 - 8}};
+                      {u"left"_s, sides[0]}, {u"right"_s, sides[1]}, {u"top"_s, sides[2]}, {u"bottom"_s, sides[3]},
+                      {u"title"_s, title}, {u"titleY"_s, sides[2].isEmpty() ? -height / 2 - 8 : 0.0}};
     return {{u"id"_s, idFor(name)}, {u"name"_s, name.trimmed()}, {u"category"_s, u"Macros"_s},
             {u"prefix"_s, u"U"_s}, {u"aliases"_s, QJsonArray{name.trimmed()}},
             {u"description"_s, QStringLiteral("Macro: %1 inputs, %2 outputs").arg(ins.size()).arg(outs.size())},
@@ -120,6 +142,23 @@ bool setLock(const QString& id, const QString& digest, QString* error)
     QJsonObject doc = s->model.value(u"circuit").toObject();
     if (digest.isEmpty()) doc.remove(u"lock");
     else doc.insert(u"lock", digest);
+    if (registerMacro(s->name, doc, error).isEmpty())
+        return false;
+    return !userIds().contains(id) || saveUserLibrary(error);
+}
+
+QJsonObject symbolLayout(const SymbolDef& s) { return s.model.value(u"circuit").toObject().value(u"symbol").toObject(); }
+
+bool setSymbolLayout(const QString& id, const QJsonObject& layout, QString* error)
+{
+    const SymbolDef* s = LibraryRegistry::instance().find(id);
+    if (!s || !isMacro(*s)) {
+        if (error) *error = QStringLiteral("%1 is not a macro").arg(id);
+        return false;
+    }
+    QJsonObject doc = s->model.value(u"circuit").toObject();
+    if (layout.isEmpty()) doc.remove(u"symbol");
+    else doc.insert(u"symbol", layout);
     if (registerMacro(s->name, doc, error).isEmpty())
         return false;
     return !userIds().contains(id) || saveUserLibrary(error);

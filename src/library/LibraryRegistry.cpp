@@ -400,6 +400,21 @@ bool LibraryRegistry::loadFile(const QString& path, QString* error)
 bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
 {
     SymbolDef s;
+    if (!parseSymbol(o, s, error))
+        return false;
+    if (!m_symbols.contains(s.id))
+        m_order << s.id;
+    for (const QString& a : std::as_const(s.aliases))
+        m_aliases.insert(a.toLower(), s.id);
+    if (auto it = m_symbols.find(s.id); it != m_symbols.end())
+        **it = s;
+    else
+        m_symbols.insert(s.id, std::make_shared<SymbolDef>(s));
+    return true;
+}
+
+bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* error)
+{
     s.id = o.value(u"id").toString();
     if (s.id.isEmpty()) {
         if (error) *error = QStringLiteral("symbol without id");
@@ -508,14 +523,6 @@ bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
     }
 
     s.bounds = computeBounds(s);
-    if (!m_symbols.contains(s.id))
-        m_order << s.id;
-    for (const QString& a : std::as_const(s.aliases))
-        m_aliases.insert(a.toLower(), s.id);
-    if (auto it = m_symbols.find(s.id); it != m_symbols.end())
-        **it = s;
-    else
-        m_symbols.insert(s.id, std::make_shared<SymbolDef>(s));
     return true;
 }
 

@@ -45,7 +45,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | 555, relé SPDT, transformador (simples e com derivação central), optoacoplador, SCR, TRIAC | ✅ | modelos SPICE; o relé também chaveia na simulação digital |
 | Válvulas, motores, alto-falantes, reguladores, JFET, cristal, fusível, ponte retificadora, Darlington, buzzer, solenoide | ✅ | modelos SPICE simplificados (motor/solenoide = R+L, alto-falante/buzzer = R, válvulas pela lei de 3/2) |
 | UJT, PUT, fontes controladas (V->I etc.), ADC/DAC, PLL, linhas de transmissão | ❌ | importados como `?` |
-| Macros (subcircuitos com símbolo próprio, Expand Macro) | 🟡 | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`, Macro Lock com senha; símbolo gerado (caixa), sem editor de símbolo |
+| Macros (subcircuitos com símbolo próprio, Expand Macro) | ✅ | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`, Macro Lock com senha; símbolo em caixa com editor de pinos (lados, ordem, espaços, largura, título) |
 
 ## Simulação digital
 

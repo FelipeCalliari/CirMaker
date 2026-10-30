@@ -12,6 +12,7 @@
 #include "library/Macros.h"
 #include "ui/FaultDialogs.h"
 #include "ui/LibraryBrowser.h"
+#include "ui/MacroSymbolDialog.h"
 #include "sim/digital/EventSimulator.h"
 #include "ui/AnalysisDialog.h"
 #include "ui/ComponentItem.h"
@@ -585,6 +586,9 @@ void MainWindow::createActions()
     m_editMacro = new QAction(tr("Edit &Macro..."), this);
     m_editMacro->setStatusTip(tr("Rename the macro being edited; a new name saves a new macro"));
     connect(m_editMacro, &QAction::triggered, this, &MainWindow::editMacro);
+    m_macroSymbol = new QAction(tr("Edit Macro S&ymbol..."), this);
+    m_macroSymbol->setStatusTip(tr("Arrange the pins of the selected macro's symbol"));
+    connect(m_macroSymbol, &QAction::triggered, this, &MainWindow::editMacroSymbol);
     m_lockMacro = new QAction(tr("Macro &Lock..."), this);
     m_lockMacro->setStatusTip(tr("Protects the selected macro with a password: it cannot be expanded without it"));
     connect(m_lockMacro, &QAction::triggered, this, &MainWindow::lockMacro);
@@ -672,7 +676,7 @@ void MainWindow::createMenus()
     simulation->addAction(m_analysisSetup);
 
     QMenu* macrosMenu = menuBar()->addMenu(tr("&Macros"));
-    macrosMenu->addActions({m_newMacro, m_editMacro, m_saveMacro, m_expandMacro, m_lockMacro});
+    macrosMenu->addActions({m_newMacro, m_editMacro, m_saveMacro, m_expandMacro, m_macroSymbol, m_lockMacro});
     macrosMenu->addSeparator();
     macrosMenu->addAction(m_deleteMacro);
 
@@ -735,6 +739,7 @@ void MainWindow::updateActions()
     m_editMacro->setEnabled(!simulating && !m_macroName.isEmpty());
     m_expandMacro->setEnabled(!simulating && selectedMacro());
     m_lockMacro->setEnabled(!simulating && selectedMacro());
+    m_macroSymbol->setEnabled(!simulating && selectedMacro());
     for (QAction* a : m_tools->actions())
         a->setEnabled(!simulating || a == m_toolSelect || a == m_toolProbe);
     m_step->setEnabled(!m_scene->running());
@@ -1217,6 +1222,36 @@ void MainWindow::showContextMenu(QGraphicsItem* item, QPoint screenPos)
         menu.addActions({m_paste, m_selectAll});
     }
     menu.exec(screenPos);
+}
+
+void MainWindow::editMacroSymbol()
+{
+    const SymbolDef* s = selectedMacro();
+    if (!s) {
+        statusBar()->showMessage(tr("Select one macro device"), 4000);
+        return;
+    }
+    if (const QString lock = macros::lockOf(*s); !lock.isEmpty()) {
+        bool ok = false;
+        const QString pw = QInputDialog::getText(this, tr("Edit Macro Symbol"), tr("%1 is locked. Password:").arg(s->name),
+                                                 QLineEdit::Password, {}, &ok);
+        if (!ok) return;
+        if (faults::hashPassword(pw) != lock) {
+            QMessageBox::warning(this, tr("Edit Macro Symbol"), tr("Wrong password."));
+            return;
+        }
+    }
+    MacroSymbolDialog dlg(*s, this);
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+    QString error;
+    if (!macros::setSymbolLayout(s->id, dlg.layout(), &error)) {
+        QMessageBox::warning(this, tr("Edit Macro Symbol"), error);
+        return;
+    }
+    m_scene->refreshSymbols();
+    m_browser->reload();
+    setWindowModified(true);
 }
 
 // CircuitMaker's Macro Lock: set a password, or remove it with the password
