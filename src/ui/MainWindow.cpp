@@ -1665,11 +1665,43 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
         return x;
     };
     const QVector<double> x = xOf(*scale);
-    if (plotted.isEmpty()) {
+    // device probes: current, power and impedance (CircuitMaker's test points)
+    struct DeviceProbe { QString label, mode, current, a, b; };
+    QVector<DeviceProbe> devices;
+    if (!noise) {
+        for (const Component& c : m_circuit->components()) {
+            const QString mode = c.props.value(QStringLiteral("probe")).toString();
+            const QString current = deck.currentOf.value(c.id);
+            if (mode.isEmpty() || current.isEmpty()) continue;
+            const QString label = mode == u"I" ? QStringLiteral("I(%1)").arg(c.designator)
+                                : mode == u"P" ? QStringLiteral("P(%1)").arg(c.designator)
+                                : ac ? QStringLiteral("|Z|(%1) dBΩ").arg(c.designator) : QStringLiteral("Z(%1)").arg(c.designator);
+            devices << DeviceProbe{label, mode, current, deck.nodeOfNet.value(nl.netOf(c.id, 0), QStringLiteral("0")),
+                                   deck.nodeOfNet.value(nl.netOf(c.id, 1), QStringLiteral("0"))};
+        }
+    }
+    if (plotted.isEmpty() && devices.isEmpty()) {
         for (auto it = r.vectors.cbegin(); it != r.vectors.cend() && plotted.size() < 6; ++it)
             if (it.key() != r.scale && !it.key().contains(u'#'))
                 plotted << std::pair{it.key(), it.key()};
     }
+    auto sample = [](const spice::Result& res, const QString& name, int k) -> std::complex<double> {
+        if (name == u"0") return 0;
+        const spice::Vector* v = res.find(name);
+        if (!v) return qQNaN();
+        return v->isComplex() ? v->complex.value(k) : std::complex<double>(v->real.value(k));
+    };
+    auto deviceY = [&](const spice::Result& res, const DeviceProbe& d, int n) {
+        QVector<double> y;
+        for (int k = 0; k < n; ++k) {
+            const std::complex<double> i = sample(res, d.current, k), v = sample(res, d.a, k) - sample(res, d.b, k);
+            if (d.mode == u"I") y << (ac ? 20 * std::log10(std::max(std::abs(i), 1e-30)) : i.real());
+            else if (d.mode == u"P") y << (ac ? std::abs(v) * std::abs(i) : v.real() * i.real());
+            else y << (ac ? 20 * std::log10(std::max(std::abs(v) / std::max(std::abs(i), 1e-30), 1e-30))
+                          : v.real() / i.real());
+        }
+        return y;
+    };
     // y of one node in one run, on that run's own x
     auto yOf = [&](const spice::Result& res, const QString& node, int n) {
         const spice::Vector* v = node == u"0" ? nullptr : res.find(node);
@@ -1736,6 +1768,11 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
         for (const auto& [label, node] : std::as_const(plotted)) {
             const QVector<double> y = yOf(results[i], node, int(rx.size()));
             traces << WaveformView::Trace{sweep ? label + u" @ " + m_runs[i].label : label, i == 0 ? y : resample(rx, y),
+                                          WaveformView::traceColor(int(traces.size()))};
+        }
+        for (const DeviceProbe& d : std::as_const(devices)) {
+            const QVector<double> y = deviceY(results[i], d, int(rx.size()));
+            traces << WaveformView::Trace{sweep ? d.label + u" @ " + m_runs[i].label : d.label, i == 0 ? y : resample(rx, y),
                                           WaveformView::traceColor(int(traces.size()))};
         }
     }

@@ -64,10 +64,10 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Ponto de operação, transitório, AC, varredura DC | ✅ | ngspice |
 | Modo misto (XSPICE) | 🟡 | portas e FFs; CIs MSI não |
 | Parameter Sweep, Fourier, Transfer Function, Noise, Temperature, Monte Carlo | ✅ | varreduras repetem qualquer análise e sobrepõem as curvas; Fourier com THD |
-| Impedance plot | ❌ | |
+| Impedance plot | ✅ | ponta Z na análise AC (\|V/I\| em dBΩ) |
 | Janela de análise: cursores, zoom, escala, matemática de ondas, store/recall | 🟡 | cursor de leitura e exportação CSV/PNG |
 | Gerador multifunção: senoide (atraso, amortecimento), pulso, AM, FM, exponencial, PWL | ✅ | tensão ou corrente; fonte AC com magnitude/fase; arquivo .PWL com escala |
-| Test points de corrente/potência | ❌ | só tensões e multímetro |
+| Test points de corrente/potência | ✅ | Probe sobre a peça: I → P → Z → nenhum |
 | Importar/simular netlist SPICE | ❌ | exporta sim |
 
 ## Arquivos e exportação

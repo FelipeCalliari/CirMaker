@@ -717,10 +717,32 @@ void SchematicScene::toggleProbe(QPointF p)
         }
     }
     QPointF pin;
-    if (pinAt(p, &pin))
+    if (pinAt(p, &pin)) {
         p = pin;
-    else if (!onConductor(p)) {
-        emit statusMessage(tr("Place probes on a wire or a pin"));
+    } else if (!onConductor(p)) {
+        // on an analog part: current, then power, then impedance, then nothing
+        for (QGraphicsItem* it : items(p)) {
+            auto* item = qgraphicsitem_cast<ComponentItem*>(it);
+            if (!item || item == m_ghost || item->symbol()->spice.isEmpty() || item->symbol()->pins.size() < 2) continue;
+            Component c = item->component();
+            const QString modes[] = {QString(), QStringLiteral("I"), QStringLiteral("P"), QStringLiteral("Z")};
+            const QString now = c.props.value(QStringLiteral("probe")).toString();
+            int i = 0;
+            while (i < 4 && modes[i] != now) ++i;
+            const QString next = modes[(i + 1) % 4];
+            if (next.isEmpty()) c.props.remove(QStringLiteral("probe"));
+            else c.props.insert(QStringLiteral("probe"), next);
+            Selection b, a;
+            b.components << item->component();
+            a.components << c;
+            m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Device probe")));
+            emit statusMessage(next == u"I" ? tr("%1: current probe").arg(c.designator)
+                               : next == u"P" ? tr("%1: power probe").arg(c.designator)
+                               : next == u"Z" ? tr("%1: impedance probe (AC analysis)").arg(c.designator)
+                                              : tr("%1: probe removed").arg(c.designator));
+            return;
+        }
+        emit statusMessage(tr("Place probes on a wire, a pin or an analog part"));
         return;
     }
     probes << p;
@@ -1873,6 +1895,22 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         p->setPen(pen);
         p->setBrush(Qt::NoBrush);
         p->drawPolyline(pts.constData(), int(pts.size()));
+    }
+    // device probes: I, P or Z in a tag at the part's top left
+    if (!m_exporting) {
+        QFont f = p->font();
+        f.setPixelSize(11);
+        f.setBold(true);
+        p->setFont(f);
+        for (const ComponentItem* item : std::as_const(m_componentItems)) {
+            const QString mode = item->component().props.value(QStringLiteral("probe")).toString();
+            if (mode.isEmpty()) continue;
+            const QRectF tag(item->sceneBoundingRect().topLeft() - QPointF(6, 6), QSizeF(16, 16));
+            p->setPen(QPen(QColor(0x90, 0x00, 0x90), 1));
+            p->setBrush(QColor(0xf4, 0xe0, 0xff));
+            p->drawRoundedRect(tag, 3, 3);
+            p->drawText(tag, Qt::AlignCenter, mode);
+        }
     }
     // probe tool while simulating: a lamp with the node's level next to the cursor
     if (m_sim && m_tool == Tool::Probe && !m_exporting) {

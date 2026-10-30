@@ -172,6 +172,7 @@ private:
         const QString name = uniqueName(c);
         if (!s.spice.isEmpty()) {
             emitTemplate(c, s, name);
+            noteCurrent(c, s.spice.value(u"line").toString().left(1), name);
             if (s.spice.value(u"line").toString().startsWith(u'V'))
                 m_deck.sourceOfDesignator.insert(c.designator, u'V' + name);
             else if (s.spice.value(u"line").toString().startsWith(u'I'))
@@ -279,6 +280,7 @@ private:
                 m_lines << QStringLiteral("B%1 %2 %3 V=%4").arg(name, mid, minus, expr);
             }
             m_deck.sourceOfDesignator.insert(c.designator, kind + name);
+            noteCurrent(c, kind, name);
             return;
         } else {
             shape = QStringLiteral("SIN(%1 %2 %3 %4 %5)")
@@ -287,6 +289,21 @@ private:
         // as the I Source: current leaves through the - terminal
         m_lines << QStringLiteral("%1%2 %3 %4 DC %5 %6%7").arg(kind, name, plus, minus, formatNumber(off), shape, ac);
         m_deck.sourceOfDesignator.insert(c.designator, kind + name);
+        noteCurrent(c, kind, name);
+    }
+
+    // the vector ngspice keeps for the current of element <letter><name>
+    void noteCurrent(const Component& c, const QString& letter, const QString& name)
+    {
+        const QString e = (letter + name).toLower();
+        const QChar l = letter.isEmpty() ? QChar() : letter.at(0).toUpper();
+        QString v;
+        if (l == u'V') v = e + QStringLiteral("#branch");
+        else if (l == u'I') v = QStringLiteral("@%1[current]").arg(e);
+        else if (l == u'R' || l == u'C' || l == u'L') v = QStringLiteral("@%1[i]").arg(e);
+        else if (l == u'D' || l == u'M') v = QStringLiteral("@%1[id]").arg(e);
+        else if (l == u'Q') v = QStringLiteral("@%1[ic]").arg(e);
+        if (!v.isEmpty()) m_deck.currentOf.insert(c.id, v);
     }
 
     void emitPot(const Component& c, const SymbolDef& s, const QString& name)
@@ -572,6 +589,13 @@ Deck build(const Circuit& circuit, const LibraryRegistry& library, const Netlist
                 l += QStringLiteral(" AC 1");
         deck.text = lines.join(u'\n');
     }
+    // device probes: ngspice only keeps internal device currents when asked
+    QStringList saved;
+    for (const Component& c : circuit.components())
+        if (!c.props.value(QStringLiteral("probe")).toString().isEmpty())
+            if (const QString v = deck.currentOf.value(c.id); v.startsWith(u'@')) saved << v;
+    if (!saved.isEmpty())
+        deck.text += QStringLiteral(".save all %1\n").arg(saved.join(u' '));
     if (!extra.isEmpty())
         deck.text += extra + u'\n';
     deck.text += line + QStringLiteral("\n.end\n");

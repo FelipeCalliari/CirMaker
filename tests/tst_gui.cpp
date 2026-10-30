@@ -55,6 +55,7 @@ private slots:
     void signalGenDialog();
     void groupItemsAndPlacement();
     void themeColours();
+    void deviceProbeCycles();
     void screenshot();
 };
 
@@ -599,6 +600,20 @@ void TestGui::themeColours()
     PreferencesDialog dlg(p);
     QCOMPARE(dlg.result().theme.wire, QColor(Qt::darkGreen));
     Theme::setCurrent(saved);
+}
+
+void TestGui::deviceProbeCycles()
+{
+    ViewFixture f;
+    const ItemId r = place(f.circuit, QStringLiteral("resistor"), {0, 0}, QStringLiteral("R1"));
+    f.scene.setTool(SchematicScene::Tool::Probe);
+    QStringList modes;
+    for (int i = 0; i < 4; ++i) {
+        QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({0, 0}));
+        modes << f.circuit.component(r)->props.value(QStringLiteral("probe")).toString();
+    }
+    QCOMPARE(modes, (QStringList{"I", "P", "Z", ""}));
+    QVERIFY(f.circuit.probes().isEmpty());              // not a net probe
 }
 
 QTEST_MAIN(TestGui)

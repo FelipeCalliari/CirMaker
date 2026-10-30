@@ -68,7 +68,8 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
             form->addRow(propertyCaption(it.key()) + u':', combo);
             continue;
         }
-        if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break")
+        if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break"
+            || it.key() == u"probe")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM

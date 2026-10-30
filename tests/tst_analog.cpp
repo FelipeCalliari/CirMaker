@@ -34,6 +34,7 @@ private slots:
     void optoIsolator();
     void scrLatches();
     void triacBothWays();
+    void deviceProbeCurrents();
     void importedExamplesSimulate();
 
 private:
@@ -733,6 +734,35 @@ void TestAnalog::triacBothWays()
         const double v = res.last(QStringLiteral("mt2")).value();
         QVERIFY2(std::abs(v) < 2.5, qPrintable(QString::number(v)));            // conducting: most of 12 V on the 100 ohm
     }
+}
+
+void TestAnalog::deviceProbeCurrents()
+{
+    Circuit c;
+    divider(c);
+    for (const Component& comp : c.components()) {
+        if (comp.designator != u"R1" && comp.designator != u"V1") continue;
+        Component p = comp;
+        p.props.insert(QStringLiteral("probe"), QStringLiteral("I"));
+        c.updateComponent(p);
+    }
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const Netlist nl = NetlistBuilder::build(c, library());
+    deck = spice::build(c, library(), nl);
+    QVERIFY2(deck.text.contains(QStringLiteral(".save all @rr1[i]\n")), qPrintable(deck.text));   // sources need no .save
+    ItemId r1 = 0, v1 = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.designator == u"R1") r1 = comp.id;
+        if (comp.designator == u"V1") v1 = comp.id;
+    }
+    QCOMPARE(deck.currentOf.value(r1), QStringLiteral("@rr1[i]"));
+    QCOMPARE(deck.currentOf.value(v1), QStringLiteral("vv1#branch"));
+    requireEngine();
+    const spice::Result res = spice::NgspiceEngine::instance().run(deck.text);
+    QVERIFY2(res.ok, qPrintable(res.error));
+    QVERIFY2(qAbs(std::abs(res.last(QStringLiteral("@rr1[i]")).value_or(0)) - 5e-3) < 1e-9, qPrintable(res.log));
+    QVERIFY(qAbs(std::abs(res.last(QStringLiteral("vv1#branch")).value_or(0)) - 5e-3) < 1e-9);
 }
 
 void TestAnalog::importedExamplesSimulate()

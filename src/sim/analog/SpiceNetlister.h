@@ -29,6 +29,9 @@ struct Deck {
     QStringList warnings;
     bool ok = true;                         // false when the deck cannot run (see warnings)
     double generatorFrequency = 0;          // first signal generator's (Fourier default)
+    // ngspice vector of the current through a component (into its first pin),
+    // for current, power and impedance probes: "@r1[i]", "v1#branch"
+    QHash<ItemId, QString> currentOf;
 };
 
 // One simulation of a sweep (temperature, parameter, Monte Carlo).
