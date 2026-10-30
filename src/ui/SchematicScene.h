@@ -278,6 +278,13 @@ private:
 
     TitleBlockItem* m_titleItem = nullptr;
     std::optional<WireEdit> m_wireEdit;
+    struct TextDrag {
+        ItemId component;
+        int which;              // 0 designator, 1 label
+        QPointF anchor, press;
+    };
+    std::optional<TextDrag> m_textDrag;
+    bool m_simPressed = false;          // a press since the last release, while simulating
     std::optional<AnalogOverlay> m_overlay;
     QVector<Lane> m_lanes;
 

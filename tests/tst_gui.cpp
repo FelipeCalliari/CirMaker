@@ -69,6 +69,8 @@ private slots:
     void wireAutoRoutes();
     void macroSymbolLayout();
     void hexKeyTakesKeyboard();
+    void switchesClickFastAndKeyboard();
+    void dragDesignator();
     void screenshot();
 };
 
@@ -760,6 +762,54 @@ void TestGui::hexKeyTakesKeyboard()
     QCOMPARE(f.scene.simState(ascii), int('A'));
     f.scene.stopSimulation();
     QCOMPARE(f.scene.keyFocus(), ItemId(0));
+}
+
+// Quick clicks each switch a Logic Switch (the second arrives as a double
+// click); once clicked it also switches with Space or Enter.
+void TestGui::switchesClickFastAndKeyboard()
+{
+    ViewFixture f;
+    const ItemId s = place(f.circuit, QStringLiteral("logicswitch"), {0, 0}, QStringLiteral("S1"));
+    f.scene.run();
+    f.scene.pause();
+    const int start = f.scene.simState(s);
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({-10, 0}));
+    QCOMPARE(f.scene.simState(s), 1 - start);
+    // the second click of a quick pair arrives as a double click
+    QTest::mouseDClick(f.view.viewport(), Qt::LeftButton, {}, f.at({-10, 0}));
+    QTest::mouseRelease(f.view.viewport(), Qt::LeftButton, {}, f.at({-10, 0}));
+    QCOMPARE(f.scene.simState(s), start);
+    // or after its own press: still one switch
+    QTest::mousePress(f.view.viewport(), Qt::LeftButton, {}, f.at({-10, 0}));
+    QTest::mouseDClick(f.view.viewport(), Qt::LeftButton, {}, f.at({-10, 0}));
+    QTest::mouseRelease(f.view.viewport(), Qt::LeftButton, {}, f.at({-10, 0}));
+    QCOMPARE(f.scene.simState(s), 1 - start);
+    QCOMPARE(f.scene.keyFocus(), s);
+    f.view.setFocus();
+    QTest::keyClick(f.view.viewport(), Qt::Key_Space);
+    QCOMPARE(f.scene.simState(s), start);
+    QTest::keyClick(f.view.viewport(), Qt::Key_Return);
+    QCOMPARE(f.scene.simState(s), 1 - start);
+    f.scene.stopSimulation();
+}
+
+// A part's designator drags on its own, undoably.
+void TestGui::dragDesignator()
+{
+    ViewFixture f;
+    const ItemId u = place(f.circuit, QStringLiteral("74LS74"), {0, 0}, QStringLiteral("U1"), QStringLiteral("74LS74"));
+    ComponentItem* item = nullptr;
+    for (QGraphicsItem* it : f.scene.items())
+        if (auto* ci = qgraphicsitem_cast<ComponentItem*>(it); ci && ci->id() == u) item = ci;
+    QVERIFY(item);
+    const QPointF from = item->pos() + item->textAnchor(0) + QPointF(0, -4);
+    QCOMPARE(item->textAt(from), 0);
+    f.drag(from, from + QPointF(-60, -40));
+    QVERIFY(f.circuit.component(u)->designatorAt.has_value());
+    QVERIFY(QLineF(*f.circuit.component(u)->designatorAt, item->textAnchor(0)).length() < 1);
+    QCOMPARE(f.circuit.component(u)->pos, QPointF(0, 0));   // the part stays
+    f.undo.undo();
+    QVERIFY(!f.circuit.component(u)->designatorAt.has_value());
 }
 
 QTEST_MAIN(TestGui)

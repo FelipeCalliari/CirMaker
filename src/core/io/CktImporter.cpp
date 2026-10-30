@@ -619,6 +619,29 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             comp.designatorAt = (origin + d.designatorRect->center()) * kScale - comp.pos;
         if (d.valueRect)
             comp.labelAt = (origin + d.valueRect->center()) * kScale - comp.pos;
+        // CircuitMaker's texts sit around its own, often larger, drawings:
+        // keep them on the same side but close to ours. Anchors are the
+        // centre of the baseline, about 10 above it and 3 below.
+        if (!placed[i].symbol->netLabel) {
+            Component turned = comp;
+            turned.pos = {};
+            const QRectF body = LibraryRegistry::placement(turned).mapRect(placed[i].symbol->bounds);
+            // one shift for both, the smallest that brings one in: stacked
+            // texts keep their spacing
+            std::optional<QPointF> shift;
+            for (std::optional<QPointF>* at : {&comp.designatorAt, &comp.labelAt}) {
+                if (!*at) continue;
+                const double half = 4.5 * (at == &comp.designatorAt ? d.designator.size() : d.value.size());
+                const QPointF a = **at;
+                const QPointF s(std::clamp(a.x(), body.left() - 12 - half, body.right() + 12 + half) - a.x(),
+                                std::clamp(a.y(), body.top() - 14, body.bottom() + 24) - a.y());
+                if (!shift) shift = s;
+                else shift = QPointF(std::abs(s.x()) < std::abs(shift->x()) ? s.x() : shift->x(),
+                                     std::abs(s.y()) < std::abs(shift->y()) ? s.y() : shift->y());
+            }
+            for (std::optional<QPointF>* at : {&comp.designatorAt, &comp.labelAt})
+                if (*at) *at = QPointF(std::round((**at + *shift).x()), std::round((**at + *shift).y()));
+        }
         placed[i].id = circuit.addComponent(comp);
     }
 

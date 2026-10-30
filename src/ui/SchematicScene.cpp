@@ -1480,13 +1480,16 @@ void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
         return;
     }
     const QString& d = hit->symbol()->display;
-    // a click on a hex or ASCII key gives it the keyboard
-    setKeyFocus(d == u"hexkey" || d == u"asciikey" ? hit->id() : 0);
-    if (d == u"logicswitch" || d == u"spst" || d == u"window") {
+    // a click on a key, switch or button gives it the keyboard
+    const bool toggles = d == u"logicswitch" || d == u"spst" || d == u"window";
+    setKeyFocus(d == u"hexkey" || d == u"asciikey" || toggles || d == u"button" ? hit->id() : 0);
+    if (toggles) {
         m_sim->interact(hit->id(), QStringLiteral("toggle"));
+        emit statusMessage(tr("%1 takes the keyboard: Space or Enter switches it (Esc to stop)").arg(hit->component().designator));
     } else if (d == u"button") {
         m_sim->interact(hit->id(), QStringLiteral("press"));
         m_heldButton = hit->id();
+        emit statusMessage(tr("%1 takes the keyboard: hold Space or Enter to press it (Esc to stop)").arg(hit->component().designator));
     } else if (d == u"hexkey") {
         const int key = hit->hexKeyAt(hit->mapFromScene(e->scenePos()));
         if (key < 0)
@@ -1514,8 +1517,10 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
     const QPointF p = snap(e->scenePos());
     if (simulating()) {
-        if (e->button() == Qt::LeftButton && m_tool != Tool::Probe)
+        if (e->button() == Qt::LeftButton && m_tool != Tool::Probe) {
+            m_simPressed = true;
             simInteractPress(e);
+        }
         return;
     }
     if (e->button() == Qt::RightButton) {
@@ -1575,6 +1580,21 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         wireClick(p);
         return;
     }
+    // a designator or label drags on its own
+    // (unless the press is right on a pin end next to it)
+    QPointF nearPin;
+    const bool onPin = pinAt(e->scenePos(), &nearPin) && QLineF(nearPin, e->scenePos()).length() < 3;
+    if (!onPin && !(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier)) && !restricted(QStringLiteral("edit")))
+        for (QGraphicsItem* it : items(e->scenePos(), Qt::IntersectsItemBoundingRect)) {
+            auto* ci = qgraphicsitem_cast<ComponentItem*>(it);
+            if (!ci || ci == m_ghost || ci->id() == 0) continue;
+            if (const int which = ci->textAt(e->scenePos()); which >= 0) {
+                clearSelection();
+                ci->setSelected(true);
+                m_textDrag = TextDrag{ci->id(), which, ci->textAnchor(which), e->scenePos()};
+                return;
+            }
+        }
     // pressing on a pin end starts a wire, as in CircuitMaker
     QPointF pin;
     if (!(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) && !restricted(QStringLiteral("wire"))
@@ -1716,6 +1736,13 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
             w->setPreview(editedWire(m_cursor));
         return;
     }
+    if (m_textDrag) {
+        if (ComponentItem* ci = m_componentItems.value(m_textDrag->component)) {
+            const QPointF at = m_textDrag->anchor + e->scenePos() - m_textDrag->press;
+            ci->setTextPreview(m_textDrag->which, QPointF(std::round(at.x()), std::round(at.y())));
+        }
+        return;
+    }
     if (restricted(QStringLiteral("edit")) && (e->buttons() & Qt::LeftButton))
         return;     // the circuit is locked against moving
     QGraphicsScene::mouseMoveEvent(e);
@@ -1730,8 +1757,16 @@ void SchematicScene::updateHoverCursor(QPointF p)
     if (m_tool != Tool::Select || views().isEmpty())
         return;
     Qt::CursorShape shape = Qt::ArrowCursor;
+    const auto onText = [&] {
+        for (QGraphicsItem* it : items(p, Qt::IntersectsItemBoundingRect))
+            if (auto* ci = qgraphicsitem_cast<ComponentItem*>(it); ci && ci != m_ghost && ci->id() && ci->textAt(p) >= 0)
+                return true;
+        return false;
+    };
     if (pinAt(p, nullptr)) {
         shape = Qt::CrossCursor;
+    } else if (!restricted(QStringLiteral("edit")) && onText()) {
+        shape = Qt::SizeAllCursor;
     } else {
         for (QGraphicsItem* it : items(p)) {
             auto* w = qgraphicsitem_cast<WireItem*>(it);
@@ -1752,6 +1787,7 @@ void SchematicScene::updateHoverCursor(QPointF p)
 void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 {
     if (simulating()) {
+        m_simPressed = false;
         simInteractRelease();
         return;
     }
@@ -1760,6 +1796,24 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
         const QPointF p = snap(e->scenePos());
         if (!near(p, m_wirePoints.first()))
             wireClick(p);
+        return;
+    }
+    if (m_textDrag) {
+        const TextDrag drag = *m_textDrag;
+        m_textDrag.reset();
+        ComponentItem* ci = m_componentItems.value(drag.component);
+        const Component* c = m_circuit->component(drag.component);
+        if (!ci || !c) return;
+        ci->setTextPreview(drag.which, std::nullopt);
+        const QPointF delta = e->scenePos() - drag.press;
+        if (delta.manhattanLength() < 2) return;
+        const QPointF at = drag.anchor + delta;
+        Selection before, after;
+        before.components << *c;
+        Component n = *c;
+        (drag.which == 0 ? n.designatorAt : n.labelAt) = QPointF(std::round(at.x()), std::round(at.y()));
+        after.components << n;
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, drag.which == 0 ? tr("Move designator") : tr("Move label")));
         return;
     }
     if (m_wireEdit) {
@@ -1787,8 +1841,12 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 
 void SchematicScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
 {
-    if (simulating())
+    // a quick second click on a switch is another click, not a double click
+    if (simulating()) {
+        // the platform may send it instead of the second press, or after it
+        if (m_sim && e->button() == Qt::LeftButton && !std::exchange(m_simPressed, true)) simInteractPress(e);
         return;
+    }
     if (!m_wirePoints.isEmpty()) {
         finishWire();
         return;
@@ -1852,6 +1910,21 @@ bool SchematicScene::typeIntoKey(QKeyEvent* e)
     if (!item) return false;
     if (e->key() == Qt::Key_Escape) {
         setKeyFocus(0);
+        return true;
+    }
+    // switches and push buttons: Space or Enter
+    const QString& d = item->symbol()->display;
+    if (d == u"logicswitch" || d == u"spst" || d == u"window" || d == u"button") {
+        if (e->key() != Qt::Key_Space && e->key() != Qt::Key_Return && e->key() != Qt::Key_Enter) return false;
+        if (!e->isAutoRepeat()) {
+            if (d == u"button") {
+                m_sim->interact(m_keyFocus, QStringLiteral("press"));
+                m_typedKey = e->key();
+            } else {
+                m_sim->interact(m_keyFocus, QStringLiteral("toggle"));
+            }
+            update();
+        }
         return true;
     }
     const QString text = e->text();

@@ -7,6 +7,7 @@
 #include "ui/SchematicScene.h"
 #include "ui/SymbolPainter.h"
 
+#include <QFontMetricsF>
 #include <QPainter>
 #include <QRadialGradient>
 #include <QStyleOptionGraphicsItem>
@@ -79,11 +80,56 @@ void ComponentItem::updateLabelGeometry()
         m_designatorAt = {r.right() + 3, r.top() + 6};
         m_labelAt = {r.right() + 3, r.top() + (m_showDesignator ? 26 : 6)};
     }
-    const QRectF labels(r.right() - 220, r.top() - 30, 440, std::max(r.height(), 50.0) + 60);
+    QRectF labels(r.right() - 220, r.top() - 30, 440, std::max(r.height(), 50.0) + 60);
+    // texts moved elsewhere
+    for (const std::optional<QPointF>& at : {m_c.designatorAt, m_c.labelAt})
+        if (at) labels |= QRectF(*at - QPointF(150, 30), QSizeF(300, 60));
     m_bounds = m_symbol->bounds.united(transform().inverted().mapRect(labels)).adjusted(-3, -3, 3, 3);
 }
 
 QRectF ComponentItem::boundingRect() const { return m_bounds; }
+
+QPointF ComponentItem::textAnchor(int which) const
+{
+    if (which == 0 && m_c.designatorAt) return *m_c.designatorAt;
+    if (which == 1 && m_c.labelAt) return *m_c.labelAt;
+    // the default places are left-aligned: their centre
+    const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : m_c.label;
+    const double w = QFontMetricsF(SymbolPainter::schematicFont(14)).horizontalAdvance(text);
+    return (which == 0 ? m_designatorAt : m_labelAt) + QPointF(w / 2, 0);
+}
+
+QRectF ComponentItem::textRect(int which) const
+{
+    const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : m_c.label;
+    const QFontMetricsF fm(SymbolPainter::schematicFont(14));
+    const double w = fm.horizontalAdvance(text);
+    const QPointF a = textAnchor(which);
+    return QRectF(a.x() - w / 2, a.y() - fm.ascent(), w, fm.ascent() + fm.descent()).adjusted(-2, -2, 2, 2);
+}
+
+int ComponentItem::textAt(QPointF scenePos) const
+{
+    // net labels and ports draw their names in fixed places
+    if (m_symbol->netLabel) return -1;
+    const QPointF rel = scenePos - pos();
+    if (m_showDesignator && textRect(0).contains(rel)) return 0;
+    if (m_showLabel && textRect(1).contains(rel)) return 1;
+    return -1;
+}
+
+void ComponentItem::setTextPreview(int which, std::optional<QPointF> anchor)
+{
+    prepareGeometryChange();
+    m_previewText = anchor ? which : -1;
+    if (anchor) {
+        m_previewAt = *anchor;
+        // keep the dragged text inside the item's area
+        const QRectF r = transform().inverted().mapRect(QRectF(*anchor - QPointF(150, 30), QSizeF(300, 60)));
+        m_bounds = m_bounds.united(r);
+    }
+    update();
+}
 
 QPainterPath ComponentItem::shape() const
 {
@@ -147,7 +193,9 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {
-        if (m_c.designatorAt)
+        if (m_previewText == 0)
+            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), shownDesignator(*m_symbol, m_c), 14, 0, ink);
+        else if (m_c.designatorAt)
             SymbolPainter::uprightText(p, toLocal.map(*m_c.designatorAt), shownDesignator(*m_symbol, m_c), 14, 0, ink);
         else
             SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), shownDesignator(*m_symbol, m_c), 14, -1, ink);
@@ -165,6 +213,8 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
             const QPointF at = side == u"left" ? QPointF(-4, -10) : side == u"right" ? QPointF(4, -10)
                              : side == u"up" ? QPointF(5, -14) : QPointF(5, 14);
             SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, 16, align, ink);
+        } else if (m_previewText == 1) {
+            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), m_c.label, 14, 0, ink);
         } else if (m_c.labelAt) {
             SymbolPainter::uprightText(p, toLocal.map(*m_c.labelAt), m_c.label, 14, 0, ink);
         } else {

@@ -24,7 +24,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Folha que cresce com o circuito (rolar/zoom até qualquer peça) | ✅ | |
 | Borda com zonas (Borders) | ✅ | Exibir > Borda; vai junto na impressão e na exportação |
 | Auto Wire Routing / Quick Connect / Single Click Connect | ✅ | pino → pino/fio contorna os dispositivos sem tocar outros pinos nem correr sobre fios (Opções > Roteamento automático); arrastar a partir do pino |
-| Set Label Positions | ✅ | |
+| Set Label Positions; arrastar designador e rótulo | ✅ | o texto arrasta sozinho (com desfazer); na importação de `.ckt` os textos ficam junto ao símbolo |
 | Group Items (portas no mesmo encapsulamento) | ✅ | U1A, U1B...; ao colocar, a porta entra no primeiro encapsulamento com vaga; pinos por parte no netlist de PCB e no BOM; importado do `.ckt` |
 | Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |
 | Copiar esquemático/formas de onda para a área de transferência como imagem | ✅ | Ctrl+Shift+C; formas de onda pelo Editar ou menu da janela |
@@ -37,7 +37,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | --- | --- | --- |
 | Navegador por categorias e busca | ✅ | |
 | Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS74/73/112, 74139 e 74153 como pacote inteiro; 4017, 4093, 74168/169, 74173, 7475, 74181 (ULA) e Quad D Flop |
-| Entradas/saídas digitais (chaves, teclados, displays, pulser, SCOPE) | ✅ | |
+| Entradas/saídas digitais (chaves, teclados, displays, pulser, SCOPE) | ✅ | cliques rápidos contam todos; chaves e botões clicados recebem o teclado (Espaço/Enter) |
 | Edit PROM/RAM (grade hexadecimal, carregar/salvar .hex/.bin, edição ao vivo durante a simulação) | ✅ | RAM1K e PROM32 |
 | Data Sequencer + Pattern Editor | ✅ | clock interno/externo, níveis analógicos (fontes PWL); importado do `.ckt` |
 | 7-seg com decodificador, displays ASCII/hex | ✅ | |

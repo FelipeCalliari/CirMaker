@@ -2944,7 +2944,7 @@ Saída do SPICE:
     </message>
     <message>
         <location filename="../src/ui/SchematicScene.cpp" line="1168"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1561"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1566"/>
         <source>Text:</source>
         <translation>Texto:</translation>
     </message>
@@ -2997,12 +2997,22 @@ Saída do SPICE:
         <translation>Definir breakpoint</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1496"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1488"/>
+        <source>%1 takes the keyboard: Space or Enter switches it (Esc to stop)</source>
+        <translation>%1 recebe o teclado: Espaço ou Enter alterna (Esc para sair)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SchematicScene.cpp" line="1492"/>
+        <source>%1 takes the keyboard: hold Space or Enter to press it (Esc to stop)</source>
+        <translation>%1 recebe o teclado: segure Espaço ou Enter para pressionar (Esc para sair)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SchematicScene.cpp" line="1499"/>
         <source>%1 takes the keyboard: type 0-9 and A-F (Esc to stop)</source>
         <translation>%1 recebe o teclado: digite 0-9 e A-F (Esc para parar)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1498"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1501"/>
         <source>%1 takes the keyboard: type characters (Esc to stop)</source>
         <translation>%1 recebe o teclado: digite caracteres (Esc para parar)</translation>
     </message>
@@ -3015,13 +3025,23 @@ Saída do SPICE:
         <translation type="vanished">Caractere:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1561"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1565"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1566"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1570"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1779"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1816"/>
+        <source>Move designator</source>
+        <translation>Mover designador</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SchematicScene.cpp" line="1816"/>
+        <source>Move label</source>
+        <translation>Mover rótulo</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SchematicScene.cpp" line="1833"/>
         <source>Reshape wire</source>
         <translation>Remodelar fio</translation>
     </message>
