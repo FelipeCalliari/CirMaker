@@ -641,7 +641,7 @@ def analog():
          'description': 'Voltmeter (mode V) or ammeter (mode A) between + and -',
          'graphics': [R(-80, -50, 160, 100), L(-80, 50, -80, 80), L(80, 50, 80, 80), T('+', -70, 40, 9), T('-', 70, 40, 9)],
          'pins': [pin('+', -80, 80), pin('-', 80, 80)]},
-    ] + power_parts() + misc_parts()
+    ] + power_parts() + misc_parts() + controlled_sources()
 
 N = '\n'   # separates the lines of a multi-element template
 MODELS['J2N3819'] = '.model J2N3819 NJF(Beta=1.304m Betatce=-.5 Rd=1 Rs=1 Lambda=2.25m Vto=-3 Vtotc=-2.5m Is=33.57f Cgd=1.6p Cgs=2.414p)'
@@ -742,6 +742,43 @@ def misc_parts():
                       P('M -24 10 L -16 10 M -8 10 L 0 10 M 8 10 L 16 10'), P('M -24 -8 L -16 -8 M -8 -8 L 0 -8 M 8 -8 L 16 -8'),
                       L(20, -8, 90, -8), P('M -20 25 L 20 25 L 20 30'), L(-40, 80, -40, 30), L(-40, 30, -20, 25)],
          'pins': [pin('P', 0, -90), pin('S', 90, -10), pin('G', -90, 10, 'in'), pin('K', -40, 80)]},
+    ]
+
+
+MODELS['VSW_GEN'] = '.model VSW_GEN sw vt=2.5 vh=0.1 ron=1 roff=1G'
+MODELS['ISW_GEN'] = '.model ISW_GEN csw it=1m ih=0.1m ron=1 roff=1G'
+
+
+def controlled_sources():
+    """CircuitMaker's dependent sources: output on pins 1-2 (right), control on
+    3-4 (left); current control flows from 3 to 4 through a 0 V sense source."""
+    def source(id, name, cm, line, desc, label, inner, models=()):
+        return {'id': id, 'name': name, 'prefix': id[0].upper() if id[0] in 'eghf' else 'S', 'label': label,
+                'aliases': [cm], 'cmPins': ['1', '2', '3', '4'], 'spice': sp(line, *models), 'description': desc,
+                'graphics': [L(-70, -90, -30, -90), L(-30, -90, -30, -20), L(-70, 90, -30, 90), L(-30, 90, -30, 20),
+                             T('+', -44, -60, 9), T('-', -44, 60, 9),
+                             L(70, -90, 30, -90), L(30, -90, 30, -40), L(70, 90, 30, 90), L(30, 90, 30, 40)] + inner,
+                'pins': [pin('1', 70, -90), pin('2', 70, 90), pin('3', -70, -90, 'in'), pin('4', -70, 90, 'in')]}
+    diamond = [P('M 30 -40 L 60 0 L 30 40 L 0 0 Z')]
+    sense = 'V{name}s {3} {4} DC 0' + N
+    return [
+        source('vcvs', 'V->V Source', 'V->V Source', 'E{name} {1} {2} {3} {4} {value}',
+               'Voltage-controlled voltage source: V(1,2) = gain x V(3,4)', '1', diamond + [T('+', 30, -18, 8), T('-', 30, 18, 8)]),
+        source('vccs', 'V->I Source', 'V->I Source', 'G{name} {1} {2} {3} {4} {value}',
+               'Voltage-controlled current source: I(1->2) = gain x V(3,4) (A/V)', '1m',
+               diamond + [L(30, -20, 30, 20), P('M 25 12 L 30 20 L 35 12')]),
+        source('ccvs', 'I->V Source', 'I->V Source', sense + 'H{name} {1} {2} V{name}s {value}',
+               'Current-controlled voltage source: V(1,2) = gain x I(3->4) (V/A)', '1k',
+               diamond + [T('+', 30, -18, 8), T('-', 30, 18, 8)]),
+        source('cccs', 'I->I Source', 'I->I Source', sense + 'F{name} {1} {2} V{name}s {value}',
+               'Current-controlled current source: I(1->2) = gain x I(3->4)', '1',
+               diamond + [L(30, -20, 30, 20), P('M 25 12 L 30 20 L 35 12')]),
+        source('vswitch', 'V->Switch', 'V->Switch', 'S{name} {1} {2} {3} {4} VSW_GEN',
+               'Voltage-controlled switch: 1-2 closed (1 ohm) while V(3,4) is above 2.5 V', '2.5V',
+               [L(30, -40, 30, -10), L(30, -10, 50, 25), L(30, 25, 30, 40), C(30, -10, 2), C(30, 25, 2)], ['VSW_GEN']),
+        source('iswitch', 'I->Switch', 'I->Switch', sense + 'W{name} {1} {2} V{name}s ISW_GEN',
+               'Current-controlled switch: 1-2 closed (1 ohm) while I(3->4) is above 1 mA', '1mA',
+               [L(30, -40, 30, -10), L(30, -10, 50, 25), L(30, 25, 30, 40), C(30, -10, 2), C(30, 25, 2)], ['ISW_GEN']),
     ]
 
 

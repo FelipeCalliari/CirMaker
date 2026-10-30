@@ -42,6 +42,8 @@ private slots:
     void miscPartsSimulate_data();
     void miscPartsSimulate();
     void importsSpiceNetlist();
+    void controlledSources_data();
+    void controlledSources();
     void importedExamplesSimulate();
 
 private:
@@ -920,6 +922,57 @@ void TestAnalog::importsSpiceNetlist()
     const spice::Result r = simulate(c, &deck);
     QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
     QVERIFY2(qAbs(r.last(QStringLiteral("out")).value_or(0) - 5) < 0.2, qPrintable(deck.text));   // the PNP barely loads it
+}
+
+void TestAnalog::controlledSources_data()
+{
+    QTest::addColumn<QString>("symbol");
+    QTest::addColumn<QString>("gain");
+    QTest::addColumn<double>("expected");          // |V(OUT)| with 1 V and 1 mA control, 1k load
+    QTest::newRow("V->V") << "vcvs" << "2" << 2.0;
+    QTest::newRow("V->I") << "vccs" << "3m" << 3.0;
+    QTest::newRow("I->V") << "ccvs" << "4k" << 4.0;
+    QTest::newRow("I->I") << "cccs" << "5" << 5.0;
+    QTest::newRow("V->Switch on") << "vswitch" << "" << 10 * 1000 / 1001.0;
+    QTest::newRow("I->Switch off") << "iswitch" << "" << 0.0;    // 1 mA is at the threshold, hysteresis keeps it open
+}
+
+void TestAnalog::controlledSources()
+{
+    QFETCH(QString, symbol);
+    QFETCH(QString, gain);
+    QFETCH(double, expected);
+    requireEngine();
+    Circuit c;
+    const ItemId u = part(c, symbol, QStringLiteral("X1"), gain);
+    ground(c, QStringLiteral("G"));
+    // control: 1 V across 3-4 for voltage control; 1 mA through 3->4 for current control
+    const bool currentControl = symbol == u"ccvs" || symbol == u"cccs" || symbol == u"iswitch";
+    supply(c, QStringLiteral("CTL"), symbol.endsWith(u"switch") && !currentControl ? QStringLiteral("5") : QStringLiteral("1"));
+    if (currentControl) {
+        resistor(c, QStringLiteral("1k"), QStringLiteral("CTL"), QStringLiteral("C3"));
+        wire(c, u, QStringLiteral("3"), QStringLiteral("C3"));
+    } else {
+        wire(c, u, QStringLiteral("3"), QStringLiteral("CTL"));
+    }
+    wire(c, u, QStringLiteral("4"), QStringLiteral("G"));
+    if (symbol.endsWith(u"switch")) {
+        supply(c, QStringLiteral("SUP"), QStringLiteral("10"));
+        resistor(c, QStringLiteral("1k"), QStringLiteral("SUP"), QStringLiteral("OUT"));
+        wire(c, u, QStringLiteral("1"), QStringLiteral("OUT"));
+        wire(c, u, QStringLiteral("2"), QStringLiteral("G"));
+        expected = expected > 0 ? 10 * 1 / 1001.0 : 10 * 1e9 / (1e9 + 1000);    // switch from OUT to ground
+    } else {
+        wire(c, u, QStringLiteral("1"), QStringLiteral("OUT"));
+        wire(c, u, QStringLiteral("2"), QStringLiteral("G"));
+        resistor(c, QStringLiteral("1k"), QStringLiteral("OUT"), QStringLiteral("G"));
+    }
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const double v = std::abs(r.last(QStringLiteral("out")).value_or(qQNaN()));
+    QVERIFY2(qAbs(v - expected) < 0.01, qPrintable(QString::number(v) + u'\n' + deck.text));
 }
 
 void TestAnalog::importedExamplesSimulate()
