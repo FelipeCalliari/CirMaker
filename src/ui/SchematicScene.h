@@ -59,6 +59,7 @@ public:
     // Edit menu tools from CircuitMaker
     void nudgeSelection(QPointF delta);
     void straightenWires();
+    void resetLabelPositions();
     // Renumbers designations per prefix (only `prefix` when not empty),
     // in reading order, starting at `first`; selection only when not empty.
     void setDesignations(const QString& prefix, int first);
@@ -133,8 +134,13 @@ public:
 
     static QPointF snap(QPointF p);
 
-    // Items' scene bounds without the grid, for export/printing.
+    // Items' scene bounds without the grid (and the border, when shown), for export/printing.
     QRectF contentsRect() const;
+    // Map border with lettered/numbered zones around the drawing.
+    void setBorderVisible(bool on);
+    bool borderVisible() const { return m_border; }
+    QRectF borderRect() const;
+    static constexpr double kZone = 300, kBorderMargin = 30;
     void setGridVisible(bool on) { m_gridVisible = on; update(); }
     void setGridLines(bool lines) { m_gridLines = lines; update(); }
     bool gridVisible() const { return m_gridVisible; }
@@ -178,6 +184,8 @@ private:
     void scheduleNetlist();
     void rebuildNetlist();
     void updateSceneRect();
+    QRectF itemsRect() const;
+    void drawBorder(QPainter* p) const;
 
     // wire tool
     void wireClick(QPointF p);
@@ -272,6 +280,7 @@ private:
     int m_highlightNet = -1;
     bool m_exporting = false;
     bool m_suppressMenu = false;
+    bool m_border = false;
     QStringList m_restrictions;
     QHash<ItemId, int> m_breaks;        // SCOPE breakpoints while simulating
     QHash<int, sim::Logic> m_breakPrev; // break nets' values one tick earlier

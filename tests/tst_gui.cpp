@@ -48,6 +48,7 @@ private slots:
     void probeToolSurvivesRun();
     void faultLockRestrictsScene();
     void simulationAppliesFaults();
+    void labelPositionsAndBorder();
     void screenshot();
 };
 
@@ -496,6 +497,30 @@ void TestGui::simulationAppliesFaults()
     scene.stopSimulation();
     QCOMPARE(scene.simCircuit().components().size(), 1);
     QCOMPARE(scene.netlist().nets.size(), NetlistBuilder::build(circuit, library()).nets.size());
+}
+
+void TestGui::labelPositionsAndBorder()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    const ItemId g = place(circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    Component c = *circuit.component(g);
+    c.designatorAt = QPointF(200, 200);
+    circuit.updateComponent(c);
+    scene.selectAll();
+    scene.resetLabelPositions();
+    QVERIFY(!circuit.component(g)->designatorAt);
+    undo.undo();
+    QVERIFY(circuit.component(g)->designatorAt);
+
+    const QRectF items = scene.contentsRect();
+    scene.setBorderVisible(true);
+    const QRectF border = scene.borderRect();
+    QVERIFY(border.contains(items));
+    QCOMPARE(std::fmod(border.width(), SchematicScene::kZone), 0.0);
+    QVERIFY(border.width() >= 2 * SchematicScene::kZone);
+    QVERIFY(scene.contentsRect().contains(border));            // exported with the drawing
 }
 
 QTEST_MAIN(TestGui)

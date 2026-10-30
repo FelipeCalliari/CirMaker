@@ -194,6 +194,16 @@ void MainWindow::createActions()
     m_copyImage->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_C);
     connect(m_copyImage, &QAction::triggered, this, &MainWindow::copyImage);
 
+    m_copyWaves = new QAction(tr("Copy &Waveforms as Image"), this);
+    connect(m_copyWaves, &QAction::triggered, this, [this] {
+        if (!m_wavesDock->isVisible()) {
+            statusBar()->showMessage(tr("Open the Waveforms window first"), 4000);
+            return;
+        }
+        QApplication::clipboard()->setImage(m_waves->grab().toImage());
+        statusBar()->showMessage(tr("Waveforms copied to the clipboard"), 4000);
+    });
+
     m_print = new QAction(themeIcon("document-print", QStyle::SP_FileIcon), tr("&Print Schematic..."), this);
     m_print->setShortcut(QKeySequence::Print);
     connect(m_print, &QAction::triggered, this, &MainWindow::print);
@@ -376,6 +386,18 @@ void MainWindow::createActions()
     m_refresh = new QAction(tr("&Refresh Screen"), this);
     m_refresh->setShortcuts({QKeySequence(Qt::Key_F7), QKeySequence(Qt::Key_End)});
     connect(m_refresh, &QAction::triggered, this, [this] { m_scene->update(); m_view->viewport()->update(); });
+    m_labelPositions = new QAction(tr("Set &Label Positions"), this);
+    m_labelPositions->setStatusTip(tr("Puts the designators and labels of the selected devices back in their standard places"));
+    connect(m_labelPositions, &QAction::triggered, m_scene, &SchematicScene::resetLabelPositions);
+    m_border = new QAction(tr("&Border"), this);
+    m_border->setCheckable(true);
+    m_border->setStatusTip(tr("Map border with lettered and numbered zones around the schematic (also printed and exported)"));
+    m_border->setChecked(QSettings().value(QStringLiteral("prefs/border"), false).toBool());
+    m_scene->setBorderVisible(m_border->isChecked());
+    connect(m_border, &QAction::toggled, this, [this](bool on) {
+        m_scene->setBorderVisible(on);
+        QSettings().setValue(QStringLiteral("prefs/border"), on);
+    });
     m_straighten = new QAction(tr("Straighten &Wires"), this);
     connect(m_straighten, &QAction::triggered, m_scene, &SchematicScene::straightenWires);
     m_designations = new QAction(tr("Set Desi&gnations..."), this);
@@ -546,9 +568,9 @@ void MainWindow::createMenus()
     QMenu* edit = menuBar()->addMenu(tr("&Edit"));
     edit->addActions({m_undoAct, m_redoAct});
     edit->addSeparator();
-    edit->addActions({m_cut, m_copy, m_copyImage, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
+    edit->addActions({m_cut, m_copy, m_copyImage, m_copyWaves, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
     edit->addSeparator();
-    edit->addActions({m_rotate, m_mirror, m_props, m_straighten, m_designations, m_propDelays});
+    edit->addActions({m_rotate, m_mirror, m_props, m_labelPositions, m_straighten, m_designations, m_propDelays});
     edit->addSeparator();
     edit->addAction(m_titleBlock);
     edit->addSeparator();
@@ -558,7 +580,7 @@ void MainWindow::createMenus()
     view->setObjectName(QStringLiteral("viewMenu"));
     view->addActions({m_scale, m_normalSize, m_zoomFit, m_zoomIn, m_zoomOut, m_home, m_refresh, m_collapseTree});
     view->addSeparator();
-    view->addActions({m_grid, m_showTitleBlock});
+    view->addActions({m_grid, m_border, m_showTitleBlock});
     view->addSeparator();
 
     QMenu* tools = menuBar()->addMenu(tr("&Options"));
@@ -699,6 +721,7 @@ void MainWindow::updateActions()
     auto off = [this](const char* option) { return m_scene->restricted(QString::fromLatin1(option)); };
     if (off("edit"))
         for (QAction* a : {m_cut, m_copy, m_paste, m_duplicate, m_rotate, m_mirror, m_merge, m_straighten, m_designations,
+                           m_labelPositions,
                            m_propDelays})
             a->setEnabled(false);
     if (off("delete")) {

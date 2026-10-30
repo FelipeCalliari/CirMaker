@@ -381,8 +381,13 @@ QString WaveformView::toCsv() const
 
 void WaveformView::contextMenuEvent(QContextMenuEvent* e)
 {
-    if (m_x.isEmpty()) return;
+    if (m_x.isEmpty() && !m_digital) return;
     QMenu menu(this);
+    menu.addAction(tr("Copy image"), this, [this] { QApplication::clipboard()->setImage(grab().toImage()); });
+    if (m_x.isEmpty()) {        // digital waveforms: image only
+        menu.exec(e->globalPos());
+        return;
+    }
     menu.addAction(tr("Copy data (CSV)"), this, [this] { QApplication::clipboard()->setText(toCsv()); });
     menu.addAction(tr("Save data as CSV..."), this, [this] {
         const QString path = QFileDialog::getSaveFileName(this, tr("Save waveforms"), QStringLiteral("waveforms.csv"),

@@ -235,6 +235,8 @@ void SchematicScene::updateSceneRect()
     for (QGraphicsItem* it : items())
         if (it != m_ghost && !it->parentItem())
             r |= it->sceneBoundingRect().adjusted(-1000, -1000, 1000, 1000);
+    if (m_border)
+        r |= contentsRect().adjusted(-200, -200, 200, 200);
     if (r != sceneRect())
         setSceneRect(r);
 }
@@ -499,6 +501,24 @@ void SchematicScene::nudgeSelection(QPointF delta)
         a.components << n;
     }
     m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Nudge")));
+}
+
+// CircuitMaker's Set Label Positions: designator and label back to the symbol's places.
+void SchematicScene::resetLabelPositions()
+{
+    if (simulating() || restricted(QStringLiteral("edit")))
+        return;
+    Selection before, after;
+    for (const Component& c : selection().components) {
+        if (!c.designatorAt && !c.labelAt) continue;
+        Component n = c;
+        n.designatorAt.reset();
+        n.labelAt.reset();
+        before.components << c;
+        after.components << n;
+    }
+    if (!after.isEmpty())
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Set label positions")));
 }
 
 void SchematicScene::straightenWires()
@@ -955,7 +975,7 @@ void SchematicScene::mergeCircuit(const Circuit& source)
     for (const TextNote& t : source.texts()) incoming |= QRectF(t.pos, QSizeF(1, 1));
     QPointF offset;
     if (!m_circuit->components().isEmpty() || !m_circuit->wires().isEmpty() || !m_circuit->texts().isEmpty()) {
-        const QRectF here = contentsRect();
+        const QRectF here = itemsRect();
         offset = snap(QPointF(here.left() - incoming.left(), here.bottom() + 100 - incoming.top()));
     }
     insertCircuit(source, offset, tr("Merge"));
@@ -1081,7 +1101,7 @@ void SchematicScene::editTitleBlock()
     if (!tb.visible) {
         tb.visible = true;
         if (tb.pos.isNull())
-            tb.pos = snap(contentsRect().bottomRight() - QPointF(TitleBlockItem::kWidth, -20));
+            tb.pos = snap(itemsRect().bottomRight() - QPointF(TitleBlockItem::kWidth, -20));
     }
     m_undo->push(new SetTitleBlockCommand(m_circuit, tb, tr("Edit title block")));
 }
@@ -1093,7 +1113,7 @@ void SchematicScene::setTitleBlockVisible(bool visible)
     TitleBlock tb = m_circuit->titleBlock();
     tb.visible = visible;
     if (visible && tb.pos.isNull())
-        tb.pos = snap(contentsRect().bottomRight() - QPointF(TitleBlockItem::kWidth, -20));
+        tb.pos = snap(itemsRect().bottomRight() - QPointF(TitleBlockItem::kWidth, -20));
     m_undo->push(new SetTitleBlockCommand(m_circuit, tb, visible ? tr("Show title block") : tr("Hide title block")));
 }
 
@@ -1700,6 +1720,8 @@ void SchematicScene::keyPressEvent(QKeyEvent* e)
 void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
 {
     p->fillRect(rect, Qt::white);
+    if (m_border)
+        drawBorder(p);
     if (!m_gridVisible || m_exporting)
         return;
     // CircuitMaker-style grid: squares three snap steps wide, coarser when
@@ -1878,13 +1900,78 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
     }
 }
 
-QRectF SchematicScene::contentsRect() const
+QRectF SchematicScene::itemsRect() const
 {
     QRectF r;
     for (QGraphicsItem* it : items())
         if (it != m_ghost)
             r = r.united(it->sceneBoundingRect());
     return r.adjusted(-20, -20, 20, 20);
+}
+
+QRectF SchematicScene::contentsRect() const
+{
+    return m_border ? borderRect().adjusted(-kBorderMargin, -kBorderMargin, kBorderMargin, kBorderMargin) : itemsRect();
+}
+
+// Zone frame around the drawing: whole zones, at least 2 x 2.
+QRectF SchematicScene::borderRect() const
+{
+    QRectF r = itemsRect();
+    if (r.isEmpty()) r = QRectF(0, 0, 1, 1);
+    const double left = std::floor(r.left() / kZone) * kZone, top = std::floor(r.top() / kZone) * kZone;
+    const double right = std::max(left + 2 * kZone, std::ceil(r.right() / kZone) * kZone);
+    const double bottom = std::max(top + 2 * kZone, std::ceil(r.bottom() / kZone) * kZone);
+    return QRectF(QPointF(left, top), QPointF(right, bottom));
+}
+
+void SchematicScene::setBorderVisible(bool on)
+{
+    m_border = on;
+    updateSceneRect();
+    update();
+}
+
+// CircuitMaker's map border: zone numbers along the top and bottom, letters
+// down the sides.
+void SchematicScene::drawBorder(QPainter* p) const
+{
+    const QRectF inner = borderRect();
+    const QRectF outer = inner.adjusted(-kBorderMargin, -kBorderMargin, kBorderMargin, kBorderMargin);
+    p->save();
+    p->setPen(QPen(kInk, 1.5));
+    p->setBrush(Qt::NoBrush);
+    p->drawRect(outer);
+    p->drawRect(inner);
+    QFont f = p->font();
+    f.setPixelSize(16);
+    p->setFont(f);
+    const int cols = qRound(inner.width() / kZone), rows = qRound(inner.height() / kZone);
+    for (int i = 0; i < cols; ++i) {
+        const double x = inner.left() + i * kZone;
+        if (i) {
+            p->drawLine(QPointF(x, outer.top()), QPointF(x, inner.top()));
+            p->drawLine(QPointF(x, inner.bottom()), QPointF(x, outer.bottom()));
+        }
+        const QString n = QString::number(i + 1);
+        p->drawText(QRectF(x, outer.top(), kZone, kBorderMargin), Qt::AlignCenter, n);
+        p->drawText(QRectF(x, inner.bottom(), kZone, kBorderMargin), Qt::AlignCenter, n);
+    }
+    for (int j = 0; j < rows; ++j) {
+        const double y = inner.top() + j * kZone;
+        if (j) {
+            p->drawLine(QPointF(outer.left(), y), QPointF(inner.left(), y));
+            p->drawLine(QPointF(inner.right(), y), QPointF(outer.right(), y));
+        }
+        QString letter;
+        for (int k = j; ; k = k / 26 - 1) {      // A..Z, AA, AB...
+            letter.prepend(QChar(u'A' + k % 26));
+            if (k < 26) break;
+        }
+        p->drawText(QRectF(outer.left(), y, kBorderMargin, kZone), Qt::AlignCenter, letter);
+        p->drawText(QRectF(inner.right(), y, kBorderMargin, kZone), Qt::AlignCenter, letter);
+    }
+    p->restore();
 }
 
 void SchematicScene::setExporting(bool on)
