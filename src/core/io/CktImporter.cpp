@@ -517,9 +517,14 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
 
     // ---- wires: scale, then pin attached ends to our pins
     QHash<ItemId, int> wireNetOf;               // our wire -> CM net
-    struct Entry { QPointF at; QPointF from; QString name; };
+    struct Entry { QPointF at; QPointF from; QString name; int cmNet; };
     QVector<Entry> entries;                     // wire ends on a bus, named as in CircuitMaker
     for (const CktWire& w : file.wires) {
+        // a zero-length leftover touching no device connects nothing in
+        // CircuitMaker, but would join whatever wire it lies on here
+        if (w.h[7] == 0 && w.h[8] == 0 && !w.isBus()
+            && std::all_of(w.points.cbegin(), w.points.cend(), [&](QPointF p) { return p == w.points.first(); }))
+            continue;
         Wire out;
         out.bus = w.isBus();
         if (out.bus)
@@ -558,9 +563,9 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
                 return (b < 0 ? decodeName(b) : QString::number(b)) + u'.' + QString::number(v);
             };
             if (w.h[7] == 0 && (w.h[0] < 0 || (w.h[0] > 0 && onBus(w.h[9]))))
-                entries << Entry{out.points.first(), out.points.value(1), entryName(w.h[0], w.h[9])};
+                entries << Entry{out.points.first(), out.points.value(1), entryName(w.h[0], w.h[9]), w.h[2]};
             if (w.h[8] == 0 && (w.h[1] < 0 || (w.h[1] > 0 && onBus(w.h[10]))))
-                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), entryName(w.h[1], w.h[10])};
+                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), entryName(w.h[1], w.h[10]), w.h[2]};
         }
     }
     QSet<std::pair<qint64, qint64>> entryAt;
@@ -610,23 +615,28 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
                 const QPointF a = w.points[seg], b = w.points[seg + 1];
                 if ((a.x() != b.x() && a.y() != b.y()) || a == b) continue;
                 const QPointF dir = (b - a) / QLineF(a, b).length();
+                const QPointF across(-dir.y(), dir.x());
+                // the crossed tip nearest to a; after stepping around it the
+                // rest of the segment comes next
+                const Tip* first = nullptr;
                 for (const Tip& t : std::as_const(tips)) {
                     if (t.cmNet == it.value() || !WireGeometry::onSegment(t.at, a, b)) continue;
                     if (QLineF(a, t.at).length() < 10 || QLineF(b, t.at).length() < 10) continue;
-                    const QPointF across(-dir.y(), dir.x());
-                    for (int side : {1, -1}) {
-                        const QPointF p1 = t.at - dir * 10, p4 = t.at + dir * 10;
-                        const QPointF p2 = p1 + across * 10 * side, p3 = p4 + across * 10 * side;
-                        if (blocked({p1, p2, p3, p4}, it.value())) continue;
-                        w.points.insert(seg + 1, p1);
-                        w.points.insert(seg + 2, p2);
-                        w.points.insert(seg + 3, p3);
-                        w.points.insert(seg + 4, p4);
-                        changed = true;
-                        ++stepped;
-                        break;
-                    }
-                    break;      // one step per segment; the rest is checked on the next pass
+                    if (!first || QLineF(a, t.at).length() < QLineF(a, first->at).length()) first = &t;
+                }
+                if (!first) continue;
+                for (int side : {1, -1}) {
+                    const QPointF p1 = first->at - dir * 10, p4 = first->at + dir * 10;
+                    const QPointF p2 = p1 + across * 10 * side, p3 = p4 + across * 10 * side;
+                    if (blocked({p1, p2, p3, p4}, it.value())) continue;
+                    w.points.insert(seg + 1, p1);
+                    w.points.insert(seg + 2, p2);
+                    w.points.insert(seg + 3, p3);
+                    w.points.insert(seg + 4, p4);
+                    seg += 3;   // continue with p4 -> b
+                    changed = true;
+                    ++stepped;
+                    break;
                 }
             }
             if (changed) circuit.updateWire(w);
@@ -657,10 +667,25 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
     for (auto it = wireNetOf.cbegin(); it != wireNetOf.cend(); ++it)
         byCmNet[it.value()] << Member{nl.wireNet.value(it.key(), -1), circuit.wire(it.key())->points.first(), false};
 
+    // CircuitMaker numbers each side of a bus entry separately; entries with
+    // the same name are one node
+    QHash<int, int> cmNode;                     // CM net -> representative
+    auto nodeOf = [&](int net) {
+        while (cmNode.contains(net) && cmNode[net] != net) net = cmNode[net];
+        return net;
+    };
+    QHash<QString, int> entryNet;
+    for (const Entry& e : std::as_const(entries)) {
+        if (e.cmNet <= 0) continue;
+        if (auto it = entryNet.constFind(e.name); it != entryNet.cend())
+            cmNode[nodeOf(e.cmNet)] = nodeOf(*it);
+        else
+            entryNet.insert(e.name, e.cmNet);
+    }
     QHash<int, QSet<int>> cmNetsOfOurNet;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it)
         for (const Member& m : it.value())
-            if (m.ourNet >= 0) cmNetsOfOurNet[m.ourNet].insert(it.key());
+            if (m.ourNet >= 0) cmNetsOfOurNet[m.ourNet].insert(nodeOf(it.key()));
     int shorts = 0;
     for (const QSet<int>& s : std::as_const(cmNetsOfOurNet))
         shorts += s.size() > 1;

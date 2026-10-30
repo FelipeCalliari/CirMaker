@@ -133,10 +133,13 @@ static QVector<double> inputRows(int count)
 {
     if (count <= 1) return {0};
     if (count == 2) return {-30, 30};
-    const double pitch = count == 3 ? 30 : 20;
+    // CircuitMaker's spacing, also for 4 and 8 inputs; an even count sits
+    // half a pitch low as in its symbols (-40, -10, 20, 50), keeping the grid
+    const double pitch = 30;
+    const double shift = count % 2 ? 0 : 5;
     QVector<double> rows;
     for (int i = 0; i < count; ++i)
-        rows << (i - (count - 1) / 2.0) * pitch;
+        rows << (i - (count - 1) / 2.0) * pitch + shift;
     return rows;
 }
 

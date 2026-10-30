@@ -72,8 +72,10 @@ void TestCktImport::importsAllCircuits()
     }
     qInfo("%lld files, %d devices, %d wires, %d net labels, %d nets merged by redrawn symbols",
           qlonglong(files.size()), devices, wires, labels, shorts);
-    // regression guard for symbol geometry: was 138 before the CircuitMaker layouts
-    QVERIFY2(shorts <= 65, qPrintable(QString::number(shorts)));
+    // regression guard for symbol geometry (138 before the CircuitMaker
+    // layouts); what remains is mostly analog symbols and stale net numbers
+    // in the files themselves
+    QVERIFY2(shorts <= 30, qPrintable(QString::number(shorts)));
     QStringList missing;
     for (auto it = unmapped.cbegin(); it != unmapped.cend(); ++it)
         missing << QStringLiteral("%1 x%2").arg(it.key()).arg(it.value());
