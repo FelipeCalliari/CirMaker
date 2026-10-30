@@ -649,6 +649,68 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             rep.warnings << QStringLiteral("%1 wires stepped around pins they crossed without connecting").arg(stepped);
     }
 
+    // ---- rounding to our grid can lay a wire on top of another net's wire
+    // (CircuitMaker allows wires one of its units apart): move such middle
+    // segments sideways until they are clear
+    {
+        struct Seg { QPointF a, b; int net; };
+        auto foreign = [&](ItemId self, int net) {
+            QVector<Seg> out;
+            for (auto it = wireNetOf.cbegin(); it != wireNetOf.cend(); ++it) {
+                if (it.key() == self || it.value() == net) continue;
+                const QVector<QPointF>& pts = circuit.wire(it.key())->points;
+                for (int i = 0; i + 1 < pts.size(); ++i) out << Seg{pts[i], pts[i + 1], it.value()};
+            }
+            return out;
+        };
+        QVector<std::pair<QPointF, int>> tips;          // pin tips with their CM net
+        for (int i = 0; i < placed.size(); ++i) {
+            if (!placed[i].id) continue;
+            const Device& d = file.devices[i];
+            const Component* c = circuit.component(placed[i].id);
+            for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin)
+                if (const int pin = ourPin(*placed[i].symbol, d, cmPin); pin >= 0)
+                    tips.push_back({library.pinScenePos(*c, pin), d.nets[cmPin]});
+        }
+        auto touches = [&](const QVector<QPointF>& pts, int from, int to, const QVector<Seg>& others, int net) {
+            for (int i = from; i < to; ++i) {
+                for (const Seg& o : others)
+                    if (WireGeometry::onSegment(o.a, pts[i], pts[i + 1]) || WireGeometry::onSegment(o.b, pts[i], pts[i + 1])
+                        || WireGeometry::onSegment(pts[i], o.a, o.b) || WireGeometry::onSegment(pts[i + 1], o.a, o.b))
+                        return true;
+                for (const auto& [at, tipNet] : tips)
+                    if (tipNet != net && WireGeometry::onSegment(at, pts[i], pts[i + 1])) return true;
+            }
+            return false;
+        };
+        int moved = 0;
+        for (auto it = wireNetOf.cbegin(); it != wireNetOf.cend(); ++it) {
+            Wire w = *circuit.wire(it.key());
+            const QVector<Seg> others = foreign(it.key(), it.value());
+            bool changed = false;
+            for (int seg = 1; seg + 2 < w.points.size(); ++seg) {
+                const QPointF a = w.points[seg], b = w.points[seg + 1];
+                const bool horizontal = a.y() == b.y(), vertical = a.x() == b.x();
+                if (horizontal == vertical) continue;
+                if (!touches(w.points, seg, seg + 1, others, it.value())) continue;
+                for (double off : {-10.0, 10.0, -20.0, 20.0}) {
+                    QVector<QPointF> trial = w.points;
+                    const QPointF d = horizontal ? QPointF(0, off) : QPointF(off, 0);
+                    trial[seg] += d;
+                    trial[seg + 1] += d;
+                    if (touches(trial, seg - 1, seg + 2, others, it.value())) continue;
+                    w.points = trial;
+                    changed = true;
+                    ++moved;
+                    break;
+                }
+            }
+            if (changed) circuit.updateWire(w);
+        }
+        if (moved)
+            rep.warnings << QStringLiteral("%1 wire segments moved off wires of other nets").arg(moved);
+    }
+
     // ---- connectivity check: every CM net must be one of our nets
     const Netlist nl = NetlistBuilder::build(circuit, library);
     struct Member { int ourNet; QPointF at; bool pin; };
