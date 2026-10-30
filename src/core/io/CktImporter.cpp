@@ -97,6 +97,7 @@ struct Device {
     std::optional<QRectF> valueRect, designatorRect;
     QVector<int> nets;
     QString value, designator, prefix;
+    QString kind;               // "type:digital", "alias:XPLLX {Fc=100k Fr=50k}"
     QVector<int> data;
     QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
 };
@@ -187,7 +188,7 @@ Device readDevice(Reader& r, double version)
     r.string();                                 // SPICE template
     r.string();
     if (version > 4.0) {
-        r.string();                             // "type:digital"
+        d.kind = r.string();                    // "type:digital", or a model alias with parameters
         r.string();                             // package
     }
     // package pin map: 0, the pins of this part, then the pins of every part
@@ -430,6 +431,16 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             c.label = s->defaultLabel;
         }
         c.symbolId = s->id;
+        // model parameters given with the alias, "{Fc=100k Fr=50k}": those the part has
+        static const QRegularExpression params(QStringLiteral("\\{([^}]*)\\}"));
+        if (const auto m = params.match(d.kind); m.hasMatch()) {
+            for (const QString& pair : m.captured(1).split(u' ', Qt::SkipEmptyParts)) {
+                const int eq = pair.indexOf(u'=');
+                if (eq <= 0) continue;
+                for (auto it = s->defaultProps.cbegin(); it != s->defaultProps.cend(); ++it)
+                    if (it.key().compare(pair.left(eq), Qt::CaseInsensitive) == 0) c.props.insert(it.key(), pair.mid(eq + 1));
+            }
+        }
 
         const QString kind = s->model.value(u"kind").toString();
         if (kind == u"logicswitch")
@@ -442,6 +453,10 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
             static const QRegularExpression percent(QStringLiteral("(\\d+(?:\\.\\d+)?)\\s*%"));
             if (const auto m = percent.match(d.value); m.hasMatch())
                 c.props.insert(QStringLiteral("position"), m.captured(1).toDouble());
+        } else if (s->id == u"vco" && d.value.trimmed().toUpper() == u"SQRVCO") {
+            // CircuitMaker's square-wave VCO swings 0 to 5 V
+            c.props.insert(QStringLiteral("low"), QStringLiteral("0"));
+            c.props.insert(QStringLiteral("high"), QStringLiteral("5"));
         } else if (kind == u"siggen") {
             // "-1/1V": low/high levels
             static const QRegularExpression levels(QStringLiteral("^\\s*([-+]?[\\d.]+[a-zA-Z]*)\\s*/\\s*([-+]?[\\d.]+[a-zA-Z]*)"));

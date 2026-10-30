@@ -46,7 +46,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Válvulas, motores, alto-falantes, reguladores, JFET, cristal, fusível, ponte retificadora, Darlington, buzzer, solenoide | ✅ | modelos SPICE simplificados (motor/solenoide = R+L, alto-falante/buzzer = R, válvulas pela lei de 3/2) |
 | Fontes controladas V→V, V→I, I→V, I→I e chaves controladas por V/I | ✅ | modelos E, G, H, F, S e W do SPICE |
 | UJT, PUT, fontes não lineares (NLV/NLI), ADC8/DAC8, linha sem perdas, coaxial, par trançado, blocos gain/divider | ✅ | na simulação analógica; ADC/DAC comportamentais (0/5 V) |
-| PLL, VCO, V-Math, blocos diferenciais (gain:A) | ❌ | importados como `?` |
+| PLL, VCO, V-Math, blocos diferenciais (gain:A) | ✅ | V-Math1/2 e versões Ref (o rótulo escolhe a função: ABSV, SQRTV, ADDV, MULTV...); gain:A e divider:A com entrada diferencial; VCO senoidal/quadrada/triangular (XSPICE); PLL tipo CD4046 (comparador XOR, VCO de Fc−Fr a Fc+Fr, saída demodulada), com Fc/Fr lidos e gravados no `.ckt` |
 | Macros (subcircuitos com símbolo próprio, Expand Macro) | ✅ | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`, Macro Lock com senha; símbolo em caixa com editor de pinos (lados, ordem, espaços, largura, título) |
 
 ## Simulação digital

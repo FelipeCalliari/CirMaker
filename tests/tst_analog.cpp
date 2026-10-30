@@ -46,6 +46,8 @@ private slots:
     void controlledSources();
     void converters();
     void blocksAndExpressions();
+    void mathBlocks();
+    void vcoAndPll();
     void transmissionLineDelay();
     void unijunctions();
     void ownSpiceLine();
@@ -1035,6 +1037,105 @@ void TestAnalog::blocksAndExpressions()
     QVERIFY(qAbs(r.last(QStringLiteral("gain")).value_or(0) - 6) < 1e-6);
     QVERIFY(qAbs(r.last(QStringLiteral("quot")).value_or(0) - 3) < 1e-6);
     QVERIFY(qAbs(r.last(QStringLiteral("prod")).value_or(0) - 12) < 1e-6);
+}
+
+// V-Math1/2 (the label picks the function), their floating-output versions
+// and the differential gain and divider blocks
+void TestAnalog::mathBlocks()
+{
+    requireEngine();
+    Circuit c;
+    supply(c, QStringLiteral("A"), QStringLiteral("4"));
+    supply(c, QStringLiteral("B"), QStringLiteral("2"));
+    ground(c, QStringLiteral("G"));
+    const QString S = QStringLiteral("SQRT"), M = QStringLiteral("MULT"), U = QStringLiteral("NEG"), K = QStringLiteral("GAIN"),
+                  D = QStringLiteral("DIV");
+    const ItemId sq = part(c, QStringLiteral("vmath1"), QStringLiteral("A1"), QStringLiteral("SQRTV"));
+    wire(c, sq, QStringLiteral("V"), QStringLiteral("A"));
+    wire(c, sq, QStringLiteral("Q"), S);
+    const ItemId mul = part(c, QStringLiteral("vmath2"), QStringLiteral("A2"), QStringLiteral("MULTV"));
+    wire(c, mul, QStringLiteral("A"), QStringLiteral("A"));
+    wire(c, mul, QStringLiteral("B"), QStringLiteral("B"));
+    wire(c, mul, QStringLiteral("Q"), M);
+    const ItemId neg = part(c, QStringLiteral("vmath1_ref"), QStringLiteral("A3"), QStringLiteral("UNARYVR"));
+    wire(c, neg, QStringLiteral("V+"), QStringLiteral("A"));
+    wire(c, neg, QStringLiteral("V-"), QStringLiteral("B"));
+    wire(c, neg, QStringLiteral("Q+"), U);
+    wire(c, neg, QStringLiteral("Q-"), QStringLiteral("G"));
+    const ItemId gain = part(c, QStringLiteral("gain_diff"), QStringLiteral("A4"), {}, {{QStringLiteral("gain"), QStringLiteral("3")}});
+    wire(c, gain, QStringLiteral("IN+"), QStringLiteral("A"));
+    wire(c, gain, QStringLiteral("IN-"), QStringLiteral("B"));
+    wire(c, gain, QStringLiteral("OUT+"), K);
+    wire(c, gain, QStringLiteral("OUT-"), QStringLiteral("G"));
+    const ItemId div = part(c, QStringLiteral("divider_diff"), QStringLiteral("A5"));
+    wire(c, div, QStringLiteral("NUM+"), QStringLiteral("A"));
+    wire(c, div, QStringLiteral("NUM-"), QStringLiteral("G"));
+    wire(c, div, QStringLiteral("DEN+"), QStringLiteral("B"));
+    wire(c, div, QStringLiteral("DEN-"), QStringLiteral("G"));
+    wire(c, div, QStringLiteral("OUT+"), D);
+    wire(c, div, QStringLiteral("OUT-"), QStringLiteral("G"));
+    for (const QString& n : {S, M, U, K, D}) resistor(c, QStringLiteral("1k"), n, QStringLiteral("G"));
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const QPair<QString, double> expected[] = {{QStringLiteral("sqrt"), 2}, {QStringLiteral("mult"), 8}, {QStringLiteral("neg"), -2},
+                                               {QStringLiteral("gain"), 6}, {QStringLiteral("div"), 2}};
+    for (const auto& [node, v] : expected)
+        QVERIFY2(qAbs(r.last(node).value_or(1e9) - v) < 1e-6, qPrintable(node + u' ' + QString::number(r.last(node).value_or(1e9))));
+}
+
+// A square-wave VCO at 2 V runs at 2 kHz; a PLL locks its VCO onto a 12 kHz input.
+void TestAnalog::vcoAndPll()
+{
+    requireEngine();
+    {
+        Circuit c;
+        supply(c, QStringLiteral("CTL"), QStringLiteral("2"));
+        ground(c, QStringLiteral("G"));
+        const ItemId v = part(c, QStringLiteral("vco"), QStringLiteral("A1"), QStringLiteral("SQRVCO"),
+                              {{QStringLiteral("low"), QStringLiteral("0")}, {QStringLiteral("high"), QStringLiteral("5")}});
+        wire(c, v, QStringLiteral("C+"), QStringLiteral("CTL"));
+        wire(c, v, QStringLiteral("C-"), QStringLiteral("G"));
+        wire(c, v, QStringLiteral("OUT+"), QStringLiteral("OUT"));
+        wire(c, v, QStringLiteral("OUT-"), QStringLiteral("G"));
+        resistor(c, QStringLiteral("1k"), QStringLiteral("OUT"), QStringLiteral("G"));
+        transient(c, QStringLiteral("5m"), QStringLiteral("5u"));
+        spice::Deck deck;
+        const spice::Result r = simulate(c, &deck);
+        QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+        const QVector<double> edges = risingEdges(r, QStringLiteral("out"), 2.5);
+        QVERIFY(edges.size() >= 5);
+        QVERIFY2(qAbs((edges.last() - edges[1]) / (edges.size() - 2) - 0.5e-3) < 0.02e-3, qPrintable(deck.text));
+    }
+    Circuit c;
+    supply(c, QStringLiteral("VDD"), QStringLiteral("5"));
+    ground(c, QStringLiteral("G"));
+    const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V1"), {},
+                          {{QStringLiteral("wave"), QStringLiteral("sine")}, {QStringLiteral("offset"), QStringLiteral("2.5")},
+                           {QStringLiteral("amplitude"), QStringLiteral("2.5")}, {QStringLiteral("frequency"), QStringLiteral("12k")}});
+    wire(c, g, QStringLiteral("+"), QStringLiteral("SIG"));
+    wire(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    const ItemId pll = part(c, QStringLiteral("pll"), QStringLiteral("U1"));
+    const QPair<QString, QString> pins[] = {{QStringLiteral("Sig"), QStringLiteral("SIG")}, {QStringLiteral("Comp"), QStringLiteral("OUT")},
+                                            {QStringLiteral("Vout"), QStringLiteral("OUT")}, {QStringLiteral("Vss"), QStringLiteral("G")},
+                                            {QStringLiteral("Dem"), QStringLiteral("DEM")}, {QStringLiteral("Vin"), QStringLiteral("VIN")},
+                                            {QStringLiteral("PC"), QStringLiteral("PC")}, {QStringLiteral("Vdd"), QStringLiteral("VDD")}};
+    for (const auto& [pin, net] : pins) wire(c, pll, pin, net);
+    resistor(c, QStringLiteral("10k"), QStringLiteral("PC"), QStringLiteral("VIN"));
+    const ItemId cap = part(c, QStringLiteral("capacitor"), QStringLiteral("C1"), QStringLiteral("10n"));
+    wire(c, cap, QStringLiteral("1"), QStringLiteral("VIN"));
+    wire(c, cap, QStringLiteral("2"), QStringLiteral("G"));
+    transient(c, QStringLiteral("20m"), QStringLiteral("1u"));
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    QVector<double> edges;
+    for (double t : risingEdges(r, QStringLiteral("out"), 2.5))
+        if (t > 15e-3) edges << t;
+    QVERIFY(edges.size() > 20);
+    const double f = (edges.size() - 1) / (edges.last() - edges.first());
+    QVERIFY2(qAbs(f - 12e3) < 100, qPrintable(QString::number(f)));
 }
 
 void TestAnalog::transmissionLineDelay()

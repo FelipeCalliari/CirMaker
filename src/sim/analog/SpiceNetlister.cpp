@@ -182,8 +182,9 @@ private:
         if (const QString models = c.props.value(QStringLiteral("spiceModels")).toString().trimmed(); !models.isEmpty())
             addModel(models);           // one block: identical parts share it
         if (!own.isEmpty() || !s.spice.isEmpty()) {
-            const QString line = own.isEmpty() ? s.spice.value(u"line").toString() : own;
-            emitTemplate(c, s, name, line);
+            const QJsonObject spice = variant(c, s);
+            const QString line = own.isEmpty() ? spice.value(u"line").toString() : own;
+            emitTemplate(c, s, name, line, spice);
             noteCurrent(c, line.left(1), name);
             if (line.startsWith(u'V'))
                 m_deck.sourceOfDesignator.insert(c.designator, u'V' + name);
@@ -200,7 +201,8 @@ private:
         emitDigital(c, s, name, kind);
     }
 
-    void emitTemplate(const Component& c, const SymbolDef& s, const QString& name, const QString& tpl)
+    // {name}, {value}, {prop:x} and, in the element line only, {pin}
+    QString expand(const Component& c, const SymbolDef& s, const QString& name, const QString& tpl, bool pins)
     {
         static const QRegularExpression placeholder(QStringLiteral("\\{([^}]+)\\}"));
         QString out;
@@ -212,14 +214,40 @@ private:
             if (key == u"name") out += name;
             else if (key == u"value") out += value(c, s);
             else if (key.startsWith(u"prop:")) out += props(c, s).value(key.mid(5)).toString();
-            else if (s.pinIndex(key) >= 0) out += node(c, s, key);
+            else if (pins && s.pinIndex(key) >= 0) out += node(c, s, key);
             else out += m.captured(0);
             last = int(m.capturedEnd());
         }
         out += tpl.mid(last);
-        m_lines << out;
-        for (const QJsonValue& v : s.spice.value(u"models").toArray()) addModel(v.toString());
-        addSubckt(s.spice.value(u"subckt").toArray());
+        return out;
+    }
+
+    // Models and subcircuits may name the part ({name}) to carry its own
+    // parameters; identical text is emitted once.
+    // A symbol may offer variants chosen by a property ("select"): each
+    // replaces the line, models and subcircuit it gives.
+    static QJsonObject variant(const Component& c, const SymbolDef& s)
+    {
+        QJsonObject spice = s.spice;
+        const QString select = s.spice.value(u"select").toString();
+        if (select.isEmpty()) return spice;
+        const QJsonObject variants = s.spice.value(u"variants").toObject();
+        // "label": the text on the part names the variant, as CircuitMaker's device value does
+        QString chosen = select == u"label" ? c.label.trimmed().toUpper()
+                                            : c.props.value(select, s.defaultProps.value(select)).toString();
+        if (!variants.contains(chosen) && !variants.isEmpty()) chosen = variants.begin().key();
+        const QJsonObject v = variants.value(chosen).toObject();
+        for (auto it = v.begin(); it != v.end(); ++it) spice.insert(it.key(), it.value());
+        return spice;
+    }
+
+    void emitTemplate(const Component& c, const SymbolDef& s, const QString& name, const QString& tpl, const QJsonObject& spice)
+    {
+        m_lines << expand(c, s, name, tpl, true);
+        for (const QJsonValue& v : spice.value(u"models").toArray()) addModel(expand(c, s, name, v.toString(), false));
+        QJsonArray sub;
+        for (const QJsonValue& v : spice.value(u"subckt").toArray()) sub << expand(c, s, name, v.toString(), false);
+        addSubckt(sub);
     }
 
     double number(const QVariantMap& p, const char* key, double fallback)

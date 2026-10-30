@@ -891,6 +891,142 @@ def rare_parts():
     ]
 
 
+# CircuitMaker's math blocks: the part's label names the function, as the
+# device value does in CircuitMaker ("ABSV", "ADDV"; "...R" for the versions
+# with floating inputs and output).
+VMATH1 = {'ABSV': 'abs({x})', 'ACOSV': 'acos({x})', 'ACOSHV': 'acosh({x})', 'ASINV': 'asin({x})',
+          'ASINHV': 'asinh({x})', 'ATANV': 'atan({x})', 'ATANHV': 'atanh({x})', 'COSV': 'cos({x})',
+          'COSHV': 'cosh({x})', 'EXPV': 'exp({x})', 'LNV': 'ln({x})', 'LOGV': 'log10({x})', 'SINV': 'sin({x})',
+          'SINHV': 'sinh({x})', 'SQRTV': 'sqrt({x})', 'TANV': 'tan({x})', 'UNARYV': '-({x})'}
+VMATH2 = {'ADDV': '({a})+({b})', 'SUBV': '({a})-({b})', 'MULTV': '({a})*({b})', 'DIVV': '({a})/({b})'}
+
+
+def vmath_variants(table, out, args, loads, suffix=''):
+    return {name + suffix: {'line': f'B{{name}} {out} V=' + expr.format(**args) + N
+                            + N.join(f'R{{name}}{k} {a} {b} 1Meg' for k, (a, b) in enumerate(loads))}
+            for name, expr in table.items()}
+
+
+# Phase-locked loop (CD4046-like): input buffers at half the supply, an
+# exclusive-OR phase comparator, a VCO from fc - fr to fc + fr over Vin = 0..VDD,
+# and the demodulator output following Vin.
+PLL = ['.subckt PLL_GEN sig comp vout vss dem vin pc vdd params: fc=10k fr=5k rs=100',
+       'Rin1 sig vdd 1.5Meg',
+       'Rin2 sig vss 1.5Meg',
+       'Bs s 0 V=0.5+0.5*tanh(40*(v(sig,vss)/(v(vdd,vss)+1e-9)-0.5))',
+       'Bc k 0 V=0.5+0.5*tanh(40*(v(comp,vss)/(v(vdd,vss)+1e-9)-0.5))',
+       'Bpc p vss V=v(vdd,vss)*(v(s)+v(k)-2*v(s)*v(k))',
+       'Rpc p pc {rs}',
+       'Bctl ctl 0 V=v(vin,vss)/(v(vdd,vss)+1e-9)',
+       'Rctl ctl 0 100Meg',
+       'Avco %vd(ctl 0) %vd(osc 0) vcom',
+       '.model vcom square(cntl_array=[0 1] freq_array=[{fc-fr} {fc+fr}] out_low=0 out_high=1 duty_cycle=0.5 '
+       'rise_time=1e-7 fall_time=1e-7)',
+       'Bo o vss V=v(osc)*v(vdd,vss)',
+       'Ro o vout {rs}',
+       'Bd d vss V=v(vin,vss)',
+       'Rd d dem {rs}',
+       '.ends']
+
+
+def vco_model(kind, extra=''):
+    return {'models': ['.model {name}_m ' + kind + '(cntl_array=[{prop:cntl}] freq_array=[{prop:freq}] '
+                       'out_low={prop:low} out_high={prop:high}' + extra + ')']}
+
+
+def math_blocks():
+    box1 = [R(-60, -30, 120, 60), L(-90, 0, -60, 0), L(60, 0, 90, 0), T('f(V)', 0, 0, 9)]
+    return [
+        {'id': 'vmath1', 'name': 'V-Math1', 'prefix': 'A', 'label': 'ABSV', 'aliases': ['V-Math1'],
+         'cmPins': ['V', 'Q'],
+         'spice': {'select': 'label', 'variants': vmath_variants(VMATH1, '{Q} 0', {'x': 'v({V})'}, [('{V}', '0')])},
+         'description': 'Function of a voltage, referred to ground; the label picks it: ' + ', '.join(VMATH1),
+         'graphics': box1, 'pins': [pin('V', -90, 0, 'in'), pin('Q', 90, 0, 'out')]},
+        {'id': 'vmath1_ref', 'name': 'V-Math1 Ref', 'prefix': 'A', 'label': 'ABSVR', 'aliases': ['V-Math1 Ref'],
+         'cmPins': ['V+', 'V-', 'Q-', 'Q+'],
+         'spice': {'select': 'label', 'variants': vmath_variants(VMATH1, '{Q+} {Q-}', {'x': 'v({V+},{V-})'},
+                                                                [('{V+}', '{V-}')], 'R')},
+         'description': 'Function of a differential voltage, floating output; the label picks it: '
+                        + ', '.join(k + 'R' for k in VMATH1),
+         'graphics': [R(-60, -50, 120, 70), L(-90, -30, -60, -30), L(-90, 0, -60, 0), L(60, -30, 90, -30),
+                      L(60, 0, 90, 0), T('f(V)', 0, -15, 9), T('+', -50, -30, 7, 'left'), T('+', 50, -30, 7, 'right')],
+         'pins': [pin('V+', -90, -30, 'in'), pin('V-', -90, 0, 'in'), pin('Q-', 90, 0, 'out'), pin('Q+', 90, -30, 'out')]},
+        {'id': 'vmath2', 'name': 'V-Math2', 'prefix': 'A', 'label': 'ADDV', 'aliases': ['V-Math2'],
+         'cmPins': ['A', 'B', 'Q'],
+         'spice': {'select': 'label', 'variants': vmath_variants(VMATH2, '{Q} 0', {'a': 'v({A})', 'b': 'v({B})'},
+                                                                [('{A}', '0'), ('{B}', '0')])},
+         'description': 'Sum, difference, product or quotient of two voltages, referred to ground; the label picks it: '
+                        + ', '.join(VMATH2),
+         'graphics': [R(-60, -50, 120, 70), L(-90, -30, -60, -30), L(-90, 0, -60, 0), L(60, -30, 90, -30),
+                      T('A', -50, -30, 7, 'left'), T('B', -50, 0, 7, 'left'), T('Q', 50, -30, 7, 'right')],
+         'pins': [pin('A', -90, -30, 'in'), pin('B', -90, 0, 'in'), pin('Q', 90, -30, 'out')]},
+        {'id': 'vmath2_ref', 'name': 'V-Math2 Ref', 'prefix': 'A', 'label': 'ADDVR', 'aliases': ['V-Math2 Ref'],
+         'cmPins': ['A+', 'A-', 'B+', 'B-', 'Q-', 'Q+'],
+         'spice': {'select': 'label', 'variants': vmath_variants(VMATH2, '{Q+} {Q-}',
+                                                                {'a': 'v({A+},{A-})', 'b': 'v({B+},{B-})'},
+                                                                [('{A+}', '{A-}'), ('{B+}', '{B-}')], 'R')},
+         'description': 'Operation on two differential voltages, floating output; the label picks it: '
+                        + ', '.join(k + 'R' for k in VMATH2),
+         'graphics': [R(-60, -50, 120, 130), L(-90, -30, -60, -30), L(-90, 0, -60, 0), L(-90, 30, -60, 30),
+                      L(-90, 60, -60, 60), L(60, 0, 90, 0), L(60, 30, 90, 30), T('A+', -50, -30, 7, 'left'),
+                      T('A-', -50, 0, 7, 'left'), T('B+', -50, 30, 7, 'left'), T('B-', -50, 60, 7, 'left'),
+                      T('Q+', 50, 0, 7, 'right'), T('Q-', 50, 30, 7, 'right')],
+         'pins': [pin('A+', -90, -30, 'in'), pin('A-', -90, 0, 'in'), pin('B+', -90, 30, 'in'), pin('B-', -90, 60, 'in'),
+                  pin('Q-', 90, 30, 'out'), pin('Q+', 90, 0, 'out')]},
+        {'id': 'gain_diff', 'name': 'Gain (differential)', 'prefix': 'A', 'label': 'x1', 'aliases': ['gain:A'],
+         'cmPins': ['IN+', 'IN-', 'OUT+', 'OUT-'], 'props': {'gain': '1'},
+         'spice': sp('B{name} {OUT+} {OUT-} V={prop:gain}*v({IN+},{IN-})' + N + 'R{name} {IN+} {IN-} 1Meg'),
+         'description': 'Gain block with differential input and floating output: OUT = gain x (IN+ - IN-)',
+         'graphics': [P('M -30 -60 L 80 0 L -30 60 Z'), L(-60, -30, -30, -30), L(-60, 30, -30, 30),
+                      L(50, -16, 80, -16), L(80, -16, 80, -30), L(80, -30, 110, -30), L(50, 16, 80, 16),
+                      L(80, 16, 80, 30), L(80, 30, 110, 30), T('K', 0, 0, 10), T('+', -22, -30, 7, 'left'),
+                      T('-', -22, 30, 7, 'left')],
+         'pins': [pin('IN+', -60, -30, 'in'), pin('IN-', -60, 30, 'in'), pin('OUT+', 110, -30, 'out'),
+                  pin('OUT-', 110, 30, 'out')]},
+        {'id': 'divider_diff', 'name': 'Divider (differential)', 'prefix': 'A', 'label': '÷', 'aliases': ['divider:A'],
+         'cmPins': ['NUM+', 'NUM-', 'DEN+', 'DEN-', 'OUT+', 'OUT-'],
+         'spice': sp('B{name} {OUT+} {OUT-} V=v({NUM+},{NUM-})/(abs(v({DEN+},{DEN-}))<1e-9?1e-9:v({DEN+},{DEN-}))' + N
+                     + 'R{name}a {NUM+} {NUM-} 1Meg' + N + 'R{name}b {DEN+} {DEN-} 1Meg'),
+         'description': 'Divider with differential inputs and floating output: OUT = (NUM+ - NUM-) / (DEN+ - DEN-)',
+         'graphics': [R(-30, -80, 110, 160), T('÷', 25, 0, 16), L(-60, -60, -30, -60), L(-60, -30, -30, -30),
+                      L(-60, 30, -30, 30), L(-60, 60, -30, 60), L(80, -30, 110, -30), L(80, 30, 110, 30),
+                      T('N', -22, -45, 7, 'left'), T('D', -22, 45, 7, 'left')],
+         'pins': [pin('NUM+', -60, -60, 'in'), pin('NUM-', -60, -30, 'in'), pin('DEN+', -60, 30, 'in'),
+                  pin('DEN-', -60, 60, 'in'), pin('OUT+', 110, -30, 'out'), pin('OUT-', 110, 30, 'out')]},
+        {'id': 'vco', 'name': 'VCO', 'prefix': 'A', 'label': 'SINEVCO', 'aliases': ['VCO'],
+         'cmPins': ['C+', 'C-', 'OUT+', 'OUT-'],
+         'props': {'cntl': '0 1 2 3 4', 'freq': '0 1k 2k 3k 4k', 'low': '-1', 'high': '1', 'duty': '0.5'},
+         'spice': {'line': 'A{name} %vd({C+} {C-}) %vd({OUT+} {OUT-}) {name}_m', 'select': 'label',
+                   'variants': {'SINEVCO': vco_model('sine'),
+                                'SQRVCO': vco_model('square', ' duty_cycle={prop:duty} rise_time=1u fall_time=1u'),
+                                'TRIVCO': vco_model('triangle', ' duty_cycle={prop:duty}')}},
+         'description': 'Voltage-controlled oscillator: the frequency follows the control voltage through the '
+                        '"cntl" and "freq" points; the label picks the wave (SINEVCO, SQRVCO, TRIVCO), '
+                        'between "low" and "high"',
+         'graphics': [R(-60, -80, 60, 180), L(-90, -60, -60, -60), L(-90, 80, -60, 80), L(0, -60, 30, -60),
+                      L(0, 80, 30, 80), P('M -45 10 Q -38 -10 -30 10 Q -22 30 -15 10'), T('VCO', -30, -35, 8),
+                      T('+', -52, -60, 7, 'left'), T('+', -8, -60, 7, 'right')],
+         'pins': [pin('C+', -90, -60, 'in'), pin('C-', -90, 80, 'in'), pin('OUT+', 30, -60, 'out'),
+                  pin('OUT-', 30, 80, 'out')]},
+        {'id': 'pll', 'name': 'PLL', 'prefix': 'U', 'label': 'PLL10K', 'aliases': ['PLL'],
+         'cmPins': ['Sig', 'Comp', 'Vout', 'Vss', 'Dem', 'Vin', 'PC', 'Vdd'],
+         'props': {'fc': '10k', 'fr': '5k', 'rs': '100'},
+         'spice': sp('X{name} {Sig} {Comp} {Vout} {Vss} {Dem} {Vin} {PC} {Vdd} PLL_GEN fc={prop:fc} fr={prop:fr} '
+                     'rs={prop:rs}', subckt=PLL),
+         'description': 'Phase-locked loop (CD4046-like): XOR phase comparator (PC), VCO from fc - fr to fc + fr '
+                        'as Vin goes from Vss to Vdd (Vout), demodulator output (Dem) following Vin',
+         'graphics': [R(-140, -140, 110, 160), T('PLL', -85, -150, 8), L(-170, -120, -140, -120), L(-170, -90, -140, -90),
+                      L(-170, -60, -140, -60), L(-170, 0, -140, 0), L(-30, 0, 0, 0), L(-30, -30, 0, -30),
+                      L(-30, -60, 0, -60), L(-30, -120, 0, -120),
+                      T('Sig', -134, -120, 7, 'left'), T('Comp', -134, -90, 7, 'left'), T('Vout', -134, -60, 7, 'left'),
+                      T('Vss', -134, 0, 7, 'left'), T('Dem', -36, 0, 7, 'right'), T('Vin', -36, -30, 7, 'right'),
+                      T('PC', -36, -60, 7, 'right'), T('Vdd', -36, -120, 7, 'right')],
+         'pins': [pin('Sig', -170, -120, 'in'), pin('Comp', -170, -90, 'in'), pin('Vout', -170, -60, 'out'),
+                  pin('Vss', -170, 0), pin('Dem', 0, 0, 'out'), pin('Vin', 0, -30, 'in'), pin('PC', 0, -60, 'out'),
+                  pin('Vdd', 0, -120)]},
+    ]
+
+
 # 555 timer: divider, two comparators, a latch (with a small RC so it is not
 # an algebraic loop), totem-pole output and the discharge switch.
 TIMER555 = ['.subckt TIMER555 gnd trg out rst ctl thr dis vcc',
@@ -1195,5 +1331,5 @@ if __name__ == '__main__':
     write('60_ttl_gates.json', 'Digital/74xx Gates', package_gates(TTL_GATES, ttl=True))
     write('70_ttl_msi.json', 'Digital/74xx MSI', msi() + cm_chips())
     write('80_cmos_gates.json', 'Digital/40xx CMOS', package_gates(CMOS_GATES, ttl=False))
-    write('90_analog.json', 'Analog', analog())
+    write('90_analog.json', 'Analog', analog() + math_blocks())
     print('library written to', os.path.normpath(OUT))

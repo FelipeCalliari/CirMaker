@@ -285,6 +285,15 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             spice = QStringLiteral("%D %1 %2 DC 0 SIN(") + QString::number(offset, 'g', 6) + u' ' + g + u' '
                   + QString::number(frequency, 'g', 6) + QStringLiteral(" 0 0) AC 1 0");
         }
+        // model parameters after the alias, as CircuitMaker keeps them
+        QString modelKind = l.kind;
+        if (s.id == u"pll") {
+            const QVariantMap p = c.props;
+            modelKind += QStringLiteral(" {Fc=%1 Fr=%2 Rs=%3}")
+                             .arg(p.value(QStringLiteral("fc"), QStringLiteral("10k")).toString(),
+                                  p.value(QStringLiteral("fr"), QStringLiteral("5k")).toString(),
+                                  p.value(QStringLiteral("rs"), QStringLiteral("100")).toString());
+        }
         QVector<int> data;
         if (l.type == 0x50) {                           // PROM: 32 bytes after the record
             data = dataBytes(c);
@@ -353,7 +362,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         if (!value.isEmpty()) rec << rect(textRect(value, c.labelAt, labelAnchor));
         rec << str(designator);
         if (!designator.isEmpty()) rec << rect(textRect(designator, c.designatorAt, designatorAnchor));
-        rec << QStringLiteral("0") << str(l.power) << str(spice) << QStringLiteral("0") << str(l.kind) << str(l.package);
+        rec << QStringLiteral("0") << str(l.power) << str(spice) << QStringLiteral("0") << str(modelKind) << str(l.package);
         rec << QString::number(pkg.size() - 1) << join(pkg);
         rec << join({l.code & 0xffff, 0, 0, 0, l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);

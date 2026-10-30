@@ -5604,6 +5604,1339 @@
      "dir": "out"
     }
    ]
+  },
+  {
+   "id": "vmath1",
+   "name": "V-Math1",
+   "prefix": "A",
+   "label": "ABSV",
+   "aliases": [
+    "V-Math1"
+   ],
+   "cmPins": [
+    "V",
+    "Q"
+   ],
+   "spice": {
+    "select": "label",
+    "variants": {
+     "ABSV": {
+      "line": "B{name} {Q} 0 V=abs(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "ACOSV": {
+      "line": "B{name} {Q} 0 V=acos(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "ACOSHV": {
+      "line": "B{name} {Q} 0 V=acosh(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "ASINV": {
+      "line": "B{name} {Q} 0 V=asin(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "ASINHV": {
+      "line": "B{name} {Q} 0 V=asinh(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "ATANV": {
+      "line": "B{name} {Q} 0 V=atan(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "ATANHV": {
+      "line": "B{name} {Q} 0 V=atanh(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "COSV": {
+      "line": "B{name} {Q} 0 V=cos(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "COSHV": {
+      "line": "B{name} {Q} 0 V=cosh(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "EXPV": {
+      "line": "B{name} {Q} 0 V=exp(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "LNV": {
+      "line": "B{name} {Q} 0 V=ln(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "LOGV": {
+      "line": "B{name} {Q} 0 V=log10(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "SINV": {
+      "line": "B{name} {Q} 0 V=sin(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "SINHV": {
+      "line": "B{name} {Q} 0 V=sinh(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "SQRTV": {
+      "line": "B{name} {Q} 0 V=sqrt(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "TANV": {
+      "line": "B{name} {Q} 0 V=tan(v({V}))\nR{name}0 {V} 0 1Meg"
+     },
+     "UNARYV": {
+      "line": "B{name} {Q} 0 V=-(v({V}))\nR{name}0 {V} 0 1Meg"
+     }
+    }
+   },
+   "description": "Function of a voltage, referred to ground; the label picks it: ABSV, ACOSV, ACOSHV, ASINV, ASINHV, ATANV, ATANHV, COSV, COSHV, EXPV, LNV, LOGV, SINV, SINHV, SQRTV, TANV, UNARYV",
+   "graphics": [
+    {
+     "rect": [
+      -60,
+      -30,
+      120,
+      60
+     ]
+    },
+    {
+     "line": [
+      -90,
+      0,
+      -60,
+      0
+     ]
+    },
+    {
+     "line": [
+      60,
+      0,
+      90,
+      0
+     ]
+    },
+    {
+     "text": "f(V)",
+     "at": [
+      0,
+      0
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "V",
+     "at": [
+      -90,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Q",
+     "at": [
+      90,
+      0
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "vmath1_ref",
+   "name": "V-Math1 Ref",
+   "prefix": "A",
+   "label": "ABSVR",
+   "aliases": [
+    "V-Math1 Ref"
+   ],
+   "cmPins": [
+    "V+",
+    "V-",
+    "Q-",
+    "Q+"
+   ],
+   "spice": {
+    "select": "label",
+    "variants": {
+     "ABSVR": {
+      "line": "B{name} {Q+} {Q-} V=abs(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "ACOSVR": {
+      "line": "B{name} {Q+} {Q-} V=acos(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "ACOSHVR": {
+      "line": "B{name} {Q+} {Q-} V=acosh(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "ASINVR": {
+      "line": "B{name} {Q+} {Q-} V=asin(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "ASINHVR": {
+      "line": "B{name} {Q+} {Q-} V=asinh(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "ATANVR": {
+      "line": "B{name} {Q+} {Q-} V=atan(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "ATANHVR": {
+      "line": "B{name} {Q+} {Q-} V=atanh(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "COSVR": {
+      "line": "B{name} {Q+} {Q-} V=cos(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "COSHVR": {
+      "line": "B{name} {Q+} {Q-} V=cosh(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "EXPVR": {
+      "line": "B{name} {Q+} {Q-} V=exp(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "LNVR": {
+      "line": "B{name} {Q+} {Q-} V=ln(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "LOGVR": {
+      "line": "B{name} {Q+} {Q-} V=log10(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "SINVR": {
+      "line": "B{name} {Q+} {Q-} V=sin(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "SINHVR": {
+      "line": "B{name} {Q+} {Q-} V=sinh(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "SQRTVR": {
+      "line": "B{name} {Q+} {Q-} V=sqrt(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "TANVR": {
+      "line": "B{name} {Q+} {Q-} V=tan(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     },
+     "UNARYVR": {
+      "line": "B{name} {Q+} {Q-} V=-(v({V+},{V-}))\nR{name}0 {V+} {V-} 1Meg"
+     }
+    }
+   },
+   "description": "Function of a differential voltage, floating output; the label picks it: ABSVR, ACOSVR, ACOSHVR, ASINVR, ASINHVR, ATANVR, ATANHVR, COSVR, COSHVR, EXPVR, LNVR, LOGVR, SINVR, SINHVR, SQRTVR, TANVR, UNARYVR",
+   "graphics": [
+    {
+     "rect": [
+      -60,
+      -50,
+      120,
+      70
+     ]
+    },
+    {
+     "line": [
+      -90,
+      -30,
+      -60,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -90,
+      0,
+      -60,
+      0
+     ]
+    },
+    {
+     "line": [
+      60,
+      -30,
+      90,
+      -30
+     ]
+    },
+    {
+     "line": [
+      60,
+      0,
+      90,
+      0
+     ]
+    },
+    {
+     "text": "f(V)",
+     "at": [
+      0,
+      -15
+     ],
+     "size": 9
+    },
+    {
+     "text": "+",
+     "at": [
+      -50,
+      -30
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "+",
+     "at": [
+      50,
+      -30
+     ],
+     "size": 7,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "V+",
+     "at": [
+      -90,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "V-",
+     "at": [
+      -90,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Q-",
+     "at": [
+      90,
+      0
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Q+",
+     "at": [
+      90,
+      -30
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "vmath2",
+   "name": "V-Math2",
+   "prefix": "A",
+   "label": "ADDV",
+   "aliases": [
+    "V-Math2"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Q"
+   ],
+   "spice": {
+    "select": "label",
+    "variants": {
+     "ADDV": {
+      "line": "B{name} {Q} 0 V=(v({A}))+(v({B}))\nR{name}0 {A} 0 1Meg\nR{name}1 {B} 0 1Meg"
+     },
+     "SUBV": {
+      "line": "B{name} {Q} 0 V=(v({A}))-(v({B}))\nR{name}0 {A} 0 1Meg\nR{name}1 {B} 0 1Meg"
+     },
+     "MULTV": {
+      "line": "B{name} {Q} 0 V=(v({A}))*(v({B}))\nR{name}0 {A} 0 1Meg\nR{name}1 {B} 0 1Meg"
+     },
+     "DIVV": {
+      "line": "B{name} {Q} 0 V=(v({A}))/(v({B}))\nR{name}0 {A} 0 1Meg\nR{name}1 {B} 0 1Meg"
+     }
+    }
+   },
+   "description": "Sum, difference, product or quotient of two voltages, referred to ground; the label picks it: ADDV, SUBV, MULTV, DIVV",
+   "graphics": [
+    {
+     "rect": [
+      -60,
+      -50,
+      120,
+      70
+     ]
+    },
+    {
+     "line": [
+      -90,
+      -30,
+      -60,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -90,
+      0,
+      -60,
+      0
+     ]
+    },
+    {
+     "line": [
+      60,
+      -30,
+      90,
+      -30
+     ]
+    },
+    {
+     "text": "A",
+     "at": [
+      -50,
+      -30
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "B",
+     "at": [
+      -50,
+      0
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "Q",
+     "at": [
+      50,
+      -30
+     ],
+     "size": 7,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "A",
+     "at": [
+      -90,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "B",
+     "at": [
+      -90,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Q",
+     "at": [
+      90,
+      -30
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "vmath2_ref",
+   "name": "V-Math2 Ref",
+   "prefix": "A",
+   "label": "ADDVR",
+   "aliases": [
+    "V-Math2 Ref"
+   ],
+   "cmPins": [
+    "A+",
+    "A-",
+    "B+",
+    "B-",
+    "Q-",
+    "Q+"
+   ],
+   "spice": {
+    "select": "label",
+    "variants": {
+     "ADDVR": {
+      "line": "B{name} {Q+} {Q-} V=(v({A+},{A-}))+(v({B+},{B-}))\nR{name}0 {A+} {A-} 1Meg\nR{name}1 {B+} {B-} 1Meg"
+     },
+     "SUBVR": {
+      "line": "B{name} {Q+} {Q-} V=(v({A+},{A-}))-(v({B+},{B-}))\nR{name}0 {A+} {A-} 1Meg\nR{name}1 {B+} {B-} 1Meg"
+     },
+     "MULTVR": {
+      "line": "B{name} {Q+} {Q-} V=(v({A+},{A-}))*(v({B+},{B-}))\nR{name}0 {A+} {A-} 1Meg\nR{name}1 {B+} {B-} 1Meg"
+     },
+     "DIVVR": {
+      "line": "B{name} {Q+} {Q-} V=(v({A+},{A-}))/(v({B+},{B-}))\nR{name}0 {A+} {A-} 1Meg\nR{name}1 {B+} {B-} 1Meg"
+     }
+    }
+   },
+   "description": "Operation on two differential voltages, floating output; the label picks it: ADDVR, SUBVR, MULTVR, DIVVR",
+   "graphics": [
+    {
+     "rect": [
+      -60,
+      -50,
+      120,
+      130
+     ]
+    },
+    {
+     "line": [
+      -90,
+      -30,
+      -60,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -90,
+      0,
+      -60,
+      0
+     ]
+    },
+    {
+     "line": [
+      -90,
+      30,
+      -60,
+      30
+     ]
+    },
+    {
+     "line": [
+      -90,
+      60,
+      -60,
+      60
+     ]
+    },
+    {
+     "line": [
+      60,
+      0,
+      90,
+      0
+     ]
+    },
+    {
+     "line": [
+      60,
+      30,
+      90,
+      30
+     ]
+    },
+    {
+     "text": "A+",
+     "at": [
+      -50,
+      -30
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "A-",
+     "at": [
+      -50,
+      0
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "B+",
+     "at": [
+      -50,
+      30
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "B-",
+     "at": [
+      -50,
+      60
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "Q+",
+     "at": [
+      50,
+      0
+     ],
+     "size": 7,
+     "align": "right"
+    },
+    {
+     "text": "Q-",
+     "at": [
+      50,
+      30
+     ],
+     "size": 7,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "A+",
+     "at": [
+      -90,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "A-",
+     "at": [
+      -90,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "B+",
+     "at": [
+      -90,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "B-",
+     "at": [
+      -90,
+      60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Q-",
+     "at": [
+      90,
+      30
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Q+",
+     "at": [
+      90,
+      0
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "gain_diff",
+   "name": "Gain (differential)",
+   "prefix": "A",
+   "label": "x1",
+   "aliases": [
+    "gain:A"
+   ],
+   "cmPins": [
+    "IN+",
+    "IN-",
+    "OUT+",
+    "OUT-"
+   ],
+   "props": {
+    "gain": "1"
+   },
+   "spice": {
+    "line": "B{name} {OUT+} {OUT-} V={prop:gain}*v({IN+},{IN-})\nR{name} {IN+} {IN-} 1Meg"
+   },
+   "description": "Gain block with differential input and floating output: OUT = gain x (IN+ - IN-)",
+   "graphics": [
+    {
+     "path": "M -30 -60 L 80 0 L -30 60 Z"
+    },
+    {
+     "line": [
+      -60,
+      -30,
+      -30,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -60,
+      30,
+      -30,
+      30
+     ]
+    },
+    {
+     "line": [
+      50,
+      -16,
+      80,
+      -16
+     ]
+    },
+    {
+     "line": [
+      80,
+      -16,
+      80,
+      -30
+     ]
+    },
+    {
+     "line": [
+      80,
+      -30,
+      110,
+      -30
+     ]
+    },
+    {
+     "line": [
+      50,
+      16,
+      80,
+      16
+     ]
+    },
+    {
+     "line": [
+      80,
+      16,
+      80,
+      30
+     ]
+    },
+    {
+     "line": [
+      80,
+      30,
+      110,
+      30
+     ]
+    },
+    {
+     "text": "K",
+     "at": [
+      0,
+      0
+     ],
+     "size": 10
+    },
+    {
+     "text": "+",
+     "at": [
+      -22,
+      -30
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "-",
+     "at": [
+      -22,
+      30
+     ],
+     "size": 7,
+     "align": "left"
+    }
+   ],
+   "pins": [
+    {
+     "name": "IN+",
+     "at": [
+      -60,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "IN-",
+     "at": [
+      -60,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "OUT+",
+     "at": [
+      110,
+      -30
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "OUT-",
+     "at": [
+      110,
+      30
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "divider_diff",
+   "name": "Divider (differential)",
+   "prefix": "A",
+   "label": "÷",
+   "aliases": [
+    "divider:A"
+   ],
+   "cmPins": [
+    "NUM+",
+    "NUM-",
+    "DEN+",
+    "DEN-",
+    "OUT+",
+    "OUT-"
+   ],
+   "spice": {
+    "line": "B{name} {OUT+} {OUT-} V=v({NUM+},{NUM-})/(abs(v({DEN+},{DEN-}))<1e-9?1e-9:v({DEN+},{DEN-}))\nR{name}a {NUM+} {NUM-} 1Meg\nR{name}b {DEN+} {DEN-} 1Meg"
+   },
+   "description": "Divider with differential inputs and floating output: OUT = (NUM+ - NUM-) / (DEN+ - DEN-)",
+   "graphics": [
+    {
+     "rect": [
+      -30,
+      -80,
+      110,
+      160
+     ]
+    },
+    {
+     "text": "÷",
+     "at": [
+      25,
+      0
+     ],
+     "size": 16
+    },
+    {
+     "line": [
+      -60,
+      -60,
+      -30,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -60,
+      -30,
+      -30,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -60,
+      30,
+      -30,
+      30
+     ]
+    },
+    {
+     "line": [
+      -60,
+      60,
+      -30,
+      60
+     ]
+    },
+    {
+     "line": [
+      80,
+      -30,
+      110,
+      -30
+     ]
+    },
+    {
+     "line": [
+      80,
+      30,
+      110,
+      30
+     ]
+    },
+    {
+     "text": "N",
+     "at": [
+      -22,
+      -45
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "D",
+     "at": [
+      -22,
+      45
+     ],
+     "size": 7,
+     "align": "left"
+    }
+   ],
+   "pins": [
+    {
+     "name": "NUM+",
+     "at": [
+      -60,
+      -60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "NUM-",
+     "at": [
+      -60,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "DEN+",
+     "at": [
+      -60,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "DEN-",
+     "at": [
+      -60,
+      60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "OUT+",
+     "at": [
+      110,
+      -30
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "OUT-",
+     "at": [
+      110,
+      30
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "vco",
+   "name": "VCO",
+   "prefix": "A",
+   "label": "SINEVCO",
+   "aliases": [
+    "VCO"
+   ],
+   "cmPins": [
+    "C+",
+    "C-",
+    "OUT+",
+    "OUT-"
+   ],
+   "props": {
+    "cntl": "0 1 2 3 4",
+    "freq": "0 1k 2k 3k 4k",
+    "low": "-1",
+    "high": "1",
+    "duty": "0.5"
+   },
+   "spice": {
+    "line": "A{name} %vd({C+} {C-}) %vd({OUT+} {OUT-}) {name}_m",
+    "select": "label",
+    "variants": {
+     "SINEVCO": {
+      "models": [
+       ".model {name}_m sine(cntl_array=[{prop:cntl}] freq_array=[{prop:freq}] out_low={prop:low} out_high={prop:high})"
+      ]
+     },
+     "SQRVCO": {
+      "models": [
+       ".model {name}_m square(cntl_array=[{prop:cntl}] freq_array=[{prop:freq}] out_low={prop:low} out_high={prop:high} duty_cycle={prop:duty} rise_time=1u fall_time=1u)"
+      ]
+     },
+     "TRIVCO": {
+      "models": [
+       ".model {name}_m triangle(cntl_array=[{prop:cntl}] freq_array=[{prop:freq}] out_low={prop:low} out_high={prop:high} duty_cycle={prop:duty})"
+      ]
+     }
+    }
+   },
+   "description": "Voltage-controlled oscillator: the frequency follows the control voltage through the \"cntl\" and \"freq\" points; the label picks the wave (SINEVCO, SQRVCO, TRIVCO), between \"low\" and \"high\"",
+   "graphics": [
+    {
+     "rect": [
+      -60,
+      -80,
+      60,
+      180
+     ]
+    },
+    {
+     "line": [
+      -90,
+      -60,
+      -60,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -90,
+      80,
+      -60,
+      80
+     ]
+    },
+    {
+     "line": [
+      0,
+      -60,
+      30,
+      -60
+     ]
+    },
+    {
+     "line": [
+      0,
+      80,
+      30,
+      80
+     ]
+    },
+    {
+     "path": "M -45 10 Q -38 -10 -30 10 Q -22 30 -15 10"
+    },
+    {
+     "text": "VCO",
+     "at": [
+      -30,
+      -35
+     ],
+     "size": 8
+    },
+    {
+     "text": "+",
+     "at": [
+      -52,
+      -60
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "+",
+     "at": [
+      -8,
+      -60
+     ],
+     "size": 7,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "C+",
+     "at": [
+      -90,
+      -60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "C-",
+     "at": [
+      -90,
+      80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "OUT+",
+     "at": [
+      30,
+      -60
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "OUT-",
+     "at": [
+      30,
+      80
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "pll",
+   "name": "PLL",
+   "prefix": "U",
+   "label": "PLL10K",
+   "aliases": [
+    "PLL"
+   ],
+   "cmPins": [
+    "Sig",
+    "Comp",
+    "Vout",
+    "Vss",
+    "Dem",
+    "Vin",
+    "PC",
+    "Vdd"
+   ],
+   "props": {
+    "fc": "10k",
+    "fr": "5k",
+    "rs": "100"
+   },
+   "spice": {
+    "line": "X{name} {Sig} {Comp} {Vout} {Vss} {Dem} {Vin} {PC} {Vdd} PLL_GEN fc={prop:fc} fr={prop:fr} rs={prop:rs}",
+    "subckt": [
+     ".subckt PLL_GEN sig comp vout vss dem vin pc vdd params: fc=10k fr=5k rs=100",
+     "Rin1 sig vdd 1.5Meg",
+     "Rin2 sig vss 1.5Meg",
+     "Bs s 0 V=0.5+0.5*tanh(40*(v(sig,vss)/(v(vdd,vss)+1e-9)-0.5))",
+     "Bc k 0 V=0.5+0.5*tanh(40*(v(comp,vss)/(v(vdd,vss)+1e-9)-0.5))",
+     "Bpc p vss V=v(vdd,vss)*(v(s)+v(k)-2*v(s)*v(k))",
+     "Rpc p pc {rs}",
+     "Bctl ctl 0 V=v(vin,vss)/(v(vdd,vss)+1e-9)",
+     "Rctl ctl 0 100Meg",
+     "Avco %vd(ctl 0) %vd(osc 0) vcom",
+     ".model vcom square(cntl_array=[0 1] freq_array=[{fc-fr} {fc+fr}] out_low=0 out_high=1 duty_cycle=0.5 rise_time=1e-7 fall_time=1e-7)",
+     "Bo o vss V=v(osc)*v(vdd,vss)",
+     "Ro o vout {rs}",
+     "Bd d vss V=v(vin,vss)",
+     "Rd d dem {rs}",
+     ".ends"
+    ]
+   },
+   "description": "Phase-locked loop (CD4046-like): XOR phase comparator (PC), VCO from fc - fr to fc + fr as Vin goes from Vss to Vdd (Vout), demodulator output (Dem) following Vin",
+   "graphics": [
+    {
+     "rect": [
+      -140,
+      -140,
+      110,
+      160
+     ]
+    },
+    {
+     "text": "PLL",
+     "at": [
+      -85,
+      -150
+     ],
+     "size": 8
+    },
+    {
+     "line": [
+      -170,
+      -120,
+      -140,
+      -120
+     ]
+    },
+    {
+     "line": [
+      -170,
+      -90,
+      -140,
+      -90
+     ]
+    },
+    {
+     "line": [
+      -170,
+      -60,
+      -140,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -170,
+      0,
+      -140,
+      0
+     ]
+    },
+    {
+     "line": [
+      -30,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "line": [
+      -30,
+      -30,
+      0,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -30,
+      -60,
+      0,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -30,
+      -120,
+      0,
+      -120
+     ]
+    },
+    {
+     "text": "Sig",
+     "at": [
+      -134,
+      -120
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "Comp",
+     "at": [
+      -134,
+      -90
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "Vout",
+     "at": [
+      -134,
+      -60
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "Vss",
+     "at": [
+      -134,
+      0
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "Dem",
+     "at": [
+      -36,
+      0
+     ],
+     "size": 7,
+     "align": "right"
+    },
+    {
+     "text": "Vin",
+     "at": [
+      -36,
+      -30
+     ],
+     "size": 7,
+     "align": "right"
+    },
+    {
+     "text": "PC",
+     "at": [
+      -36,
+      -60
+     ],
+     "size": 7,
+     "align": "right"
+    },
+    {
+     "text": "Vdd",
+     "at": [
+      -36,
+      -120
+     ],
+     "size": 7,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "Sig",
+     "at": [
+      -170,
+      -120
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Comp",
+     "at": [
+      -170,
+      -90
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Vout",
+     "at": [
+      -170,
+      -60
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Vss",
+     "at": [
+      -170,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "Dem",
+     "at": [
+      0,
+      0
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Vin",
+     "at": [
+      0,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "PC",
+     "at": [
+      0,
+      -60
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Vdd",
+     "at": [
+      0,
+      -120
+     ],
+     "dir": "passive"
+    }
+   ]
   }
  ]
 }
