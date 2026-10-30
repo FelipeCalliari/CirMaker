@@ -14,7 +14,8 @@ QVector<BomLine> build(const Circuit& circuit, const LibraryRegistry& library)
     QMap<std::pair<QString, QString>, BomLine> byKey;
     for (const Component& c : circuit.components()) {
         const SymbolDef* s = library.find(c.symbolId);
-        if (!s || s->netLabel || s->hidden || s->model.value(u"kind").toString() == u"const")
+        if (!s || s->netLabel || s->hidden || s->model.value(u"kind").toString() == u"const"
+            || c.props.value(QStringLiteral("excludeBom")).toBool())
             continue;
         // gates of one package are one part
         const QString device = s->parts.size() > 1 && !s->package.isEmpty() ? s->package : s->name;

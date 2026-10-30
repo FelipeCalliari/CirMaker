@@ -1293,7 +1293,10 @@ void SchematicScene::stepSimulation()
         run();
         m_timer.stop();
     }
-    m_sim->stepToNextEvent();
+    if (m_stepTicks > 0)
+        m_sim->step(m_stepTicks);
+    else
+        m_sim->stepToNextEvent();
     emit simTimeChanged(m_sim->time());
     update();
     emit simulationChanged();

@@ -7,6 +7,7 @@
 
 class QLineEdit;
 class QSpinBox;
+class QCheckBox;
 class QComboBox;
 
 namespace cm {
@@ -27,6 +28,10 @@ private:
     QHash<QString, QSpinBox*> m_intProps;
     QHash<QString, QLineEdit*> m_textProps;
     QHash<QString, QComboBox*> m_choiceProps;
+    QCheckBox *m_showDesignator, *m_showLabel;
+    bool m_designatorDefault, m_labelDefault;   // the symbol's visibility
+    QCheckBox *m_excludePcb = nullptr, *m_excludeBom = nullptr;
+    QLineEdit* m_package = nullptr;
 };
 
 // Title, author, date and revision of the drawing.

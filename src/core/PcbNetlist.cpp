@@ -12,7 +12,7 @@ QString write(const Circuit& circuit, const LibraryRegistry& library, const Netl
     auto isPart = [&](const Component& c) {
         const SymbolDef* s = library.find(c.symbolId);
         return s && !s->netLabel && !s->hidden && s->model.value(u"kind").toString() != u"const"
-            && s->model.value(u"kind").toString() != u"scope";
+            && s->model.value(u"kind").toString() != u"scope" && !c.props.value(QStringLiteral("excludePcb")).toBool();
     };
     QCollator natural;
     natural.setNumericMode(true);
@@ -30,7 +30,8 @@ QString write(const Circuit& circuit, const LibraryRegistry& library, const Netl
         const SymbolDef* s = library.find(c->symbolId);
         if (s->parts.size() > 1 && listed.contains(c->designator)) continue;
         listed << c->designator;
-        const QString footprint = s->parts.size() > 1 && !s->package.isEmpty() ? s->package : s->id;
+        QString footprint = c->props.value(QStringLiteral("package")).toString();
+        if (footprint.isEmpty()) footprint = s->parts.size() > 1 && !s->package.isEmpty() ? s->package : s->id;
         out += QStringLiteral("[\n%1\n%2\n%3\n]\n").arg(c->designator, footprint, c->label.isEmpty() ? s->name : c->label);
     }
     for (int n = 0; n < netlist.nets.size(); ++n) {

@@ -28,7 +28,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Group Items (portas no mesmo encapsulamento) | ✅ | U1A, U1B...; ao colocar, a porta entra no primeiro encapsulamento com vaga; pinos por parte no netlist de PCB e no BOM; importado do `.ckt` |
 | Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |
 | Copiar esquemático/formas de onda para a área de transferência como imagem | ✅ | Ctrl+Shift+C; formas de onda pelo Editar ou menu da janela |
-| Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | 🟡 | designador, rótulo, parâmetros e visibilidade dos textos |
+| Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | 🟡 | designador, rótulo, parâmetros, textos visíveis, encapsulamento, excluir do PCB/BOM; sem prefixo SPICE nem edição de pinos |
 | Cores e fontes configuráveis (Colors, Device/Text Font) | ✅ | Preferências: fundo, grade, dispositivos, fios, barramentos, texto, seleção, níveis lógicos; fontes de dispositivo e de texto |
 
 ## Biblioteca
@@ -55,7 +55,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Formas de onda digitais (SCOPE / Active Probe) | ✅ | |
 | Atrasos de propagação por dispositivo | ✅ | 1–14 ticks |
 | Breakpoints | ✅ | caixinhas dos SCOPEs nas formas de onda (0/1); Nível/Borda × E/Ou |
-| Digital Options (tick em tempo real etc.) | 🟡 | velocidade em ticks/quadro |
+| Digital Options (tick em tempo real etc.) | ✅ | velocidade em ticks/quadro; tamanho do passo em ticks (10 = um ciclo) ou até o próximo evento |
 
 ## Simulação analógica / mista
 

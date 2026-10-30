@@ -20,7 +20,28 @@ private slots:
     void protelNetlist();
     void analysisRoundTrip();
     void packagedGates();
+    void exclusionsAndFootprint();
 };
+
+void TestDocument::exclusionsAndFootprint()
+{
+    Circuit c;
+    const ItemId r1 = place(c, QStringLiteral("resistor"), {0, 0}, QStringLiteral("R1"), QStringLiteral("1k"));
+    const ItemId r2 = place(c, QStringLiteral("resistor"), {400, 0}, QStringLiteral("R2"), QStringLiteral("1k"));
+    Component a = *c.component(r1);
+    a.props.insert(QStringLiteral("package"), QStringLiteral("AXIAL0.4"));
+    a.props.insert(QStringLiteral("excludeBom"), true);
+    c.updateComponent(a);
+    Component b = *c.component(r2);
+    b.props.insert(QStringLiteral("excludePcb"), true);
+    c.updateComponent(b);
+    const QString net = PcbNetlist::write(c, library(), NetlistBuilder::build(c, library()));
+    QVERIFY2(net.contains(QStringLiteral("[\nR1\nAXIAL0.4\n")), qPrintable(net));
+    QVERIFY(!net.contains(QStringLiteral("R2")));
+    const QVector<BomLine> bom = Bom::build(c, library());
+    QCOMPARE(bom.size(), 1);
+    QCOMPARE(bom.first().designators, QStringList{QStringLiteral("R2")});
+}
 
 void TestDocument::packagedGates()
 {

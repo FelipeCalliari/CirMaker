@@ -28,6 +28,7 @@ Preferences Preferences::load()
                                                                                                           : GridStyle::Lines;
     p.zoomPercent = std::clamp(s.value(QStringLiteral("prefs/zoomPercent"), p.zoomPercent).toInt(), 20, 400);
     p.ticksPerFrame = std::clamp(s.value(QStringLiteral("prefs/ticksPerFrame"), p.ticksPerFrame).toInt(), 1, 1000);
+    p.stepTicks = std::clamp(s.value(QStringLiteral("prefs/stepTicks"), p.stepTicks).toInt(), 0, 100000);
     p.theme = Theme::current();
     return p;
 }
@@ -40,6 +41,7 @@ void Preferences::save() const
     s.setValue(QStringLiteral("prefs/gridStyle"), gridStyle == GridStyle::Lines ? QStringLiteral("lines") : QStringLiteral("dots"));
     s.setValue(QStringLiteral("prefs/zoomPercent"), zoomPercent);
     s.setValue(QStringLiteral("prefs/ticksPerFrame"), ticksPerFrame);
+    s.setValue(QStringLiteral("prefs/stepTicks"), stepTicks);
     Theme::setCurrent(theme);
 }
 
@@ -88,6 +90,13 @@ PreferencesDialog::PreferencesDialog(const Preferences& prefs, QWidget* parent)
     m_ticks->setSuffix(tr(" ticks/frame"));
     m_ticks->setValue(prefs.ticksPerFrame);
     sf->addRow(tr("Initial &speed:"), m_ticks);
+    m_step = new QSpinBox;
+    m_step->setRange(0, 100000);
+    m_step->setSpecialValueText(tr("next event"));
+    m_step->setSuffix(tr(" ticks"));
+    m_step->setValue(prefs.stepTicks);
+    m_step->setToolTip(tr("How far Step advances; a cycle is 10 ticks"));
+    sf->addRow(tr("S&tep size:"), m_step);
     layout->addWidget(sim);
 
     // CircuitMaker's Colors, Device Font and Text Font
@@ -153,6 +162,7 @@ Preferences PreferencesDialog::result() const
     p.gridStyle = m_gridStyle->currentIndex() == 1 ? Preferences::GridStyle::Lines : Preferences::GridStyle::Dots;
     p.zoomPercent = m_zoom->value();
     p.ticksPerFrame = m_ticks->value();
+    p.stepTicks = m_step->value();
     p.theme = m_theme;
     p.theme.deviceFont = m_deviceFont->currentFont().family();
     const QString text = m_textFont->currentFont().family();

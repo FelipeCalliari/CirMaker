@@ -13,6 +13,7 @@
 #include "ui/Theme.h"
 #include "ui/WaveformView.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include "ui/SchematicScene.h"
 #include "ui/WireItem.h"
@@ -58,6 +59,8 @@ private slots:
     void themeColours();
     void deviceProbeCycles();
     void analysisWindowTools();
+    void propertiesVisibility();
+    void stepSize();
     void screenshot();
 };
 
@@ -645,6 +648,34 @@ void TestGui::analysisWindowTools()
     w.store();
     w.setCursors(1.0, 3.0);
     QVERIFY(!w.grab().isNull());                        // paints cursors and the reference
+}
+
+void TestGui::propertiesVisibility()
+{
+    Component c;
+    c.symbolId = QStringLiteral("resistor");
+    c.designator = QStringLiteral("R1");
+    const SymbolDef& s = *library().find(c.symbolId);
+    PropertiesDialog unchanged(c, s);
+    QVERIFY(!unchanged.result().showDesignator && !unchanged.result().showLabel);   // defaults stay implicit
+    PropertiesDialog dlg(c, s);
+    for (QCheckBox* box : dlg.findChildren<QCheckBox*>())
+        if (box->text().contains(QStringLiteral("esignator"))) box->setChecked(false);
+    QCOMPARE(dlg.result().showDesignator, std::optional<bool>(false));
+}
+
+void TestGui::stepSize()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    place(circuit, QStringLiteral("pulser"), {0, 0}, QStringLiteral("P1"));
+    scene.setStepTicks(10);                             // one cycle
+    scene.stepSimulation();
+    QCOMPARE(scene.simTime(), quint64(10));
+    scene.stepSimulation();
+    QCOMPARE(scene.simTime(), quint64(20));
+    scene.stopSimulation();
 }
 
 QTEST_MAIN(TestGui)

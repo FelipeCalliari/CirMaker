@@ -125,6 +125,8 @@ public:
     void stopSimulation();
     void setTicksPerFrame(int ticks) { m_ticksPerFrame = std::max(1, ticks); }
     int ticksPerFrame() const { return m_ticksPerFrame; }
+    // Step size in ticks; 0 steps to the next event.
+    void setStepTicks(int ticks) { m_stepTicks = std::max(0, ticks); }
     quint64 simTime() const;
     sim::EventSimulator* simulator() const { return m_sim.get(); }
     // Nets shown in the digital waveform window: SCOPE devices and probes.
@@ -274,6 +276,7 @@ private:
     std::unique_ptr<sim::EventSimulator> m_sim;
     QTimer m_timer;
     int m_ticksPerFrame = 2;
+    int m_stepTicks = 0;
     ItemId m_heldButton = 0;
     QString m_heldRelease;
     bool m_gridVisible = true;

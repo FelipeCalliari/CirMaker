@@ -1357,8 +1357,8 @@
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="723"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1464"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1468"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1465"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1469"/>
         <source>Analog mode</source>
         <translation>Modo analógico</translation>
     </message>
@@ -1824,37 +1824,37 @@ Coloque dispositivos Input e Output (categoria General) onde os pinos da macro s
         <translation>%1 mesclado</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1464"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1465"/>
         <source>Digital mode</source>
         <translation>Modo digital</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1468"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1505"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1469"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1506"/>
         <source>The SPICE engine is not available:
 %1</source>
         <translation>O motor SPICE não está disponível:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1496"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1497"/>
         <source>Analysis settings</source>
         <translation>Configuração da análise</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1505"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1520"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1547"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1506"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1521"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1548"/>
         <source>Analog simulation</source>
         <translation>Simulação analógica</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1547"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1548"/>
         <source>SPICE could not simulate the circuit.</source>
         <translation>O SPICE não conseguiu simular o circuito.</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1551"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1552"/>
         <source>Netlist:
 %1
 SPICE output:
@@ -1865,110 +1865,110 @@ Saída do SPICE:
 %2</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1584"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1585"/>
         <source>Transfer function V(%1)/%2: %3</source>
         <translation>Função de transferência V(%1)/%2: %3</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1585"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1586"/>
         <source>Input impedance: %1</source>
         <translation>Impedância de entrada: %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1585"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1586"/>
         <source>Output impedance: %1</source>
         <translation>Impedância de saída: %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1587"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1588"/>
         <source>Transfer function</source>
         <translation>Função de transferência</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1643"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1644"/>
         <source>Operating point sweep</source>
         <translation>Varredura do ponto de operação</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1651"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1652"/>
         <source>Operating point: node voltages are shown on the wires</source>
         <translation>Ponto de operação: as tensões dos nós aparecem nos fios</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1658"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1659"/>
         <source>output noise</source>
         <translation>ruído na saída</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1658"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1659"/>
         <source>input noise</source>
         <translation>ruído na entrada</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1732"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1751"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1733"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1752"/>
         <source>Fourier analysis</source>
         <translation>Análise de Fourier</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1732"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1733"/>
         <source>Set the fundamental frequency (no signal generator found).</source>
         <translation>Defina a frequência fundamental (nenhum gerador de sinais encontrado).</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1747"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1748"/>
         <source>%1: THD %2%</source>
         <translation>%1: THD %2%</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1751"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1752"/>
         <source>The transient is shorter than one period of %1.</source>
         <translation>O transiente é mais curto que um período de %1.</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1755"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1756"/>
         <source>Fourier (harmonic peaks)</source>
         <translation>Fourier (picos das harmônicas)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1780"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1781"/>
         <source>Transient</source>
         <translation>Transitório</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1780"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1781"/>
         <source>Time</source>
         <translation>Tempo</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1782"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1783"/>
         <source>AC sweep (magnitude)</source>
         <translation>Varredura AC (módulo)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1755"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1782"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1784"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1756"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1783"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1785"/>
         <source>Frequency</source>
         <translation>Frequência</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1784"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1785"/>
         <source>Noise spectral density</source>
         <translation>Densidade espectral de ruído</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1787"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1788"/>
         <source>DC sweep</source>
         <translation>Varredura DC</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1794"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1795"/>
         <source>About CirMaker Qt</source>
         <translation>Sobre o CirMaker Qt</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1795"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1796"/>
         <source>&lt;h3&gt;CirMaker Qt %1&lt;/h3&gt;&lt;p&gt;A schematic editor and digital logic simulator in the spirit of CircuitMaker 2000, built with Qt %2.&lt;/p&gt;&lt;p&gt;Opens CircuitMaker 2000 text circuits (.ckt). The device library is an independent reimplementation; no files from the original product are included.&lt;/p&gt;</source>
         <translation>&lt;h3&gt;CirMaker Qt %1&lt;/h3&gt;&lt;p&gt;Editor de esquemáticos e simulador lógico digital no espírito do CircuitMaker 2000, feito com Qt %2.&lt;/p&gt;&lt;p&gt;Abre circuitos texto do CircuitMaker 2000 (.ckt). A biblioteca de dispositivos é uma reimplementação independente; nenhum arquivo do produto original é incluído.&lt;/p&gt;</translation>
     </message>
@@ -2112,142 +2112,162 @@ Saída do SPICE:
 <context>
     <name>cm::PreferencesDialog</name>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="49"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="51"/>
         <source>Preferences</source>
         <translation>Preferências</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="52"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="54"/>
         <source>General</source>
         <translation>Geral</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="55"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="57"/>
         <source>System default</source>
         <translation>Padrão do sistema</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="59"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="61"/>
         <source>&amp;Language:</source>
         <translation>&amp;Idioma:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="60"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="62"/>
         <source>A language change takes effect after restarting.</source>
         <translation>A troca de idioma vale após reiniciar o programa.</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="65"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="67"/>
         <source>Schematic</source>
         <translation>Esquemático</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="67"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="69"/>
         <source>Show grid</source>
         <translation>Mostrar grade</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="71"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="73"/>
         <source>Dots</source>
         <translation>Pontos</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="72"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="74"/>
         <source>Lines</source>
         <translation>Linhas</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="74"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="76"/>
         <source>Grid &amp;style:</source>
         <translation>&amp;Estilo da grade:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="80"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="82"/>
         <source>Zoom used for new and opened circuits; &quot;Fit to window&quot; never enlarges beyond it</source>
         <translation>Zoom usado em circuitos novos e abertos; &quot;Ajustar à janela&quot; nunca amplia além dele</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="81"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="83"/>
         <source>Default &amp;zoom:</source>
         <translation>&amp;Zoom padrão:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="84"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="86"/>
         <source>Digital simulation</source>
         <translation>Simulação digital</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="88"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="90"/>
         <source> ticks/frame</source>
         <translation> ticks/quadro</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="90"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="92"/>
         <source>Initial &amp;speed:</source>
         <translation>&amp;Velocidade inicial:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="94"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="95"/>
+        <source>next event</source>
+        <translation>próximo evento</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="96"/>
+        <source> ticks</source>
+        <translation> ticks</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="98"/>
+        <source>How far Step advances; a cycle is 10 ticks</source>
+        <translation>Quanto o Passo avança; um ciclo são 10 ticks</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="99"/>
+        <source>S&amp;tep size:</source>
+        <translation>&amp;Tamanho do passo:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="103"/>
         <source>Colours and fonts</source>
         <translation>Cores e fontes</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="97"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="106"/>
         <source>Background</source>
         <translation>Fundo</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="97"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="106"/>
         <source>Grid</source>
         <translation>Grade</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="97"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="106"/>
         <source>Devices</source>
         <translation>Dispositivos</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="98"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="107"/>
         <source>Wires</source>
         <translation>Fios</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="98"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="107"/>
         <source>Buses</source>
         <translation>Barramentos</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="98"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="107"/>
         <source>Text</source>
         <translation>Texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="99"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="108"/>
         <source>Selection</source>
         <translation>Seleção</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="99"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="108"/>
         <source>Logic high</source>
         <translation>Nível lógico alto</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="99"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="108"/>
         <source>Logic low</source>
         <translation>Nível lógico baixo</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="118"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="127"/>
         <source>&amp;Device font:</source>
         <translation>Fonte dos &amp;dispositivos:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="119"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="128"/>
         <source>&amp;Text font:</source>
         <translation>Fonte do &amp;texto:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PreferencesDialog.cpp" line="121"/>
+        <location filename="../src/ui/PreferencesDialog.cpp" line="130"/>
         <source>&amp;Restore defaults</source>
         <translation>&amp;Restaurar padrões</translation>
     </message>
@@ -2255,89 +2275,119 @@ Saída do SPICE:
 <context>
     <name>cm::PropertiesDialog</name>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="20"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="23"/>
         <source>High time (ticks)</source>
         <translation>Tempo em nível alto (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="21"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="24"/>
         <source>Low time (ticks)</source>
         <translation>Tempo em nível baixo (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="22"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="25"/>
         <source>Initial state (0/1)</source>
         <translation>Estado inicial (0/1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="23"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="26"/>
         <source>Closed (0/1)</source>
         <translation>Fechada (0/1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="24"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="27"/>
         <source>Value</source>
         <translation>Valor</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="25"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="28"/>
         <source>Colour</source>
         <translation>Cor</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="26"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="29"/>
         <source>Propagation delay (ticks)</source>
         <translation>Atraso de propagação (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="32"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="35"/>
         <source>Red</source>
         <translation>Vermelho</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="33"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="36"/>
         <source>Green</source>
         <translation>Verde</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="34"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="37"/>
         <source>Yellow</source>
         <translation>Amarelo</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="35"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="38"/>
         <source>Blue</source>
         <translation>Azul</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="36"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="39"/>
         <source>Orange</source>
         <translation>Laranja</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="37"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="40"/>
         <source>White</source>
         <translation>Branco</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="46"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="49"/>
         <source>%1 properties</source>
         <translation>Propriedades de %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="54"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="57"/>
         <source>&amp;Designator:</source>
         <translation>&amp;Designador:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="56"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="59"/>
         <source>&amp;Net name:</source>
         <translation>Nome da &amp;rede:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="56"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="59"/>
         <source>&amp;Label:</source>
         <translation>&amp;Rótulo:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="62"/>
+        <source>Show d&amp;esignator</source>
+        <translation>Mostrar d&amp;esignador</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="63"/>
+        <source>Show la&amp;bel</source>
+        <translation>Mostrar &amp;rótulo</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="105"/>
+        <source>PCB and parts list</source>
+        <translation>PCB e lista de peças</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="109"/>
+        <source>&amp;Package (footprint):</source>
+        <translation>&amp;Encapsulamento (footprint):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="110"/>
+        <source>Exclude from the &amp;PCB netlist</source>
+        <translation>Excluir do netlist de &amp;PCB</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="112"/>
+        <source>Exclude from the parts &amp;list (BOM)</source>
+        <translation>Excluir da &amp;lista de peças (BOM)</translation>
     </message>
 </context>
 <context>
@@ -2528,7 +2578,7 @@ Saída do SPICE:
     </message>
     <message>
         <location filename="../src/ui/SchematicScene.cpp" line="1138"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1527"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1530"/>
         <source>Text:</source>
         <translation>Texto:</translation>
     </message>
@@ -2566,38 +2616,38 @@ Saída do SPICE:
         </translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1343"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1346"/>
         <source>Switch positions</source>
         <translation>Posições das chaves</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1358"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1361"/>
         <source>Breakpoint at tick %1</source>
         <translation>Breakpoint no tick %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1391"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1394"/>
         <source>Set breakpoint</source>
         <translation>Definir breakpoint</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1460"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1463"/>
         <source>ASCII key</source>
         <translation>Tecla ASCII</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1460"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1463"/>
         <source>Character:</source>
         <translation>Caractere:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1527"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1531"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1530"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1534"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1745"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1748"/>
         <source>Reshape wire</source>
         <translation>Remodelar fio</translation>
     </message>
@@ -2863,27 +2913,27 @@ Saída do SPICE:
 <context>
     <name>cm::TitleBlockDialog</name>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="111"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="157"/>
         <source>Title block</source>
         <translation>Bloco de título</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="118"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="164"/>
         <source>&amp;Title:</source>
         <translation>&amp;Título:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="119"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="165"/>
         <source>&amp;Author:</source>
         <translation>&amp;Autor:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="120"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="166"/>
         <source>&amp;Date:</source>
         <translation>&amp;Data:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="121"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="167"/>
         <source>&amp;Revision:</source>
         <translation>&amp;Revisão:</translation>
     </message>

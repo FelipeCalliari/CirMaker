@@ -3,7 +3,10 @@
 #include "core/Faults.h"
 #include "library/SymbolDef.h"
 
+#include <QCheckBox>
 #include <QComboBox>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QDate>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -54,6 +57,17 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
     form->addRow(tr("&Designator:"), m_designator);
     m_label = new QLineEdit(c.label);
     form->addRow(symbol.netLabel ? tr("&Net name:") : tr("&Label:"), m_label);
+    // CircuitMaker's Visible boxes; unchecked/checked override the symbol's default
+    auto* visible = new QHBoxLayout;
+    m_showDesignator = new QCheckBox(tr("Show d&esignator"));
+    m_showLabel = new QCheckBox(tr("Show la&bel"));
+    m_designatorDefault = !symbol.netLabel && symbol.model.value(u"kind").toString() != u"const";
+    m_labelDefault = symbol.netLabel || symbol.prefix != u"U";
+    m_showDesignator->setChecked(c.showDesignator.value_or(m_designatorDefault));
+    m_showLabel->setChecked(c.showLabel.value_or(m_labelDefault));
+    visible->addWidget(m_showDesignator);
+    visible->addWidget(m_showLabel);
+    form->addRow(visible);
 
     QVariantMap props = symbol.defaultProps;
     for (auto it = c.props.cbegin(); it != c.props.cend(); ++it)
@@ -69,7 +83,8 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
             continue;
         }
         if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break"
-            || it.key() == u"probe")
+            || it.key() == u"probe"
+            || it.key() == u"package" || it.key() == u"excludePcb" || it.key() == u"excludeBom")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM
@@ -84,6 +99,21 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
             m_textProps.insert(it.key(), edit);
             form->addRow(propertyCaption(it.key()) + u':', edit);
         }
+    }
+
+    if (!symbol.netLabel) {
+        auto* pcb = new QGroupBox(tr("PCB and parts list"));
+        auto* pf = new QFormLayout(pcb);
+        m_package = new QLineEdit(c.props.value(QStringLiteral("package")).toString());
+        m_package->setPlaceholderText(symbol.package.isEmpty() ? symbol.id : symbol.package);
+        pf->addRow(tr("&Package (footprint):"), m_package);
+        m_excludePcb = new QCheckBox(tr("Exclude from the &PCB netlist"));
+        m_excludePcb->setChecked(c.props.value(QStringLiteral("excludePcb")).toBool());
+        m_excludeBom = new QCheckBox(tr("Exclude from the parts &list (BOM)"));
+        m_excludeBom->setChecked(c.props.value(QStringLiteral("excludeBom")).toBool());
+        pf->addRow(m_excludePcb);
+        pf->addRow(m_excludeBom);
+        form->addRow(pcb);
     }
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -103,6 +133,22 @@ Component PropertiesDialog::result() const
         c.props.insert(it.key(), it.value()->text());
     for (auto it = m_choiceProps.cbegin(); it != m_choiceProps.cend(); ++it)
         c.props.insert(it.key(), it.value()->currentData().toString());
+    // only store what differs from the symbol's default
+    if (m_c.showDesignator || m_showDesignator->isChecked() != m_designatorDefault)
+        c.showDesignator = m_showDesignator->isChecked();
+    if (m_c.showLabel || m_showLabel->isChecked() != m_labelDefault)
+        c.showLabel = m_showLabel->isChecked();
+    auto flag = [&](QCheckBox* box, const QString& key) {
+        if (!box) return;
+        if (box->isChecked()) c.props.insert(key, true);
+        else c.props.remove(key);
+    };
+    flag(m_excludePcb, QStringLiteral("excludePcb"));
+    flag(m_excludeBom, QStringLiteral("excludeBom"));
+    if (m_package) {
+        if (m_package->text().trimmed().isEmpty()) c.props.remove(QStringLiteral("package"));
+        else c.props.insert(QStringLiteral("package"), m_package->text().trimmed());
+    }
     return c;
 }
 

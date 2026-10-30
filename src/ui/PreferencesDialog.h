@@ -21,6 +21,7 @@ struct Preferences {
     GridStyle gridStyle = GridStyle::Lines;
     int zoomPercent = 60;       // initial zoom and upper limit of "fit to window"
     int ticksPerFrame = 2;
+    int stepTicks = 0;          // Step: this many ticks (CircuitMaker's step size); 0 = to the next event
     Theme theme;                // colours and fonts
 
     static Preferences load();
@@ -39,6 +40,7 @@ private:
     QComboBox* m_gridStyle;
     QSpinBox* m_zoom;
     QSpinBox* m_ticks;
+    QSpinBox* m_step;
     QString m_initialLanguage;
     Theme m_theme;
     QHash<QPushButton*, QColor Theme::*> m_colorButtons;
