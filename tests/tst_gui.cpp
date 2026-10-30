@@ -43,6 +43,9 @@ private slots:
     void memoryEditorText();
     void contextMenuSelectsItem();
     void sceneGrowsWithItems();
+    void breakpointStopsSimulation();
+    void mergePlacesBelow();
+    void probeToolSurvivesRun();
     void screenshot();
 };
 
@@ -375,6 +378,87 @@ void TestGui::sceneGrowsWithItems()
     place(circuit, QStringLiteral("and2"), {9000, 6000});
     scene.refreshNetlist();
     QVERIFY(scene.sceneRect().contains(QPointF(9500, 6500)));
+}
+
+namespace {
+
+// Pulser (10 ticks high, 10 low) watched by a SCOPE.
+ItemId clockWithScope(Circuit& c)
+{
+    const ItemId p = place(c, QStringLiteral("pulser"), {0, 0}, QStringLiteral("P1"));
+    const ItemId scope = place(c, QStringLiteral("scope"), {400, 0}, QStringLiteral("T1"));
+    label(c, p, QStringLiteral("Q"), QStringLiteral("CLK"));
+    label(c, scope, library().find(QStringLiteral("scope"))->pins[0].name, QStringLiteral("CLK"));
+    return scope;
+}
+
+} // namespace
+
+void TestGui::breakpointStopsSimulation()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    const ItemId scope = clockWithScope(circuit);
+    scene.setBreakCondition(scope, 2);                     // break on 1
+    QCOMPARE(scene.breakCondition(scope), 2);
+    scene.setTicksPerFrame(15);
+    scene.run();
+    QTRY_VERIFY(!scene.running());
+    const int net = scene.waveformLanes().first().net;
+    QCOMPARE(scene.simulator()->netValue(net), sim::Logic::L1);
+    const quint64 first = scene.simTime();
+    scene.run();
+    QTRY_VERIFY(!scene.running());
+    QCOMPARE(scene.simTime(), first + 20);                 // the next rising edge
+    QCOMPARE(scene.simulator()->netValue(net), sim::Logic::L1);
+    scene.stopSimulation();
+    QCOMPARE(circuit.component(scope)->props.value(QStringLiteral("break")).toInt(), 2);
+
+    // Level-Or on 0: stops when the level starts matching, not again while it holds
+    AnalysisSettings a = circuit.analysis();
+    a.breakEdge = false;
+    circuit.setAnalysis(a);
+    scene.setBreakCondition(scope, 1);
+    scene.run();
+    QTRY_VERIFY(!scene.running());
+    QCOMPARE(scene.simulator()->netValue(net), sim::Logic::L0);
+    const quint64 low = scene.simTime();
+    scene.run();
+    QTRY_VERIFY(!scene.running());
+    QVERIFY(scene.simTime() > low + 10);                   // went high, then low again
+    QCOMPARE(scene.simulator()->netValue(net), sim::Logic::L0);
+    scene.stopSimulation();
+}
+
+void TestGui::mergePlacesBelow()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    place(circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    Circuit other;
+    place(other, QStringLiteral("or2"), {500, -300}, QStringLiteral("U1"));
+    scene.mergeCircuit(other);
+    QCOMPARE(circuit.components().size(), 2);
+    const Component& merged = circuit.components().last();
+    QCOMPARE(merged.designator, QStringLiteral("U2"));
+    QVERIFY(merged.pos.y() > 40);
+    QCOMPARE(scene.selection().components.size(), 1);
+    undo.undo();
+    QCOMPARE(circuit.components().size(), 1);
+}
+
+void TestGui::probeToolSurvivesRun()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    clockWithScope(circuit);
+    scene.setTool(SchematicScene::Tool::Probe);
+    scene.run();
+    QCOMPARE(scene.tool(), SchematicScene::Tool::Probe);
+    scene.stopSimulation();
 }
 
 QTEST_MAIN(TestGui)

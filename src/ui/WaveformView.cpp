@@ -1,5 +1,7 @@
 #include "ui/WaveformView.h"
 
+#include <QMouseEvent>
+
 #include <QApplication>
 #include <QClipboard>
 #include <QContextMenuEvent>
@@ -64,13 +66,43 @@ void WaveformView::setDigital(QVector<Lane> lanes, quint64 now)
     update();
 }
 
+namespace {
+constexpr double kNameWidth = 110, kLaneTop = 8;
+}
+
+double WaveformView::laneHeight() const
+{
+    return std::clamp((height() - 40.0) / std::max<qsizetype>(1, m_lanes.size()), 18.0, 46.0);
+}
+
+QRectF WaveformView::breakBox(int lane) const
+{
+    const double h = laneHeight(), mid = kLaneTop + (lane + 0.5) * h;
+    return QRectF(4, mid - 6, 12, 12);
+}
+
+void WaveformView::mousePressEvent(QMouseEvent* e)
+{
+    if (m_digital && e->button() == Qt::LeftButton) {
+        for (int i = 0; i < m_lanes.size(); ++i) {
+            if (m_lanes[i].breakOn >= 0 && breakBox(i).adjusted(-3, -3, 3, 3).contains(e->position())) {
+                m_lanes[i].breakOn = (m_lanes[i].breakOn + 1) % 3;
+                update();
+                emit breakChanged(i, m_lanes[i].breakOn);
+                return;
+            }
+        }
+    }
+    QWidget::mousePressEvent(e);
+}
+
 void WaveformView::paintDigital(QPainter& p)
 {
     const QPalette pal = palette();
     const QColor text = pal.color(QPalette::Text);
     QFont f = font();
     p.setFont(f);
-    const double nameWidth = 110, top = 8, laneH = std::clamp((height() - 40.0) / std::max<qsizetype>(1, m_lanes.size()), 18.0, 46.0);
+    const double nameWidth = kNameWidth, top = kLaneTop, laneH = laneHeight();
     const QRectF area(nameWidth, top, width() - nameWidth - 12, laneH * m_lanes.size());
     // the most recent window of ticks, like a scrolling logic analyser
     const quint64 window = std::max<quint64>(200, quint64(area.width() / 2));
@@ -93,7 +125,19 @@ void WaveformView::paintDigital(QPainter& p)
         const double y0 = area.top() + i * laneH + 4, y1 = area.top() + (i + 1) * laneH - 4;
         const QColor c = traceColor(i);
         p.setPen(text);
-        p.drawText(QRectF(4, y0, nameWidth - 8, y1 - y0), Qt::AlignRight | Qt::AlignVCenter, lane.name);
+        p.drawText(QRectF(20, y0, nameWidth - 24, y1 - y0), Qt::AlignRight | Qt::AlignVCenter, lane.name);
+        if (lane.breakOn >= 0) {
+            // CircuitMaker's breakpoint box: lower half = break on 0, upper half = break on 1
+            const QRectF box = breakBox(i);
+            p.setPen(QPen(text, 1));
+            p.setBrush(Qt::NoBrush);
+            p.drawRect(box);
+            if (lane.breakOn) {
+                const QRectF half = lane.breakOn == 1 ? QRectF(box.left(), box.center().y(), box.width(), box.height() / 2)
+                                                      : QRectF(box.left(), box.top(), box.width(), box.height() / 2);
+                p.fillRect(half, QColor(0xe0, 0x20, 0x20));
+            }
+        }
         int state = 3;
         quint64 from = t0;
         auto segment = [&](quint64 a, quint64 b, int st) {

@@ -27,6 +27,7 @@ public:
     struct Lane {
         QString name;
         QVector<std::pair<quint64, int>> changes;
+        int breakOn = -1;       // breakpoint box: -1 none shown, 0 off, 1 break on 0, 2 break on 1
     };
     void setDigital(QVector<Lane> lanes, quint64 now);
     void clear();
@@ -34,16 +35,25 @@ public:
     QString toCsv() const;
 
     static QColor traceColor(int index);
+
+signals:
+    // The breakpoint box of a digital lane was clicked (0 off, 1 on 0, 2 on 1).
+    void breakChanged(int lane, int condition);
+
+public:
     static QString siFormat(double v, const QString& unit, int digits = 3);
 
 protected:
     void paintEvent(QPaintEvent*) override;
     void mouseMoveEvent(QMouseEvent* e) override;
+    void mousePressEvent(QMouseEvent* e) override;
     void leaveEvent(QEvent*) override;
     void contextMenuEvent(QContextMenuEvent* e) override;
 
 private:
     void paintDigital(QPainter& p);
+    double laneHeight() const;
+    QRectF breakBox(int lane) const;
     QRectF plotRect() const;
     double xToPixel(double x) const;
     double yToPixel(double y) const;

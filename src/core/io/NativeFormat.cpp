@@ -28,7 +28,8 @@ QJsonObject analysisToJson(const AnalysisSettings& a)
     return {{u"analog"_s, a.analogMode}, {u"type"_s, QString::fromLatin1(kAnalysisTypes[int(a.type)])},
             {u"tranStop"_s, a.tranStop}, {u"tranStep"_s, a.tranStep},
             {u"acStart"_s, a.acStart}, {u"acStop"_s, a.acStop}, {u"acPoints"_s, a.acPointsPerDecade},
-            {u"dcSource"_s, a.dcSource}, {u"dcStart"_s, a.dcStart}, {u"dcStop"_s, a.dcStop}, {u"dcStep"_s, a.dcStep}};
+            {u"dcSource"_s, a.dcSource}, {u"dcStart"_s, a.dcStart}, {u"dcStop"_s, a.dcStop}, {u"dcStep"_s, a.dcStep},
+            {u"breakEdge"_s, a.breakEdge}, {u"breakAll"_s, a.breakAll}};
 }
 
 AnalysisSettings analysisFromJson(const QJsonObject& o)
@@ -47,6 +48,8 @@ AnalysisSettings analysisFromJson(const QJsonObject& o)
     a.acStop = o.value(u"acStop").toString(a.acStop);
     a.acPointsPerDecade = o.value(u"acPoints").toInt(a.acPointsPerDecade);
     a.dcSource = o.value(u"dcSource").toString();
+    a.breakEdge = o.value(u"breakEdge").toBool(a.breakEdge);
+    a.breakAll = o.value(u"breakAll").toBool(a.breakAll);
     a.dcStart = o.value(u"dcStart").toString(a.dcStart);
     a.dcStop = o.value(u"dcStop").toString(a.dcStop);
     a.dcStep = o.value(u"dcStep").toString(a.dcStep);

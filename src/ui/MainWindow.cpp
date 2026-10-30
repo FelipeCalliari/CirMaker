@@ -20,6 +20,7 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QDockWidget>
@@ -96,6 +97,10 @@ MainWindow::MainWindow()
     m_wavesDock->setWidget(m_waves);
     addDockWidget(Qt::BottomDockWidgetArea, m_wavesDock);
     m_wavesDock->hide();
+    connect(m_waves, &WaveformView::breakChanged, this, [this](int lane, int condition) {
+        if (lane < m_scene->waveformLanes().size())
+            m_scene->setBreakCondition(m_scene->waveformLanes()[lane].component, condition);
+    });
     connect(&m_analogWatcher, &QFutureWatcher<spice::Result>::finished, this, &MainWindow::analogFinished);
 
     createActions();
@@ -167,6 +172,10 @@ void MainWindow::createActions()
     m_import->setShortcut(Qt::CTRL | Qt::Key_I);
     connect(m_import, &QAction::triggered, this, &MainWindow::importCkt);
 
+    m_merge = new QAction(tr("&Merge..."), this);
+    m_merge->setStatusTip(tr("Insert another circuit below this one"));
+    connect(m_merge, &QAction::triggered, this, &MainWindow::merge);
+
     m_save = new QAction(themeIcon("document-save", QStyle::SP_DialogSaveButton), tr("&Save"), this);
     m_save->setShortcut(QKeySequence::Save);
     connect(m_save, &QAction::triggered, this, &MainWindow::save);
@@ -177,6 +186,10 @@ void MainWindow::createActions()
 
     m_export = new QAction(tr("&Export Schematic (PNG, SVG, PDF)..."), this);
     connect(m_export, &QAction::triggered, this, &MainWindow::exportImage);
+
+    m_copyImage = new QAction(tr("Copy Schematic as &Image"), this);
+    m_copyImage->setShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_C);
+    connect(m_copyImage, &QAction::triggered, this, &MainWindow::copyImage);
 
     m_print = new QAction(themeIcon("document-print", QStyle::SP_FileIcon), tr("&Print Schematic..."), this);
     m_print->setShortcut(QKeySequence::Print);
@@ -512,7 +525,7 @@ void MainWindow::createMenus()
     QMenu* file = menuBar()->addMenu(tr("&File"));
     file->addActions({m_new, m_open});
     m_recentMenu = file->addMenu(tr("Open &Recent"));
-    file->addActions({m_import});
+    file->addActions({m_import, m_merge});
     file->addSeparator();
     file->addActions({m_save, m_saveAs});
     file->addSeparator();
@@ -525,7 +538,7 @@ void MainWindow::createMenus()
     QMenu* edit = menuBar()->addMenu(tr("&Edit"));
     edit->addActions({m_undoAct, m_redoAct});
     edit->addSeparator();
-    edit->addActions({m_cut, m_copy, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
+    edit->addActions({m_cut, m_copy, m_copyImage, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
     edit->addSeparator();
     edit->addActions({m_rotate, m_mirror, m_props, m_straighten, m_designations, m_propDelays});
     edit->addSeparator();
@@ -552,6 +565,32 @@ void MainWindow::createMenus()
     simulation->addActions({m_digitalMode, m_analogMode});
     simulation->addSeparator();
     simulation->addActions({m_run, m_step, m_trace, m_reset, m_stop});
+    // CircuitMaker Digital Options: how the SCOPE breakpoint boxes combine
+    QMenu* breakMenu = simulation->addMenu(tr("&Breakpoint Type"));
+    auto* breakGroup = new QActionGroup(breakMenu);
+    const std::pair<QString, std::pair<bool, bool>> types[] = {
+        {tr("Level-&And"), {false, true}}, {tr("Level-&Or"), {false, false}},
+        {tr("&Edge-And"), {true, true}}, {tr("Edge-O&r"), {true, false}}};
+    for (const auto& [name, mode] : types) {
+        QAction* a = breakMenu->addAction(name);
+        a->setCheckable(true);
+        breakGroup->addAction(a);
+        const auto [edge, all] = mode;
+        auto sync = [this, a, edge, all] {
+            a->setChecked(m_circuit->analysis().breakEdge == edge && m_circuit->analysis().breakAll == all);
+        };
+        sync();
+        connect(m_circuit, &Circuit::analysisChanged, a, sync);
+        connect(a, &QAction::triggered, this, [this, edge, all] {
+            AnalysisSettings s = m_circuit->analysis();
+            s.breakEdge = edge;
+            s.breakAll = all;
+            m_undo->push(new SetAnalysisCommand(m_circuit, s, tr("Breakpoint type")));
+        });
+    }
+    breakMenu->setToolTipsVisible(true);
+    breakMenu->menuAction()->setStatusTip(
+        tr("Breakpoints are set with the boxes beside the SCOPE names in the Waveforms window"));
     simulation->addSeparator();
     simulation->addAction(m_analysisSetup);
 
@@ -604,7 +643,7 @@ void MainWindow::updateActions()
 {
     const bool simulating = m_scene->simulating();
     const bool hasSel = m_scene->hasSelection();
-    for (QAction* a : {m_new, m_open, m_import, m_cut, m_paste, m_delete, m_selectAll, m_props, m_find, m_titleBlock,
+    for (QAction* a : {m_new, m_open, m_import, m_merge, m_cut, m_paste, m_delete, m_selectAll, m_props, m_find, m_titleBlock,
                        m_showTitleBlock})
         a->setEnabled(!simulating);
     m_undoAct->setEnabled(!simulating && m_undo->canUndo());
@@ -618,7 +657,8 @@ void MainWindow::updateActions()
         a->setEnabled(!simulating);
     m_editMacro->setEnabled(!simulating && !m_macroName.isEmpty());
     m_expandMacro->setEnabled(!simulating && selectedMacro());
-    m_tools->setEnabled(!simulating);
+    for (QAction* a : m_tools->actions())
+        a->setEnabled(!simulating || a == m_toolSelect || a == m_toolProbe);
     m_step->setEnabled(!m_scene->running());
     m_reset->setEnabled(simulating);
     m_stop->setEnabled(simulating);
@@ -1077,17 +1117,63 @@ bool MainWindow::exportTo(const QString& path)
         QPainter p(&pdf);
         m_scene->render(&p, {}, src);
     } else {
-        const double scale = std::min(2.0, 6000.0 / std::max(src.width(), src.height()));
-        QImage img((src.size() * scale).toSize(), QImage::Format_ARGB32);
-        img.fill(Qt::white);
-        QPainter p(&img);
-        p.setRenderHint(QPainter::Antialiasing);
-        m_scene->render(&p, {}, src);
-        p.end();
-        ok = img.save(path);
+        ok = renderImage().save(path);
     }
     m_scene->setExporting(false);
     return ok;
+}
+
+QImage MainWindow::renderImage() const
+{
+    const QRectF src = m_scene->contentsRect();
+    const double scale = std::min(2.0, 6000.0 / std::max(src.width(), src.height()));
+    QImage img((src.size() * scale).toSize(), QImage::Format_ARGB32);
+    img.fill(Qt::white);
+    const QList<QGraphicsItem*> selected = m_scene->selectedItems();
+    for (QGraphicsItem* it : selected) it->setSelected(false);
+    m_scene->setExporting(true);
+    QPainter p(&img);
+    p.setRenderHint(QPainter::Antialiasing);
+    m_scene->render(&p, {}, src);
+    p.end();
+    m_scene->setExporting(false);
+    for (QGraphicsItem* it : selected) it->setSelected(true);
+    return img;
+}
+
+void MainWindow::copyImage()
+{
+    QApplication::clipboard()->setImage(renderImage());
+    statusBar()->showMessage(tr("Schematic copied to the clipboard"), 4000);
+}
+
+void MainWindow::merge()
+{
+    if (m_scene->simulating())
+        return;
+    QSettings settings;
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Merge circuit"), settings.value(QStringLiteral("dirs/open")).toString(),
+        tr("Circuits (*.cmq *.ckt *.CKT);;All files (*)"));
+    if (path.isEmpty())
+        return;
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) {
+        QMessageBox::critical(this, tr("Merge"), tr("Cannot open %1:\n%2").arg(path, f.errorString()));
+        return;
+    }
+    const QByteArray data = f.readAll();
+    Circuit other;
+    QString error;
+    const bool ok = data.startsWith("CircuitMaker")
+                        ? CktImporter::importData(data, other, LibraryRegistry::instance(), nullptr, &error)
+                        : NativeFormat::deserialize(data, other, &error);
+    if (!ok) {
+        QMessageBox::critical(this, tr("Merge"), tr("Cannot open %1:\n%2").arg(QFileInfo(path).fileName(), error));
+        return;
+    }
+    m_scene->mergeCircuit(other);
+    statusBar()->showMessage(tr("Merged %1").arg(path), 4000);
 }
 
 void MainWindow::showLibrarySheet()
@@ -1169,7 +1255,7 @@ void MainWindow::showDigitalWaveforms()
         return;
     QVector<WaveformView::Lane> lanes;
     for (const SchematicScene::Lane& l : m_scene->waveformLanes()) {
-        WaveformView::Lane lane{l.name, {}};
+        WaveformView::Lane lane{l.name, {}, l.component ? m_scene->breakCondition(l.component) : -1};
         for (const auto& [t, v] : sim->history().value(l.net))
             lane.changes.append(std::pair<quint64, int>(t, int(v)));
         lanes << lane;

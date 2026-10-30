@@ -58,6 +58,9 @@ struct AnalysisSettings {
     QString acStart = QStringLiteral("10"), acStop = QStringLiteral("1Meg");
     int acPointsPerDecade = 20;
     QString dcSource, dcStart = QStringLiteral("0"), dcStop = QStringLiteral("5"), dcStep = QStringLiteral("0.05");
+    // Digital breakpoints (CircuitMaker Digital Options): level or edge
+    // conditions, all of them or any one.
+    bool breakEdge = true, breakAll = false;
     friend bool operator==(const AnalysisSettings&, const AnalysisSettings&) = default;
 };
 

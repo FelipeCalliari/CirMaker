@@ -843,10 +843,17 @@ void SchematicScene::paste()
     if (!mime || !mime->hasFormat(kMime))
         return;
     Circuit temp;
-    if (!NativeFormat::deserialize(mime->data(kMime), temp, nullptr))
+    if (NativeFormat::deserialize(mime->data(kMime), temp, nullptr))
+        insertCircuit(temp, QPointF(20, 20), tr("Paste"));
+}
+
+void SchematicScene::insertCircuit(const Circuit& source, QPointF offset, const QString& undoText)
+{
+    if (simulating())
         return;
-    Selection sel = fromCircuit(temp);
-    const QPointF offset(20, 20);
+    Selection sel = fromCircuit(source);
+    if (sel.isEmpty())
+        return;
     // designators already in use get the next free number
     Circuit names;
     for (const Component& c : m_circuit->components())
@@ -872,7 +879,7 @@ void SchematicScene::paste()
         t.id = 0;
         t.pos += offset;
     }
-    auto* cmd = new AddItemsCommand(m_circuit, sel, tr("Paste"));
+    auto* cmd = new AddItemsCommand(m_circuit, sel, undoText);
     m_undo->push(cmd);
     clearSelection();
     for (const Component& c : cmd->items().components)
@@ -881,6 +888,25 @@ void SchematicScene::paste()
         if (auto* it = m_wireItems.value(w.id)) it->setSelected(true);
     for (const TextNote& t : cmd->items().texts)
         if (auto* it = m_textItems.value(t.id)) it->setSelected(true);
+}
+
+// Merge: the other circuit goes below this one, left edges aligned.
+void SchematicScene::mergeCircuit(const Circuit& source)
+{
+    QRectF incoming;
+    for (const Component& c : source.components()) {
+        const SymbolDef* s = m_library.find(c.symbolId);
+        incoming |= QRectF(c.pos, QSizeF(1, 1)) | (s ? s->bounds.translated(c.pos) : QRectF());
+    }
+    for (const Wire& w : source.wires())
+        for (QPointF p : w.points) incoming |= QRectF(p, QSizeF(1, 1));
+    for (const TextNote& t : source.texts()) incoming |= QRectF(t.pos, QSizeF(1, 1));
+    QPointF offset;
+    if (!m_circuit->components().isEmpty() || !m_circuit->wires().isEmpty() || !m_circuit->texts().isEmpty()) {
+        const QRectF here = contentsRect();
+        offset = snap(QPointF(here.left() - incoming.left(), here.bottom() + 100 - incoming.top()));
+    }
+    insertCircuit(source, offset, tr("Merge"));
 }
 
 void SchematicScene::editItem(QGraphicsItem* item)
@@ -1022,19 +1048,25 @@ void SchematicScene::setTitleBlockVisible(bool visible)
 void SchematicScene::run()
 {
     if (!m_sim) {
-        setTool(Tool::Select);
+        if (m_tool != Tool::Probe)
+            setTool(Tool::Select);      // the probe tool reads nodes while simulating
         clearSelection();
         rebuildNetlist();
         m_sim = std::make_unique<sim::EventSimulator>();
         m_sim->build(simCircuit(), m_library, m_netlist);
         m_sim->reset();
         m_lanes.clear();
+        m_breaks.clear();
         for (const ComponentItem* item : std::as_const(m_componentItems)) {
             const Component& c = item->component();
             if (c.symbolId != u"scope") continue;
             const int net = m_netlist.netOf(c.id, 0);
-            m_lanes << Lane{c.label.isEmpty() ? (c.designator.isEmpty() ? m_netlist.nets.value(net).name : c.designator) : c.label, net};
+            m_lanes << Lane{c.label.isEmpty() ? (c.designator.isEmpty() ? m_netlist.nets.value(net).name : c.designator) : c.label,
+                            net, c.id};
+            m_breaks.insert(c.id, std::clamp(c.props.value(QStringLiteral("break")).toInt(), 0, 2));
         }
+        m_breakPrev.clear();
+        m_breakMet = false;
         const QVector<int> probes = probeNets();
         for (int i = 0; i < probes.size(); ++i)
             if (probes[i] >= 0)
@@ -1095,7 +1127,9 @@ void SchematicScene::persistSimProps()
 {
     Selection before, after;
     for (const Component& c : m_circuit->components()) {
-        const QVariantMap p = m_sim->persistentProps(c.id);
+        QVariantMap p = m_sim->persistentProps(c.id);
+        if (const int b = m_breaks.value(c.id, -1); b >= 0 && b != c.props.value(QStringLiteral("break")).toInt())
+            p.insert(QStringLiteral("break"), b);
         if (p.isEmpty())
             continue;
         Component n = c;
@@ -1112,9 +1146,77 @@ void SchematicScene::persistSimProps()
 
 void SchematicScene::advance()
 {
-    m_sim->step(m_ticksPerFrame);
+    bool breaks = false;
+    for (int b : std::as_const(m_breaks)) breaks |= b != 0;
+    if (!breaks) {
+        m_sim->step(m_ticksPerFrame);
+    } else {
+        // one tick at a time so the simulation stops exactly at the break
+        for (int i = 0; i < m_ticksPerFrame; ++i) {
+            m_sim->step(1);
+            if (breakpointHit()) {
+                pause();
+                emit statusMessage(tr("Breakpoint at tick %1").arg(m_sim->time()));
+                break;
+            }
+        }
+    }
     emit simTimeChanged(m_sim->time());
     update();
+}
+
+int SchematicScene::breakCondition(ItemId scope) const
+{
+    if (m_sim)
+        return m_breaks.value(scope);
+    const Component* c = m_circuit->component(scope);
+    return c ? std::clamp(c->props.value(QStringLiteral("break")).toInt(), 0, 2) : 0;
+}
+
+void SchematicScene::setBreakCondition(ItemId scope, int condition)
+{
+    if (m_sim) {
+        if (m_breaks.contains(scope)) m_breaks[scope] = std::clamp(condition, 0, 2);
+        m_breakPrev.clear();
+        m_breakMet = false;
+        return;
+    }
+    const Component* c = m_circuit->component(scope);
+    if (!c || breakCondition(scope) == condition)
+        return;
+    Component n = *c;
+    n.props.insert(QStringLiteral("break"), std::clamp(condition, 0, 2));
+    Selection b, a;
+    b.components << *c;
+    a.components << n;
+    m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Set breakpoint")));
+}
+
+// CircuitMaker's breakpoint types: Level-And/Or stop when the SCOPE levels
+// (all or any) start matching; Edge-And/Or when they change to the condition
+// in this tick (all together or any one).
+bool SchematicScene::breakpointHit()
+{
+    const AnalysisSettings& a = m_circuit->analysis();
+    bool used = false, any = false, all = true;
+    for (const Lane& l : std::as_const(m_lanes)) {
+        const int b = l.component ? m_breaks.value(l.component) : 0;
+        if (!b || l.net < 0) continue;
+        used = true;
+        const sim::Logic target = b == 2 ? sim::Logic::L1 : sim::Logic::L0;
+        const sim::Logic v = m_sim->netValue(l.net);
+        const sim::Logic prev = m_breakPrev.value(l.net, v);
+        m_breakPrev[l.net] = v;
+        const bool met = v == target && (!a.breakEdge || prev != target);
+        any |= met;
+        all &= met;
+    }
+    const bool met = used && (a.breakAll ? all : any);
+    if (a.breakEdge)
+        return met;
+    const bool started = met && !m_breakMet;
+    m_breakMet = met;
+    return started;
 }
 
 quint64 SchematicScene::simTime() const { return m_sim ? m_sim->time() : 0; }
@@ -1179,7 +1281,7 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
     const QPointF p = snap(e->scenePos());
     if (simulating()) {
-        if (e->button() == Qt::LeftButton)
+        if (e->button() == Qt::LeftButton && m_tool != Tool::Probe)
             simInteractPress(e);
         return;
     }
@@ -1355,8 +1457,16 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
 {
     m_cursor = snap(e->scenePos());
     emit cursorMoved(m_cursor);
-    if (simulating())
+    if (simulating()) {
+        if (m_tool == Tool::Probe) {
+            const int net = netAt(e->scenePos());
+            if (net != m_probeNet || net >= 0) {
+                m_probeNet = net;
+                update();
+            }
+        }
         return;
+    }
     if (m_ghost) {
         m_ghostComponent.pos = m_cursor;
         m_ghost->setPos(m_cursor);
@@ -1580,6 +1690,27 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         p->setPen(pen);
         p->setBrush(Qt::NoBrush);
         p->drawPolyline(pts.constData(), int(pts.size()));
+    }
+    // probe tool while simulating: a lamp with the node's level next to the cursor
+    if (m_sim && m_tool == Tool::Probe && !m_exporting) {
+        const sim::Logic v = m_probeNet >= 0 ? m_sim->netValue(m_probeNet) : sim::Logic::Z;
+        const QString text = m_probeNet < 0 ? QStringLiteral("-")
+                           : v == sim::Logic::L1 ? QStringLiteral("H")
+                           : v == sim::Logic::L0 ? QStringLiteral("L")
+                           : v == sim::Logic::X ? QStringLiteral("X") : QStringLiteral("Z");
+        const QColor fill = m_probeNet < 0 ? QColor(0xd0, 0xd0, 0xd0)
+                          : v == sim::Logic::L1 ? QColor(0xff, 0x30, 0x30)
+                          : v == sim::Logic::L0 ? QColor(0x30, 0xc0, 0x40)
+                          : v == sim::Logic::X ? QColor(0xf0, 0x90, 0x00) : QColor(0xa0, 0xa0, 0xff);
+        const QRectF lamp(m_cursor + QPointF(8, -26), QSizeF(18, 18));
+        p->setPen(QPen(kInk, 1));
+        p->setBrush(fill);
+        p->drawEllipse(lamp);
+        QFont f = p->font();
+        f.setPixelSize(12);
+        f.setBold(true);
+        p->setFont(f);
+        p->drawText(lamp, Qt::AlignCenter, text);
     }
     // pin dots: pins with a wire attached
     if (m_showPinDots) {

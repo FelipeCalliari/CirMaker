@@ -56,6 +56,10 @@ private:
     bool save();
     bool saveAs();
     void exportImage();
+    void merge();
+    void copyImage();
+    // The schematic without grid and selection, at most 6000 px a side.
+    QImage renderImage() const;
     void exportBom();
     void writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text);
     void findAndSelect();
@@ -94,7 +98,7 @@ private:
     QSpinBox* m_speed;
     QMenu* m_recentMenu = nullptr;
 
-    QAction *m_new, *m_open, *m_import, *m_save, *m_saveAs, *m_export, *m_print, *m_quit;
+    QAction *m_new, *m_open, *m_import, *m_merge, *m_copyImage, *m_save, *m_saveAs, *m_export, *m_print, *m_quit;
     QAction *m_undoAct, *m_redoAct, *m_cut, *m_copy, *m_paste, *m_delete, *m_selectAll, *m_rotate, *m_mirror, *m_props;
     QAction *m_zoomIn, *m_zoomOut, *m_zoomFit, *m_grid;
     QAction *m_toolSelect, *m_toolWire, *m_toolBus, *m_toolNetLabel, *m_toolText, *m_toolDelete = nullptr,

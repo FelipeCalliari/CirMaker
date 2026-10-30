@@ -3,6 +3,7 @@
 #include "core/Circuit.h"
 #include "core/NetlistBuilder.h"
 #include "core/UndoCommands.h"
+#include "sim/digital/Logic.h"
 
 #include <QGraphicsScene>
 #include <QHash>
@@ -59,12 +60,17 @@ public:
     void setDesignations(const QString& prefix, int first);
     void setPropDelays(int ticks);
     int highlightedNet() const { return m_highlightNet; }
+    // Node under the probe tool while simulating (-1: none).
+    int probedNet() const { return m_probeNet; }
     void setShowNodeNames(bool on) { m_showNodeNames = on; update(); }
     void setShowPinDots(bool on) { m_showPinDots = on; update(); }
     // CircuitMaker "Trace": colour wires by logic level while simulating
     void setTrace(bool on) { m_trace = on; update(); }
     bool trace() const { return m_trace; }
     void paste();
+    // Adds a copy of `source` moved by offset, selected, as one undo step.
+    void insertCircuit(const Circuit& source, QPointF offset, const QString& undoText);
+    void mergeCircuit(const Circuit& source);
     bool hasSelection() const { return !selectedItems().isEmpty(); }
     Selection selection() const;
     void editItem(QGraphicsItem* item);
@@ -109,9 +115,12 @@ public:
     quint64 simTime() const;
     sim::EventSimulator* simulator() const { return m_sim.get(); }
     // Nets shown in the digital waveform window: SCOPE devices and probes.
-    struct Lane { QString name; int net; };
+    struct Lane { QString name; int net; ItemId component = 0; };   // component: the SCOPE
     const QVector<Lane>& waveformLanes() const { return m_lanes; }
     int simState(ItemId id) const;
+    // Breakpoint of a SCOPE: 0 none, 1 break on 0, 2 break on 1 (property "break").
+    int breakCondition(ItemId scope) const;
+    void setBreakCondition(ItemId scope, int condition);
     QColor wireColor(ItemId id) const;
 
     static QPointF snap(QPointF p);
@@ -202,6 +211,7 @@ private:
     void simInteractRelease();
     void advance();
     void persistSimProps();
+    bool breakpointHit();
     QWidget* dialogParent() const;
 
     Circuit* m_circuit;
@@ -252,7 +262,11 @@ private:
     bool m_showPinDots = true;
     int m_highlightNet = -1;
     bool m_exporting = false;
-    bool m_suppressMenu = false;        // the right press ended a wire or a tool
+    bool m_suppressMenu = false;
+    QHash<ItemId, int> m_breaks;        // SCOPE breakpoints while simulating
+    QHash<int, sim::Logic> m_breakPrev; // break nets' values one tick earlier
+    bool m_breakMet = false;            // level breakpoints: condition held last tick
+    int m_probeNet = -1;                // node under the probe tool while simulating        // the right press ended a wire or a tool
 };
 
 } // namespace cm
