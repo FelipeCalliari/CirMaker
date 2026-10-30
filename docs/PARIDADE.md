@@ -25,7 +25,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Borda com zonas (Borders) | ✅ | Exibir > Borda; vai junto na impressão e na exportação |
 | Auto Wire Routing / Quick Connect / Single Click Connect | 🟡 | arrastar a partir do pino; sem roteamento automático |
 | Set Label Positions | ✅ | |
-| Group Items (portas no mesmo encapsulamento) | ❌ | falta a pinagem por porta dos CIs |
+| Group Items (portas no mesmo encapsulamento) | ✅ | U1A, U1B...; ao colocar, a porta entra no primeiro encapsulamento com vaga; pinos por parte no netlist de PCB e no BOM; importado do `.ckt` |
 | Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |
 | Copiar esquemático/formas de onda para a área de transferência como imagem | ✅ | Ctrl+Shift+C; formas de onda pelo Editar ou menu da janela |
 | Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | 🟡 | designador, rótulo, parâmetros e visibilidade dos textos |

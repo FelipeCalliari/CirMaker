@@ -16,12 +16,16 @@ QVector<BomLine> build(const Circuit& circuit, const LibraryRegistry& library)
         const SymbolDef* s = library.find(c.symbolId);
         if (!s || s->netLabel || s->hidden || s->model.value(u"kind").toString() == u"const")
             continue;
-        BomLine& line = byKey[{s->name, c.label}];
-        line.device = s->name;
+        // gates of one package are one part
+        const QString device = s->parts.size() > 1 && !s->package.isEmpty() ? s->package : s->name;
+        BomLine& line = byKey[{device, c.label}];
+        line.device = device;
         line.value = c.label;
         line.description = s->description;
-        line.designators << c.designator;
-        ++line.quantity;
+        if (!line.designators.contains(c.designator) || c.designator.isEmpty() || s->parts.size() < 2) {
+            line.designators << c.designator;
+            ++line.quantity;
+        }
     }
 
     QCollator natural;

@@ -20,8 +20,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In NAND (TTL); one gate per symbol",
+   "description": "Quad 2-In NAND (TTL); one gate per symbol, grouped by package",
    "label": "7400",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "8"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -43,8 +65,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In NOR (TTL); one gate per symbol",
+   "description": "Quad 2-In NOR (TTL); one gate per symbol, grouped by package",
    "label": "7402",
+   "parts": [
+    [
+     "3",
+     "2",
+     "1"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "11",
+     "12",
+     "13"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -65,8 +109,34 @@
     "A",
     "Y"
    ],
-   "description": "Hex Inverter (TTL); one gate per symbol",
+   "description": "Hex Inverter (TTL); one gate per symbol, grouped by package",
    "label": "7404",
+   "parts": [
+    [
+     "1",
+     "2"
+    ],
+    [
+     "3",
+     "4"
+    ],
+    [
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "8"
+    ],
+    [
+     "11",
+     "10"
+    ],
+    [
+     "13",
+     "12"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -87,8 +157,34 @@
     "A",
     "Y"
    ],
-   "description": "Hex Buffer (TTL); one gate per symbol",
+   "description": "Hex Buffer (TTL); one gate per symbol, grouped by package",
    "label": "7407",
+   "parts": [
+    [
+     "1",
+     "2"
+    ],
+    [
+     "3",
+     "4"
+    ],
+    [
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "8"
+    ],
+    [
+     "11",
+     "10"
+    ],
+    [
+     "13",
+     "12"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -110,8 +206,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In AND (TTL); one gate per symbol",
+   "description": "Quad 2-In AND (TTL); one gate per symbol, grouped by package",
    "label": "7408",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "8"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -134,8 +252,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In NAND (TTL); one gate per symbol",
+   "description": "Triple 3-In NAND (TTL); one gate per symbol, grouped by package",
    "label": "7410",
+   "parts": [
+    [
+     "1",
+     "2",
+     "13",
+     "12"
+    ],
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -158,8 +296,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In AND (TTL); one gate per symbol",
+   "description": "Triple 3-In AND (TTL); one gate per symbol, grouped by package",
    "label": "7411",
+   "parts": [
+    [
+     "1",
+     "2",
+     "13",
+     "12"
+    ],
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -182,8 +340,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In AND (TTL); one gate per symbol",
+   "description": "Triple 3-In AND (TTL); one gate per symbol, grouped by package",
    "label": "7415",
+   "parts": [
+    [
+     "1",
+     "2",
+     "13",
+     "12"
+    ],
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -207,8 +385,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In NAND (TTL); one gate per symbol",
+   "description": "Dual 4-In NAND (TTL); one gate per symbol, grouped by package",
    "label": "7420",
+   "parts": [
+    [
+     "1",
+     "2",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "12",
+     "13",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -232,8 +426,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In AND (TTL); one gate per symbol",
+   "description": "Dual 4-In AND (TTL); one gate per symbol, grouped by package",
    "label": "7421",
+   "parts": [
+    [
+     "1",
+     "2",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "12",
+     "13",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -257,8 +467,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In NAND (TTL); one gate per symbol",
+   "description": "Dual 4-In NAND (TTL); one gate per symbol, grouped by package",
    "label": "7422",
+   "parts": [
+    [
+     "1",
+     "2",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "12",
+     "13",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -281,8 +507,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In NOR (TTL); one gate per symbol",
+   "description": "Triple 3-In NOR (TTL); one gate per symbol, grouped by package",
    "label": "7427",
+   "parts": [
+    [
+     "1",
+     "2",
+     "13",
+     "12"
+    ],
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -310,8 +556,21 @@
     "H",
     "Y"
    ],
-   "description": "Single 8-In NAND (TTL); one gate per symbol",
+   "description": "Single 8-In NAND (TTL); one gate per symbol, grouped by package",
    "label": "7430",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "11",
+     "12",
+     "8"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -333,8 +592,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In OR (TTL); one gate per symbol",
+   "description": "Quad 2-In OR (TTL); one gate per symbol, grouped by package",
    "label": "7432",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "8"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -356,8 +637,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In XOR (TTL); one gate per symbol",
+   "description": "Quad 2-In XOR (TTL); one gate per symbol, grouped by package",
    "label": "7486",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "10",
+     "8"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ],
    "floatInputs": 1
   },
   {
@@ -379,8 +682,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In XNOR (TTL); one gate per symbol",
+   "description": "Quad 2-In XNOR (TTL); one gate per symbol, grouped by package",
    "label": "74266",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ],
    "floatInputs": 1
   }
  ]

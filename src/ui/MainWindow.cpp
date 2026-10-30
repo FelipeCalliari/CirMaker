@@ -386,6 +386,13 @@ void MainWindow::createActions()
     m_refresh = new QAction(tr("&Refresh Screen"), this);
     m_refresh->setShortcuts({QKeySequence(Qt::Key_F7), QKeySequence(Qt::Key_End)});
     connect(m_refresh, &QAction::triggered, this, [this] { m_scene->update(); m_view->viewport()->update(); });
+    m_groupItems = new QAction(tr("&Group Items"), this);
+    m_groupItems->setStatusTip(tr("Puts the selected gates in the same package (U1A, U1B...)"));
+    connect(m_groupItems, &QAction::triggered, this, [this] {
+        QString error;
+        if (!m_scene->groupSelection(&error) && !error.isEmpty())
+            QMessageBox::information(this, tr("Group items"), error);
+    });
     m_labelPositions = new QAction(tr("Set &Label Positions"), this);
     m_labelPositions->setStatusTip(tr("Puts the designators and labels of the selected devices back in their standard places"));
     connect(m_labelPositions, &QAction::triggered, m_scene, &SchematicScene::resetLabelPositions);
@@ -570,7 +577,7 @@ void MainWindow::createMenus()
     edit->addSeparator();
     edit->addActions({m_cut, m_copy, m_copyImage, m_copyWaves, m_paste, m_delete, m_duplicate, m_selectAll, m_find});
     edit->addSeparator();
-    edit->addActions({m_rotate, m_mirror, m_props, m_labelPositions, m_straighten, m_designations, m_propDelays});
+    edit->addActions({m_rotate, m_mirror, m_props, m_groupItems, m_labelPositions, m_straighten, m_designations, m_propDelays});
     edit->addSeparator();
     edit->addAction(m_titleBlock);
     edit->addSeparator();
@@ -721,7 +728,7 @@ void MainWindow::updateActions()
     auto off = [this](const char* option) { return m_scene->restricted(QString::fromLatin1(option)); };
     if (off("edit"))
         for (QAction* a : {m_cut, m_copy, m_paste, m_duplicate, m_rotate, m_mirror, m_merge, m_straighten, m_designations,
-                           m_labelPositions,
+                           m_labelPositions, m_groupItems,
                            m_propDelays})
             a->setEnabled(false);
     if (off("delete")) {

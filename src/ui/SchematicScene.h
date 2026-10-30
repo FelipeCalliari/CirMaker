@@ -64,6 +64,8 @@ public:
     // in reading order, starting at `first`; selection only when not empty.
     void setDesignations(const QString& prefix, int first);
     void setPropDelays(int ticks);
+    // Puts the selected gates in one package; false (with a reason) if it cannot.
+    bool groupSelection(QString* error = nullptr);
     int highlightedNet() const { return m_highlightNet; }
     // Node under the probe tool while simulating (-1: none).
     int probedNet() const { return m_probeNet; }

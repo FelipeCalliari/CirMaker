@@ -19,8 +19,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In NOR (CMOS); one gate per symbol",
-   "label": "4001"
+   "description": "Quad 2-In NOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4001",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4002",
@@ -42,8 +64,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In NOR (CMOS); one gate per symbol",
-   "label": "4002"
+   "description": "Dual 4-In NOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4002",
+   "parts": [
+    [
+     "2",
+     "3",
+     "4",
+     "5",
+     "1"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ]
+   ]
   },
   {
    "id": "4011",
@@ -63,8 +101,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In NAND (CMOS); one gate per symbol",
-   "label": "4011"
+   "description": "Quad 2-In NAND (CMOS); one gate per symbol, grouped by package",
+   "label": "4011",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4012",
@@ -86,8 +146,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In NAND (CMOS); one gate per symbol",
-   "label": "4012"
+   "description": "Dual 4-In NAND (CMOS); one gate per symbol, grouped by package",
+   "label": "4012",
+   "parts": [
+    [
+     "2",
+     "3",
+     "4",
+     "5",
+     "1"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ]
+   ]
   },
   {
    "id": "4023",
@@ -108,8 +184,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In NAND (CMOS); one gate per symbol",
-   "label": "4023"
+   "description": "Triple 3-In NAND (CMOS); one gate per symbol, grouped by package",
+   "label": "4023",
+   "parts": [
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "1",
+     "2",
+     "8",
+     "9"
+    ],
+    [
+     "11",
+     "12",
+     "13",
+     "10"
+    ]
+   ]
   },
   {
    "id": "4025",
@@ -130,8 +226,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In NOR (CMOS); one gate per symbol",
-   "label": "4025"
+   "description": "Triple 3-In NOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4025",
+   "parts": [
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "1",
+     "2",
+     "8",
+     "9"
+    ],
+    [
+     "11",
+     "12",
+     "13",
+     "10"
+    ]
+   ]
   },
   {
    "id": "4030",
@@ -151,8 +267,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In XOR (CMOS); one gate per symbol",
-   "label": "4030"
+   "description": "Quad 2-In XOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4030",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4049",
@@ -171,8 +309,34 @@
     "A",
     "Y"
    ],
-   "description": "Hex Inverter (CMOS); one gate per symbol",
-   "label": "4049"
+   "description": "Hex Inverter (CMOS); one gate per symbol, grouped by package",
+   "label": "4049",
+   "parts": [
+    [
+     "3",
+     "2"
+    ],
+    [
+     "5",
+     "4"
+    ],
+    [
+     "7",
+     "6"
+    ],
+    [
+     "9",
+     "10"
+    ],
+    [
+     "11",
+     "12"
+    ],
+    [
+     "14",
+     "15"
+    ]
+   ]
   },
   {
    "id": "4050",
@@ -191,8 +355,34 @@
     "A",
     "Y"
    ],
-   "description": "Hex Buffer (CMOS); one gate per symbol",
-   "label": "4050"
+   "description": "Hex Buffer (CMOS); one gate per symbol, grouped by package",
+   "label": "4050",
+   "parts": [
+    [
+     "3",
+     "2"
+    ],
+    [
+     "5",
+     "4"
+    ],
+    [
+     "7",
+     "6"
+    ],
+    [
+     "9",
+     "10"
+    ],
+    [
+     "11",
+     "12"
+    ],
+    [
+     "14",
+     "15"
+    ]
+   ]
   },
   {
    "id": "4068",
@@ -218,8 +408,21 @@
     "H",
     "Y"
    ],
-   "description": "Single 8-In AND (CMOS); one gate per symbol",
-   "label": "4068"
+   "description": "Single 8-In AND (CMOS); one gate per symbol, grouped by package",
+   "label": "4068",
+   "parts": [
+    [
+     "2",
+     "3",
+     "4",
+     "5",
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ]
+   ]
   },
   {
    "id": "4069",
@@ -238,8 +441,34 @@
     "A",
     "Y"
    ],
-   "description": "Hex Inverter (CMOS); one gate per symbol",
-   "label": "4069"
+   "description": "Hex Inverter (CMOS); one gate per symbol, grouped by package",
+   "label": "4069",
+   "parts": [
+    [
+     "1",
+     "2"
+    ],
+    [
+     "3",
+     "4"
+    ],
+    [
+     "5",
+     "6"
+    ],
+    [
+     "9",
+     "8"
+    ],
+    [
+     "11",
+     "10"
+    ],
+    [
+     "13",
+     "12"
+    ]
+   ]
   },
   {
    "id": "4070",
@@ -259,8 +488,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In XOR (CMOS); one gate per symbol",
-   "label": "4070"
+   "description": "Quad 2-In XOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4070",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4071",
@@ -280,8 +531,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In OR (CMOS); one gate per symbol",
-   "label": "4071"
+   "description": "Quad 2-In OR (CMOS); one gate per symbol, grouped by package",
+   "label": "4071",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4072",
@@ -303,8 +576,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In OR (CMOS); one gate per symbol",
-   "label": "4072"
+   "description": "Dual 4-In OR (CMOS); one gate per symbol, grouped by package",
+   "label": "4072",
+   "parts": [
+    [
+     "2",
+     "3",
+     "4",
+     "5",
+     "1"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ]
+   ]
   },
   {
    "id": "4073",
@@ -325,8 +614,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In AND (CMOS); one gate per symbol",
-   "label": "4073"
+   "description": "Triple 3-In AND (CMOS); one gate per symbol, grouped by package",
+   "label": "4073",
+   "parts": [
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "1",
+     "2",
+     "8",
+     "9"
+    ],
+    [
+     "11",
+     "12",
+     "13",
+     "10"
+    ]
+   ]
   },
   {
    "id": "4075",
@@ -347,8 +656,28 @@
     "C",
     "Y"
    ],
-   "description": "Triple 3-In OR (CMOS); one gate per symbol",
-   "label": "4075"
+   "description": "Triple 3-In OR (CMOS); one gate per symbol, grouped by package",
+   "label": "4075",
+   "parts": [
+    [
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    [
+     "1",
+     "2",
+     "8",
+     "9"
+    ],
+    [
+     "11",
+     "12",
+     "13",
+     "10"
+    ]
+   ]
   },
   {
    "id": "4077",
@@ -368,8 +697,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In XNOR (CMOS); one gate per symbol",
-   "label": "4077"
+   "description": "Quad 2-In XNOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4077",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4078",
@@ -395,8 +746,21 @@
     "H",
     "Y"
    ],
-   "description": "Single 8-In NOR (CMOS); one gate per symbol",
-   "label": "4078"
+   "description": "Single 8-In NOR (CMOS); one gate per symbol, grouped by package",
+   "label": "4078",
+   "parts": [
+    [
+     "2",
+     "3",
+     "4",
+     "5",
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ]
+   ]
   },
   {
    "id": "4081",
@@ -416,8 +780,30 @@
     "B",
     "Y"
    ],
-   "description": "Quad 2-In AND (CMOS); one gate per symbol",
-   "label": "4081"
+   "description": "Quad 2-In AND (CMOS); one gate per symbol, grouped by package",
+   "label": "4081",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   },
   {
    "id": "4082",
@@ -439,8 +825,24 @@
     "D",
     "Y"
    ],
-   "description": "Dual 4-In AND (CMOS); one gate per symbol",
-   "label": "4082"
+   "description": "Dual 4-In AND (CMOS); one gate per symbol, grouped by package",
+   "label": "4082",
+   "parts": [
+    [
+     "2",
+     "3",
+     "4",
+     "5",
+     "1"
+    ],
+    [
+     "9",
+     "10",
+     "11",
+     "12",
+     "13"
+    ]
+   ]
   }
  ]
 }

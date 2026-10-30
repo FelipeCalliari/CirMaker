@@ -71,7 +71,8 @@ CM_GATE_ALIASES = {'nor2': ['2-In NOR:DM'], 'nand2': ['2-In NAND:DM']}
 def generic_gates():
     out = []
     for id, (op, n, inv, name) in GATE_KINDS.items():
-        out.append(gate(id, name, op, n, inv, [name] + CM_GATE_ALIASES.get(id, [])))
+        out.append(gate(id, name, op, n, inv, [name] + CM_GATE_ALIASES.get(id, []), parts=parts(GENERIC_PACKAGE[id]),
+                        package=GENERIC_PACKAGE[id]))
     tri_graphics = [L(0, 15, 0, 40)]
     out.append({'id': 'tribuf', 'name': 'Buffer 3S', 'shape': {'type': 'gate', 'op': 'buf', 'inputs': 1},
                 'model': {'kind': 'tribuf'}, 'aliases': ['Buffer 3S'], 'cmPins': ['A', 'EN', 'Y'],
@@ -98,18 +99,51 @@ CMOS_GATES = [
 ]
 COUNT = {1: 'Single', 2: 'Dual', 3: 'Triple', 4: 'Quad', 6: 'Hex'}
 
+# DIP pins of each gate of a package, in symbol pin order (inputs, then Y),
+# in CircuitMaker's part order (A, B, ...) where its circuits record it.
+_Q2_TTL = [[1, 2, 3], [4, 5, 6], [9, 10, 8], [12, 13, 11]]
+_Q2_CMOS = [[1, 2, 3], [5, 6, 4], [8, 9, 10], [12, 13, 11]]
+_HEX = [[1, 2], [3, 4], [5, 6], [9, 8], [11, 10], [13, 12]]
+_T3_TTL = [[1, 2, 13, 12], [3, 4, 5, 6], [9, 10, 11, 8]]
+_T3_CMOS = [[3, 4, 5, 6], [1, 2, 8, 9], [11, 12, 13, 10]]
+_D4_TTL = [[1, 2, 4, 5, 6], [9, 10, 12, 13, 8]]
+_D4_CMOS = [[2, 3, 4, 5, 1], [9, 10, 11, 12, 13]]
+PACKAGE_PARTS = {
+    '7400': _Q2_TTL, '7408': _Q2_TTL, '7432': _Q2_TTL, '7486': _Q2_TTL, '74266': _Q2_CMOS,
+    '7402': [[3, 2, 1], [5, 6, 4], [8, 9, 10], [11, 12, 13]],
+    '7404': _HEX, '7407': _HEX, '4069': _HEX,
+    '4049': [[3, 2], [5, 4], [7, 6], [9, 10], [11, 12], [14, 15]], '4050': [[3, 2], [5, 4], [7, 6], [9, 10], [11, 12], [14, 15]],
+    '7410': _T3_TTL, '7411': _T3_TTL, '7415': _T3_TTL, '7427': _T3_TTL,
+    '7420': _D4_TTL, '7421': _D4_TTL, '7422': _D4_TTL,
+    '7430': [[1, 2, 3, 4, 5, 6, 11, 12, 8]],
+    '4001': _Q2_CMOS, '4011': _Q2_CMOS, '4030': _Q2_CMOS, '4070': _Q2_CMOS, '4071': _Q2_CMOS, '4077': _Q2_CMOS,
+    '4081': _Q2_CMOS,
+    '4023': _T3_CMOS, '4025': _T3_CMOS, '4073': _T3_CMOS, '4075': _T3_CMOS,
+    '4002': _D4_CMOS, '4012': _D4_CMOS, '4072': _D4_CMOS, '4082': _D4_CMOS,
+    '4068': [[2, 3, 4, 5, 9, 10, 11, 12, 13]], '4078': [[2, 3, 4, 5, 9, 10, 11, 12, 13]],
+}
+# the package CircuitMaker puts generic gates in
+GENERIC_PACKAGE = {'inv': '7404', 'buf': '7407', 'and2': '7408', 'and3': '7411', 'and4': '7421', 'and8': '4068',
+                   'nand2': '7400', 'nand3': '7410', 'nand4': '7420', 'nand8': '7430', 'or2': '7432', 'or3': '4075',
+                   'or4': '4072', 'or8': '4078', 'nor2': '7402', 'nor3': '4025', 'nor4': '4002', 'nor8': '4078',
+                   'xor2': '7486', 'xnor2': '74266'}
 
-def package_gates(parts, ttl):
+
+def parts(number):
+    return [[str(n) for n in gate] for gate in PACKAGE_PARTS[number]]
+
+
+def package_gates(table, ttl):
     out = []
-    for number, kind, count in parts:
+    for number, kind, count in table:
         op, n, inv, gname = GATE_KINDS[kind]
         aliases = [number] + ([f'74LS{number[2:]}', f'74HC{number[2:]}'] if ttl else [f'CD{number}'])
         name = f'{number} {COUNT[count]} {gname}'
-        extra = {'label': number}
+        extra = {'label': number, 'parts': parts(number)}
         if ttl:
             extra['floatInputs'] = 1
         out.append(gate(number, name, op, n, inv, aliases,
-                        f'{COUNT[count]} {gname} ({"TTL" if ttl else "CMOS"}); one gate per symbol', **extra))
+                        f'{COUNT[count]} {gname} ({"TTL" if ttl else "CMOS"}); one gate per symbol, grouped by package', **extra))
     return out
 
 

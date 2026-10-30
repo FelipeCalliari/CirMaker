@@ -18,10 +18,25 @@ private slots:
     void importedCounterCounts();
     void importsDataSequencer();
     void challengeCounterStops();
+    void importsPackageParts();
 
 private:
     static QStringList circuitFiles();
 };
+
+void TestCktImport::importsPackageParts()
+{
+    const QString file = QDir::homePath() + QStringLiteral("/Documents/github/_calliari_/tecdigi/CircuitMaker/FSM_0101_Moore.CKT");
+    if (!QFile::exists(file))
+        QSKIP("course circuit not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(file, c, library(), nullptr, nullptr));
+    QStringList shown;
+    for (const Component& comp : c.components())
+        if (comp.designator == u"U6") shown << shownDesignator(*library().find(comp.symbolId), comp);
+    shown.sort();
+    QCOMPARE(shown, (QStringList{"U6A", "U6B", "U6C"}));
+}
 
 QStringList TestCktImport::circuitFiles()
 {

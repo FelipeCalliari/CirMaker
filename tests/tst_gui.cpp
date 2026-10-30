@@ -51,6 +51,7 @@ private slots:
     void simulationAppliesFaults();
     void labelPositionsAndBorder();
     void signalGenDialog();
+    void groupItemsAndPlacement();
     void screenshot();
 };
 
@@ -541,6 +542,40 @@ void TestGui::signalGenDialog()
     QCOMPARE(r.props.value(QStringLiteral("carrier")).toString(), QStringLiteral("20k"));
     QCOMPARE(r.props.value(QStringLiteral("mdi")).toString(), QStringLiteral("1"));
     QVERIFY(!r.props.contains(QStringLiteral("current")));
+}
+
+void TestGui::groupItemsAndPlacement()
+{
+    ViewFixture f;
+    const ItemId a = place(f.circuit, QStringLiteral("7400"), {0, 0}, QStringLiteral("U1"));
+    const ItemId b = place(f.circuit, QStringLiteral("7400"), {0, 200}, QStringLiteral("U2"));
+    const ItemId other = place(f.circuit, QStringLiteral("7404"), {0, 400}, QStringLiteral("U3"));
+    f.scene.selectAll();
+    QString error;
+    QVERIFY(!f.scene.groupSelection(&error));                // a 7404 cannot join a 7400
+    QVERIFY(!error.isEmpty());
+    f.scene.clearSelection();
+    for (QGraphicsItem* it : f.scene.items())
+        if (auto* c = qgraphicsitem_cast<ComponentItem*>(it); c && c->id() != other) c->setSelected(true);
+    QVERIFY(f.scene.groupSelection(&error));
+    QCOMPARE(f.circuit.component(b)->designator, QStringLiteral("U1"));
+    const SymbolDef& nand = *library().find(QStringLiteral("7400"));
+    QCOMPARE(packagePart(nand, *f.circuit.component(a)), 1);
+    QCOMPARE(packagePart(nand, *f.circuit.component(b)), 2);
+
+    // a new 7400 fills part C of U1; with A-D taken the next one starts U4
+    f.scene.beginPlace(QStringLiteral("7400"));
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({200, 0}));
+    f.scene.beginPlace(QStringLiteral("7400"));
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({200, 200}));
+    f.scene.beginPlace(QStringLiteral("7400"));
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({-200, 200}));
+    f.scene.setTool(SchematicScene::Tool::Select);
+    QStringList shown;
+    for (const Component& c : f.circuit.components())
+        if (c.symbolId == u"7400") shown << shownDesignator(*library().find(c.symbolId), c);
+    shown.sort();
+    QCOMPARE(shown, (QStringList{"U1A", "U1B", "U1C", "U1D", "U4A"}));
 }
 
 QTEST_MAIN(TestGui)

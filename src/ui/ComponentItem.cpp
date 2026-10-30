@@ -1,5 +1,7 @@
 #include "ui/ComponentItem.h"
 
+#include "library/LibraryRegistry.h"
+
 #include "library/SymbolDef.h"
 #include "ui/SchematicScene.h"
 #include "ui/SymbolPainter.h"
@@ -141,9 +143,9 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {
         if (m_c.designatorAt)
-            SymbolPainter::uprightText(p, toLocal.map(*m_c.designatorAt), m_c.designator, 14, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(*m_c.designatorAt), shownDesignator(*m_symbol, m_c), 14, 0, ink);
         else
-            SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), m_c.designator, 14, -1, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), shownDesignator(*m_symbol, m_c), 14, -1, ink);
     }
     if (m_showLabel)
     {

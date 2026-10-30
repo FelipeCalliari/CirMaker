@@ -19,7 +19,33 @@ private slots:
     void titleBlockUndo();
     void protelNetlist();
     void analysisRoundTrip();
+    void packagedGates();
 };
+
+void TestDocument::packagedGates()
+{
+    Circuit c;
+    // two gates of U1 (parts A and C) and a generic 2-In AND in its 7408
+    const ItemId a = place(c, QStringLiteral("7408"), {0, 0}, QStringLiteral("U1"), QStringLiteral("7408"));
+    const ItemId b = place(c, QStringLiteral("7408"), {0, 300}, QStringLiteral("U1"), QStringLiteral("7408"));
+    Component cb = *c.component(b);
+    cb.props.insert(QStringLiteral("part"), 3);
+    c.updateComponent(cb);
+    place(c, QStringLiteral("and2"), {0, 600}, QStringLiteral("U2"));
+    label(c, a, QStringLiteral("Y"), QStringLiteral("X1"));
+    label(c, b, QStringLiteral("A"), QStringLiteral("X1"));
+    const SymbolDef& s = *library().find(QStringLiteral("7408"));
+    QCOMPARE(shownDesignator(s, *c.component(b)), QStringLiteral("U1C"));
+    QCOMPARE(packagePin(s, *c.component(b), 0), QStringLiteral("9"));
+    const QString net = PcbNetlist::write(c, library(), NetlistBuilder::build(c, library()));
+    QCOMPARE(net.count(QStringLiteral("[\nU1\n")), 1);             // the package once
+    QVERIFY2(net.contains(QStringLiteral("(\nX1\nU1-3\nU1-9\n)")), qPrintable(net));
+    QVERIFY2(net.contains(QStringLiteral("[\nU2\n7408\n")), qPrintable(net));   // generic gate: its package
+    const QVector<BomLine> bom = Bom::build(c, library());
+    int packages = 0;
+    for (const BomLine& l : bom) packages += l.quantity;
+    QCOMPARE(packages, 2);
+}
 
 void TestDocument::analysisRoundTrip()
 {

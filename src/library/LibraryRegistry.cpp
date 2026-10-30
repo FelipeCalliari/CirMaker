@@ -15,6 +15,26 @@ using namespace Qt::StringLiterals;
 
 namespace cm {
 
+int packagePart(const SymbolDef& s, const Component& c)
+{
+    return s.parts.isEmpty() ? 1 : std::clamp(c.props.value(QStringLiteral("part"), 1).toInt(), 1, int(s.parts.size()));
+}
+
+QString packagePin(const SymbolDef& s, const Component& c, int pin)
+{
+    if (!s.parts.isEmpty())
+        return s.parts[packagePart(s, c) - 1].value(pin);
+    return pin >= 0 && pin < s.pins.size() ? s.pins[pin].number : QString();
+}
+
+QString shownDesignator(const SymbolDef& s, const Component& c)
+{
+    if (s.parts.size() < 2 || c.designator.isEmpty())
+        return c.designator;
+    return c.designator + QChar(u'A' + packagePart(s, c) - 1);
+}
+
+
 namespace {
 
 QVector<double> numbers(const QJsonValue& v)
@@ -385,6 +405,12 @@ bool LibraryRegistry::addSymbol(const QJsonObject& o, QString* error)
     s.defaultLabel = o.value(u"label").toString();
     s.netLabel = o.value(u"netLabel").toBool();
     s.hidden = o.value(u"hidden").toBool();
+    s.package = o.value(u"package").toString();
+    for (const QJsonValue& part : o.value(u"parts").toArray()) {
+        QStringList numbers;
+        for (const QJsonValue& n : part.toArray()) numbers << n.toString();
+        s.parts << numbers;
+    }
     s.model = o.value(u"model").toObject();
     s.spice = o.value(u"spice").toObject();
     s.defaultProps = o.value(u"props").toObject().toVariantMap();

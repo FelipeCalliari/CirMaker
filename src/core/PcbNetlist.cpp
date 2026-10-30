@@ -3,6 +3,7 @@
 #include "library/LibraryRegistry.h"
 
 #include <QCollator>
+#include <QSet>
 
 namespace cm::PcbNetlist {
 
@@ -24,9 +25,13 @@ QString write(const Circuit& circuit, const LibraryRegistry& library, const Netl
     });
 
     QString out;
+    QSet<QString> listed;                       // a package once, whatever its gates
     for (const Component* c : std::as_const(parts)) {
         const SymbolDef* s = library.find(c->symbolId);
-        out += QStringLiteral("[\n%1\n%2\n%3\n]\n").arg(c->designator, s->id, c->label.isEmpty() ? s->name : c->label);
+        if (s->parts.size() > 1 && listed.contains(c->designator)) continue;
+        listed << c->designator;
+        const QString footprint = s->parts.size() > 1 && !s->package.isEmpty() ? s->package : s->id;
+        out += QStringLiteral("[\n%1\n%2\n%3\n]\n").arg(c->designator, footprint, c->label.isEmpty() ? s->name : c->label);
     }
     for (int n = 0; n < netlist.nets.size(); ++n) {
         QStringList pins;
@@ -34,7 +39,8 @@ QString write(const Circuit& circuit, const LibraryRegistry& library, const Netl
             const Component* c = circuit.component(r.component);
             if (!c || !isPart(*c)) continue;
             const SymbolDef* s = library.find(c->symbolId);
-            const QString number = s->pins[r.pin].number.isEmpty() ? QString::number(r.pin + 1) : s->pins[r.pin].number;
+            const QString pin = packagePin(*s, *c, r.pin);
+            const QString number = pin.isEmpty() ? QString::number(r.pin + 1) : pin;
             pins << c->designator + u'-' + number;
         }
         if (pins.size() < 2) continue;

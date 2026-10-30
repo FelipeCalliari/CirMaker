@@ -20,6 +20,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QCollator>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
@@ -307,6 +308,26 @@ void SchematicScene::placeGhost(QPointF scenePos)
     Component c = m_ghostComponent;
     c.pos = snap(scenePos);
     c.designator = m_circuit->nextDesignator(s->prefix);
+    if (s->parts.size() > 1) {
+        // as in CircuitMaker, a gate goes into the first package of its kind
+        // with a free part
+        QMap<QString, QSet<int>> used;
+        for (const Component& o : m_circuit->components())
+            if (o.symbolId == c.symbolId && !o.designator.isEmpty()) used[o.designator] << packagePart(*s, o);
+        QCollator natural;
+        natural.setNumericMode(true);
+        QStringList refs = used.keys();
+        std::sort(refs.begin(), refs.end(), natural);
+        for (const QString& ref : std::as_const(refs)) {
+            int part = 1;
+            while (part <= s->parts.size() && used[ref].contains(part)) ++part;
+            if (part <= s->parts.size()) {
+                c.designator = ref;
+                c.props.insert(QStringLiteral("part"), part);
+                break;
+            }
+        }
+    }
     Selection sel;
     sel.components << c;
     m_undo->push(new AddItemsCommand(m_circuit, sel, tr("Place %1").arg(s->name)));
@@ -567,14 +588,20 @@ void SchematicScene::setDesignations(const QString& prefix, int first)
         return qFuzzyCompare(a.pos.y(), b.pos.y()) ? a.pos.x() < b.pos.x() : a.pos.y() < b.pos.y();
     });
     QHash<QString, int> next;
+    QHash<QString, QString> package;        // gates of one package keep sharing a designator
     Selection before, after;
     for (const Component& c : std::as_const(comps)) {
         const SymbolDef* s = m_library.find(c.symbolId);
         if (!s || s->netLabel || s->hidden || s->prefix.isEmpty()) continue;
         if (!prefix.isEmpty() && s->prefix != prefix) continue;
-        const int n = next.value(s->prefix, first);
-        next[s->prefix] = n + 1;
-        const QString ref = s->prefix + QString::number(n);
+        const QString key = c.symbolId + u'/' + c.designator;
+        QString ref = s->parts.size() > 1 && !c.designator.isEmpty() ? package.value(key) : QString();
+        if (ref.isEmpty()) {
+            const int n = next.value(s->prefix, first);
+            next[s->prefix] = n + 1;
+            ref = s->prefix + QString::number(n);
+            if (s->parts.size() > 1) package.insert(key, ref);
+        }
         if (ref == c.designator) continue;
         before.components << c;
         Component m = c;
@@ -583,6 +610,51 @@ void SchematicScene::setDesignations(const QString& prefix, int first)
     }
     if (!after.isEmpty())
         m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Set designations")));
+}
+
+// CircuitMaker's Group Items: the selected gates become parts A, B, ... of
+// one package (the first one's designator), in reading order.
+bool SchematicScene::groupSelection(QString* error)
+{
+    if (simulating() || restricted(QStringLiteral("edit")))
+        return false;
+    QVector<Component> comps = selection().components;
+    if (comps.size() < 2) {
+        if (error) *error = tr("Select two or more gates of the same kind");
+        return false;
+    }
+    std::sort(comps.begin(), comps.end(), [](const Component& a, const Component& b) {
+        return qFuzzyCompare(a.pos.y(), b.pos.y()) ? a.pos.x() < b.pos.x() : a.pos.y() < b.pos.y();
+    });
+    const SymbolDef* s = m_library.find(comps.first().symbolId);
+    for (const Component& c : std::as_const(comps)) {
+        if (c.symbolId != comps.first().symbolId || !s || s->parts.size() < 2) {
+            if (error) *error = tr("Only gates of the same kind can share a package");
+            return false;
+        }
+    }
+    if (comps.size() > s->parts.size()) {
+        if (error) *error = tr("A %1 package holds %n gate(s)", nullptr, int(s->parts.size())).arg(s->package.isEmpty() ? s->id : s->package);
+        return false;
+    }
+    // the designator: the first gate's, unless gates outside the selection use it
+    QString ref = comps.first().designator;
+    QSet<ItemId> selected;
+    for (const Component& c : std::as_const(comps)) selected << c.id;
+    for (const Component& o : m_circuit->components())
+        if (!selected.contains(o.id) && o.designator == ref) ref = m_circuit->nextDesignator(s->prefix);
+    Selection before, after;
+    for (int i = 0; i < comps.size(); ++i) {
+        Component n = comps[i];
+        n.designator = ref;
+        n.props.insert(QStringLiteral("part"), i + 1);
+        if (n.designator == comps[i].designator && packagePart(*s, comps[i]) == i + 1) continue;
+        before.components << comps[i];
+        after.components << n;
+    }
+    if (!after.isEmpty())
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Group items")));
+    return true;
 }
 
 void SchematicScene::setPropDelays(int ticks)
@@ -931,15 +1003,22 @@ void SchematicScene::insertCircuit(const Circuit& source, QPointF offset, const 
     Circuit names;
     for (const Component& c : m_circuit->components())
         names.addComponent(c);
+    QHash<QString, QString> renamed;        // a pasted package keeps one designator
     for (Component& c : sel.components) {
         c.id = 0;
         c.pos += offset;
-        bool clash = false;
-        for (const Component& e : names.components())
-            clash |= e.designator == c.designator;
-        if (clash) {
-            const SymbolDef* s = m_library.find(c.symbolId);
-            c.designator = names.nextDesignator(s ? s->prefix : QStringLiteral("U"));
+        const QString key = c.symbolId + u'/' + c.designator;
+        if (const auto it = renamed.constFind(key); it != renamed.cend()) {
+            c.designator = *it;
+        } else {
+            bool clash = false;
+            for (const Component& e : names.components())
+                clash |= e.designator == c.designator;
+            if (clash) {
+                const SymbolDef* s = m_library.find(c.symbolId);
+                c.designator = names.nextDesignator(s ? s->prefix : QStringLiteral("U"));
+                renamed.insert(key, c.designator);
+            }
         }
         names.addComponent(c);
         c.id = 0;

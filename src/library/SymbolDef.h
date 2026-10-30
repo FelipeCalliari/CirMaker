@@ -53,6 +53,10 @@ struct SymbolDef {
     QVariantMap defaultProps;
     QHash<QString, QStringList> propChoices;    // property -> allowed values (combo box in the dialog)
     QRectF bounds;
+    // Gates sharing a package (7408...): the package pins of each part, in
+    // symbol pin order; components pick theirs with the "part" property.
+    QVector<QStringList> parts;
+    QString package;        // generic gates: the package CircuitMaker uses ("7408")
 
     int pinIndex(const QString& pinName) const
     {

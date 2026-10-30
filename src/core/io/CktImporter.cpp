@@ -400,6 +400,16 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         const SymbolDef* s = library.findByAlias(cmName);
         Component c;
         c.designator = d.designator;
+        // gates of a package: "U6A" is part A of U6, whose pins CircuitMaker
+        // lists after the part's own ones
+        if (s && s->parts.size() > 1 && c.designator.size() > 1) {
+            const QChar letter = c.designator.back();
+            const int part = letter.unicode() - u'A' + 1;
+            if (c.designator.at(c.designator.size() - 2).isDigit() && part >= 1 && part <= s->parts.size()) {
+                c.designator.chop(1);
+                c.props.insert(QStringLiteral("part"), part);
+            }
+        }
         // the low 9 bits hold the angle and 0x200 marks a mirrored device
         // (692 = mirrored and turned 180 degrees); higher bits are left over
         // from older versions
