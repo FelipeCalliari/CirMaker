@@ -18,6 +18,7 @@ private slots:
     void ramWriteRead();
     void promRead();
     void ramContentsAndLiveEdit();
+    void relaySwitchesDigitally();
     void decoder74155();
     void parity74280();
     void keypadConnects();
@@ -320,6 +321,31 @@ void TestChips::ramContentsAndLiveEdit()
     b.sim.interact(a0, QStringLiteral("toggle"));
     b.sim.step(3);
     QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0xcd);
+}
+
+void TestChips::relaySwitchesDigitally()
+{
+    Circuit c;
+    const ItemId k = place(c, QStringLiteral("relay_spdt"), {0, 0}, QStringLiteral("K1"));
+    const ItemId coil = source(c, k, QStringLiteral("C1"), -600, 0);
+    tieLow(c, k, QStringLiteral("C2"));
+    const ItemId vcc = place(c, QStringLiteral("vcc"), {-2000, -2000});
+    label(c, vcc, QStringLiteral("VCC"), QStringLiteral("HIGH"));
+    label(c, k, QStringLiteral("COM"), QStringLiteral("HIGH"));
+    const ItemId no = place(c, QStringLiteral("and2"), {600, 0}, QStringLiteral("U1"));
+    const ItemId nc = place(c, QStringLiteral("and2"), {600, 300}, QStringLiteral("U2"));
+    label(c, k, QStringLiteral("NO"), QStringLiteral("NO"));
+    label(c, k, QStringLiteral("NC"), QStringLiteral("NC"));
+    label(c, no, QStringLiteral("A"), QStringLiteral("NO"));
+    label(c, nc, QStringLiteral("A"), QStringLiteral("NC"));
+    Bench b(c);
+    QCOMPARE(b.value(c, nc, QStringLiteral("A")), Logic::L1);       // at rest COM is on NC
+    QVERIFY(b.value(c, no, QStringLiteral("A")) != Logic::L1);
+    b.sim.interact(coil, QStringLiteral("toggle"));
+    b.sim.step(5);
+    QCOMPARE(b.value(c, no, QStringLiteral("A")), Logic::L1);
+    QVERIFY(b.value(c, nc, QStringLiteral("A")) != Logic::L1);
+    QCOMPARE(b.sim.componentState(k), 1);
 }
 
 void TestChips::decoder74155()

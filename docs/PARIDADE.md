@@ -42,7 +42,8 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Data Sequencer + Pattern Editor | ✅ | clock interno/externo, níveis analógicos (fontes PWL); importado do `.ckt` |
 | 7-seg com decodificador, displays ASCII/hex | ✅ | |
 | Peças analógicas comuns | ✅ | R, C, L, diodos, BJT, MOSFET, amp-op, fontes, gerador, multímetro |
-| Relés, transformadores, válvulas, 555, optoacoplador, SCR/TRIAC | ❌ | importados como `?` |
+| 555, relé SPDT, transformador (simples e com derivação central), optoacoplador, SCR, TRIAC | ✅ | modelos SPICE; o relé também chaveia na simulação digital |
+| Válvulas, motores, alto-falantes, reguladores, JFET/UJT, cristal, fusível | ❌ | importados como `?` |
 | Macros (subcircuitos com símbolo próprio, Expand Macro) | 🟡 | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`; símbolo gerado (caixa), sem editor de símbolo nem Macro Lock |
 
 ## Simulação digital
@@ -73,7 +74,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 
 | Recurso | Estado | Observação |
 | --- | --- | --- |
-| Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | CIs 74xx/40xx com a ordem e o desenho de pinos do CM; peças giradas/espelhadas; barramentos com nomes numéricos; fios afastados de pinos e de fios de outras redes. Em 167 circuitos de teste restam 7 redes unidas, quase todas por números de rede inconsistentes no próprio arquivo |
+| Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | CIs 74xx/40xx com a ordem e o desenho de pinos do CM; peças giradas/espelhadas; barramentos com nomes numéricos; fios afastados de pinos e de fios de outras redes. Em 167 circuitos de teste restam 8 redes unidas, quase todas por números de rede inconsistentes no próprio arquivo ou por fios que o CM desenha a 1 unidade um do outro |
 | Salvar em `.ckt` | ❌ | salva em `.cmq` |
 | Exportar imagem (PNG/SVG/PDF), imprimir | ✅ | |
 | Lista de materiais | ✅ | CSV |

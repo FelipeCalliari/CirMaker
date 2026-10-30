@@ -567,6 +567,118 @@ def analog():
          'description': 'Voltmeter (mode V) or ammeter (mode A) between + and -',
          'graphics': [R(-80, -50, 160, 100), L(-80, 50, -80, 80), L(80, 50, 80, 80), T('+', -70, 40, 9), T('-', 70, 40, 9)],
          'pins': [pin('+', -80, 80), pin('-', 80, 80)]},
+    ] + power_parts()
+
+
+# 555 timer: divider, two comparators, a latch (with a small RC so it is not
+# an algebraic loop), totem-pole output and the discharge switch.
+TIMER555 = ['.subckt TIMER555 gnd trg out rst ctl thr dis vcc',
+            'R1 vcc ctl 5k',
+            'R2 ctl lo 5k',
+            'R3 lo gnd 5k',
+            'Bs s gnd V = v(trg,gnd) < v(lo,gnd) ? 1 : 0',
+            'Br r gnd V = v(thr,gnd) > v(ctl,gnd) ? 1 : 0',
+            'Bq qx gnd V = v(rst,gnd) < 0.7 ? 0 : (v(s,gnd) > 0.5 ? 1 : (v(r,gnd) > 0.5 ? 0 : (v(q,gnd) > 0.5 ? 1 : 0)))',
+            'Rq qx q 1k',
+            'Cq q gnd 10p',
+            'Bo oi gnd V = v(q,gnd) > 0.5 ? max(v(vcc,gnd) - 1.7, 0) : 0.1',
+            'Ro oi out 10',
+            'Bn qn gnd V = 1 - v(q,gnd)',
+            'Sd dis gnd qn gnd SW555',
+            'Iq vcc gnd 3m',
+            '.model SW555 sw vt=0.5 vh=0.2 ron=10 roff=100Meg',
+            '.ends TIMER555']
+
+# SCR as the classic two-transistor latch; TRIAC as two of them back to back,
+# the reverse one fired by gate current leaving G.
+SCR = ['.subckt SCR_GEN a g k',
+       'Qn x g k NSCR',
+       'Qp g x a PSCR',
+       'Rgk g k 1k',
+       '.model NSCR NPN(Bf=100 Is=1e-14 Cje=10p Cjc=5p)',
+       '.model PSCR PNP(Bf=10 Is=1e-14 Cje=10p Cjc=5p)',
+       '.ends SCR_GEN']
+TRIAC = ['.subckt TRIAC_GEN mt2 g mt1',
+         'Vg g gi 0',
+         'Qn1 x1 gi mt1 NTRI',
+         'Qp1 gi x1 mt2 PTRI',
+         'R1 gi mt1 1k',
+         'Qn2 x2 g2 mt2 NTRI',
+         'Qp2 g2 x2 mt1 PTRI',
+         'R2 g2 mt2 1k',
+         'B2 mt2 g2 I = max(-i(Vg), 0)',
+         '.model NTRI NPN(Bf=100 Is=1e-14 Cje=10p Cjc=5p)',
+         '.model PTRI PNP(Bf=10 Is=1e-14 Cje=10p Cjc=5p)',
+         '.ends TRIAC_GEN']
+MODELS['RELAY_NO'] = '.model RELAY_NO sw vt=2.5 vh=0.5 ron=50m roff=1G'
+MODELS['RELAY_NC'] = '.model RELAY_NC sw vt=2.5 vh=0.5 ron=1G roff=50m'
+
+
+def power_parts():
+    coil = lambda x0, y0, y1: [P(f'M {x0} {y0} ' + ' '.join(f'Q {x0 + 12} {y0 + (i + .5) * (y1 - y0) / 4} {x0} {y0 + (i + 1) * (y1 - y0) / 4}'
+                                                           for i in range(4)))]
+    return [
+        {'id': '555', 'name': '555 Timer', 'prefix': 'U', 'label': '555', 'aliases': ['555 Timer', 'NE555', 'LM555'],
+         'cmPins': ['GND', 'TRG', 'OUT', '~RST', 'CTL', 'THR', 'DIS', 'VCC'],
+         'shape': {'type': 'box', 'width': 160, 'pitch': 30, 'left': ['GND', 'TRG', 'OUT', '~RST'],
+                   'right': ['VCC', 'DIS', 'THR', 'CTL'], 'leftStart': -30, 'rightStart': -30, 'title': '555'},
+         'spice': sp('X{name} {GND} {TRG} {OUT} {~RST} {CTL} {THR} {DIS} {VCC} TIMER555', subckt=TIMER555),
+         'description': 'Timer: OUT goes high when TRG < VCC/3 and low when THR > 2/3 VCC; DIS shorts to GND while OUT is low'},
+        {'id': 'relay_spdt', 'name': 'SPDT Relay', 'prefix': 'K', 'label': '100', 'aliases': ['SPDT Relay', 'Relay'],
+         'cmPins': ['COM', 'NC', 'NO', 'C1', 'C2'], 'display': 'button', 'model': {'kind': 'relay', 'type': 'spdt'},
+         'props': {'coil': '100'},
+         'spice': sp('R{name} {C1} {C2} {prop:coil}\nS{name}a {COM} {NO} {C1} {C2} RELAY_NO\n'
+                     'S{name}b {COM} {NC} {C1} {C2} RELAY_NC', 'RELAY_NO', 'RELAY_NC'),
+         'description': 'Relay: the coil (C1 positive) pulls COM from NC to NO above 3 V; digitally, when C1 and C2 differ',
+         'graphics': [C(30, -60, 3), C(20, -80, 3), C(20, -40, 3),
+                      L(33, -60, 50, -60), L(23, -80, 50, -80), L(23, -40, 50, -40),
+                      R(-40, 0, 30, 40), L(-35, 5, -15, 35), L(-50, -20, -25, -20), L(-25, -20, -25, 0),
+                      L(-25, 40, -25, 60), L(-50, 60, -25, 60), P('M -10 20 L 10 20 L 24 -52')],
+         'pins': [pin('COM', 50, -60), pin('NC', 50, -80), pin('NO', 50, -40), pin('C1', -50, -20, 'in'),
+                  pin('C2', -50, 60, 'in')]},
+        {'id': 'transformer', 'name': 'Transformer', 'prefix': 'T', 'label': '1:1', 'aliases': ['Transformer'],
+         'cmPins': ['P1', 'P2', 'S1', 'S2'], 'props': {'lp': '10m', 'ls': '10m'},
+         'spice': sp('L{name}p {P1} {name}_p {prop:lp}\nR{name}p {name}_p {P2} 0.1\n'
+                     'L{name}s {S1} {name}_s {prop:ls}\nR{name}s {name}_s {S2} 0.1\nK{name} L{name}p L{name}s 0.999'),
+         'description': 'Coupled inductors (k = 0.999, 0.1 ohm windings): voltage ratio = sqrt(ls / lp)',
+         'graphics': coil(-20, -30, 30) + [P('M 20 -30 Q 8 -22.5 20 -15 Q 8 -7.5 20 0 Q 8 7.5 20 15 Q 8 22.5 20 30')]
+                     + [L(-4, -30, -4, 30), L(4, -30, 4, 30), L(-40, -30, -20, -30), L(-40, 30, -20, 30),
+                        L(20, -30, 40, -30), L(20, 30, 40, 30)],
+         'pins': [pin('P1', -40, -30), pin('P2', -40, 30), pin('S1', 40, -30), pin('S2', 40, 30)]},
+        {'id': 'ct_transformer', 'name': 'CT Transformer', 'prefix': 'T', 'label': 'CT', 'aliases': ['CTTransformer'],
+         'cmPins': ['P1', 'P2', 'S1', 'CT', 'S2'], 'props': {'lp': '10m', 'ls': '2.5m'},
+         'spice': sp('L{name}p {P1} {name}_p {prop:lp}\nR{name}p {name}_p {P2} 0.1\n'
+                     'L{name}a {S1} {name}_a {prop:ls}\nR{name}a {name}_a {CT} 0.1\n'
+                     'L{name}b {CT} {name}_b {prop:ls}\nR{name}b {name}_b {S2} 0.1\n'
+                     'K{name}1 L{name}p L{name}a 0.999\nK{name}2 L{name}p L{name}b 0.999\nK{name}3 L{name}a L{name}b 0.999'),
+         'description': 'Centre-tapped transformer: primary P1-P2 (right), secondary halves S1-CT and CT-S2 of ls each',
+         'graphics': [P('M 40 -30 Q 28 -22.5 40 -15 Q 28 -7.5 40 0 Q 28 7.5 40 15 Q 28 22.5 40 30')]
+                     + coil(-40, -50, 50) + [L(16, -40, 16, 40), L(24, -40, 24, 40), L(40, -30, 60, -30), L(40, 30, 60, 30),
+                                             L(-60, -50, -40, -50), L(-60, 50, -40, 50), L(-60, 0, -40, 0)],
+         'pins': [pin('P1', 60, -30), pin('P2', 60, 30), pin('S1', -60, -50), pin('CT', -60, 0), pin('S2', -60, 50)]},
+        {'id': 'optoisolator', 'name': 'Opto Isolator', 'prefix': 'U', 'label': '4N25', 'aliases': ['Opto Isolator'],
+         'cmPins': ['A', 'C', 'COL', 'E'],
+         'spice': sp('D{name} {A} {name}_k DLED\nV{name} {name}_k {C} 0\nQ{name} {COL} {name}_b {E} Q2N3904\n'
+                     'F{name} {E} {name}_b V{name} 0.002', 'DLED', 'Q2N3904'),
+         'description': 'LED and phototransistor: the LED current drives the base (CTR about 80 %)',
+         'graphics': [R(-60, -60, 120, 120), L(-90, -40, -40, -40), L(-90, 40, -40, 40), L(-40, -40, -40, -12),
+                      P('M -52 -12 L -28 -12 L -40 12 Z'), L(-52, 12, -28, 12), L(-40, 12, -40, 40),
+                      L(-18, -6, 0, -6), P('M -4 -10 L 2 -6 L -4 -2'), L(-18, 6, 0, 6), P('M -4 2 L 2 6 L -4 10'),
+                      L(18, -20, 18, 20), L(18, -8, 40, -30), L(40, -30, 40, -40), L(18, 8, 40, 30), L(40, 30, 40, 40),
+                      L(40, -40, 90, -40), L(40, 40, 90, 40), P('M 31 27 L 40 30 L 36 21 Z')],
+         'pins': [pin('A', -90, -40), pin('C', -90, 40), pin('COL', 90, -40), pin('E', 90, 40)]},
+        {'id': 'scr', 'name': 'SCR', 'prefix': 'Q', 'label': 'SCR', 'aliases': ['SCR'],
+         'cmPins': ['A', 'G', 'K'], 'spice': sp('X{name} {A} {G} {K} SCR_GEN', subckt=SCR),
+         'description': 'Thyristor: a gate current turns it on; it stays on until the anode current stops',
+         'graphics': [L(0, -40, 0, -12), P('M -14 -12 L 14 -12 L 0 12 Z'), L(-14, 12, 14, 12), L(0, 12, 0, 40),
+                      L(0, 12, -20, 20), L(-20, 20, -40, 20)],
+         'pins': [pin('A', 0, -40), pin('G', -40, 20, 'in'), pin('K', 0, 40)]},
+        {'id': 'triac', 'name': 'TRIAC', 'prefix': 'Q', 'label': 'TRIAC', 'aliases': ['Triac:A', 'Triac:B', 'Triac'],
+         'cmPins': ['MT2', 'G', 'MT1'], 'spice': sp('X{name} {MT2} {G} {MT1} TRIAC_GEN', subckt=TRIAC),
+         'description': 'Bidirectional thyristor: gate current of either sign turns it on in either direction',
+         'graphics': [L(0, -60, 0, -14), L(-18, -14, 18, -14), L(-18, 14, 18, 14), P('M -18 -14 L -2 14 L -16 14 Z'),
+                      P('M 2 -14 L 18 -14 L 10 14 Z'), L(0, 14, 0, 60), L(-10, 14, -30, 30), L(-30, 30, -50, 30)],
+         'pins': [pin('MT2', 0, -60), pin('G', -50, 30, 'in'), pin('MT1', 0, 60)]},
     ]
 
 

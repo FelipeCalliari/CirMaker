@@ -372,6 +372,28 @@ private:
     bool m_closed;
 };
 
+// Relay: the coil is energized while C1 and C2 sit at different levels;
+// then COM connects to NO, otherwise to NC.
+class RelayModel : public Model {
+public:
+    RelayModel(int c1, int c2, int com, int nc, int no) : m_c1(c1), m_c2(c2), m_com(com), m_nc(nc), m_no(no) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const Logic a = ctx.input(m_c1), b = ctx.input(m_c2);
+        const bool on = (a == Logic::L1 && b == Logic::L0) || (a == Logic::L0 && b == Logic::L1);
+        if (on != m_on) {
+            m_on = on;
+            ctx.linksChanged();
+        }
+    }
+    QVector<LinkPath> links() const override { return {{m_com, m_on ? m_no : m_nc}}; }
+    int state() const override { return m_on; }
+
+private:
+    int m_c1, m_c2, m_com, m_nc, m_no;
+    bool m_on = false;
+};
+
 } // namespace
 
 std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QString* error)
@@ -464,6 +486,14 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         if (a < 0 || k < 0)
             return fail(QStringLiteral("LED needs A and K"));
         return std::make_unique<LedModel>(a, k);
+    }
+    if (kind == u"relay") {
+        const int c1 = s.pinIndex(QStringLiteral("C1")), c2 = s.pinIndex(QStringLiteral("C2")),
+                  com = s.pinIndex(QStringLiteral("COM")), nc = s.pinIndex(QStringLiteral("NC")),
+                  no = s.pinIndex(QStringLiteral("NO"));
+        if (std::min({c1, c2, com, nc, no}) < 0)
+            return fail(QStringLiteral("relay needs C1, C2, COM, NC and NO"));
+        return std::make_unique<RelayModel>(c1, c2, com, nc, no);
     }
     if (kind == u"link") {
         const QString type = s.model.value(u"type").toString();
