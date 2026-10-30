@@ -777,6 +777,212 @@ private:
     Control m_g;
 };
 
+// ------------------------------------------------------------ 4017
+
+// Johnson decade counter: advances on CP0 rising while ~CP1 is low, or on
+// ~CP1 falling while CP0 is high; MR clears. Q0..Q9 decoded, ~Q5-9 (carry
+// out) high for counts 0 to 4.
+class Johnson4017 : public Model {
+public:
+    explicit Johnson4017(const Pins& p)
+        : m_cp0(p.at(QStringLiteral("CP0"))), m_cp1(p.at(QStringLiteral("~CP1"))), m_mr(p.at(QStringLiteral("MR"))),
+          m_q(p.run(QStringLiteral("Q"))), m_carry(p.at(QStringLiteral("~Q5-9")))
+    {
+        m_fall.falling = true;
+    }
+    void evaluate(ModelContext& ctx) override
+    {
+        const bool rise = m_rise(ctx, m_cp0), fall = m_fall(ctx, m_cp1);
+        if (ctx.input(m_mr) == Logic::L1)
+            m_count = 0;
+        else if ((rise && ctx.input(m_cp1) == Logic::L0) || (fall && ctx.input(m_cp0) == Logic::L1))
+            m_count = (m_count + 1) % 10;
+        for (int i = 0; i < m_q.size(); ++i) driveBit(ctx, m_q[i], fromBool(i == m_count));
+        driveBit(ctx, m_carry, fromBool(m_count < 5));
+    }
+    int state() const override { return m_count; }
+
+private:
+    int m_cp0, m_cp1, m_mr;
+    QVector<int> m_q;
+    int m_carry;
+    Edge m_rise, m_fall;
+    int m_count = 0;
+};
+
+// ------------------------------------------------------------ 74168 / 74169
+
+// Synchronous up/down counter: on CP rising, ~PE low loads D, else counts
+// when ~CEP and ~CET are low, up while U/~D is high. ~TC goes low at the
+// terminal count (9 or 15 up, 0 down) while ~CET is low.
+class UpDown169 : public Model {
+public:
+    UpDown169(const Pins& p, int modulus)
+        : m_mod(modulus), m_cp(p.at(QStringLiteral("CP"))), m_pe(p.at(QStringLiteral("~PE"))),
+          m_cep(p.at(QStringLiteral("~CEP"))), m_cet(p.at(QStringLiteral("~CET"))), m_ud(p.at(QStringLiteral("U/~D"))),
+          m_d(p.run(QStringLiteral("D"))), m_q(p.run(QStringLiteral("Q"))), m_tc(p.at(QStringLiteral("~TC"))) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const bool up = ctx.input(m_ud) != Logic::L0;
+        if (m_edge(ctx, m_cp)) {
+            if (ctx.input(m_pe) == Logic::L0)
+                m_count = readBus(ctx, m_d).value_or(m_count) % 16;
+            else if (ctx.input(m_cep) == Logic::L0 && ctx.input(m_cet) == Logic::L0)
+                m_count = up ? (m_count + 1) % m_mod : (m_count + m_mod - 1) % m_mod;
+        }
+        driveBus(ctx, m_q, m_count);
+        const bool terminal = up ? m_count == m_mod - 1 : m_count == 0;
+        driveBit(ctx, m_tc, fromBool(!(terminal && ctx.input(m_cet) == Logic::L0)));
+    }
+    int state() const override { return m_count; }
+
+private:
+    int m_mod, m_cp, m_pe, m_cep, m_cet, m_ud;
+    QVector<int> m_d, m_q;
+    int m_tc;
+    Edge m_edge;
+    int m_count = 0;
+};
+
+// ------------------------------------------------------------ 74173
+
+// 4-bit D register: loads on CP rising while ~E1 and ~E2 are low, MR clears
+// (asynchronous, active high), outputs float unless ~OE1 and ~OE2 are low.
+class Register173 : public Model {
+public:
+    explicit Register173(const Pins& p)
+        : m_cp(p.at(QStringLiteral("CP"))), m_mr(p.at(QStringLiteral("MR"))), m_e1(p.at(QStringLiteral("~E1"))),
+          m_e2(p.at(QStringLiteral("~E2"))), m_oe1(p.at(QStringLiteral("~OE1"))), m_oe2(p.at(QStringLiteral("~OE2"))),
+          m_d(p.run(QStringLiteral("D"))), m_q(p.run(QStringLiteral("Q"))) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const bool edge = m_edge(ctx, m_cp);
+        if (ctx.input(m_mr) == Logic::L1)
+            m_value = 0;
+        else if (edge && ctx.input(m_e1) == Logic::L0 && ctx.input(m_e2) == Logic::L0)
+            m_value = readBus(ctx, m_d);
+        const bool enabled = ctx.input(m_oe1) == Logic::L0 && ctx.input(m_oe2) == Logic::L0;
+        for (int i = 0; i < m_q.size(); ++i) {
+            if (!enabled) ctx.drive(m_q[i], released());
+            else driveBit(ctx, m_q[i], m_value ? fromBool(*m_value >> i & 1) : Logic::X);
+        }
+    }
+    int state() const override { return m_value.value_or(-1); }
+
+private:
+    int m_cp, m_mr, m_e1, m_e2, m_oe1, m_oe2;
+    QVector<int> m_d, m_q;
+    Edge m_edge;
+    std::optional<int> m_value = 0;
+};
+
+// ------------------------------------------------------------ 74LS75
+
+// 4-bit transparent latch: E01 passes D0/D1, E23 passes D2/D3 while high.
+class Latch75 : public Model {
+public:
+    explicit Latch75(const Pins& p)
+        : m_d(p.run(QStringLiteral("D"))), m_qPins(p.run(QStringLiteral("Q"))), m_qn(p.run(QStringLiteral("~Q"))),
+          m_e01(p.at(QStringLiteral("E01"))), m_e23(p.at(QStringLiteral("E23"))) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        for (int i = 0; i < 4; ++i) {
+            if (ctx.input(i < 2 ? m_e01 : m_e23) == Logic::L1) {
+                const Logic d = ctx.input(m_d.value(i, -1));
+                m_q[i] = isKnown(d) ? d : Logic::X;
+            }
+            driveBit(ctx, m_qPins.value(i, -1), m_q[i]);
+            driveBit(ctx, m_qn.value(i, -1), m_q[i] == Logic::L1 ? Logic::L0 : m_q[i] == Logic::L0 ? Logic::L1 : Logic::X);
+        }
+    }
+
+private:
+    QVector<int> m_d, m_qPins, m_qn;
+    int m_e01, m_e23;
+    Logic m_q[4] = {Logic::L0, Logic::L0, Logic::L0, Logic::L0};
+};
+
+// ------------------------------------------------------------ 74181
+
+// 4-bit ALU, on pin levels (the active-high data table): M high gives the
+// 16 logic functions of A and B; M low gives X plus Y plus carry, with Cn
+// low meaning carry in and Cn+4 low meaning carry out. ~G/~P are the
+// lookahead generate/propagate, A=B is high when F is all ones.
+class Alu181 : public Model {
+public:
+    explicit Alu181(const Pins& p)
+        : m_a(p.run(QStringLiteral("~A"))), m_b(p.run(QStringLiteral("~B"))), m_f(p.run(QStringLiteral("~F"))),
+          m_s(p.run(QStringLiteral("S"))), m_m(p.at(QStringLiteral("M"))), m_cn(p.at(QStringLiteral("Cn"))),
+          m_cn4(p.at(QStringLiteral("Cn+4"))), m_eq(p.at(QStringLiteral("A=B"))), m_g(p.at(QStringLiteral("~G"))),
+          m_p(p.at(QStringLiteral("~P"))) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const auto a = readBus(ctx, m_a), b = readBus(ctx, m_b), s = readBus(ctx, m_s);
+        const Logic m = ctx.input(m_m), cn = ctx.input(m_cn);
+        if (!a || !b || !s || !isKnown(m) || (m == Logic::L0 && !isKnown(cn))) {
+            driveBus(ctx, m_f, std::nullopt);
+            for (int pin : {m_cn4, m_eq, m_g, m_p}) driveBit(ctx, pin, Logic::X);
+            return;
+        }
+        const int A = *a, B = *b, nB = ~*b & 15;
+        int f;
+        bool g = false, pr = false, carry = false;
+        if (m == Logic::L1) {
+            switch (*s) {
+            case 0: f = ~A; break;
+            case 1: f = ~(A | B); break;
+            case 2: f = ~A & B; break;
+            case 3: f = 0; break;
+            case 4: f = ~(A & B); break;
+            case 5: f = nB; break;
+            case 6: f = A ^ B; break;
+            case 7: f = A & nB; break;
+            case 8: f = ~A | B; break;
+            case 9: f = ~(A ^ B); break;
+            case 10: f = B; break;
+            case 11: f = A & B; break;
+            case 12: f = 15; break;
+            case 13: f = A | nB; break;
+            case 14: f = A | B; break;
+            default: f = A; break;
+            }
+            f &= 15;
+        } else {
+            static const int table[16][2] = {{0, -1}, {1, -1}, {2, -1}, {-2, -1}, {0, 3}, {1, 3}, {0, 4}, {3, -3},
+                                             {0, 5}, {0, 6}, {2, 5}, {5, -3}, {0, 0}, {1, 0}, {2, 0}, {0, -3}};
+            auto term = [&](int code) {
+                switch (code) {
+                case 0: return A;
+                case 1: return A | B;
+                case 2: return A | nB;
+                case 3: return A & nB;
+                case 4: return nB;
+                case 5: return A & B;
+                case 6: return B;
+                case -2:
+                case -3: return 15;         // "minus 1"
+                default: return 0;
+                }
+            };
+            const int x = term(table[*s][0]), y = term(table[*s][1]);
+            const int sum = x + y + (cn == Logic::L0 ? 1 : 0);
+            f = sum & 15;
+            carry = sum > 15;
+            g = x + y > 15;
+            pr = x + y >= 15;
+        }
+        driveBus(ctx, m_f, f);
+        driveBit(ctx, m_eq, fromBool(f == 15));
+        driveBit(ctx, m_cn4, fromBool(!carry));
+        driveBit(ctx, m_g, fromBool(!g));
+        driveBit(ctx, m_p, fromBool(!pr));
+    }
+
+private:
+    QVector<int> m_a, m_b, m_f, m_s;
+    int m_m, m_cn, m_cn4, m_eq, m_g, m_p;
+};
+
 // ------------------------------------------------------------ memories
 
 // Parses "00 1F a3 ..." (hex bytes separated by spaces or commas).
@@ -982,6 +1188,11 @@ std::unique_ptr<Model> createChipModel(const SymbolDef& s, const Component& c, Q
     if (kind == u"parity") return std::make_unique<Parity>(p);
     if (kind == u"transceiver") return std::make_unique<Transceiver>(p);
     if (kind == u"keymatrix") return std::make_unique<KeyMatrix>(p);
+    if (kind == u"johnson") return std::make_unique<Johnson4017>(p);
+    if (kind == u"updown169") return std::make_unique<UpDown169>(p, s.model.value(u"modulus").toInt(16));
+    if (kind == u"reg173") return std::make_unique<Register173>(p);
+    if (kind == u"latch75") return std::make_unique<Latch75>(p);
+    if (kind == u"alu181") return std::make_unique<Alu181>(p);
     QVariantMap props = s.defaultProps;
     for (auto it = c.props.cbegin(); it != c.props.cend(); ++it)
         props.insert(it.key(), it.value());

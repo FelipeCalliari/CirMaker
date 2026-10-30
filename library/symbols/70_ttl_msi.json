@@ -3640,6 +3640,678 @@
    "floatInputs": 0
   },
   {
+   "id": "4017",
+   "name": "4017 Decade counter/divider with 10 decoded outputs (CMOS)",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~CP1",
+     {
+      "name": "CP0",
+      "clock": true
+     },
+     "",
+     "MR"
+    ],
+    "right": [
+     "~Q5-9",
+     "Q9",
+     "Q8",
+     "Q7",
+     "Q6",
+     "Q5",
+     "Q4",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": 60,
+    "rightStart": -120,
+    "title": "4017"
+   },
+   "model": {
+    "kind": "johnson"
+   },
+   "aliases": [
+    "4017",
+    "CD4017"
+   ],
+   "cmPins": [
+    "~CP1",
+    "CP0",
+    "MR",
+    "Q0",
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4",
+    "Q5",
+    "Q6",
+    "Q7",
+    "Q8",
+    "Q9",
+    "~Q5-9"
+   ],
+   "label": "4017",
+   "description": "Decade counter/divider with 10 decoded outputs (CMOS)",
+   "floatInputs": 0
+  },
+  {
+   "id": "74169",
+   "name": "74169 Synchronous up/down 4-bit binary counter",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~CEP",
+     "~CET",
+     {
+      "name": "CP",
+      "clock": true
+     },
+     "",
+     "",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     {
+      "name": "~PE",
+      "dir": "in"
+     },
+     {
+      "name": "U/~D",
+      "label": "U/D",
+      "dir": "in"
+     },
+     "",
+     "",
+     "~TC",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -120,
+    "rightStart": -120,
+    "title": "74169"
+   },
+   "model": {
+    "kind": "updown169",
+    "modulus": 16
+   },
+   "aliases": [
+    "74169",
+    "74LS169",
+    "74HC169",
+    "74F169"
+   ],
+   "cmPins": [
+    "~CEP",
+    "~CET",
+    "CP",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~PE",
+    "U/~D",
+    "~TC",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74169",
+   "description": "Synchronous up/down 4-bit binary counter",
+   "floatInputs": 1
+  },
+  {
+   "id": "74168",
+   "name": "74168 Synchronous up/down decade counter",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "~CEP",
+     "~CET",
+     {
+      "name": "CP",
+      "clock": true
+     },
+     "",
+     "",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     {
+      "name": "~PE",
+      "dir": "in"
+     },
+     {
+      "name": "U/~D",
+      "label": "U/D",
+      "dir": "in"
+     },
+     "",
+     "",
+     "~TC",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -120,
+    "rightStart": -120,
+    "title": "74168"
+   },
+   "model": {
+    "kind": "updown169",
+    "modulus": 10
+   },
+   "aliases": [
+    "74168",
+    "74LS168",
+    "74HC168",
+    "74F168"
+   ],
+   "cmPins": [
+    "~CEP",
+    "~CET",
+    "CP",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~PE",
+    "U/~D",
+    "~TC",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74168",
+   "description": "Synchronous up/down decade counter",
+   "floatInputs": 1
+  },
+  {
+   "id": "74173",
+   "name": "74173 4-bit D register",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "MR",
+     "~E1",
+     "~E2",
+     {
+      "name": "CP",
+      "clock": true
+     },
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     {
+      "name": "~OE1",
+      "dir": "in"
+     },
+     {
+      "name": "~OE2",
+      "dir": "in"
+     },
+     "",
+     "",
+     "Q3",
+     "Q2",
+     "Q1",
+     "Q0"
+    ],
+    "leftStart": -90,
+    "rightStart": -90,
+    "title": "74173"
+   },
+   "model": {
+    "kind": "reg173"
+   },
+   "aliases": [
+    "74173",
+    "74LS173",
+    "74HC173",
+    "74F173"
+   ],
+   "cmPins": [
+    "MR",
+    "~E1",
+    "~E2",
+    "CP",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "~OE1",
+    "~OE2",
+    "Q3",
+    "Q2",
+    "Q1",
+    "Q0"
+   ],
+   "label": "74173",
+   "description": "4-bit D register, 3-state outputs",
+   "floatInputs": 1
+  },
+  {
+   "id": "7475",
+   "name": "7475 4-bit bistable latch",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "D3",
+     "D2",
+     "E23",
+     "",
+     "D1",
+     "D0",
+     "E01"
+    ],
+    "right": [
+     "Q3",
+     "~Q3",
+     "Q2",
+     "~Q2",
+     "Q1",
+     "~Q1",
+     "Q0",
+     "~Q0"
+    ],
+    "leftStart": -90,
+    "rightStart": -90,
+    "title": "7475"
+   },
+   "model": {
+    "kind": "latch75"
+   },
+   "aliases": [
+    "7475",
+    "74LS75",
+    "74HC75",
+    "74F75"
+   ],
+   "cmPins": [
+    "D3",
+    "D2",
+    "E23",
+    "D1",
+    "D0",
+    "E01",
+    "Q3",
+    "~Q3",
+    "Q2",
+    "~Q2",
+    "Q1",
+    "~Q1",
+    "Q0",
+    "~Q0"
+   ],
+   "label": "7475",
+   "description": "4-bit bistable latch",
+   "floatInputs": 1
+  },
+  {
+   "id": "74181",
+   "name": "74181 4-bit arithmetic logic unit",
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "S3",
+     "S2",
+     "S1",
+     "S0",
+     "~A3",
+     "~A2",
+     "~A1",
+     "~A0",
+     "~B3",
+     "~B2",
+     "~B1",
+     "~B0"
+    ],
+    "right": [
+     {
+      "name": "Cn",
+      "dir": "in"
+     },
+     {
+      "name": "M",
+      "dir": "in"
+     },
+     "",
+     "",
+     "Cn+4",
+     "A=B",
+     "~G",
+     "~P",
+     "~F3",
+     "~F2",
+     "~F1",
+     "~F0"
+    ],
+    "leftStart": -150,
+    "rightStart": -150,
+    "title": "74181"
+   },
+   "model": {
+    "kind": "alu181"
+   },
+   "aliases": [
+    "74181",
+    "74LS181",
+    "74HC181",
+    "74F181"
+   ],
+   "cmPins": [
+    "S3",
+    "S2",
+    "S1",
+    "S0",
+    "~A3",
+    "~A2",
+    "~A1",
+    "~A0",
+    "~B3",
+    "~B2",
+    "~B1",
+    "~B0",
+    "Cn",
+    "M",
+    "Cn+4",
+    "A=B",
+    "~G",
+    "~P",
+    "~F3",
+    "~F2",
+    "~F1",
+    "~F0"
+   ],
+   "label": "74181",
+   "description": "4-bit arithmetic logic unit",
+   "floatInputs": 1
+  },
+  {
+   "id": "quad_dff",
+   "name": "Quad D Flop",
+   "prefix": "U",
+   "label": "",
+   "aliases": [
+    "Quad D Flop"
+   ],
+   "cmPins": [
+    "D0",
+    "D1",
+    "D2",
+    "D3",
+    "Q0",
+    "Q1",
+    "Q2",
+    "Q3",
+    "CLK"
+   ],
+   "model": {
+    "kind": "register"
+   },
+   "description": "Four D flip-flops on one rising clock",
+   "graphics": [
+    {
+     "rect": [
+      -50,
+      -120,
+      100,
+      210
+     ]
+    },
+    {
+     "line": [
+      -80,
+      -100,
+      -50,
+      -100
+     ]
+    },
+    {
+     "line": [
+      -80,
+      -60,
+      -50,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -80,
+      -20,
+      -50,
+      -20
+     ]
+    },
+    {
+     "line": [
+      -80,
+      20,
+      -50,
+      20
+     ]
+    },
+    {
+     "line": [
+      50,
+      -100,
+      80,
+      -100
+     ]
+    },
+    {
+     "line": [
+      50,
+      -60,
+      80,
+      -60
+     ]
+    },
+    {
+     "line": [
+      50,
+      -20,
+      80,
+      -20
+     ]
+    },
+    {
+     "line": [
+      50,
+      20,
+      80,
+      20
+     ]
+    },
+    {
+     "line": [
+      0,
+      90,
+      0,
+      120
+     ]
+    },
+    {
+     "path": "M -8 90 L 0 80 L 8 90"
+    },
+    {
+     "text": "D0",
+     "at": [
+      -42,
+      -100
+     ],
+     "size": 8,
+     "align": "left"
+    },
+    {
+     "text": "D1",
+     "at": [
+      -42,
+      -60
+     ],
+     "size": 8,
+     "align": "left"
+    },
+    {
+     "text": "D2",
+     "at": [
+      -42,
+      -20
+     ],
+     "size": 8,
+     "align": "left"
+    },
+    {
+     "text": "D3",
+     "at": [
+      -42,
+      20
+     ],
+     "size": 8,
+     "align": "left"
+    },
+    {
+     "text": "Q0",
+     "at": [
+      42,
+      -100
+     ],
+     "size": 8,
+     "align": "right"
+    },
+    {
+     "text": "Q1",
+     "at": [
+      42,
+      -60
+     ],
+     "size": 8,
+     "align": "right"
+    },
+    {
+     "text": "Q2",
+     "at": [
+      42,
+      -20
+     ],
+     "size": 8,
+     "align": "right"
+    },
+    {
+     "text": "Q3",
+     "at": [
+      42,
+      20
+     ],
+     "size": 8,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "D0",
+     "at": [
+      -80,
+      -100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D1",
+     "at": [
+      -80,
+      -60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D2",
+     "at": [
+      -80,
+      -20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "D3",
+     "at": [
+      -80,
+      20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "Q0",
+     "at": [
+      80,
+      -100
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Q1",
+     "at": [
+      80,
+      -60
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Q2",
+     "at": [
+      80,
+      -20
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "Q3",
+     "at": [
+      80,
+      20
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "CLK",
+     "at": [
+      0,
+      120
+     ],
+     "dir": "in",
+     "clock": true
+    }
+   ]
+  },
+  {
    "id": "RAM1K",
    "name": "RAM1K Static RAM 1K x 8",
    "shape": {

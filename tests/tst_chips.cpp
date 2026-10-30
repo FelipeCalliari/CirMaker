@@ -19,6 +19,12 @@ private slots:
     void promRead();
     void ramContentsAndLiveEdit();
     void relaySwitchesDigitally();
+    void johnson4017();
+    void counter74169();
+    void register74173();
+    void latch7475();
+    void alu74181_data();
+    void alu74181();
     void decoder74155();
     void parity74280();
     void keypadConnects();
@@ -44,6 +50,20 @@ ItemId tieLow(Circuit& c, ItemId chip, const QString& pin)
     label(c, g, QStringLiteral("GND"), QStringLiteral("LOW"));
     label(c, chip, pin, QStringLiteral("LOW"));
     return g;
+}
+
+ItemId tieHigh(Circuit& c, ItemId chip, const QString& pin)
+{
+    const ItemId v = place(c, QStringLiteral("vcc"), {-2000, -2000});
+    label(c, v, QStringLiteral("VCC"), QStringLiteral("HIGH"));
+    label(c, chip, pin, QStringLiteral("HIGH"));
+    return v;
+}
+
+// ties pins (LSB first) to the bits of value
+void tieBus(Circuit& c, ItemId chip, const QStringList& pins, int value)
+{
+    for (int i = 0; i < pins.size(); ++i) (value >> i & 1) ? tieHigh(c, chip, pins[i]) : tieLow(c, chip, pins[i]);
 }
 
 QStringList names(const QString& prefix, int n)
@@ -346,6 +366,130 @@ void TestChips::relaySwitchesDigitally()
     QCOMPARE(b.value(c, no, QStringLiteral("A")), Logic::L1);
     QVERIFY(b.value(c, nc, QStringLiteral("A")) != Logic::L1);
     QCOMPARE(b.sim.componentState(k), 1);
+}
+
+void TestChips::johnson4017()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("4017"), {0, 0}, QStringLiteral("U1"));
+    const ItemId clk = source(c, u, QStringLiteral("CP0"), -600, 0);
+    const ItemId mr = source(c, u, QStringLiteral("MR"), -600, 100);
+    tieLow(c, u, QStringLiteral("~CP1"));
+    Bench b(c);
+    QCOMPARE(b.value(c, u, QStringLiteral("Q0")), Logic::L1);
+    for (int i = 0; i < 3; ++i) pulse(b, clk);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 10)), 1 << 3);
+    QCOMPARE(b.value(c, u, QStringLiteral("~Q5-9")), Logic::L1);
+    for (int i = 0; i < 3; ++i) pulse(b, clk);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 10)), 1 << 6);
+    QCOMPARE(b.value(c, u, QStringLiteral("~Q5-9")), Logic::L0);
+    for (int i = 0; i < 4; ++i) pulse(b, clk);                     // 10: wraps to 0
+    QCOMPARE(b.value(c, u, QStringLiteral("Q0")), Logic::L1);
+    pulse(b, clk);
+    b.sim.interact(mr, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("Q0")), Logic::L1);
+}
+
+void TestChips::counter74169()
+{
+    for (const int modulus : {16, 10}) {
+        Circuit c;
+        const ItemId u = place(c, modulus == 16 ? QStringLiteral("74169") : QStringLiteral("74168"), {0, 0}, QStringLiteral("U1"));
+        const ItemId clk = source(c, u, QStringLiteral("CP"), -600, 0);
+        const ItemId dir = source(c, u, QStringLiteral("U/~D"), -600, 100);    // starts low: down
+        tieHigh(c, u, QStringLiteral("~PE"));
+        tieLow(c, u, QStringLiteral("~CEP"));
+        tieLow(c, u, QStringLiteral("~CET"));
+        tieBus(c, u, names(QStringLiteral("D"), 4), 0);
+        Bench b(c);
+        QCOMPARE(b.value(c, u, QStringLiteral("~TC")), Logic::L0);      // 0 counting down
+        pulse(b, clk);
+        QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 4)), modulus - 1);
+        b.sim.interact(dir, QStringLiteral("toggle"));                   // up
+        b.sim.step(3);
+        QCOMPARE(b.value(c, u, QStringLiteral("~TC")), Logic::L0);      // terminal counting up
+        pulse(b, clk);
+        QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 4)), 0);
+        QCOMPARE(b.value(c, u, QStringLiteral("~TC")), Logic::L1);
+    }
+}
+
+void TestChips::register74173()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74173"), {0, 0}, QStringLiteral("U1"));
+    const ItemId clk = source(c, u, QStringLiteral("CP"), -600, 0);
+    const ItemId oe = source(c, u, QStringLiteral("~OE1"), -600, 100);
+    tieBus(c, u, names(QStringLiteral("D"), 4), 0b1010);
+    for (const char* n : {"MR", "~E1", "~E2", "~OE2"}) tieLow(c, u, QString::fromLatin1(n));
+    Bench b(c);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 4)), 0);
+    pulse(b, clk);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("Q"), 4)), 0b1010);
+    b.sim.interact(oe, QStringLiteral("toggle"));                        // outputs off
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("Q1")), Logic::Z);
+}
+
+void TestChips::latch7475()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("7475"), {0, 0}, QStringLiteral("U1"));
+    const ItemId d = source(c, u, QStringLiteral("D0"), -600, 0);
+    const ItemId e = source(c, u, QStringLiteral("E01"), -600, 100);
+    for (const char* n : {"D1", "D2", "D3", "E23"}) tieLow(c, u, QString::fromLatin1(n));
+    Bench b(c);
+    b.sim.interact(e, QStringLiteral("toggle"));                         // transparent
+    b.sim.interact(d, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("Q0")), Logic::L1);
+    QCOMPARE(b.value(c, u, QStringLiteral("~Q0")), Logic::L0);
+    b.sim.interact(e, QStringLiteral("toggle"));                         // latched
+    b.sim.interact(d, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(b.value(c, u, QStringLiteral("Q0")), Logic::L1);
+}
+
+void TestChips::alu74181_data()
+{
+    QTest::addColumn<int>("s");
+    QTest::addColumn<bool>("logic");
+    QTest::addColumn<bool>("carryIn");
+    QTest::addColumn<int>("a");
+    QTest::addColumn<int>("b");
+    QTest::addColumn<int>("f");
+    QTest::addColumn<bool>("carryOut");
+    QTest::newRow("A plus B") << 9 << false << false << 5 << 3 << 8 << false;
+    QTest::newRow("A plus B overflow") << 9 << false << false << 12 << 7 << 3 << true;
+    QTest::newRow("A plus B plus 1") << 9 << false << true << 5 << 3 << 9 << false;
+    QTest::newRow("A minus B (with carry)") << 6 << false << true << 9 << 4 << 5 << true;
+    QTest::newRow("A minus 1") << 15 << false << false << 0 << 0 << 15 << false;
+    QTest::newRow("A xor B") << 6 << true << false << 0b1100 << 0b1010 << 0b0110 << false;
+    QTest::newRow("A and B") << 11 << true << false << 0b1100 << 0b1010 << 0b1000 << false;
+    QTest::newRow("not A") << 0 << true << false << 0b1100 << 0 << 0b0011 << false;
+}
+
+void TestChips::alu74181()
+{
+    QFETCH(int, s);
+    QFETCH(bool, logic);
+    QFETCH(bool, carryIn);
+    QFETCH(int, a);
+    QFETCH(int, b);
+    QFETCH(int, f);
+    QFETCH(bool, carryOut);
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("74181"), {0, 0}, QStringLiteral("U1"));
+    tieBus(c, u, names(QStringLiteral("S"), 4), s);
+    tieBus(c, u, names(QStringLiteral("~A"), 4), a);
+    tieBus(c, u, names(QStringLiteral("~B"), 4), b);
+    logic ? tieHigh(c, u, QStringLiteral("M")) : tieLow(c, u, QStringLiteral("M"));
+    carryIn ? tieLow(c, u, QStringLiteral("Cn")) : tieHigh(c, u, QStringLiteral("Cn"));   // Cn low = carry in
+    Bench bench(c);
+    QCOMPARE(bus(bench, c, u, names(QStringLiteral("~F"), 4)), f);
+    if (!logic) QCOMPARE(bench.value(c, u, QStringLiteral("Cn+4")), carryOut ? Logic::L0 : Logic::L1);
+    QCOMPARE(bench.value(c, u, QStringLiteral("A=B")), f == 15 ? Logic::L1 : Logic::L0);
 }
 
 void TestChips::decoder74155()

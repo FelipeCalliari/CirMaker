@@ -36,7 +36,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Recurso | Estado | Observação |
 | --- | --- | --- |
 | Navegador por categorias e busca | ✅ | |
-| Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS74/73/112, 74139 e 74153 como pacote inteiro; 74LS181 falta |
+| Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS74/73/112, 74139 e 74153 como pacote inteiro; 4017, 4093, 74168/169, 74173, 7475, 74181 (ULA) e Quad D Flop |
 | Entradas/saídas digitais (chaves, teclados, displays, pulser, SCOPE) | ✅ | |
 | Edit PROM/RAM (grade hexadecimal, carregar/salvar .hex/.bin, edição ao vivo durante a simulação) | ✅ | RAM1K e PROM32 |
 | Data Sequencer + Pattern Editor | ✅ | clock interno/externo, níveis analógicos (fontes PWL); importado do `.ckt` |

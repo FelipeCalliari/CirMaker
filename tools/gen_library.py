@@ -96,6 +96,7 @@ CMOS_GATES = [
     ('4025', 'nor3', 3), ('4030', 'xor2', 4), ('4049', 'inv', 6), ('4050', 'buf', 6), ('4068', 'and8', 1),
     ('4069', 'inv', 6), ('4070', 'xor2', 4), ('4071', 'or2', 4), ('4072', 'or4', 2), ('4073', 'and3', 3),
     ('4075', 'or3', 3), ('4077', 'xnor2', 4), ('4078', 'nor8', 1), ('4081', 'and2', 4), ('4082', 'and4', 2),
+    ('4093', 'nand2', 4),
 ]
 COUNT = {1: 'Single', 2: 'Dual', 3: 'Triple', 4: 'Quad', 6: 'Hex'}
 
@@ -117,7 +118,7 @@ PACKAGE_PARTS = {
     '7420': _D4_TTL, '7421': _D4_TTL, '7422': _D4_TTL,
     '7430': [[1, 2, 3, 4, 5, 6, 11, 12, 8]],
     '4001': _Q2_CMOS, '4011': _Q2_CMOS, '4030': _Q2_CMOS, '4070': _Q2_CMOS, '4071': _Q2_CMOS, '4077': _Q2_CMOS,
-    '4081': _Q2_CMOS,
+    '4081': _Q2_CMOS, '4093': _Q2_CMOS,
     '4023': _T3_CMOS, '4025': _T3_CMOS, '4073': _T3_CMOS, '4075': _T3_CMOS,
     '4002': _D4_CMOS, '4012': _D4_CMOS, '4072': _D4_CMOS, '4082': _D4_CMOS,
     '4068': [[2, 3, 4, 5, 9, 10, 11, 12, 13]], '4078': [[2, 3, 4, 5, 9, 10, 11, 12, 13]],
@@ -406,6 +407,45 @@ def cm_chips():
                 rev(D(4, 'A')) + rev(D(4, 'B')) + ['', 'I>', 'I=', 'I<'], ['A>B', 'A=B', 'A<B'], {'kind': 'comparator'},
                 rev(D(4, 'A')) + rev(D(4, 'B')) + ['I>', 'I=', 'I<', 'A<B', 'A=B', 'A>B'], -120, 0,
                 aliases=['4585', 'CD4585'], floatInputs=0),
+        cm_chip('4017', 'Decade counter/divider with 10 decoded outputs (CMOS)',
+                ['~CP1', clk('CP0'), '', 'MR'], ['~Q5-9'] + [f'Q{i}' for i in range(9, -1, -1)], {'kind': 'johnson'},
+                ['~CP1', 'CP0', 'MR'] + [f'Q{i}' for i in range(10)] + ['~Q5-9'], 60, -120,
+                aliases=['4017', 'CD4017'], floatInputs=0),
+        cm_chip('74169', 'Synchronous up/down 4-bit binary counter',
+                ['~CEP', '~CET', clk('CP'), '', ''] + rev(D(4)),
+                [{'name': '~PE', 'dir': 'in'}, {'name': 'U/~D', 'label': 'U/D', 'dir': 'in'}, '', '', '~TC'] + rev(D(4, 'Q')),
+                {'kind': 'updown169', 'modulus': 16},
+                ['~CEP', '~CET', 'CP'] + rev(D(4)) + ['~PE', 'U/~D', '~TC'] + rev(D(4, 'Q')), -120, -120),
+        cm_chip('74168', 'Synchronous up/down decade counter',
+                ['~CEP', '~CET', clk('CP'), '', ''] + rev(D(4)),
+                [{'name': '~PE', 'dir': 'in'}, {'name': 'U/~D', 'label': 'U/D', 'dir': 'in'}, '', '', '~TC'] + rev(D(4, 'Q')),
+                {'kind': 'updown169', 'modulus': 10},
+                ['~CEP', '~CET', 'CP'] + rev(D(4)) + ['~PE', 'U/~D', '~TC'] + rev(D(4, 'Q')), -120, -120),
+        cm_chip('74173', '4-bit D register, 3-state outputs',
+                ['MR', '~E1', '~E2', clk('CP')] + rev(D(4)),
+                [{'name': '~OE1', 'dir': 'in'}, {'name': '~OE2', 'dir': 'in'}, '', ''] + rev(D(4, 'Q')),
+                {'kind': 'reg173'}, ['MR', '~E1', '~E2', 'CP'] + rev(D(4)) + ['~OE1', '~OE2'] + rev(D(4, 'Q')), -90, -90),
+        cm_chip('7475', '4-bit bistable latch',
+                ['D3', 'D2', 'E23', '', 'D1', 'D0', 'E01'], ['Q3', '~Q3', 'Q2', '~Q2', 'Q1', '~Q1', 'Q0', '~Q0'],
+                {'kind': 'latch75'}, ['D3', 'D2', 'E23', 'D1', 'D0', 'E01', 'Q3', '~Q3', 'Q2', '~Q2', 'Q1', '~Q1', 'Q0', '~Q0'],
+                -90, -90),
+        cm_chip('74181', '4-bit arithmetic logic unit',
+                ['S3', 'S2', 'S1', 'S0'] + [f'~A{i}' for i in range(3, -1, -1)] + [f'~B{i}' for i in range(3, -1, -1)],
+                [{'name': 'Cn', 'dir': 'in'}, {'name': 'M', 'dir': 'in'}, '', '', 'Cn+4', 'A=B', '~G', '~P']
+                + [f'~F{i}' for i in range(3, -1, -1)],
+                {'kind': 'alu181'},
+                ['S3', 'S2', 'S1', 'S0'] + [f'~A{i}' for i in range(3, -1, -1)] + [f'~B{i}' for i in range(3, -1, -1)]
+                + ['Cn', 'M', 'Cn+4', 'A=B', '~G', '~P'] + [f'~F{i}' for i in range(3, -1, -1)], -150, -150),
+        {'id': 'quad_dff', 'name': 'Quad D Flop', 'prefix': 'U', 'label': '', 'aliases': ['Quad D Flop'],
+         'cmPins': ['D0', 'D1', 'D2', 'D3', 'Q0', 'Q1', 'Q2', 'Q3', 'CLK'], 'model': {'kind': 'register'},
+         'description': 'Four D flip-flops on one rising clock',
+         'graphics': [R(-50, -120, 100, 210)] + [L(-80, y, -50, y) for y in (-100, -60, -20, 20)]
+                     + [L(50, y, 80, y) for y in (-100, -60, -20, 20)] + [L(0, 90, 0, 120), P('M -8 90 L 0 80 L 8 90')]
+                     + [T(f'D{i}', -42, y, 8, 'left') for i, y in enumerate((-100, -60, -20, 20))]
+                     + [T(f'Q{i}', 42, y, 8, 'right') for i, y in enumerate((-100, -60, -20, 20))],
+         'pins': [pin(f'D{i}', -80, y, 'in') for i, y in enumerate((-100, -60, -20, 20))]
+                 + [pin(f'Q{i}', 80, y, 'out') for i, y in enumerate((-100, -60, -20, 20))]
+                 + [pin('CLK', 0, 120, 'in', clock=True)]},
         cm_chip('RAM1K', 'Static RAM 1K x 8',
                 rev(D(10, 'A')), ['~CS', '~WE'] + [{'name': f'D{i}', 'dir': 'inout'} for i in range(7, -1, -1)],
                 {'kind': 'ram'}, rev(D(10, 'A')) + rev(D(8)) + ['~CS', '~WE'], -120, -120,

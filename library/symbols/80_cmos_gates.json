@@ -843,6 +843,49 @@
      "13"
     ]
    ]
+  },
+  {
+   "id": "4093",
+   "name": "4093 Quad 2-In NAND",
+   "shape": {
+    "type": "gate",
+    "op": "and",
+    "inputs": 2,
+    "invert": true
+   },
+   "aliases": [
+    "4093",
+    "CD4093"
+   ],
+   "cmPins": [
+    "A",
+    "B",
+    "Y"
+   ],
+   "description": "Quad 2-In NAND (CMOS); one gate per symbol, grouped by package",
+   "label": "4093",
+   "parts": [
+    [
+     "1",
+     "2",
+     "3"
+    ],
+    [
+     "5",
+     "6",
+     "4"
+    ],
+    [
+     "8",
+     "9",
+     "10"
+    ],
+    [
+     "12",
+     "13",
+     "11"
+    ]
+   ]
   }
  ]
 }
