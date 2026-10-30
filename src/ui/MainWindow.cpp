@@ -1107,6 +1107,7 @@ void MainWindow::showContextMenu(QGraphicsItem* item, QPoint screenPos)
             menu.addAction(tr("Edit PROM/&RAM..."), this, [this, id = comp->id()] { m_scene->editMemory(id); });
         const QString edit = kind == u"dataseq" ? tr("Edit &Data Sequencer...")
                            : kind == u"pulser"  ? tr("Edit P&ulser...")
+                           : kind == u"siggen"  ? tr("Edit &Signal Generator...")
                            : comp->symbol()->netLabel ? tr("Edit &Terminal Name...")
                            : tr("Device &Properties...");
         QAction* props = menu.addAction(edit, this, [this, item] { m_scene->editItem(item); });

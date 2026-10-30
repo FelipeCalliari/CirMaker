@@ -21,6 +21,8 @@ private slots:
     void invertingAmplifier();
     void mixedModeInverter();
     void dataSequencerPwl();
+    void generatorWaves_data();
+    void generatorWaves();
     void importedExamplesSimulate();
 
 private:
@@ -287,6 +289,59 @@ void TestAnalog::dataSequencerPwl()
     QVERIFY2(res.ok, qPrintable(res.error + u'\n' + deck.text));
     QVERIFY(qAbs(nodeVoltage(res, deck, c, ds, QStringLiteral("Q0")) - 0) < 0.01);
     QVERIFY(qAbs(nodeVoltage(res, deck, c, ds, QStringLiteral("Q1")) - 5) < 0.01);
+}
+
+void TestAnalog::generatorWaves_data()
+{
+    QTest::addColumn<QVariantMap>("props");
+    QTest::addColumn<QString>("stop");
+    QTest::addColumn<double>("expected");       // NaN: only has to simulate
+    QTest::addColumn<QString>("deckHas");
+    const double any = std::numeric_limits<double>::quiet_NaN();
+    QTest::newRow("sine delayed") << QVariantMap{{"wave", "sine"}, {"amplitude", "2"}, {"frequency", "1k"}, {"delay", "1m"}}
+                                  << "0.9m" << 0.0 << "SIN(0 2 1000 0.001 0)";
+    QTest::newRow("pulse") << QVariantMap{{"wave", "pulse"}, {"v1", "0"}, {"v2", "3"}, {"period", "1m"}, {"width", "0.5m"}}
+                           << "1.25m" << 3.0 << "PULSE(0 3 0";
+    QTest::newRow("exp") << QVariantMap{{"wave", "exp"}, {"v1", "0"}, {"v2", "5"}, {"rt", "0.1m"}, {"fd", "1"}}
+                         << "2m" << 5.0 << "EXP(0 5";
+    QTest::newRow("pwl") << QVariantMap{{"wave", "pwl"}, {"pwl", "0 0\n1m 2\n2m 4"}} << "2m" << 4.0 << "PWL(0 0 0.001 2 0.002 4)";
+    QTest::newRow("am") << QVariantMap{{"wave", "am"}, {"carrier", "10k"}, {"signal", "1k"}, {"mdi", "0.5"}} << "1m" << any
+                        << "sin(2*pi*1000*time)";
+    QTest::newRow("fm") << QVariantMap{{"wave", "fm"}, {"carrier", "10k"}, {"signal", "1k"}, {"mdi", "2"}} << "1m" << any
+                        << "SFFM(0 1 10000 2 1000)";
+    QTest::newRow("current") << QVariantMap{{"wave", "sine"}, {"current", true}, {"amplitude", "1m"}} << "1m" << any << "Iv1 out 0 DC 0 SIN(";
+}
+
+void TestAnalog::generatorWaves()
+{
+    QFETCH(QVariantMap, props);
+    QFETCH(QString, stop);
+    QFETCH(double, expected);
+    QFETCH(QString, deckHas);
+    Circuit c;
+    QVariantMap p = props;
+    if (p.contains("pwl")) p["pwl"] = p["pwl"].toString().replace(QStringLiteral("\\n"), QStringLiteral("\n"));
+    const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V1"), {}, p);
+    const ItemId r = part(c, QStringLiteral("resistor"), QStringLiteral("R1"), QStringLiteral("1k"));
+    label(c, g, QStringLiteral("+"), QStringLiteral("OUT"));
+    label(c, r, QStringLiteral("1"), QStringLiteral("OUT"));
+    label(c, r, QStringLiteral("2"), QStringLiteral("G"));
+    label(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    AnalysisSettings a{true, AnalysisSettings::Type::Transient};
+    a.tranStop = stop;
+    a.tranStep = QStringLiteral("5u");
+    c.setAnalysis(a);
+    const Netlist n = NetlistBuilder::build(c, library());
+    const spice::Deck deck = spice::build(c, library(), n);
+    QVERIFY2(deck.text.contains(deckHas), qPrintable(deck.text));
+    requireEngine();
+    const spice::Result res = simulate(c);
+    QVERIFY2(res.ok, qPrintable(res.error + u'\n' + deck.text));
+    const double v = res.last(QStringLiteral("out")).value_or(std::numeric_limits<double>::quiet_NaN());
+    QVERIFY(std::isfinite(v));
+    if (!std::isnan(expected))
+        QVERIFY2(qAbs(v - expected) < 0.05, qPrintable(QString::number(v)));
 }
 
 void TestAnalog::importedExamplesSimulate()

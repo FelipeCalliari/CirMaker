@@ -1216,8 +1216,8 @@
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="716"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1455"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1459"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1456"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1460"/>
         <source>Analog mode</source>
         <translation>Modo analógico</translation>
     </message>
@@ -1329,8 +1329,8 @@
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="922"/>
         <location filename="../src/ui/MainWindow.cpp" line="964"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1343"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1353"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1344"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1354"/>
         <source>Cannot open %1:
 %2</source>
         <translation>Não foi possível abrir %1:
@@ -1473,139 +1473,144 @@
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="1110"/>
+        <source>Edit &amp;Signal Generator...</source>
+        <translation>Editar &amp;gerador de sinais...</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1111"/>
         <source>Edit &amp;Terminal Name...</source>
         <translation>Editar nome do &amp;terminal...</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1111"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1112"/>
         <source>Device &amp;Properties...</source>
         <translation>&amp;Propriedades do dispositivo...</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1115"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1116"/>
         <source>Device &amp;Faults...</source>
         <translation>&amp;Falhas do dispositivo...</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1121"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1122"/>
         <source>Edit &amp;Text...</source>
         <translation>Editar &amp;texto...</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1124"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1125"/>
         <source>Edit Title &amp;Block...</source>
         <translation>Editar &amp;bloco de título...</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1143"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1144"/>
         <source>Select one macro device to expand</source>
         <translation>Selecione uma macro para expandir</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1150"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1151"/>
         <source>Expand Macro</source>
         <translation>Expandir macro</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1162"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1163"/>
         <source>Editing macro %1; choose Macros &gt; Save Macro when done</source>
         <translation>Editando a macro %1; escolha Macros &gt; Salvar macro ao terminar</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1170"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1171"/>
         <source>Edit Macro</source>
         <translation>Editar macro</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1171"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1172"/>
         <source>Macro name (a new name saves a new macro):</source>
         <translation>Nome da macro (um nome novo salva uma nova macro):</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1189"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1194"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1200"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1190"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1195"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1201"/>
         <source>Delete Macro</source>
         <translation>Excluir macro</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1189"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1190"/>
         <source>The library has no macros.</source>
         <translation>A biblioteca não tem macros.</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1194"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1195"/>
         <source>Macro:</source>
         <translation>Macro:</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1200"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1201"/>
         <source>%1 is used in this circuit (%2).</source>
         <translation>%1 é usada neste circuito (%2).</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1205"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1206"/>
         <source>Deleted macro %1</source>
         <translation>Macro %1 excluída</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1210"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1211"/>
         <source>Export schematic</source>
         <translation>Exportar esquemático</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1211"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1212"/>
         <source>PNG image (*.png);;SVG drawing (*.svg);;PDF document (*.pdf)</source>
         <translation>Imagem PNG (*.png);;Desenho SVG (*.svg);;Documento PDF (*.pdf)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1215"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1216"/>
         <source>Export</source>
         <translation>Exportar</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1215"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1216"/>
         <source>Cannot write %1</source>
         <translation>Não foi possível gravar %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1217"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1218"/>
         <source>Exported %1</source>
         <translation>%1 exportado</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1231"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1232"/>
         <source>Written %1</source>
         <translation>%1 gravado</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1238"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1242"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1248"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1253"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1239"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1243"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1249"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1254"/>
         <source>Bill of Materials</source>
         <translation>Lista de materiais</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1238"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1239"/>
         <source>The circuit has no parts.</source>
         <translation>O circuito não tem componentes.</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1222"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1241"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1223"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1242"/>
         <source>circuit</source>
         <translation>circuito</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1243"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1244"/>
         <source>CSV file (*.csv)</source>
         <translation>Arquivo CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1228"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1248"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1253"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1229"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1249"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1254"/>
         <source>Cannot write %1:
 %2</source>
         <translation>Não foi possível gravar %1:
@@ -1621,7 +1626,7 @@ Place Input and Output devices (General category) where the macro&apos;s pins co
 Coloque dispositivos Input e Output (categoria General) onde os pinos da macro se conectam.</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/ui/MainWindow.cpp" line="1256"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1257"/>
         <source>Bill of materials written to %1 (%n line(s))</source>
         <translation>
             <numerusform>Lista de materiais gravada em %1 (%n linha)</numerusform>
@@ -1629,22 +1634,22 @@ Coloque dispositivos Input e Output (categoria General) onde os pinos da macro s
         </translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1262"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1263"/>
         <source>Find and Select</source>
         <translation>Localizar e selecionar</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1263"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1264"/>
         <source>Designator, label or device name contains:</source>
         <translation>Designador, rótulo ou nome do dispositivo contém:</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1270"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1271"/>
         <source>Nothing matches &quot;%1&quot;</source>
         <translation>Nada corresponde a &quot;%1&quot;</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/ui/MainWindow.cpp" line="1278"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1279"/>
         <source>%n item(s) selected</source>
         <translation>
             <numerusform>%n item selecionado</numerusform>
@@ -1652,63 +1657,63 @@ Coloque dispositivos Input e Output (categoria General) onde os pinos da macro s
         </translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1328"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1329"/>
         <source>Schematic copied to the clipboard</source>
         <translation>Esquemático copiado para a área de transferência</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1337"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1338"/>
         <source>Merge circuit</source>
         <translation>Mesclar circuito</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1338"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1339"/>
         <source>Circuits (*.cmq *.ckt *.CKT);;All files (*)</source>
         <translation>Circuitos (*.cmq *.ckt *.CKT);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1343"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1353"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1344"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1354"/>
         <source>Merge</source>
         <translation>Mesclar</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1357"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1358"/>
         <source>Merged %1</source>
         <translation>%1 mesclado</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1455"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1456"/>
         <source>Digital mode</source>
         <translation>Modo digital</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1459"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1485"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1460"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1486"/>
         <source>The SPICE engine is not available:
 %1</source>
         <translation>O motor SPICE não está disponível:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1476"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1477"/>
         <source>Analysis settings</source>
         <translation>Configuração da análise</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1485"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1492"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1509"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1486"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1493"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1510"/>
         <source>Analog simulation</source>
         <translation>Simulação analógica</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1509"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1510"/>
         <source>SPICE could not simulate the circuit.</source>
         <translation>O SPICE não conseguiu simular o circuito.</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1512"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1513"/>
         <source>Netlist:
 %1
 SPICE output:
@@ -1719,42 +1724,42 @@ Saída do SPICE:
 %2</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1576"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1577"/>
         <source>Operating point: node voltages are shown on the wires</source>
         <translation>Ponto de operação: as tensões dos nós aparecem nos fios</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1604"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1605"/>
         <source>Transient</source>
         <translation>Transitório</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1604"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1605"/>
         <source>Time</source>
         <translation>Tempo</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1606"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1607"/>
         <source>AC sweep (magnitude)</source>
         <translation>Varredura AC (módulo)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1606"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1607"/>
         <source>Frequency</source>
         <translation>Frequência</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1608"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1609"/>
         <source>DC sweep</source>
         <translation>Varredura DC</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1615"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1616"/>
         <source>About CirMaker Qt</source>
         <translation>Sobre o CirMaker Qt</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1616"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1617"/>
         <source>&lt;h3&gt;CirMaker Qt %1&lt;/h3&gt;&lt;p&gt;A schematic editor and digital logic simulator in the spirit of CircuitMaker 2000, built with Qt %2.&lt;/p&gt;&lt;p&gt;Opens CircuitMaker 2000 text circuits (.ckt). The device library is an independent reimplementation; no files from the original product are included.&lt;/p&gt;</source>
         <translation>&lt;h3&gt;CirMaker Qt %1&lt;/h3&gt;&lt;p&gt;Editor de esquemáticos e simulador lógico digital no espírito do CircuitMaker 2000, feito com Qt %2.&lt;/p&gt;&lt;p&gt;Abre circuitos texto do CircuitMaker 2000 (.ckt). A biblioteca de dispositivos é uma reimplementação independente; nenhum arquivo do produto original é incluído.&lt;/p&gt;</translation>
     </message>
@@ -2064,170 +2069,170 @@ Saída do SPICE:
 <context>
     <name>cm::SchematicScene</name>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="294"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="295"/>
         <source>Click to place %1 · R rotate · M mirror · Shift keeps placing · Esc cancels</source>
         <translation>Clique para colocar %1 · R gira · M espelha · Shift continua colocando · Esc cancela</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="311"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="312"/>
         <source>Place %1</source>
         <translation>Colocar %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="376"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="377"/>
         <source>Bus entry</source>
         <translation>Entrada de barramento</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="382"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="383"/>
         <source>Add wire</source>
         <translation>Adicionar fio</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="382"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="383"/>
         <source>Add bus</source>
         <translation>Adicionar barramento</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="425"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="426"/>
         <source>Net name:</source>
         <translation>Nome da rede:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="434"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="435"/>
         <source>Net label</source>
         <translation>Rótulo de rede</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="443"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="444"/>
         <source>Add net label</source>
         <translation>Adicionar rótulo de rede</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="631"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="632"/>
         <source>Remove probe</source>
         <translation>Remover ponta de prova</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="639"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="640"/>
         <source>Place probes on a wire or a pin</source>
         <translation>Coloque pontas de prova num fio ou pino</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="643"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="644"/>
         <source>Add probe</source>
         <translation>Adicionar ponta de prova</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="779"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="780"/>
         <source>Move</source>
         <translation>Mover</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="859"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="860"/>
         <source>Rotate</source>
         <translation>Girar</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="859"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="860"/>
         <source>Mirror</source>
         <translation>Espelhar</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="484"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="870"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="485"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="871"/>
         <source>Delete</source>
         <translation>Excluir</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="472"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="473"/>
         <source>Snip wire</source>
         <translation>Cortar fio</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="503"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="504"/>
         <source>Nudge</source>
         <translation>Deslocar</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="521"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="522"/>
         <source>Set label positions</source>
         <translation>Posições padrão dos rótulos</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="555"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="556"/>
         <source>Straighten wires</source>
         <translation>Endireitar fios</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="584"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="585"/>
         <source>Set designations</source>
         <translation>Definir designações</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="600"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="601"/>
         <source>Set propagation delays</source>
         <translation>Definir atrasos de propagação</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="903"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="904"/>
         <source>Cut</source>
         <translation>Recortar</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="917"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="918"/>
         <source>Paste</source>
         <translation>Colar</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="981"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="982"/>
         <source>Merge</source>
         <translation>Mesclar</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1016"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1022"/>
         <source>Edit %1</source>
         <translation>Editar %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1020"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1028"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1026"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1034"/>
         <source>Edit text</source>
         <translation>Editar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1020"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1409"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1026"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1415"/>
         <source>Text:</source>
         <translation>Texto:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1044"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1050"/>
         <source>Edit PROM/RAM %1</source>
         <translation>Editar PROM/RAM %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1072"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1078"/>
         <source>Edit %1 contents</source>
         <translation>Editar conteúdo de %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1106"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1112"/>
         <source>Edit title block</source>
         <translation>Editar bloco de título</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1117"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1123"/>
         <source>Show title block</source>
         <translation>Mostrar bloco de título</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1117"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1123"/>
         <source>Hide title block</source>
         <translation>Ocultar bloco de título</translation>
     </message>
     <message numerus="yes">
-        <location filename="../src/ui/SchematicScene.cpp" line="1158"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1164"/>
         <source>Simulation: %n problem(s); first: %1</source>
         <translation>
             <numerusform>Simulação: %n problema; primeiro: %1</numerusform>
@@ -2235,40 +2240,298 @@ Saída do SPICE:
         </translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1225"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1231"/>
         <source>Switch positions</source>
         <translation>Posições das chaves</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1240"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1246"/>
         <source>Breakpoint at tick %1</source>
         <translation>Breakpoint no tick %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1273"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1279"/>
         <source>Set breakpoint</source>
         <translation>Definir breakpoint</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1342"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1348"/>
         <source>ASCII key</source>
         <translation>Tecla ASCII</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1342"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1348"/>
         <source>Character:</source>
         <translation>Caractere:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1409"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1413"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1415"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1419"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1627"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1633"/>
         <source>Reshape wire</source>
         <translation>Remodelar fio</translation>
+    </message>
+</context>
+<context>
+    <name>cm::SignalGenDialog</name>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="33"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="36"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="38"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="44"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="47"/>
+        <source>DC offset (VO):</source>
+        <translation>Offset DC (VO):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="33"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="36"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="38"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="44"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="47"/>
+        <source>Peak amplitude (VA):</source>
+        <translation>Amplitude de pico (VA):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="34"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="37"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="39"/>
+        <source>Frequency (Hz):</source>
+        <translation>Frequência (Hz):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="34"/>
+        <source>Start delay (s):</source>
+        <translation>Atraso inicial (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="35"/>
+        <source>Damping factor (1/s):</source>
+        <translation>Fator de amortecimento (1/s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="40"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="50"/>
+        <source>Initial amplitude (VI):</source>
+        <translation>Amplitude inicial (VI):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="40"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="50"/>
+        <source>Pulse amplitude (VP):</source>
+        <translation>Amplitude do pulso (VP):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="41"/>
+        <source>Period (s):</source>
+        <translation>Período (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="41"/>
+        <source>Pulse width (s):</source>
+        <translation>Largura do pulso (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="42"/>
+        <source>Rise time (s):</source>
+        <translation>Tempo de subida (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="42"/>
+        <source>Fall time (s):</source>
+        <translation>Tempo de descida (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="43"/>
+        <source>Delay to start (s):</source>
+        <translation>Atraso para iniciar (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="45"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="48"/>
+        <source>Carrier frequency (Hz):</source>
+        <translation>Frequência da portadora (Hz):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="45"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="48"/>
+        <source>Modulation index:</source>
+        <translation>Índice de modulação:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="46"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="49"/>
+        <source>Signal frequency (Hz):</source>
+        <translation>Frequência do sinal (Hz):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="51"/>
+        <source>Rise time delay (s):</source>
+        <translation>Atraso da subida (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="51"/>
+        <source>Rise time constant (s):</source>
+        <translation>Constante de tempo da subida (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="52"/>
+        <source>Fall time delay (s):</source>
+        <translation>Atraso da descida (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="52"/>
+        <source>Fall time constant (s):</source>
+        <translation>Constante de tempo da descida (s):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="96"/>
+        <source>%1 properties</source>
+        <translation>Propriedades de %1</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="103"/>
+        <source>&amp;Designator:</source>
+        <translation>&amp;Designador:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="105"/>
+        <source>&amp;Label:</source>
+        <translation>&amp;Rótulo:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <source>Sine wave</source>
+        <translation>Senoide</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <source>Square</source>
+        <translation>Quadrada</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <source>Triangle</source>
+        <translation>Triangular</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <source>Pulse/Sawtooth</source>
+        <translation>Pulso/dente de serra</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <source>AM signal</source>
+        <translation>Sinal AM</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
+        <source>FM signal</source>
+        <translation>Sinal FM</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
+        <source>Exponential</source>
+        <translation>Exponencial</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
+        <source>Piece-wise linear</source>
+        <translation>Linear por partes (PWL)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="110"/>
+        <source>&amp;Wave:</source>
+        <translation>&amp;Onda:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="112"/>
+        <source>Volts</source>
+        <translation>Volts</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="113"/>
+        <source>Amps</source>
+        <translation>Ampères</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="115"/>
+        <source>&amp;Source:</source>
+        <translation>&amp;Fonte:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="130"/>
+        <source>time value, one point per line (e.g. 0 0, 1m 5, 2m 0)</source>
+        <translation>tempo valor, um ponto por linha (ex.: 0 0, 1m 5, 2m 0)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="131"/>
+        <source>&amp;Points:</source>
+        <translation>&amp;Pontos:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="132"/>
+        <source>Load .PWL &amp;file...</source>
+        <translation>Carregar arquivo .&amp;PWL...</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="138"/>
+        <source>Wave parameters</source>
+        <translation>Parâmetros da onda</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="145"/>
+        <source>AC analysis</source>
+        <translation>Análise AC</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="147"/>
+        <source>Use as AC &amp;source</source>
+        <translation>Usar como &amp;fonte AC</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="152"/>
+        <source>Magnitude:</source>
+        <translation>Magnitude:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="153"/>
+        <source>Phase (degrees):</source>
+        <translation>Fase (graus):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="164"/>
+        <source>Piece-wise linear data</source>
+        <translation>Dados lineares por partes</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="165"/>
+        <source>PWL data (*.pwl *.PWL *.txt);;All files (*)</source>
+        <translation>Dados PWL (*.pwl *.PWL *.txt);;Todos os arquivos (*)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="169"/>
+        <source>Cannot open %1</source>
+        <translation>Não foi possível abrir %1</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="174"/>
+        <source>Scale PWL data</source>
+        <translation>Escalar dados PWL</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="175"/>
+        <source>Max. amplitude, offset, max. time (0 = keep the file&apos;s):</source>
+        <translation>Amplitude máx., offset, tempo máx. (0 = manter os do arquivo):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="182"/>
+        <source>No &quot;+ time value&quot; lines in %1</source>
+        <translation>Nenhuma linha "+ tempo valor" em %1</translation>
     </message>
 </context>
 <context>

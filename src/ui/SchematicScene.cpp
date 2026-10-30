@@ -11,6 +11,7 @@
 #include "ui/DataSequencerDialog.h"
 #include "ui/MemoryEditorDialog.h"
 #include "ui/PropertiesDialog.h"
+#include "ui/SignalGenDialog.h"
 #include "ui/SymbolPainter.h"
 #include "ui/TextNoteItem.h"
 #include "ui/TitleBlockItem.h"
@@ -999,6 +1000,11 @@ void SchematicScene::editItem(QGraphicsItem* item)
         Component after;
         if (c->symbol()->model.value(u"kind").toString() == u"dataseq") {
             DataSequencerDialog dlg(before, *c->symbol(), dialogParent());
+            if (dlg.exec() != QDialog::Accepted)
+                return;
+            after = dlg.result();
+        } else if (c->symbol()->model.value(u"kind").toString() == u"siggen") {
+            SignalGenDialog dlg(before, *c->symbol(), dialogParent());
             if (dlg.exec() != QDialog::Accepted)
                 return;
             after = dlg.result();

@@ -64,7 +64,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Modo misto (XSPICE) | 🟡 | portas e FFs; CIs MSI não |
 | Parameter Sweep, Fourier, Transfer Function, Noise, Temperature, Monte Carlo, Impedance | ❌ | |
 | Janela de análise: cursores, zoom, escala, matemática de ondas, store/recall | 🟡 | cursor de leitura e exportação CSV/PNG |
-| Gerador multifunção: AM, FM, exponencial, PWL | 🟡 | senoide, quadrada, triangular |
+| Gerador multifunção: senoide (atraso, amortecimento), pulso, AM, FM, exponencial, PWL | ✅ | tensão ou corrente; fonte AC com magnitude/fase; arquivo .PWL com escala |
 | Test points de corrente/potência | ❌ | só tensões e multímetro |
 | Importar/simular netlist SPICE | ❌ | exporta sim |
 

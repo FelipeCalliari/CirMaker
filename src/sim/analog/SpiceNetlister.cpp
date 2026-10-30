@@ -213,12 +213,22 @@ private:
         return parseNumber(p.value(QLatin1String(key)).toString()).value_or(fallback);
     }
 
+    // CircuitMaker's multifunction generator: sine (delay, damping), square,
+    // triangle, pulse, AM, FM, exponential and piecewise linear; a voltage or
+    // a current source, used in AC analysis with its magnitude and phase.
     void emitGenerator(const Component& c, const SymbolDef& s, const QString& name)
     {
         const QVariantMap p = props(c, s);
+        auto num = [&](const char* key, double fallback) { return formatNumber(number(p, key, fallback)); };
         const double amp = number(p, "amplitude", 1), freq = std::max(number(p, "frequency", 1e3), 1e-6);
         const double off = number(p, "offset", 0), period = 1 / freq;
         const QString wave = p.value(QStringLiteral("wave")).toString().toLower();
+        const bool current = p.value(QStringLiteral("current")).toBool();
+        const QString kind = current ? QStringLiteral("I") : QStringLiteral("V");
+        const QString ac = p.value(QStringLiteral("ac"), true).toBool()
+                               ? QStringLiteral(" AC %1 %2").arg(num("acMag", 1), num("acPhase", 0))
+                               : QString();
+        const QString plus = node(c, s, QStringLiteral("+")), minus = node(c, s, QStringLiteral("-"));
         QString shape;
         if (wave.startsWith(u"sq")) {
             const double tr = period / 1000;
@@ -229,12 +239,47 @@ private:
             shape = QStringLiteral("PULSE(%1 %2 0 %3 %3 %4 %5)")
                         .arg(formatNumber(off - amp), formatNumber(off + amp), formatNumber(period / 2),
                              formatNumber(period * 1e-6), formatNumber(period));
+        } else if (wave == u"pulse") {
+            shape = QStringLiteral("PULSE(%1 %2 %3 %4 %5 %6 %7)")
+                        .arg(num("v1", 0), num("v2", 5), num("delay", 0), num("rise", 1e-9), num("fall", 1e-9),
+                             num("width", 0.5e-3), num("period", 1e-3));
+        } else if (wave == u"fm") {
+            shape = QStringLiteral("SFFM(%1 %2 %3 %4 %5)")
+                        .arg(formatNumber(off), formatNumber(amp), num("carrier", 10e3), num("mdi", 1), num("signal", 1e3));
+        } else if (wave == u"exp") {
+            shape = QStringLiteral("EXP(%1 %2 %3 %4 %5 %6)")
+                        .arg(num("v1", 0), num("v2", 5), num("rd", 0), num("rt", 1e-3), num("fd", 5e-3), num("ft", 1e-3));
+        } else if (wave == u"pwl") {
+            QStringList pts;
+            for (const QString& t : p.value(QStringLiteral("pwl")).toString().split(QRegularExpression(QStringLiteral("[\\s,;]+")),
+                                                                                     Qt::SkipEmptyParts))
+                pts << formatNumber(parseNumber(t).value_or(0));
+            if (pts.size() % 2) pts.removeLast();
+            if (pts.isEmpty()) pts = {QStringLiteral("0"), QStringLiteral("0")};
+            shape = QStringLiteral("PWL(%1)").arg(pts.join(u' '));
+        } else if (wave == u"am") {
+            // VO + VA (1 + MDI sin(2 pi FS t)) sin(2 pi FC t): a behavioural source,
+            // in series with an independent one that carries the AC stimulus
+            const QString mid = QStringLiteral("am_%1").arg(name);
+            const QString expr = QStringLiteral("%1+%2*(1+%3*sin(2*pi*%4*time))*sin(2*pi*%5*time)")
+                                     .arg(formatNumber(off), formatNumber(amp), num("mdi", 0.5), num("signal", 1e3),
+                                          num("carrier", 10e3));
+            if (current) {
+                m_lines << QStringLiteral("B%1 %2 %3 I=%4").arg(name, plus, minus, expr);
+                if (!ac.isEmpty()) m_lines << QStringLiteral("I%1 %2 %3 DC 0%4").arg(name, plus, minus, ac);
+            } else {
+                m_lines << QStringLiteral("V%1 %2 %3 DC 0%4").arg(name, plus, mid, ac);
+                m_lines << QStringLiteral("B%1 %2 %3 V=%4").arg(name, mid, minus, expr);
+            }
+            m_deck.sourceOfDesignator.insert(c.designator, kind + name);
+            return;
         } else {
-            shape = QStringLiteral("SIN(%1 %2 %3)").arg(formatNumber(off), formatNumber(amp), formatNumber(freq));
+            shape = QStringLiteral("SIN(%1 %2 %3 %4 %5)")
+                        .arg(formatNumber(off), formatNumber(amp), formatNumber(freq), num("delay", 0), num("damping", 0));
         }
-        m_lines << QStringLiteral("V%1 %2 %3 DC %4 %5 AC 1")
-                       .arg(name, node(c, s, QStringLiteral("+")), node(c, s, QStringLiteral("-")), formatNumber(off), shape);
-        m_deck.sourceOfDesignator.insert(c.designator, u'V' + name);
+        // as the I Source: current leaves through the - terminal
+        m_lines << QStringLiteral("%1%2 %3 %4 DC %5 %6%7").arg(kind, name, plus, minus, formatNumber(off), shape, ac);
+        m_deck.sourceOfDesignator.insert(c.designator, kind + name);
     }
 
     void emitPot(const Component& c, const SymbolDef& s, const QString& name)

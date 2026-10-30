@@ -61,6 +61,7 @@ add_library(cmui STATIC
     src/ui/DataSequencerDialog.h src/ui/DataSequencerDialog.cpp
     src/ui/MemoryEditorDialog.h src/ui/MemoryEditorDialog.cpp
     src/ui/FaultDialogs.h src/ui/FaultDialogs.cpp
+    src/ui/SignalGenDialog.h src/ui/SignalGenDialog.cpp
     src/ui/PreferencesDialog.h src/ui/PreferencesDialog.cpp
     src/ui/WaveformView.h src/ui/WaveformView.cpp
     src/ui/AnalysisDialog.h src/ui/AnalysisDialog.cpp

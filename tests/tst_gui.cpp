@@ -8,6 +8,7 @@
 #include "ui/PropertiesDialog.h"
 #include "ui/DataSequencerDialog.h"
 #include "ui/MemoryEditorDialog.h"
+#include "ui/SignalGenDialog.h"
 
 #include <QComboBox>
 #include "ui/SchematicScene.h"
@@ -49,6 +50,7 @@ private slots:
     void faultLockRestrictsScene();
     void simulationAppliesFaults();
     void labelPositionsAndBorder();
+    void signalGenDialog();
     void screenshot();
 };
 
@@ -521,6 +523,24 @@ void TestGui::labelPositionsAndBorder()
     QCOMPARE(std::fmod(border.width(), SchematicScene::kZone), 0.0);
     QVERIFY(border.width() >= 2 * SchematicScene::kZone);
     QVERIFY(scene.contentsRect().contains(border));            // exported with the drawing
+}
+
+void TestGui::signalGenDialog()
+{
+    const QString file = QStringLiteral("* noise\n+ 0 1 1m 3 dV\n+ 2m 2\nignored 9 9\n");
+    QCOMPARE(SignalGenDialog::parsePwlFile(file), QStringLiteral("0 1\n0.001 3\n0.002 2"));
+    // 4 V peak to peak around 1 V, stretched to 10 ms
+    QCOMPARE(SignalGenDialog::parsePwlFile(file, 4, 1, 10e-3), QStringLiteral("0 -1\n0.005 3\n0.01 1"));
+
+    Component c;
+    c.symbolId = QStringLiteral("siggen");
+    c.props = {{QStringLiteral("wave"), QStringLiteral("fm")}, {QStringLiteral("carrier"), QStringLiteral("20k")}};
+    SignalGenDialog dlg(c, *library().find(c.symbolId));
+    const Component r = dlg.result();
+    QCOMPARE(r.props.value(QStringLiteral("wave")).toString(), QStringLiteral("fm"));
+    QCOMPARE(r.props.value(QStringLiteral("carrier")).toString(), QStringLiteral("20k"));
+    QCOMPARE(r.props.value(QStringLiteral("mdi")).toString(), QStringLiteral("1"));
+    QVERIFY(!r.props.contains(QStringLiteral("current")));
 }
 
 QTEST_MAIN(TestGui)
