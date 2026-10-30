@@ -62,7 +62,8 @@ private:
     QImage renderImage() const;
     void exportBom();
     void exportCkt();
-    void writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text);
+    // the path written, empty if cancelled or failed
+    QString writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text);
     void findAndSelect();
     void print();
     void about();

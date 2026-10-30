@@ -467,7 +467,8 @@ void MainWindow::createActions()
     connect(m_exportPcb, &QAction::triggered, this, [this] {
         m_scene->refreshNetlist();
         // CircuitMaker's formats; the choice is remembered
-        const QStringList formats{tr("Protel"), tr("Tango"), tr("PADS"), tr("OrCAD PCB II")};
+        const QStringList formats{tr("Protel"), tr("Tango"), tr("PADS"), tr("OrCAD PCB II"), tr("CadNetix"), tr("Calay"),
+                                  tr("Calay 90")};
         QSettings settings;
         bool ok = false;
         const QString chosen = QInputDialog::getItem(this, tr("Export PCB netlist"), tr("Format:"), formats,
@@ -475,10 +476,16 @@ void MainWindow::createActions()
         if (!ok) return;
         const int format = int(formats.indexOf(chosen));
         settings.setValue(QStringLiteral("export/pcbFormat"), format);
-        writeTextFile(tr("Export PCB netlist"), format == 2 ? QStringLiteral("asc") : QStringLiteral("net"),
-                      tr("PCB netlist (*.net *.asc);;All files (*)"),
-                      PcbNetlist::write(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist(),
-                                        PcbNetlist::Format(format)));
+        const PcbNetlist::Format f = PcbNetlist::Format(format);
+        const QString path = writeTextFile(tr("Export PCB netlist"), format == 2 ? QStringLiteral("asc") : QStringLiteral("net"),
+                                           tr("PCB netlist (*.net *.asc);;All files (*)"),
+                                           PcbNetlist::write(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist(), f));
+        // Calay keeps the parts in a .cmp file beside the netlist
+        if (!path.isEmpty() && (f == PcbNetlist::Format::Calay || f == PcbNetlist::Format::Calay90)) {
+            QFile cmp(QFileInfo(path).path() + u'/' + QFileInfo(path).completeBaseName() + QStringLiteral(".cmp"));
+            if (cmp.open(QIODevice::WriteOnly | QIODevice::Text))
+                cmp.write(PcbNetlist::calayComponents(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist()).toUtf8());
+        }
     });
     m_exportSubckt = new QAction(tr("SPICE &Subcircuit..."), this);
     m_exportSubckt->setStatusTip(tr("The circuit as a .subckt whose pins are its Input/Output ports"));
@@ -1402,18 +1409,19 @@ void MainWindow::exportImage()
         statusBar()->showMessage(tr("Exported %1").arg(path), 4000);
 }
 
-void MainWindow::writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text)
+QString MainWindow::writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text)
 {
     const QString base = m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName();
     const QString path = QFileDialog::getSaveFileName(this, title, base + u'.' + suffix, filter);
     if (path.isEmpty())
-        return;
+        return {};
     QSaveFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text) || (f.write(text.toUtf8()), !f.commit())) {
         QMessageBox::critical(this, title, tr("Cannot write %1:\n%2").arg(path, f.errorString()));
-        return;
+        return {};
     }
     statusBar()->showMessage(tr("Written %1").arg(path), 5000);
+    return path;
 }
 
 // CircuitMaker draws devices from its own library, so writing its format

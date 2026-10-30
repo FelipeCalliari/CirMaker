@@ -42,6 +42,18 @@ void TestDocument::pcbFormats()
     QVERIFY(pads.endsWith(QStringLiteral("*END*\n")));
     const QString orcad = PcbNetlist::write(c, library(), nl, F::OrcadPcb2);
     QVERIFY2(orcad.contains(QStringLiteral(" ( 00000002 7408 U1 7408\n  ( 3 OUT )\n )")), qPrintable(orcad));
+    // column layouts as CircuitMaker writes them
+    const QString cadnetix = PcbNetlist::write(c, library(), nl, F::CadNetix);
+    QVERIFY2(cadnetix.startsWith(QStringLiteral("CadNetix Netlist\n")), qPrintable(cadnetix));
+    QVERIFY2(cadnetix.contains(QStringLiteral("1k                 resistor           R1\n")), qPrintable(cadnetix));
+    QVERIFY2(cadnetix.contains(QStringLiteral("NODENAME OUT                $\n    R1          1  U1          3\n")), qPrintable(cadnetix));
+    QVERIFY(cadnetix.endsWith(QStringLiteral("EOS\n")));
+    const QString calay = PcbNetlist::write(c, library(), nl, F::Calay);
+    QVERIFY2(calay.contains(QStringLiteral("/OUT       R1(1) U1(3);\n")), qPrintable(calay));
+    const QString calay90 = PcbNetlist::write(c, library(), nl, F::Calay90);
+    QVERIFY2(calay90.contains(QStringLiteral("OUT       R1('1) U1('3);\n")), qPrintable(calay90));
+    const QString cmp = PcbNetlist::calayComponents(c, library(), nl);
+    QVERIFY2(cmp.contains(QStringLiteral("1k                  R1                  resistor            000     000     0\n")), qPrintable(cmp));
 }
 
 void TestDocument::exclusionsAndFootprint()
