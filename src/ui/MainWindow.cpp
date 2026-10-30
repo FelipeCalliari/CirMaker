@@ -6,6 +6,7 @@
 #include "core/Faults.h"
 #include "core/UndoCommands.h"
 #include "core/io/CktImporter.h"
+#include "core/io/SpiceImporter.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "library/Macros.h"
@@ -950,7 +951,8 @@ void MainWindow::open()
     QSettings settings;
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Open circuit"), settings.value(QStringLiteral("dirs/open")).toString(),
-        tr("Circuits (*.cmq *.ckt *.CKT);;CirMaker Qt (*.cmq);;CircuitMaker 2000 (*.ckt *.CKT);;All files (*)"));
+        tr("Circuits (*.cmq *.ckt *.CKT *.cir *.sp *.spi);;CirMaker Qt (*.cmq);;CircuitMaker 2000 (*.ckt *.CKT);;"
+           "SPICE netlist (*.cir *.sp *.spi *.net);;All files (*)"));
     if (!path.isEmpty())
         openFile(path);
 }
@@ -1003,6 +1005,31 @@ bool MainWindow::openFile(const QString& path, bool interactive)
             if (!lines.isEmpty())
                 box.setInformativeText(tr("Devices without an equivalent in the library were replaced by placeholders:"));
             box.setDetailedText((lines + report.warnings).join(u'\n'));
+            box.exec();
+        }
+        statusBar()->showMessage(tr("Imported %1").arg(path), 5000);
+    } else if (!data.trimmed().startsWith('{')) {
+        // anything that is not a .cmq document is read as a SPICE netlist
+        Circuit imported;
+        SpiceImportReport report;
+        if (!SpiceImporter::importText(QString::fromLocal8Bit(data), imported, LibraryRegistry::instance(), &report, &error))
+            return fail(tr("Import"), tr("Cannot import %1:\n%2").arg(QFileInfo(path).fileName(), error));
+        m_circuit->clear();
+        m_macroName.clear();
+        m_macroLock.clear();
+        NativeFormat::deserialize(NativeFormat::serialize(imported), *m_circuit, nullptr);
+        m_undo->clear();
+        m_undo->resetClean();
+        m_path.clear();
+        updateTitle();
+        addRecent(path);
+        setWindowModified(true);
+        if (interactive && !report.skipped.isEmpty()) {
+            QMessageBox box(QMessageBox::Information, tr("Import report"),
+                            tr("Imported %1: %2 parts.").arg(QFileInfo(path).fileName()).arg(report.components),
+                            QMessageBox::Ok, this);
+            box.setInformativeText(tr("Lines without an equivalent here were left out:"));
+            box.setDetailedText(report.skipped.join(u'\n'));
             box.exec();
         }
         statusBar()->showMessage(tr("Imported %1").arg(path), 5000);
@@ -1453,7 +1480,7 @@ void MainWindow::merge()
     QSettings settings;
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Merge circuit"), settings.value(QStringLiteral("dirs/open")).toString(),
-        tr("Circuits (*.cmq *.ckt *.CKT);;All files (*)"));
+        tr("Circuits (*.cmq *.ckt *.CKT *.cir *.sp *.spi);;All files (*)"));
     if (path.isEmpty())
         return;
     QFile f(path);
@@ -1466,7 +1493,9 @@ void MainWindow::merge()
     QString error;
     const bool ok = data.startsWith("CircuitMaker")
                         ? CktImporter::importData(data, other, LibraryRegistry::instance(), nullptr, &error)
-                        : NativeFormat::deserialize(data, other, &error);
+                        : !data.trimmed().startsWith('{')
+                              ? SpiceImporter::importText(QString::fromLocal8Bit(data), other, LibraryRegistry::instance(), nullptr, &error)
+                              : NativeFormat::deserialize(data, other, &error);
     if (!ok) {
         QMessageBox::critical(this, tr("Merge"), tr("Cannot open %1:\n%2").arg(QFileInfo(path).fileName(), error));
         return;

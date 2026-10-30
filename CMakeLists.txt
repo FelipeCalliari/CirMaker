@@ -20,6 +20,7 @@ add_library(cmcore STATIC
     src/core/UndoCommands.h src/core/UndoCommands.cpp
     src/core/io/NativeFormat.h src/core/io/NativeFormat.cpp
     src/core/io/CktImporter.h src/core/io/CktImporter.cpp
+    src/core/io/SpiceImporter.h src/core/io/SpiceImporter.cpp
     src/library/SymbolDef.h
     src/library/LibraryRegistry.h src/library/LibraryRegistry.cpp
     src/library/Macros.h src/library/Macros.cpp

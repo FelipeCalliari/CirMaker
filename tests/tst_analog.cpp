@@ -2,6 +2,7 @@
 
 #include "sim/analog/NgspiceEngine.h"
 #include "sim/analog/SpiceNetlister.h"
+#include "core/io/SpiceImporter.h"
 #include "core/io/CktImporter.h"
 
 #include <QDirIterator>
@@ -40,6 +41,7 @@ private slots:
     void crystalResonance();
     void miscPartsSimulate_data();
     void miscPartsSimulate();
+    void importsSpiceNetlist();
     void importedExamplesSimulate();
 
 private:
@@ -882,6 +884,42 @@ void TestAnalog::miscPartsSimulate()
     spice::Deck deck;
     const spice::Result r = simulate(c, &deck);
     QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+}
+
+void TestAnalog::importsSpiceNetlist()
+{
+    const QString netlist = QStringLiteral(
+        "divider and a transistor\n"
+        "* comment\n"
+        "V1 in 0 DC 10\n"
+        "R1 in out 1k ; inline comment\n"
+        "R2 out 0\n+ 1k\n"
+        "Q1 col out 0 QP\n"
+        "Rc in col 4.7k\n"
+        "V2 sig 0 SIN(0 1 1k)\n"
+        "Rs sig 0 1k\n"
+        "X1 a b SOMESUB\n"
+        ".model QP PNP(Bf=100)\n"
+        ".op\n"
+        ".end\n");
+    Circuit c;
+    SpiceImportReport rep;
+    QString error;
+    QVERIFY2(SpiceImporter::importText(netlist, c, library(), &rep, &error), qPrintable(error));
+    QCOMPARE(rep.components, 7);
+    QCOMPARE(rep.skipped.size(), 1);                                    // the X line
+    QStringList symbols;
+    for (const Component& comp : c.components())
+        if (comp.symbolId != u"terminal" && comp.symbolId != u"ground") symbols << comp.designator + u'=' + comp.symbolId;
+    symbols.sort();
+    QCOMPARE(symbols, (QStringList{"Q1=pnp", "R1=resistor", "R2=resistor", "RC=resistor", "RS=resistor", "V1=vsource",
+                                   "V2=siggen"}));
+    QCOMPARE(c.analysis().type, AnalysisSettings::Type::OperatingPoint);
+    requireEngine();
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    QVERIFY2(qAbs(r.last(QStringLiteral("out")).value_or(0) - 5) < 0.2, qPrintable(deck.text));   // the PNP barely loads it
 }
 
 void TestAnalog::importedExamplesSimulate()

@@ -69,7 +69,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Janela de análise: cursores, zoom, escala, matemática de ondas, store/recall | ✅ | roda = zoom X, Ctrl+roda = zoom Y, duplo clique enquadra; clique/Shift+clique = cursores A/B com ΔX, 1/ΔX, ΔY; X log; curvas T1-T2, abs, dB; referência tracejada |
 | Gerador multifunção: senoide (atraso, amortecimento), pulso, AM, FM, exponencial, PWL | ✅ | tensão ou corrente; fonte AC com magnitude/fase; arquivo .PWL com escala |
 | Test points de corrente/potência | ✅ | Probe sobre a peça: I → P → Z → nenhum |
-| Importar/simular netlist SPICE | ❌ | exporta sim |
+| Importar/simular netlist SPICE | ✅ | R, C, L, D, Q, M, J, V/I (DC, SIN, PULSE) e .op/.tran/.ac/.dc; peças em grade ligadas por terminais com o nome do nó; subcircuitos e fontes controladas ficam de fora |
 
 ## Arquivos e exportação
 
