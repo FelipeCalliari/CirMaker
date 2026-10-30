@@ -386,6 +386,15 @@ void MainWindow::createActions()
     m_refresh = new QAction(tr("&Refresh Screen"), this);
     m_refresh->setShortcuts({QKeySequence(Qt::Key_F7), QKeySequence(Qt::Key_End)});
     connect(m_refresh, &QAction::triggered, this, [this] { m_scene->update(); m_view->viewport()->update(); });
+    m_autoRoute = new QAction(tr("&Auto Wire Routing"), this);
+    m_autoRoute->setCheckable(true);
+    m_autoRoute->setStatusTip(tr("A wire from a pin to another pin or wire goes around the devices"));
+    m_autoRoute->setChecked(QSettings().value(QStringLiteral("prefs/autoRoute"), true).toBool());
+    m_scene->setAutoRoute(m_autoRoute->isChecked());
+    connect(m_autoRoute, &QAction::toggled, this, [this](bool on) {
+        m_scene->setAutoRoute(on);
+        QSettings().setValue(QStringLiteral("prefs/autoRoute"), on);
+    });
     m_groupItems = new QAction(tr("&Group Items"), this);
     m_groupItems->setStatusTip(tr("Puts the selected gates in the same package (U1A, U1B...)"));
     connect(m_groupItems, &QAction::triggered, this, [this] {
@@ -624,6 +633,7 @@ void MainWindow::createMenus()
     tools->addSeparator();
     tools->addActions({m_showNodeNames, m_showPinDots});
     tools->addSeparator();
+    tools->addAction(m_autoRoute);
     tools->addAction(m_circuitFaults);
     tools->addAction(m_prefs);
 

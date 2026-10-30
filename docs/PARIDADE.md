@@ -23,7 +23,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Menu do botão direito (Device Properties, Edit PROM/RAM, Edit Data Sequencer, Edit Pulser, Edit Terminal Name, recortar/copiar/girar...) | ✅ | |
 | Folha que cresce com o circuito (rolar/zoom até qualquer peça) | ✅ | |
 | Borda com zonas (Borders) | ✅ | Exibir > Borda; vai junto na impressão e na exportação |
-| Auto Wire Routing / Quick Connect / Single Click Connect | 🟡 | arrastar a partir do pino; sem roteamento automático |
+| Auto Wire Routing / Quick Connect / Single Click Connect | ✅ | pino → pino/fio contorna os dispositivos sem tocar outros pinos nem correr sobre fios (Opções > Roteamento automático); arrastar a partir do pino |
 | Set Label Positions | ✅ | |
 | Group Items (portas no mesmo encapsulamento) | ✅ | U1A, U1B...; ao colocar, a porta entra no primeiro encapsulamento com vaga; pinos por parte no netlist de PCB e no BOM; importado do `.ckt` |
 | Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |

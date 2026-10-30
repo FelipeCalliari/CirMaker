@@ -61,6 +61,7 @@ private slots:
     void analysisWindowTools();
     void propertiesVisibility();
     void stepSize();
+    void wireAutoRoutes();
     void screenshot();
 };
 
@@ -676,6 +677,29 @@ void TestGui::stepSize()
     scene.stepSimulation();
     QCOMPARE(scene.simTime(), quint64(20));
     scene.stopSimulation();
+}
+
+void TestGui::wireAutoRoutes()
+{
+    ViewFixture f;
+    const ItemId a = place(f.circuit, QStringLiteral("and2"), {-200, 0}, QStringLiteral("U1"));
+    const ItemId b = place(f.circuit, QStringLiteral("and2"), {200, 0}, QStringLiteral("U2"));
+    const ItemId mid = place(f.circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U3"));   // in the way
+    const QPointF from = pinPos(f.circuit, a, QStringLiteral("Y")), to = pinPos(f.circuit, b, QStringLiteral("B"));
+    f.scene.setTool(SchematicScene::Tool::Wire);
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at(from));
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at(to));
+    QCOMPARE(f.circuit.wires().size(), 1);
+    const Wire w = f.circuit.wires().first();
+    QCOMPARE(w.points.first(), from);
+    QCOMPARE(w.points.last(), to);
+    f.scene.refreshNetlist();
+    const Netlist& nl = f.scene.netlist();
+    const SymbolDef& g = *library().find(QStringLiteral("and2"));
+    const int net = nl.netOf(a, g.pinIndex(QStringLiteral("Y")));
+    QCOMPARE(nl.netOf(b, g.pinIndex(QStringLiteral("B"))), net);
+    for (int i = 0; i < g.pins.size(); ++i)
+        QVERIFY2(nl.netOf(mid, i) != net, "touches the device in between");
 }
 
 QTEST_MAIN(TestGui)

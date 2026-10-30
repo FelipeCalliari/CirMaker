@@ -2,6 +2,7 @@
 
 #include "core/Faults.h"
 #include "core/WireGeometry.h"
+#include "core/WireRouter.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "library/Macros.h"
@@ -369,6 +370,26 @@ bool SchematicScene::isConnectionPoint(QPointF p) const
     return false;
 }
 
+// Auto routing from the wire's single start point to a connection point.
+QVector<QPointF> SchematicScene::autoRoute(QPointF from, QPointF to) const
+{
+    RouteObstacles o;
+    for (const ComponentItem* item : m_componentItems) {
+        if (item == m_ghost) continue;
+        const Component& c = item->component();
+        if (!item->symbol()->netLabel)
+            o.bodies << LibraryRegistry::placement(c).mapRect(item->symbol()->bounds);
+        for (int i = 0; i < item->symbol()->pins.size(); ++i) {
+            const QPointF pin = m_library.pinScenePos(c, i);
+            if (!near(pin, from) && !near(pin, to)) o.pins << pin;
+        }
+    }
+    for (const WireItem* w : m_wireItems)
+        for (int i = 0; i + 1 < w->wire().points.size(); ++i)
+            o.wires << QLineF(w->wire().points[i], w->wire().points[i + 1]);
+    return routeWire(from, to, o, kGrid);
+}
+
 void SchematicScene::wireClick(QPointF p)
 {
     if (m_wirePoints.isEmpty()) {
@@ -379,6 +400,15 @@ void SchematicScene::wireClick(QPointF p)
     const QPointF last = m_wirePoints.last();
     if (near(p, last))
         return;
+    // pin or wire to pin or wire in one go: route around the devices
+    if (m_wirePoints.size() == 1 && !m_drawingBus && m_autoRoute && isConnectionPoint(p)) {
+        if (const QVector<QPointF> route = autoRoute(last, p); route.size() >= 2) {
+            m_wirePoints = route;
+            finishWire();
+            update();
+            return;
+        }
+    }
     const QPointF corner(p.x(), last.y());
     if (!near(corner, last) && !near(corner, p))
         m_wirePoints << corner;
@@ -1893,7 +1923,10 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         QVector<QPointF> pts = m_wirePoints;
         const QPointF last = pts.last();
         const QPointF corner(m_cursor.x(), last.y());
-        pts << corner << m_cursor;
+        const QVector<QPointF> route = pts.size() == 1 && !m_drawingBus && m_autoRoute && isConnectionPoint(m_cursor)
+                                           ? autoRoute(last, m_cursor) : QVector<QPointF>();
+        if (route.size() >= 2) pts = route;
+        else pts << corner << m_cursor;
         QPen pen(QColor(0x00, 0x60, 0xff), m_drawingBus ? 4 : 1.4, Qt::DashLine);
         p->setPen(pen);
         p->setBrush(Qt::NoBrush);

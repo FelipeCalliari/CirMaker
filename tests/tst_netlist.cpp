@@ -1,11 +1,14 @@
 #include "TestUtil.h"
 
+#include "core/WireRouter.h"
+
 using namespace cm;
 using namespace cm::test;
 
 class TestNetlist : public QObject {
     Q_OBJECT
 private slots:
+    void routesAroundDevices();
     void wireJoinsPins();
     void crossingWiresDoNotConnect();
     void teeJunctionConnects();
@@ -93,6 +96,31 @@ void TestNetlist::busEntriesJoinByName()
     const Netlist nl = NetlistBuilder::build(c, library());
     QCOMPARE(nl.wireNet[w1], nl.wireNet[w2]);
     QVERIFY(nl.wireNet[w1] != nl.wireNet[w3]);
+}
+
+void TestNetlist::routesAroundDevices()
+{
+    RouteObstacles o;
+    o.bodies << QRectF(40, -40, 80, 80);                  // a device between the ends
+    o.wires << QLineF(QPointF(0, -100), QPointF(0, 100)); // a vertical wire through the start's column
+    o.pins << QPointF(160, 0) + QPointF(0, 10);
+    const QVector<QPointF> r = routeWire({0, 0}, {200, 0}, o, 10);
+    QVERIFY(r.size() >= 4);
+    QCOMPARE(r.first(), QPointF(0, 0));
+    QCOMPARE(r.last(), QPointF(200, 0));
+    for (int i = 0; i + 1 < r.size(); ++i) {
+        const QLineF seg(r[i], r[i + 1]);
+        QVERIFY(qFuzzyCompare(seg.x1(), seg.x2()) || qFuzzyCompare(seg.y1(), seg.y2()));     // orthogonal
+        for (double t = 0; t <= 1; t += 0.05) {
+            const QPointF p = seg.pointAt(t);
+            QVERIFY2(!o.bodies[0].adjusted(1, 1, -1, -1).contains(p), "enters the device");
+            QVERIFY(p != o.pins[0]);
+        }
+        if (i > 0) QVERIFY2(!qFuzzyIsNull(r[i].x()), "bends on the wire");
+        QVERIFY2(!(qFuzzyIsNull(seg.x1()) && qFuzzyIsNull(seg.x2())), "runs along the wire");
+    }
+    // nothing in the way: one straight segment
+    QCOMPARE(routeWire({0, 0}, {0, 300}, {}, 10), (QVector<QPointF>{{0, 0}, {0, 300}}));
 }
 
 QTEST_GUILESS_MAIN(TestNetlist)

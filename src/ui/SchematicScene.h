@@ -71,6 +71,8 @@ public:
     int probedNet() const { return m_probeNet; }
     void setShowNodeNames(bool on) { m_showNodeNames = on && !restricted(QStringLiteral("nodeNames")); update(); }
     void setShowPinDots(bool on) { m_showPinDots = on; update(); }
+    // Wires from a pin or wire to another one route around devices.
+    void setAutoRoute(bool on) { m_autoRoute = on; }
     // CircuitMaker "Trace": colour wires by logic level while simulating
     void setTrace(bool on) { m_trace = on && !restricted(QStringLiteral("trace")); update(); }
     // Fault lock: CircuitMaker's disabled circuit options ("edit", "delete",
@@ -204,6 +206,7 @@ private:
     void toggleProbe(QPointF p);
     int netAt(QPointF p) const;
     void cancelWire();
+    QVector<QPointF> autoRoute(QPointF from, QPointF to) const;
     bool isConnectionPoint(QPointF p) const;
     bool pinAt(QPointF p, QPointF* pinPos) const;
 
@@ -284,6 +287,7 @@ private:
     bool m_trace = true;
     bool m_showNodeNames = false;
     bool m_showPinDots = true;
+    bool m_autoRoute = true;
     int m_highlightNet = -1;
     bool m_exporting = false;
     bool m_suppressMenu = false;

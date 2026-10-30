@@ -14,6 +14,7 @@ add_library(cmcore STATIC
     src/core/NetlistBuilder.h src/core/NetlistBuilder.cpp
     src/core/Faults.h src/core/Faults.cpp
     src/core/WireGeometry.h src/core/WireGeometry.cpp
+    src/core/WireRouter.h src/core/WireRouter.cpp
     src/core/Bom.h src/core/Bom.cpp
     src/core/PcbNetlist.h src/core/PcbNetlist.cpp
     src/core/UndoCommands.h src/core/UndoCommands.cpp
