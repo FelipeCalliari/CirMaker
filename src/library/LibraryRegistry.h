@@ -16,7 +16,8 @@ struct Component;
 // each entry either lists its graphics and pins or names a generator shape
 // ("gate", "box") that produces them.
 // Gates in a shared package: the part (1-based) a component is, the package
-// pin number of one of its pins, and its designator as shown ("U1A").
+// pin number of one of its pins (the "pins" property overrides it), and its
+// designator as shown ("U1A").
 int packagePart(const SymbolDef& s, const Component& c);
 QString packagePin(const SymbolDef& s, const Component& c, int pin);
 QString shownDesignator(const SymbolDef& s, const Component& c);

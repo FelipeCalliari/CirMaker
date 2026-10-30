@@ -56,12 +56,22 @@ void TestDocument::exclusionsAndFootprint()
     Component b = *c.component(r2);
     b.props.insert(QStringLiteral("excludePcb"), true);
     c.updateComponent(b);
-    const QString net = PcbNetlist::write(c, library(), NetlistBuilder::build(c, library()));
-    QVERIFY2(net.contains(QStringLiteral("[\nR1\nAXIAL0.4\n")), qPrintable(net));
-    QVERIFY(!net.contains(QStringLiteral("R2")));
     const QVector<BomLine> bom = Bom::build(c, library());
     QCOMPARE(bom.size(), 1);
     QCOMPARE(bom.first().designators, QStringList{QStringLiteral("R2")});
+    const QString net = PcbNetlist::write(c, library(), NetlistBuilder::build(c, library()));
+    QVERIFY2(net.contains(QStringLiteral("[\nR1\nAXIAL0.4\n")), qPrintable(net));
+    QVERIFY(!net.contains(QStringLiteral("R2")));
+    // own pin numbers
+    Component a2 = *c.component(r1);
+    a2.props.insert(QStringLiteral("pins"), QStringLiteral("1=7,2=9"));
+    a2.props.remove(QStringLiteral("excludeBom"));
+    c.updateComponent(a2);
+    const ItemId r3 = place(c, QStringLiteral("resistor"), {800, 0}, QStringLiteral("R3"), QStringLiteral("1k"));
+    label(c, r1, QStringLiteral("2"), QStringLiteral("N"));
+    label(c, r3, QStringLiteral("1"), QStringLiteral("N"));
+    const QString net2 = PcbNetlist::write(c, library(), NetlistBuilder::build(c, library()));
+    QVERIFY2(net2.contains(QStringLiteral("(\nN\nR1-9\nR3-1\n)")), qPrintable(net2));
 }
 
 void TestDocument::packagedGates()

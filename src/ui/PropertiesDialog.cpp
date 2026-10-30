@@ -1,11 +1,16 @@
 #include "ui/PropertiesDialog.h"
 
 #include "core/Faults.h"
+#include "library/LibraryRegistry.h"
 #include "library/SymbolDef.h"
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QGroupBox>
+#include <QHeaderView>
+#include <QPushButton>
+#include <QTableWidget>
+#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDate>
 #include <QDialogButtonBox>
@@ -84,7 +89,8 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         }
         if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break"
             || it.key() == u"probe"
-            || it.key() == u"package" || it.key() == u"excludePcb" || it.key() == u"excludeBom")
+            || it.key() == u"package" || it.key() == u"excludePcb" || it.key() == u"excludeBom"
+            || it.key() == u"pins")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM
@@ -107,6 +113,11 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         m_package = new QLineEdit(c.props.value(QStringLiteral("package")).toString());
         m_package->setPlaceholderText(symbol.package.isEmpty() ? symbol.id : symbol.package);
         pf->addRow(tr("&Package (footprint):"), m_package);
+        m_pins = c.props.value(QStringLiteral("pins")).toString();
+        auto* pinsButton = new QPushButton(tr("P&in numbers..."));
+        pinsButton->setToolTip(tr("Package pin numbers used by the PCB netlist"));
+        connect(pinsButton, &QPushButton::clicked, this, [this, &symbol] { editPins(symbol); });
+        pf->addRow(pinsButton);
         m_excludePcb = new QCheckBox(tr("Exclude from the &PCB netlist"));
         m_excludePcb->setChecked(c.props.value(QStringLiteral("excludePcb")).toBool());
         m_excludeBom = new QCheckBox(tr("Exclude from the parts &list (BOM)"));
@@ -120,6 +131,40 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     form->addRow(buttons);
+}
+
+// CircuitMaker's Edit Pin Data: one package pin number per symbol pin
+void PropertiesDialog::editPins(const SymbolDef& symbol)
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Pin numbers"));
+    auto* layout = new QVBoxLayout(&dlg);
+    auto* table = new QTableWidget(int(symbol.pins.size()), 2);
+    table->setHorizontalHeaderLabels({tr("Pin"), tr("Package pin")});
+    table->horizontalHeader()->setStretchLastSection(true);
+    Component c = m_c;
+    c.props.insert(QStringLiteral("pins"), m_pins);
+    for (int i = 0; i < symbol.pins.size(); ++i) {
+        auto* name = new QTableWidgetItem(symbol.pins[i].name);
+        name->setFlags(Qt::ItemIsEnabled);
+        table->setItem(i, 0, name);
+        table->setItem(i, 1, new QTableWidgetItem(packagePin(symbol, c, i)));
+    }
+    layout->addWidget(table);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    layout->addWidget(buttons);
+    if (dlg.exec() != QDialog::Accepted) return;
+    // only the numbers that differ from the symbol's are kept
+    Component plain = m_c;
+    plain.props.remove(QStringLiteral("pins"));
+    QStringList pairs;
+    for (int i = 0; i < symbol.pins.size(); ++i) {
+        const QString n = table->item(i, 1)->text().trimmed();
+        if (!n.isEmpty() && n != packagePin(symbol, plain, i)) pairs << symbol.pins[i].name + u'=' + n;
+    }
+    m_pins = pairs.join(u',');
 }
 
 Component PropertiesDialog::result() const
@@ -145,6 +190,8 @@ Component PropertiesDialog::result() const
     };
     flag(m_excludePcb, QStringLiteral("excludePcb"));
     flag(m_excludeBom, QStringLiteral("excludeBom"));
+    if (m_pins.isEmpty()) c.props.remove(QStringLiteral("pins"));
+    else c.props.insert(QStringLiteral("pins"), m_pins);
     if (m_package) {
         if (m_package->text().trimmed().isEmpty()) c.props.remove(QStringLiteral("package"));
         else c.props.insert(QStringLiteral("package"), m_package->text().trimmed());

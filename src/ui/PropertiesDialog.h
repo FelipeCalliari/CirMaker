@@ -32,6 +32,8 @@ private:
     bool m_designatorDefault, m_labelDefault;   // the symbol's visibility
     QCheckBox *m_excludePcb = nullptr, *m_excludeBom = nullptr;
     QLineEdit* m_package = nullptr;
+    QString m_pins;                     // "pins" property, edited in its own table
+    void editPins(const SymbolDef& symbol);
 };
 
 // Title, author, date and revision of the drawing.

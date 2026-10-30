@@ -22,6 +22,14 @@ int packagePart(const SymbolDef& s, const Component& c)
 
 QString packagePin(const SymbolDef& s, const Component& c, int pin)
 {
+    // the component's own numbering ("A=3,B=4,Y=5"), as edited in its properties
+    if (pin >= 0 && pin < s.pins.size()) {
+        const QString own = c.props.value(QStringLiteral("pins")).toString();
+        for (const QString& pair : own.split(u',', Qt::SkipEmptyParts)) {
+            const int eq = pair.lastIndexOf(u'=');
+            if (eq > 0 && pair.left(eq).trimmed() == s.pins[pin].name) return pair.mid(eq + 1).trimmed();
+        }
+    }
     if (!s.parts.isEmpty())
         return s.parts[packagePart(s, c) - 1].value(pin);
     return pin >= 0 && pin < s.pins.size() ? s.pins[pin].number : QString();
