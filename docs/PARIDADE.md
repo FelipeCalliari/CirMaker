@@ -68,7 +68,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 
 | Recurso | Estado | Observação |
 | --- | --- | --- |
-| Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | CIs 74xx/40xx com a ordem e o desenho de pinos do CM; peças espelhadas; barramentos com nomes numéricos. Símbolos analógicos ainda têm tamanhos diferentes (fios de reparo) |
+| Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | CIs 74xx/40xx com a ordem e o desenho de pinos do CM; peças giradas/espelhadas; barramentos com nomes numéricos; fios afastados de pinos e de fios de outras redes. Em 167 circuitos de teste restam 7 redes unidas, quase todas por números de rede inconsistentes no próprio arquivo |
 | Salvar em `.ckt` | ❌ | salva em `.cmq` |
 | Exportar imagem (PNG/SVG/PDF), imprimir | ✅ | |
 | Lista de materiais | ✅ | CSV |
