@@ -32,6 +32,7 @@ struct Deck {
     // ngspice vector of the current through a component (into its first pin),
     // for current, power and impedance probes: "@r1[i]", "v1#branch"
     QHash<ItemId, QString> currentOf;
+    QStringList elements, models, subckts;  // the parts of the text, for subcircuits
 };
 
 // One simulation of a sweep (temperature, parameter, Monte Carlo).
@@ -55,6 +56,10 @@ inline constexpr double kTickSeconds = 1e-6;
 Deck build(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, const QString& extra = {});
 // The decks of the circuit's analysis, one per sweep point.
 QVector<Run> buildRuns(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, QString* error);
+// The circuit as ".subckt name <ports>": its Input/Output port symbols are
+// the external nodes, inputs first, then outputs, in reading order.
+QString subcircuit(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, const QString& name,
+                   QString* error);
 // Fourier analysis of the last period of a transient waveform.
 Fourier fourier(const QVector<double>& time, const QVector<double>& y, double f0, int harmonics);
 

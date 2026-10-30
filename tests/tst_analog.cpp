@@ -35,6 +35,7 @@ private slots:
     void scrLatches();
     void triacBothWays();
     void deviceProbeCurrents();
+    void exportsSubcircuit();
     void importedExamplesSimulate();
 
 private:
@@ -763,6 +764,35 @@ void TestAnalog::deviceProbeCurrents()
     QVERIFY2(res.ok, qPrintable(res.error));
     QVERIFY2(qAbs(std::abs(res.last(QStringLiteral("@rr1[i]")).value_or(0)) - 5e-3) < 1e-9, qPrintable(res.log));
     QVERIFY(qAbs(std::abs(res.last(QStringLiteral("vv1#branch")).value_or(0)) - 5e-3) < 1e-9);
+}
+
+void TestAnalog::exportsSubcircuit()
+{
+    Circuit c;
+    const ItemId a = part(c, QStringLiteral("resistor"), QStringLiteral("R1"), QStringLiteral("1k"));
+    const ItemId b = part(c, QStringLiteral("resistor"), QStringLiteral("R2"), QStringLiteral("3k"));
+    const ItemId in = part(c, QStringLiteral("port_in"), QStringLiteral("P1"), QStringLiteral("IN"));
+    const ItemId out = part(c, QStringLiteral("port_out"), QStringLiteral("P2"), QStringLiteral("OUT"));
+    label(c, a, QStringLiteral("1"), QStringLiteral("IN"));
+    label(c, a, QStringLiteral("2"), QStringLiteral("OUT"));
+    label(c, b, QStringLiteral("1"), QStringLiteral("OUT"));
+    label(c, b, QStringLiteral("2"), QStringLiteral("G"));
+    label(c, in, library().find(QStringLiteral("port_in"))->pins[0].name, QStringLiteral("IN"));
+    label(c, out, library().find(QStringLiteral("port_out"))->pins[0].name, QStringLiteral("OUT"));
+    ground(c, QStringLiteral("G"));
+    QString error;
+    const QString sub = spice::subcircuit(c, library(), NetlistBuilder::build(c, library()), QStringLiteral("Divider"), &error);
+    QVERIFY2(sub.contains(QStringLiteral(".subckt divider in out\n")), qPrintable(sub + error));
+    QVERIFY(sub.contains(QStringLiteral(".ends divider")));
+    requireEngine();
+    const spice::Result r = spice::NgspiceEngine::instance().run(
+        sub + QStringLiteral("V1 a 0 DC 4\nX1 a b Divider\n.op\n.end\n"));
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + sub));
+    QVERIFY(qAbs(r.last(QStringLiteral("b")).value_or(0) - 3) < 1e-6);
+
+    Circuit none;
+    part(none, QStringLiteral("resistor"), QStringLiteral("R1"));
+    QVERIFY(spice::subcircuit(none, library(), NetlistBuilder::build(none, library()), QStringLiteral("x"), &error).isEmpty());
 }
 
 void TestAnalog::importedExamplesSimulate()

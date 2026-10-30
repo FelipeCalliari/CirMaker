@@ -21,7 +21,28 @@ private slots:
     void analysisRoundTrip();
     void packagedGates();
     void exclusionsAndFootprint();
+    void pcbFormats();
 };
+
+void TestDocument::pcbFormats()
+{
+    Circuit c;
+    const ItemId u = place(c, QStringLiteral("7408"), {0, 0}, QStringLiteral("U1"), QStringLiteral("7408"));
+    const ItemId r = place(c, QStringLiteral("resistor"), {400, 0}, QStringLiteral("R1"), QStringLiteral("1k"));
+    label(c, u, QStringLiteral("Y"), QStringLiteral("OUT"));
+    label(c, r, QStringLiteral("1"), QStringLiteral("OUT"));
+    const Netlist nl = NetlistBuilder::build(c, library());
+    using F = PcbNetlist::Format;
+    const QString tango = PcbNetlist::write(c, library(), nl, F::Tango);
+    QVERIFY2(tango.contains(QStringLiteral("[\nR1\nresistor\n1k\n\n\n\n]")), qPrintable(tango));
+    const QString pads = PcbNetlist::write(c, library(), nl, F::Pads);
+    QVERIFY2(pads.startsWith(QStringLiteral("*PADS-PCB*\n*PART*\n")), qPrintable(pads));
+    QVERIFY(pads.contains(QStringLiteral("U1 7408\n")));
+    QVERIFY(pads.contains(QStringLiteral("*SIGNAL* OUT\nR1.1 U1.3\n")));
+    QVERIFY(pads.endsWith(QStringLiteral("*END*\n")));
+    const QString orcad = PcbNetlist::write(c, library(), nl, F::OrcadPcb2);
+    QVERIFY2(orcad.contains(QStringLiteral(" ( 00000002 7408 U1 7408\n  ( 3 OUT )\n )")), qPrintable(orcad));
+}
 
 void TestDocument::exclusionsAndFootprint()
 {

@@ -76,6 +76,9 @@ public:
             m_deck.ok = false;
             m_deck.warnings << QStringLiteral("the circuit has no analog parts");
         }
+        m_deck.elements = m_lines;
+        m_deck.models = m_models;
+        m_deck.subckts = m_subckts;
         QStringList text{QStringLiteral("* CirMaker Qt")};
         text << m_lines << m_models << m_subckts;
         m_deck.text = text.join(u'\n') + u'\n';
@@ -678,6 +681,44 @@ QVector<Run> buildRuns(const Circuit& circuit, const LibraryRegistry& library, c
     if (runs.isEmpty() && error->isEmpty())
         *error = QStringLiteral("the sweep has no points");
     return runs;
+}
+
+QString subcircuit(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, const QString& name,
+                   QString* error)
+{
+    QVector<const Component*> ports[2];
+    for (const Component& c : circuit.components()) {
+        if (c.symbolId == u"port_in") ports[0] << &c;
+        else if (c.symbolId == u"port_out") ports[1] << &c;
+    }
+    QStringList nodes;
+    for (auto& list : ports) {
+        std::sort(list.begin(), list.end(), [](const Component* a, const Component* b) {
+            return qFuzzyCompare(a->pos.y(), b->pos.y()) ? a->pos.x() < b->pos.x() : a->pos.y() < b->pos.y();
+        });
+    }
+    const Deck deck = Builder(circuit, library, netlist).run();
+    for (const auto& list : ports)
+        for (const Component* c : list) {
+            const QString node = deck.nodeOfNet.value(netlist.netOf(c->id, 0), QStringLiteral("0"));
+            if (node == u"0") {
+                *error = QStringLiteral("port %1 is on ground").arg(c->label);
+                return {};
+            }
+            if (!nodes.contains(node)) nodes << node;
+        }
+    if (nodes.isEmpty()) {
+        *error = QStringLiteral("place Input/Output ports to name the subcircuit's pins");
+        return {};
+    }
+    QStringList text{QStringLiteral("* %1: subcircuit exported by CirMaker Qt").arg(name)};
+    text << deck.subckts;
+    text << QStringLiteral(".subckt %1 %2").arg(sanitize(name), nodes.join(u' '));
+    for (const QString& l : deck.elements)
+        if (!l.startsWith(u'.')) text << l;         // .ic/.nodeset stay with the main circuit
+    text << deck.models;
+    text << QStringLiteral(".ends %1").arg(sanitize(name));
+    return text.join(u'\n') + u'\n';
 }
 
 Fourier fourier(const QVector<double>& time, const QVector<double>& y, double f0, int harmonics)

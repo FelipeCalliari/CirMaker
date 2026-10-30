@@ -78,8 +78,8 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Salvar em `.ckt` | ❌ | salva em `.cmq` |
 | Exportar imagem (PNG/SVG/PDF), imprimir | ✅ | |
 | Lista de materiais | ✅ | CSV |
-| Netlist SPICE / subcircuito SPICE | 🟡 | netlist sim, subcircuito não |
-| Netlist PCB | 🟡 | formato Protel; outros formatos do CM não |
+| Netlist SPICE / subcircuito SPICE | ✅ | subcircuito com as portas Input/Output como pinos |
+| Netlist PCB | ✅ | Protel, Tango, PADS e OrCAD PCB II (Calay não) |
 
 ## Simulação de falhas (modo professor)
 

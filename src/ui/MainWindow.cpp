@@ -453,8 +453,33 @@ void MainWindow::createActions()
     m_exportPcb = new QAction(tr("&PCB Netlist..."), this);
     connect(m_exportPcb, &QAction::triggered, this, [this] {
         m_scene->refreshNetlist();
-        writeTextFile(tr("Export PCB netlist"), QStringLiteral("net"), tr("Protel netlist (*.net)"),
-                      PcbNetlist::write(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist()));
+        // CircuitMaker's formats; the choice is remembered
+        const QStringList formats{tr("Protel"), tr("Tango"), tr("PADS"), tr("OrCAD PCB II")};
+        QSettings settings;
+        bool ok = false;
+        const QString chosen = QInputDialog::getItem(this, tr("Export PCB netlist"), tr("Format:"), formats,
+                                                     settings.value(QStringLiteral("export/pcbFormat"), 0).toInt(), false, &ok);
+        if (!ok) return;
+        const int format = int(formats.indexOf(chosen));
+        settings.setValue(QStringLiteral("export/pcbFormat"), format);
+        writeTextFile(tr("Export PCB netlist"), format == 2 ? QStringLiteral("asc") : QStringLiteral("net"),
+                      tr("PCB netlist (*.net *.asc);;All files (*)"),
+                      PcbNetlist::write(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist(),
+                                        PcbNetlist::Format(format)));
+    });
+    m_exportSubckt = new QAction(tr("SPICE &Subcircuit..."), this);
+    m_exportSubckt->setStatusTip(tr("The circuit as a .subckt whose pins are its Input/Output ports"));
+    connect(m_exportSubckt, &QAction::triggered, this, [this] {
+        m_scene->refreshNetlist();
+        const QString name = m_macroName.isEmpty() ? (m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName())
+                                                   : m_macroName;
+        QString error;
+        const QString text = spice::subcircuit(m_scene->simCircuit(), LibraryRegistry::instance(), m_scene->netlist(), name, &error);
+        if (text.isEmpty()) {
+            QMessageBox::warning(this, tr("Export SPICE subcircuit"), error);
+            return;
+        }
+        writeTextFile(tr("Export SPICE subcircuit"), QStringLiteral("sub"), tr("SPICE subcircuit (*.sub *.lib *.ckt)"), text);
     });
     m_home = new QAction(tr("Center on Cursor"), this);
     m_home->setShortcut(Qt::Key_Home);
@@ -567,7 +592,7 @@ void MainWindow::createMenus()
     file->addActions({m_save, m_saveAs});
     file->addSeparator();
     QMenu* exportMenu = file->addMenu(tr("E&xport"));
-    exportMenu->addActions({m_export, m_exportSpice, m_exportPcb});
+    exportMenu->addActions({m_export, m_exportSpice, m_exportSubckt, m_exportPcb});
     file->addActions({m_bom, m_print});
     file->addSeparator();
     file->addAction(m_quit);
