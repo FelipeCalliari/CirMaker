@@ -1,6 +1,8 @@
 #include "TestUtil.h"
 
+#include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
+#include "core/io/CmDeviceLib.h"
 
 #include <QDirIterator>
 
@@ -19,6 +21,7 @@ private slots:
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
+    void exportRoundTrip();
 
 private:
     static QStringList circuitFiles();
@@ -223,6 +226,87 @@ void TestCktImport::challengeCounterStops()
         QVERIFY2(values.contains(v), qPrintable(QString::number(v)));
     for (int v : std::as_const(values))
         QVERIFY2(v <= 0x2e, qPrintable(QString::number(v)));
+}
+
+namespace {
+
+// Which pins share a net, as sorted groups of "component#pin" keys; the
+// components are numbered in order, skipping those not exported and net
+// labels (on a re-import they stand for connections the redrawn symbols lost).
+QStringList partition(const Circuit& c, const QSet<ItemId>& skip)
+{
+    const Netlist n = NetlistBuilder::build(c, library());
+    QMap<int, QStringList> groups;
+    int index = 0;
+    for (const Component& comp : c.components()) {
+        if (skip.contains(comp.id)) continue;
+        const SymbolDef* s = library().find(comp.symbolId);
+        if (s && s->netLabel) continue;               // labels: the connections they make count
+        for (int p = 0; s && p < s->pins.size(); ++p)
+            groups[n.netOf(comp.id, p)] << QStringLiteral("%1#%2").arg(index).arg(s->pins[p].name);
+        ++index;
+    }
+    QStringList out;
+    for (QStringList g : std::as_const(groups)) {
+        if (g.size() < 2) continue;
+        g.sort();
+        out << g.join(u' ');
+    }
+    out.sort();
+    return out;
+}
+
+} // namespace
+
+// Import, write as .ckt with the installed Device.lib, read back: the same
+// parts with the same connections. CM_CKT_EXPORT_DIR keeps the written files
+// (to open them in CircuitMaker).
+void TestCktImport::exportRoundTrip()
+{
+    const QString libPath = CmDeviceLib::locate();
+    if (libPath.isEmpty())
+        QSKIP("CircuitMaker 2000 is not installed");
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(libPath));
+    QVERIFY2(cmLib.size() > 400, qPrintable(QString::number(cmLib.size())));
+    QCOMPARE(cmLib.find(QStringLiteral("2-In NAND~"))->pinCount, 3);
+    QCOMPARE(CktExporter::deviceFor(*library().find(QStringLiteral("7400")), cmLib)->name, QStringLiteral("2-In NAND~"));
+    QCOMPARE(CktExporter::deviceFor(*library().find(QStringLiteral("74161")), cmLib)->name, QStringLiteral("74LS161"));
+
+    const QString keep = qEnvironmentVariable("CM_CKT_EXPORT_DIR");
+    int files = 0, same = 0;
+    QStringList different;
+    for (const QString& path : circuitFiles()) {
+        Circuit a;
+        if (!CktImporter::import(path, a, library(), nullptr, nullptr)) continue;
+        CktExportReport rep;
+        const QByteArray data = CktExporter::write(a, library(), cmLib, &rep);
+        if (!keep.isEmpty()) {
+            QFile out(QDir(keep).filePath(QFileInfo(path).fileName()));
+            QVERIFY(out.open(QIODevice::WriteOnly));
+            out.write(data);
+        }
+        Circuit b;
+        CktImportReport back;
+        QString error;
+        QVERIFY2(CktImporter::importData(data, b, library(), &back, &error), qPrintable(path + u": " + error));
+        QSet<ItemId> skipped;
+        for (const Component& comp : a.components())
+            if (!CktExporter::deviceFor(*library().find(comp.symbolId), cmLib)) skipped << comp.id;
+        QVERIFY2(back.components >= rep.devices,
+                 qPrintable(QStringLiteral("%1: %2 read back, %3 written").arg(path).arg(back.components).arg(rep.devices)));
+        ++files;
+        if (partition(a, skipped) == partition(b, {})) ++same;
+        else {
+            different << QFileInfo(path).fileName();
+            if (qEnvironmentVariableIsSet("CM_CKT_EXPORT_DIFF")) {
+                const QStringList pa = partition(a, skipped), pb = partition(b, {});
+                for (const QString& g : pa) if (!pb.contains(g)) qInfo("  - %s", qPrintable(g));
+                for (const QString& g : pb) if (!pa.contains(g)) qInfo("  + %s", qPrintable(g));
+            }
+        }
+    }
+    qInfo("%d files written, %d with the same connections; differing: %s", files, same, qPrintable(different.join(u", ")));
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

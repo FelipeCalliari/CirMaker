@@ -5,7 +5,9 @@
 #include "core/Circuit.h"
 #include "core/Faults.h"
 #include "core/UndoCommands.h"
+#include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
+#include "core/io/CmDeviceLib.h"
 #include "core/io/SpiceImporter.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
@@ -492,6 +494,9 @@ void MainWindow::createActions()
         }
         writeTextFile(tr("Export SPICE subcircuit"), QStringLiteral("sub"), tr("SPICE subcircuit (*.sub *.lib *.ckt)"), text);
     });
+    m_exportCkt = new QAction(tr("&CircuitMaker 2000 (.ckt)..."), this);
+    m_exportCkt->setStatusTip(tr("A schematic CircuitMaker 2000 opens, built from the Device.lib of its installation"));
+    connect(m_exportCkt, &QAction::triggered, this, &MainWindow::exportCkt);
     m_home = new QAction(tr("Center on Cursor"), this);
     m_home->setShortcut(Qt::Key_Home);
     connect(m_home, &QAction::triggered, this, [this] { m_view->centerOn(m_lastCursor); });
@@ -609,7 +614,7 @@ void MainWindow::createMenus()
     file->addActions({m_save, m_saveAs});
     file->addSeparator();
     QMenu* exportMenu = file->addMenu(tr("E&xport"));
-    exportMenu->addActions({m_export, m_exportSpice, m_exportSubckt, m_exportPcb});
+    exportMenu->addActions({m_export, m_exportSpice, m_exportSubckt, m_exportPcb, m_exportCkt});
     file->addActions({m_bom, m_print});
     file->addSeparator();
     file->addAction(m_quit);
@@ -1409,6 +1414,49 @@ void MainWindow::writeTextFile(const QString& title, const QString& suffix, cons
         return;
     }
     statusBar()->showMessage(tr("Written %1").arg(path), 5000);
+}
+
+// CircuitMaker draws devices from its own library, so writing its format
+// needs an installation (normally under Wine); its folder is remembered.
+void MainWindow::exportCkt()
+{
+    const QString title = tr("Export to CircuitMaker 2000");
+    QSettings settings;
+    QString libPath = CmDeviceLib::locate(settings.value(QStringLiteral("cm/folder")).toString());
+    if (libPath.isEmpty()) {
+        QMessageBox::information(this, title,
+                                 tr("Writing .ckt files needs CircuitMaker 2000's Device.lib, which is not distributed "
+                                    "with this program. Choose the folder where CircuitMaker 2000 is installed."));
+        const QString folder = QFileDialog::getExistingDirectory(this, title);
+        if (folder.isEmpty()) return;
+        libPath = CmDeviceLib::locate(folder);
+        if (libPath.isEmpty()) {
+            QMessageBox::warning(this, title, tr("There is no Device.lib in %1.").arg(folder));
+            return;
+        }
+        settings.setValue(QStringLiteral("cm/folder"), QFileInfo(libPath).absolutePath());
+    }
+    CmDeviceLib lib;
+    QString error;
+    if (!lib.load(libPath, &error)) {
+        QMessageBox::warning(this, title, tr("Cannot read %1:\n%2").arg(libPath, error));
+        return;
+    }
+    const QString base = m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName();
+    const QString path = QFileDialog::getSaveFileName(this, title, base + QStringLiteral(".ckt"),
+                                                      tr("CircuitMaker 2000 schematic (*.ckt)"));
+    if (path.isEmpty()) return;
+    CktExportReport report;
+    if (!CktExporter::save(path, *m_circuit, LibraryRegistry::instance(), lib, &report, &error)) {
+        QMessageBox::critical(this, title, tr("Cannot write %1:\n%2").arg(path, error));
+        return;
+    }
+    if (!report.skipped.isEmpty())
+        QMessageBox::warning(this, title,
+                             tr("Written %1, without these items CircuitMaker 2000 has no equivalent for:\n%2")
+                                 .arg(path, report.skipped.join(QStringLiteral(", "))));
+    else
+        statusBar()->showMessage(tr("Written %1").arg(path), 5000);
 }
 
 void MainWindow::exportBom()

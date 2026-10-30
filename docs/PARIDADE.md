@@ -78,7 +78,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Recurso | Estado | Observação |
 | --- | --- | --- |
 | Abrir/importar `.ckt` (texto, v3–5.61) | ✅ | CIs 74xx/40xx com a ordem e o desenho de pinos do CM; peças giradas/espelhadas; barramentos com nomes numéricos; fios afastados de pinos e de fios de outras redes. Em 167 circuitos de teste restam 8 redes unidas, quase todas por números de rede inconsistentes no próprio arquivo ou por fios que o CM desenha a 1 unidade um do outro |
-| Salvar em `.ckt` | ❌ | salva em `.cmq` |
+| Salvar em `.ckt` | ✅ | Arquivo > Exportar > CircuitMaker 2000. Requer o CM instalado: os registros vêm do `Device.lib` da instalação (Wine ou pasta escolhida), que não é redistribuído. Testado abrindo os arquivos no CM via Wine: desenho, fios e simulação (chaves, Pulser, portas). Ida e volta em 167 circuitos: 156 com as mesmas conexões. Barramentos ainda não são gravados (os rótulos de rede viram Terminals) |
 | Exportar imagem (PNG/SVG/PDF), imprimir | ✅ | |
 | Lista de materiais | ✅ | CSV |
 | Netlist SPICE / subcircuito SPICE | ✅ | subcircuito com as portas Input/Output como pinos |
