@@ -1346,6 +1346,7 @@ void SchematicScene::stopSimulation()
     if (!m_sim)
         return;
     simInteractRelease();
+    setKeyFocus(0);
     m_timer.stop();
     persistSimProps();
     m_sim.reset();
@@ -1474,9 +1475,13 @@ void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
     for (QGraphicsItem* it : items(e->scenePos()))
         if ((hit = qgraphicsitem_cast<ComponentItem*>(it)) && hit->id() != 0)
             break;
-    if (!hit || !m_sim->hasModel(hit->id()))
+    if (!hit || !m_sim->hasModel(hit->id())) {
+        setKeyFocus(0);
         return;
+    }
     const QString& d = hit->symbol()->display;
+    // a click on a hex or ASCII key gives it the keyboard
+    setKeyFocus(d == u"hexkey" || d == u"asciikey" ? hit->id() : 0);
     if (d == u"logicswitch" || d == u"spst") {
         m_sim->interact(hit->id(), QStringLiteral("toggle"));
     } else if (d == u"button") {
@@ -1488,13 +1493,9 @@ void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
             return;
         m_sim->interact(hit->id(), QStringLiteral("key"), key);
         m_heldButton = hit->id();
+        emit statusMessage(tr("%1 takes the keyboard: type 0-9 and A-F (Esc to stop)").arg(hit->component().designator));
     } else if (d == u"asciikey") {
-        bool ok = false;
-        const QString text = QInputDialog::getText(dialogParent(), tr("ASCII key"), tr("Character:"), QLineEdit::Normal, {}, &ok);
-        if (ok && !text.isEmpty()) {
-            m_sim->interact(hit->id(), QStringLiteral("key"), text.at(0).unicode() & 0x7f);
-            m_sim->interact(hit->id(), QStringLiteral("release"));
-        }
+        emit statusMessage(tr("%1 takes the keyboard: type characters (Esc to stop)").arg(hit->component().designator));
     }
     update();
 }
@@ -1828,8 +1829,66 @@ void SchematicScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
     emit contextMenuRequested(hit, e->screenPos());
 }
 
+void SchematicScene::setKeyFocus(ItemId id)
+{
+    if (id == m_keyFocus)
+        return;
+    if (m_typedKey && m_sim && m_keyFocus)
+        m_sim->interact(m_keyFocus, QStringLiteral("release"));
+    m_typedKey = 0;
+    const ItemId before = m_keyFocus;
+    m_keyFocus = id;
+    for (ItemId changed : {before, id})
+        if (ComponentItem* item = m_componentItems.value(changed)) item->update();
+}
+
+// The keyboard drives the focused hex key (0-9, A-F) or ASCII key while
+// simulating; the key's strobe stays high while the keyboard key is down.
+bool SchematicScene::typeIntoKey(QKeyEvent* e)
+{
+    if (!m_sim || !m_keyFocus || (e->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)))
+        return false;
+    const ComponentItem* item = m_componentItems.value(m_keyFocus);
+    if (!item) return false;
+    if (e->key() == Qt::Key_Escape) {
+        setKeyFocus(0);
+        return true;
+    }
+    const QString text = e->text();
+    if (text.size() != 1) return false;
+    int value = -1;
+    if (item->symbol()->display == u"hexkey") {
+        bool ok = false;
+        value = text.toInt(&ok, 16);
+        if (!ok) return false;
+    } else if (text.at(0).unicode() >= 32 && text.at(0).unicode() < 127) {
+        value = text.at(0).unicode();
+    } else {
+        return false;
+    }
+    if (!e->isAutoRepeat()) {
+        m_sim->interact(m_keyFocus, QStringLiteral("key"), value);
+        m_typedKey = e->key();
+        update();
+    }
+    return true;
+}
+
+void SchematicScene::keyReleaseEvent(QKeyEvent* e)
+{
+    if (m_sim && m_keyFocus && m_typedKey && e->key() == m_typedKey && !e->isAutoRepeat()) {
+        m_sim->interact(m_keyFocus, QStringLiteral("release"));
+        m_typedKey = 0;
+        update();
+        return;
+    }
+    QGraphicsScene::keyReleaseEvent(e);
+}
+
 void SchematicScene::keyPressEvent(QKeyEvent* e)
 {
+    if (typeIntoKey(e))
+        return;
     if (e->key() == Qt::Key_Escape) {
         if (!m_wirePoints.isEmpty())
             cancelWire();

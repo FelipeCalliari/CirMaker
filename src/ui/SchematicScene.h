@@ -135,6 +135,9 @@ public:
     struct Lane { QString name; int net; ItemId component = 0; };   // component: the SCOPE
     const QVector<Lane>& waveformLanes() const { return m_lanes; }
     int simState(ItemId id) const;
+    // Hex/ASCII key that takes the keyboard while simulating (0: none).
+    ItemId keyFocus() const { return m_keyFocus; }
+    void setKeyFocus(ItemId id);
     // Breakpoint of a SCOPE: 0 none, 1 break on 0, 2 break on 1 (property "break").
     int breakCondition(ItemId scope) const;
     void setBreakCondition(ItemId scope, int condition);
@@ -173,6 +176,7 @@ protected:
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
     void keyPressEvent(QKeyEvent* e) override;
+    void keyReleaseEvent(QKeyEvent* e) override;
     void drawBackground(QPainter* p, const QRectF& rect) override;
     void drawForeground(QPainter* p, const QRectF& rect) override;
 
@@ -234,6 +238,7 @@ private:
     void transformSelection(bool rotate);
     void simInteractPress(QGraphicsSceneMouseEvent* e);
     void simInteractRelease();
+    bool typeIntoKey(QKeyEvent* e);
     void advance();
     void persistSimProps();
     bool breakpointHit();
@@ -281,6 +286,8 @@ private:
     int m_ticksPerFrame = 2;
     int m_stepTicks = 0;
     ItemId m_heldButton = 0;
+    ItemId m_keyFocus = 0;
+    int m_typedKey = 0;                 // keyboard key holding a hex/ASCII key down
     QString m_heldRelease;
     bool m_gridVisible = true;
     bool m_gridLines = true;

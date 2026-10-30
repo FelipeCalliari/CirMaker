@@ -2852,7 +2852,7 @@ Saída do SPICE:
     </message>
     <message>
         <location filename="../src/ui/SchematicScene.cpp" line="1168"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1560"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1561"/>
         <source>Text:</source>
         <translation>Texto:</translation>
     </message>
@@ -2890,38 +2890,46 @@ Saída do SPICE:
         </translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1376"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1377"/>
         <source>Switch positions</source>
         <translation>Posições das chaves</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1391"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1392"/>
         <source>Breakpoint at tick %1</source>
         <translation>Breakpoint no tick %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1424"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1425"/>
         <source>Set breakpoint</source>
         <translation>Definir breakpoint</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1493"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1496"/>
+        <source>%1 takes the keyboard: type 0-9 and A-F (Esc to stop)</source>
+        <translation>%1 recebe o teclado: digite 0-9 e A-F (Esc para parar)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SchematicScene.cpp" line="1498"/>
+        <source>%1 takes the keyboard: type characters (Esc to stop)</source>
+        <translation>%1 recebe o teclado: digite caracteres (Esc para parar)</translation>
+    </message>
+    <message>
         <source>ASCII key</source>
-        <translation>Tecla ASCII</translation>
+        <translation type="vanished">Tecla ASCII</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1493"/>
         <source>Character:</source>
-        <translation>Caractere:</translation>
+        <translation type="vanished">Caractere:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1560"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1564"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1561"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1565"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1778"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1779"/>
         <source>Reshape wire</source>
         <translation>Remodelar fio</translation>
     </message>

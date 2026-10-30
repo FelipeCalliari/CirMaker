@@ -131,6 +131,14 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     const QColor ink = isSelected() ? theme().selection : theme().device;
     p->setRenderHint(QPainter::Antialiasing);
     paintDynamic(p, state, live, ink);
+    // the hex/ASCII key that has the keyboard
+    if (live && sc && sc->keyFocus() == m_c.id) {
+        p->save();
+        p->setPen(QPen(theme().selection, 1.5, Qt::DashLine));
+        p->setBrush(Qt::NoBrush);
+        p->drawRect(bodyRect().adjusted(-4, -4, 4, 4));
+        p->restore();
+    }
     // push buttons: the plunger travels while held
     QPointF actuator;
     if (m_symbol->display == u"button" && live && state == 1)

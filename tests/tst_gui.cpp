@@ -68,6 +68,7 @@ private slots:
     void stepSize();
     void wireAutoRoutes();
     void macroSymbolLayout();
+    void hexKeyTakesKeyboard();
     void screenshot();
 };
 
@@ -729,6 +730,36 @@ void TestGui::macroSymbolLayout()
     const SymbolPin& a = s.pins[s.pinIndex(QStringLiteral("A"))];
     QVERIFY2(b.pos.y() > a.pos.y() && std::abs(b.pos.x()) < std::abs(a.pos.x()), "B is not on the bottom");
     QCOMPARE(macros::symbolLayout(s).value(u"bottom").toArray().first().toString(), QStringLiteral("B"));
+}
+
+void TestGui::hexKeyTakesKeyboard()
+{
+    ViewFixture f;
+    const ItemId hex = place(f.circuit, QStringLiteral("hexkey"), {0, 0}, QStringLiteral("K1"));
+    const ItemId ascii = place(f.circuit, QStringLiteral("asciikey"), {300, 0}, QStringLiteral("K2"));
+    f.scene.run();
+    f.scene.pause();
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({0, 0}));
+    QCOMPARE(f.scene.keyFocus(), hex);
+    f.view.setFocus();
+    QTest::keyPress(f.view.viewport(), Qt::Key_B, {}, 0);
+    QCOMPARE(f.scene.simState(hex), 0xB);
+    QTest::keyRelease(f.view.viewport(), Qt::Key_B);
+    QTest::keyClick(f.view.viewport(), Qt::Key_7);
+    QCOMPARE(f.scene.simState(hex), 7);
+    QTest::keyClick(f.view.viewport(), Qt::Key_G);          // not hex: ignored
+    QCOMPARE(f.scene.simState(hex), 7);
+    QTest::keyClick(f.view.viewport(), Qt::Key_Escape);
+    QCOMPARE(f.scene.keyFocus(), ItemId(0));
+    QTest::keyClick(f.view.viewport(), Qt::Key_3);
+    QCOMPARE(f.scene.simState(hex), 7);                     // no longer listening
+
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({300, 0}));
+    QCOMPARE(f.scene.keyFocus(), ascii);
+    QTest::keyClick(f.view.viewport(), 'A');
+    QCOMPARE(f.scene.simState(ascii), int('A'));
+    f.scene.stopSimulation();
+    QCOMPARE(f.scene.keyFocus(), ItemId(0));
 }
 
 QTEST_MAIN(TestGui)
