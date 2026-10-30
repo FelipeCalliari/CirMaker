@@ -6,6 +6,7 @@
 #include "core/io/CktImporter.h"
 
 #include <QDirIterator>
+#include <QElapsedTimer>
 
 using namespace cm;
 using namespace cm::test;
@@ -1348,6 +1349,9 @@ void TestAnalog::importedExamplesSimulate()
     QStringList failures;
     for (QDirIterator it(dir, {QStringLiteral("*.ckt"), QStringLiteral("*.CKT")}, QDir::Files); it.hasNext();) {
         const QString path = it.next();
+        // CM_EXAMPLE_ONLY=<file name>: just that one
+        if (qEnvironmentVariableIsSet("CM_EXAMPLE_ONLY") && QFileInfo(path).fileName() != qEnvironmentVariable("CM_EXAMPLE_ONLY"))
+            continue;
         Circuit c;
         CktImportReport report;
         QVERIFY(CktImporter::import(path, c, library(), &report, nullptr));
@@ -1364,7 +1368,17 @@ void TestAnalog::importedExamplesSimulate()
         c.setAnalysis(a);
         ++ran;
         spice::Deck deck;
+        QElapsedTimer clock;
+        clock.start();
+        if (qEnvironmentVariableIsSet("CM_EXAMPLE_TIMES"))
+            qInfo("%s ...", qPrintable(QFileInfo(path).fileName()));
+        if (QFileInfo(path).fileName() == qEnvironmentVariable("CM_EXAMPLE_DECK")) {
+            deck = spice::build(c, library(), NetlistBuilder::build(c, library()));
+            qInfo("%s", qPrintable(deck.text));
+        }
         const spice::Result r = simulate(c, &deck);
+        if (qEnvironmentVariableIsSet("CM_EXAMPLE_TIMES"))
+            qInfo("%s: %lld ms", qPrintable(QFileInfo(path).fileName()), qlonglong(clock.elapsed()));
         if (r.ok) ++okCount;
         else failures << QFileInfo(path).fileName() + QStringLiteral(": ") + r.error;
         // CM_EXAMPLE_DECK=<file name>: print that example's deck

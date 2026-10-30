@@ -431,6 +431,42 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setBrush(QColor(0xff, 0xe0, 0x40));
             fillFirst(Primitive::Type::Circle, QColor(0xff, 0xe0, 0x40));
         }
+    } else if (d == u"car") {
+        // the car on its track, 0..100 from start to finish
+        const double x = -70 + std::clamp(state, 0, 100) * 2.6;
+        p->setPen(QPen(ink, 1.5));
+        p->setBrush(live && state > 0 ? QColor(0xd0, 0x30, 0x30) : QColor(0xe8, 0xe8, 0xe8));
+        p->drawRoundedRect(QRectF(x - 20, -32, 40, 14), 4, 4);
+        p->drawRect(QRectF(x - 10, -40, 18, 8));
+        p->setBrush(ink);
+        p->drawEllipse(QPointF(x - 12, -16), 4, 4);
+        p->drawEllipse(QPointF(x + 12, -16), 4, 4);
+    } else if (d == u"rocket") {
+        // on the pad (height 0) or climbing; out of sight at 100
+        const int h = std::clamp(state, 0, 100);
+        if (h < 100) {
+            const double y = 10 - h * 2.8;
+            p->setPen(QPen(ink, 1.5));
+            p->setBrush(QColor(0xe8, 0xe8, 0xe8));
+            p->drawPolygon(QPolygonF({QPointF(-10, y - 60), QPointF(0, y - 80), QPointF(10, y - 60), QPointF(10, y),
+                                      QPointF(-10, y)}));
+            p->drawPolygon(QPolygonF({QPointF(-10, y - 15), QPointF(-20, y), QPointF(-10, y)}));
+            p->drawPolygon(QPolygonF({QPointF(10, y - 15), QPointF(20, y), QPointF(10, y)}));
+            if (live && h > 0) {
+                p->setPen(Qt::NoPen);
+                p->setBrush(QColor(0xff, 0x90, 0x20));
+                p->drawPolygon(QPolygonF({QPointF(-7, y), QPointF(0, y + 22), QPointF(7, y)}));
+            }
+        }
+    } else if (d == u"stepper") {
+        // the rotor points at the energized coils (half steps of 45 degrees)
+        const double a = (state * 45.0 - 90) * M_PI / 180;
+        const QPointF tip(48 * std::cos(a), 48 * std::sin(a));
+        p->setPen(QPen(live ? theme().high : ink, 4, Qt::SolidLine, Qt::RoundCap));
+        p->drawLine(-tip * 0.5, tip);
+        p->setPen(QPen(ink, 1.5));
+        p->setBrush(ink);
+        p->drawEllipse(QPointF(), 5, 5);
     } else if (d == u"window") {
         // a sash window: the lower sash slides up over the upper one when open
         const bool open = state == 1;

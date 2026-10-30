@@ -60,6 +60,10 @@ public:
     virtual void setMemory(ModelContext&, const QVector<int>& /*words*/) {}
 };
 
+// Stepper motor rotor, in half steps since the start, after the coils
+// (1, 2, 3, 4) given are energized; shared with the analog display.
+int stepperAdvance(int halfSteps, const bool energized[4]);
+
 // Creates the model named by symbol.model["kind"]; nullptr if the symbol has
 // no digital behaviour. *error is set when the kind is unknown or pins are missing.
 std::unique_ptr<Model> createModel(const SymbolDef& symbol, const Component& component, QString* error);

@@ -5,6 +5,8 @@
 
 #include <QJsonObject>
 
+#include <cmath>
+
 namespace cm::sim {
 
 namespace {
@@ -260,6 +262,116 @@ private:
     bool m_level = false;
 };
 
+// CircuitMaker's animated devices. A car drives along its track once S is
+// high and raises F at the finish; Reset brings it back. Position 0..100.
+class CarModel : public Model {
+public:
+    CarModel(int s, int f, int reset, int speed) : m_s(s), m_f(f), m_reset(reset), m_step(std::max(1, 24 / std::max(1, speed))) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        if (m_reset >= 0 && ctx.input(m_reset) == Logic::L1) {
+            m_pos = 0;
+            m_moving = false;
+        } else if (!m_moving && m_pos == 0 && ctx.input(m_s) == Logic::L1 && !ctx.settling()) {
+            m_moving = true;
+            ctx.wakeAfter(m_step);
+        }
+        if (m_f >= 0) ctx.drive(m_f, strong(fromBool(m_pos >= 100)), 0);
+    }
+    void wake(ModelContext& ctx) override
+    {
+        if (!m_moving) return;
+        if (++m_pos >= 100) {
+            m_moving = false;
+            evaluate(ctx);
+        } else {
+            ctx.wakeAfter(m_step);
+        }
+    }
+    int state() const override { return m_pos; }
+
+private:
+    int m_s, m_f, m_reset, m_step;
+    int m_pos = 0;
+    bool m_moving = false;
+};
+
+// A rocket lifts off when + is driven high against -, climbs out of sight
+// (height 0..100) and is back on its pad once the input drops after the flight.
+class RocketModel : public Model {
+public:
+    RocketModel(int plus, int minus) : m_plus(plus), m_minus(minus) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const bool lit = ctx.input(m_plus) == Logic::L1 && (m_minus < 0 || ctx.input(m_minus) != Logic::L1);
+        if (lit && m_height == 0 && !ctx.settling()) {
+            m_height = 1;
+            ctx.wakeAfter(kStep);
+        } else if (!lit && m_height >= 100) {
+            m_height = 0;
+        }
+    }
+    void wake(ModelContext& ctx) override
+    {
+        if (m_height > 0 && m_height < 100) {
+            ++m_height;
+            if (m_height < 100) ctx.wakeAfter(kStep);
+            else evaluate(ctx);
+        }
+    }
+    int state() const override { return m_height; }
+
+private:
+    static constexpr std::uint32_t kStep = 10;
+    int m_plus, m_minus;
+    int m_height = 0;
+};
+
+} // namespace
+
+// The rotor angle of a unipolar stepper from its energized coils (1 = 0,
+// 3 = 90, 2 = 180, 4 = 270 degrees), followed through full and half steps:
+// the angle in half steps (45 degrees) since the start.
+int stepperAdvance(int halfSteps, const bool energized[4])
+{
+    static const double angle[4] = {0, 180, 90, 270};          // coils 1, 2, 3, 4
+    double x = 0, y = 0;
+    for (int k = 0; k < 4; ++k)
+        if (energized[k]) {
+            x += std::cos(angle[k] * M_PI / 180);
+            y += std::sin(angle[k] * M_PI / 180);
+        }
+    if (std::hypot(x, y) < 0.5) return halfSteps;                // nothing, or opposite coils
+    const int target = int(std::lround(std::atan2(y, x) * 180 / M_PI / 45));
+    int delta = ((target - halfSteps) % 8 + 8) % 8;              // the shorter way round
+    if (delta > 4) delta -= 8;
+    if (delta == 4) delta = 0;                                   // half a turn: undecided, stays
+    return halfSteps + delta;
+}
+
+namespace {
+
+// Stepper motor: a coil is energized while its end and its common differ.
+class StepperModel : public Model {
+public:
+    StepperModel(QVector<int> coils, int comA, int comB) : m_coils(std::move(coils)), m_comA(comA), m_comB(comB) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        bool on[4] = {false, false, false, false};
+        for (int k = 0; k < 4; ++k) {
+            const Logic end = ctx.input(m_coils[k]), com = ctx.input(k < 2 ? m_comA : m_comB);
+            on[k] = isKnown(end) && isKnown(com) && end != com;
+        }
+        m_halfSteps = stepperAdvance(m_halfSteps, on);
+    }
+    int state() const override { return m_halfSteps; }
+
+private:
+    QVector<int> m_coils;
+    int m_comA, m_comB;
+    int m_halfSteps = 0;
+};
+
 // Drives a binary value on D0..Dn (hex key, ASCII key).
 class KeyModel : public Model {
 public:
@@ -460,6 +572,24 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         if (s.pins.isEmpty())
             return fail(QStringLiteral("switch without pin"));
         return std::make_unique<LogicSwitchModel>(0, props.value(QStringLiteral("state")).toInt() != 0);
+    }
+    if (kind == u"car") {
+        const int start = s.pinIndex(QStringLiteral("S"));
+        if (start < 0) return fail(QStringLiteral("car needs S"));
+        return std::make_unique<CarModel>(start, s.pinIndex(QStringLiteral("F")), s.pinIndex(QStringLiteral("RESET")),
+                                          props.value(QStringLiteral("speed"), 3).toInt());
+    }
+    if (kind == u"rocket") {
+        const int plus = s.pinIndex(QStringLiteral("+"));
+        if (plus < 0) return fail(QStringLiteral("rocket needs +"));
+        return std::make_unique<RocketModel>(plus, s.pinIndex(QStringLiteral("-")));
+    }
+    if (kind == u"stepper") {
+        QVector<int> coils;
+        for (const char* n : {"1", "2", "3", "4"}) coils << s.pinIndex(QString::fromLatin1(n));
+        const int a = s.pinIndex(QStringLiteral("COMA")), b = s.pinIndex(QStringLiteral("COMB"));
+        if (coils.contains(-1) || a < 0 || b < 0) return fail(QStringLiteral("stepper needs 1-4, COMA and COMB"));
+        return std::make_unique<StepperModel>(coils, a, b);
     }
     if (kind == u"pulser") {
         const int q = s.pinIndex(QStringLiteral("Q"));

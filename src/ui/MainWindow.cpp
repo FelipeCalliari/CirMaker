@@ -1,5 +1,7 @@
 #include "ui/MainWindow.h"
 
+#include "sim/digital/Models.h"
+
 #include "core/Bom.h"
 #include "core/PcbNetlist.h"
 #include "core/Circuit.h"
@@ -1835,6 +1837,26 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
                                                       - netVoltage(c.id, s->pinIndex(QStringLiteral("K"))) > 1.5);
         } else if (d == u"bulb") {
             overlay.displayState.insert(c.id, std::abs(netVoltage(c.id, 0) - netVoltage(c.id, 1)) > 0.5);
+        } else if (d == u"stepper") {
+            // the rotor follows the energized coils through the whole run
+            auto series = [&](const QString& pin) -> const QVector<double>* {
+                const QString node = deck.nodeOfNet.value(nl.netOf(c.id, s->pinIndex(pin)), QStringLiteral("0"));
+                const spice::Vector* v = node == u"0" ? nullptr : r.find(node);
+                return v ? &v->real : nullptr;
+            };
+            auto at = [](const QVector<double>* v, int k) { return v && !v->isEmpty() ? v->value(k, v->last()) : 0.0; };
+            const QVector<double>* coil[4] = {series(QStringLiteral("1")), series(QStringLiteral("2")),
+                                              series(QStringLiteral("3")), series(QStringLiteral("4"))};
+            const QVector<double>* com[2] = {series(QStringLiteral("COMA")), series(QStringLiteral("COMB"))};
+            int samples = 1;
+            for (const QVector<double>* v : coil) if (v) samples = std::max(samples, int(v->size()));
+            int half = 0;
+            for (int k = 0; k < samples; ++k) {
+                bool on[4];
+                for (int n = 0; n < 4; ++n) on[n] = std::abs(at(coil[n], k) - at(com[n / 2], k)) > 1.0;
+                half = sim::stepperAdvance(half, on);
+            }
+            overlay.displayState.insert(c.id, half);
         } else if (d == u"lamp" || d == u"hex" || d == u"ascii" || d == u"stoplight") {
             int value = 0;
             for (int i = 0; i < s->pins.size(); ++i) {

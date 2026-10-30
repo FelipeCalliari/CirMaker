@@ -405,20 +405,23 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
     // pins where CircuitMaker's symbol has them, so its wiring meets them:
     // rows on a 10-unit pitch with gaps between
     QJsonObject shape = sym.value(u"shape").toObject();
+    int topRow = 0;
     for (const bool right : {false, true}) {
         QMap<int, QString> rows;
         for (int k = 0; k < m.pins.size(); ++k)
             if (m.outputs.value(k) == right) rows.insert(int(std::lround(m.at.value(k).y() * kScale / 10)) * 10, m.pins[k]);
         QJsonArray column;
-        if (!rows.isEmpty())
+        if (!rows.isEmpty()) {
             for (int y = rows.firstKey(); y <= rows.lastKey(); y += 10) column.append(rows.value(y));
+            topRow = std::min(topRow, rows.firstKey());
+        }
         shape.insert(right ? QStringLiteral("right") : QStringLiteral("left"), column);
         shape.insert(right ? QStringLiteral("rightStart") : QStringLiteral("leftStart"), rows.isEmpty() ? 0 : rows.firstKey());
     }
     shape.insert(QStringLiteral("pitch"), 10);
     shape.insert(QStringLiteral("lead"), 30);
     shape.insert(QStringLiteral("width"), 160);       // pin ends 32 CM units out, past the drawn pins
-    shape.insert(QStringLiteral("titleY"), 0);
+    shape.insert(QStringLiteral("titleY"), topRow);         // the middle is often taken by the value
     sym.insert(QStringLiteral("shape"), shape);
     sym.insert(QStringLiteral("description"), QStringLiteral("CircuitMaker macro %1 (from its User.lib)").arg(m.name));
     return LibraryRegistry::instance().addSymbol(sym, &error);
@@ -525,6 +528,8 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             c.props.insert(QStringLiteral("state"), int(d.value.trimmed() == u"5V"));
         else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0)
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
+        else if (kind == u"car" && d.nets.size() > 14 && d.nets[14] > 0)
+            c.props.insert(QStringLiteral("speed"), d.nets[14]);      // as CircuitMaker keeps it
         else if (kind == u"pot") {
             // "100k 40%": total resistance and wiper position
             c.label = d.value.section(u' ', 0, 0);

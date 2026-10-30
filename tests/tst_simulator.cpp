@@ -8,6 +8,7 @@ class TestSimulator : public QObject {
     Q_OBJECT
 private slots:
     void pulserToggles();
+    void animatedDevices();
     void asyncJkCounterCounts();
     void pushButtonWithPullUp();
     void triStateBus();
@@ -166,6 +167,74 @@ void TestSimulator::dataSequencerExternalClock()
     bench.sim.step(20);
     QCOMPARE(bench.sim.componentState(id), 0);
     QCOMPARE(bench.value(c, id, QStringLiteral("Q0")), Logic::L1);
+}
+
+// CircuitMaker's animated devices: a car drives to the finish (F high) and
+// back on RESET; a rocket climbs out of sight; a stepper turns half a step
+// per change of energized coils, and back.
+void TestSimulator::animatedDevices()
+{
+    Circuit c;
+    const ItemId car = place(c, QStringLiteral("car"), {0, 0}, QStringLiteral("CAR1"));
+    const ItemId start = place(c, QStringLiteral("logicswitch"), {-300, -100}, QStringLiteral("S1"));
+    const ItemId reset = place(c, QStringLiteral("logicswitch"), {-300, 200}, QStringLiteral("S2"));
+    link(c, start, QStringLiteral("Y"), car, QStringLiteral("S"));
+    link(c, reset, QStringLiteral("Y"), car, QStringLiteral("RESET"));
+    const ItemId rocket = place(c, QStringLiteral("rocket"), {600, 0}, QStringLiteral("R1"));
+    const ItemId fire = place(c, QStringLiteral("logicswitch"), {400, -100}, QStringLiteral("S3"));
+    const ItemId gnd = place(c, QStringLiteral("ground"), {400, 200});
+    link(c, fire, QStringLiteral("Y"), rocket, QStringLiteral("+"));
+    link(c, gnd, QStringLiteral("GND"), rocket, QStringLiteral("-"));
+    const ItemId motor = place(c, QStringLiteral("stepper"), {0, 600}, QStringLiteral("M1"));
+    const ItemId vcc = place(c, QStringLiteral("vcc"), {300, 400});
+    link(c, vcc, QStringLiteral("VCC"), motor, QStringLiteral("COMA"));
+    link(c, vcc, QStringLiteral("VCC"), motor, QStringLiteral("COMB"));
+    ItemId coil[4];
+    for (int k = 0; k < 4; ++k) {
+        coil[k] = place(c, QStringLiteral("logicswitch"), {-400, 450.0 + 60 * k}, QStringLiteral("C%1").arg(k + 1));
+        link(c, coil[k], QStringLiteral("Y"), motor, QString::number(k + 1));
+    }
+    Bench bench(c);
+    // all coils high, as the commons: nothing energized
+    for (ItemId k : coil) bench.sim.interact(k, QStringLiteral("toggle"));
+    bench.sim.step(5);
+    QCOMPARE(bench.sim.componentState(car), 0);
+    QCOMPARE(bench.value(c, car, QStringLiteral("F")), Logic::L0);
+
+    bench.sim.interact(start, QStringLiteral("toggle"));
+    bench.sim.interact(fire, QStringLiteral("toggle"));
+    bench.sim.step(400);
+    QVERIFY(bench.sim.componentState(car) > 0 && bench.sim.componentState(car) < 100);
+    QVERIFY(bench.sim.componentState(rocket) > 0);
+    bench.sim.step(2000);
+    QCOMPARE(bench.sim.componentState(car), 100);
+    QCOMPARE(bench.value(c, car, QStringLiteral("F")), Logic::L1);
+    QCOMPARE(bench.sim.componentState(rocket), 100);
+    bench.sim.interact(start, QStringLiteral("toggle"));
+    bench.sim.interact(reset, QStringLiteral("toggle"));
+    bench.sim.interact(fire, QStringLiteral("toggle"));
+    bench.sim.step(5);
+    QCOMPARE(bench.sim.componentState(car), 0);
+    QCOMPARE(bench.value(c, car, QStringLiteral("F")), Logic::L0);
+    QCOMPARE(bench.sim.componentState(rocket), 0);                 // back on its pad
+
+    // full steps 1, 3, 2, 4 (coil pulled low = energized) and back
+    auto energize = [&](int k) {
+        bench.sim.interact(coil[k - 1], QStringLiteral("toggle"));
+        bench.sim.step(3);
+    };
+    energize(1);
+    QCOMPARE(bench.sim.componentState(motor), 0);
+    energize(3); energize(1);                                      // 1 off: 3 alone
+    QCOMPARE(bench.sim.componentState(motor), 2);                  // 90 degrees (through 45)
+    energize(2); energize(3);
+    QCOMPARE(bench.sim.componentState(motor), 4);
+    energize(4); energize(2);
+    QCOMPARE(bench.sim.componentState(motor), 6);
+    energize(1); energize(4);
+    QCOMPARE(bench.sim.componentState(motor), 8);                  // a full turn
+    energize(4); energize(1);
+    QCOMPARE(bench.sim.componentState(motor), 6);                  // and back
 }
 
 QTEST_GUILESS_MAIN(TestSimulator)

@@ -70,6 +70,18 @@ public:
                 continue;
             emitComponent(comp, *s);
         }
+        // the co-simulated chips run in one d_cosim instance: ngspice (47)
+        // crashes at the operating point with more than one
+        if (!m_cosim.isEmpty()) {
+            QStringList ins, outs, args;
+            for (const Cosim& k : std::as_const(m_cosim)) {
+                ins << k.ins;
+                outs << k.outs;
+                args << u'"' + k.spec + u'"';
+            }
+            addModel(QStringLiteral(".model cm_cosim d_cosim simulation=\"%1\" sim_args=[%2]").arg(cosimLibrary(), args.join(u' ')));
+            m_lines << QStringLiteral("Acosim [%1] [%2] cm_cosim").arg(ins.join(u' '), outs.join(u' '));
+        }
         // every node keeps a DC path to ground, so open inputs never make
         // the matrix singular
         for (const QString& node : std::as_const(m_usedNodes))
@@ -557,9 +569,12 @@ private:
                 if (s.pins[i].dir != SymbolPin::Dir::Out) ins << digitalIn(c, s, i, adcIn, adcOut);
             for (int i = 0; i < s.pins.size(); ++i)
                 if (s.pins[i].dir == SymbolPin::Dir::Out) outs << digitalOut(c, i, dacIn, dacOut);
-            const QString model = QStringLiteral("cm_cosim_%1").arg(sanitize(s.id));
-            addModel(QStringLiteral(".model %1 d_cosim simulation=\"%2\" sim_args=[\"%3\"]").arg(model, lib, s.id));
-            m_lines << QStringLiteral("A%1 [%2] [%3] %4").arg(name, ins.join(u' '), outs.join(u' '), model);
+            // the chip, and memory contents it starts with ("prom32;data=0a,1f,..":
+            // ngspice splits sim_args at spaces, even quoted)
+            QString spec = s.id;
+            const QString data = c.props.value(QStringLiteral("data")).toString().simplified();
+            if (!data.isEmpty()) spec += QStringLiteral(";data=") + QString(data).replace(u' ', u',');
+            m_cosim << Cosim{spec, ins, outs};
         } else {
             m_deck.warnings << QStringLiteral("%1 (%2) has no analog model and is left out").arg(c.designator, s.name);
             return;
@@ -572,6 +587,8 @@ private:
     const Netlist& m_nl;
     Deck m_deck;
     QStringList m_lines, m_models, m_subckts;
+    struct Cosim { QString spec; QStringList ins, outs; };
+    QVector<Cosim> m_cosim;
     QSet<QString> m_subcktHeads, m_names, m_usedNodes;
     bool m_digitalModels = false;
 };

@@ -1315,6 +1315,37 @@ def inputs():
          'graphics': [C(15, 0, 3), L(18, 0, 30, 0), C(-15, -10, 3), L(-30, -10, -18, -10), C(-15, 10, 3),
                       L(-30, 10, -18, 10)],
          'pins': [pin('C', 30, 0), pin('NC', -30, -10), pin('NO', -30, 10)]},
+        {'id': 'car', 'name': 'Car', 'prefix': 'CAR', 'display': 'car', 'aliases': ['Car'],
+         'cmPins': ['S', 'F', 'RESET'], 'model': {'kind': 'car'}, 'props': {'speed': 3},
+         'description': 'Animated race car: drives along its track once S goes high (faster with a higher speed), '
+                        'raises F at the finish and goes back to the start while RESET is high',
+         'graphics': [R(-90, -45, 330, 70), L(-90, -10, 240, -10), L(220, -45, 220, 25), L(-110, -20, -90, -20),
+                      L(-110, 10, -90, 10), L(20, 25, 20, 80), T('S', -84, -20, 7, 'left'), T('F', -84, 10, 7, 'left'),
+                      T('RESET', 20, 18, 6)],
+         'pins': [pin('S', -110, -20, 'in'), pin('F', -110, 10, 'out'), pin('RESET', 20, 80, 'in')]},
+        {'id': 'rocket', 'name': 'Rocket', 'prefix': 'R', 'display': 'rocket', 'aliases': ['Rocket'],
+         'cmPins': ['+', '-'], 'model': {'kind': 'rocket'},
+         'description': 'Animated rocket: lifts off when + goes high against -, and is back on its pad once the '
+                        'input drops after the flight',
+         'graphics': [R(-70, 20, 120, 60), L(-90, 30, -70, 30), L(-90, 60, -70, 60), T('+', -64, 30, 7, 'left'),
+                      T('-', -64, 60, 7, 'left'), L(40, -260, 40, 20), L(30, -260, 50, -260)],
+         'pins': [pin('+', -90, 30, 'in'), pin('-', -90, 60, 'in')]},
+        {'id': 'stepper', 'name': 'Stepper Motor', 'prefix': 'M', 'display': 'stepper', 'label': '100H',
+         'aliases': ['Stepper'], 'cmPins': ['1', 'COMA', '2', '3', 'COMB', '4'], 'model': {'kind': 'stepper'},
+         # each coil: the inductance and 10 ohm, with 1k across it so that
+         # switching it off does not raise an endless spike
+         'spice': sp(N.join(f'L{{name}}{c} {{{c}}} {{name}}_{c} {{value}}' + N + f'R{{name}}{c} {{name}}_{c} {{{com}}} 10'
+                            + N + f'R{{name}}{c}p {{{c}}} {{{com}}} 1k'
+                            for c, com in (('1', 'COMA'), ('2', 'COMA'), ('3', 'COMB'), ('4', 'COMB')))),
+         'description': 'Unipolar stepper motor: coils 1 and 2 on COMA, 3 and 4 on COMB (each the label inductance '
+                        'and 10 ohm); the rotor turns to the energized coils: 1, 3, 2, 4 in sequence is a full turn',
+         'graphics': [C(0, 0, 70), L(-100, -100, -60, -100), L(-60, -100, -45, -55), L(-100, -60, -70, -60),
+                      L(-100, 60, -70, 60), L(-100, 100, -60, 100), L(-60, 100, -45, 55), L(100, -80, 60, -80),
+                      L(60, -80, 50, -50), L(100, 80, 60, 80), L(60, 80, 50, 50),
+                      T('1', -92, -108, 6, 'left'), T('2', -92, -68, 6, 'left'), T('3', -92, 52, 6, 'left'),
+                      T('4', -92, 92, 6, 'left'), T('A', 92, -88, 6, 'right'), T('B', 92, 72, 6, 'right')],
+         'pins': [pin('1', -100, -100, 'in'), pin('COMA', 100, -80, 'in'), pin('2', -100, -60, 'in'),
+                  pin('3', -100, 60, 'in'), pin('COMB', 100, 80, 'in'), pin('4', -100, 100, 'in')]},
         {'id': 'window', 'name': 'Window', 'prefix': 'W', 'display': 'window', 'aliases': ['Window'],
          'cmPins': ['C', 'NO', 'NC', 'OC'], 'model': {'kind': 'link', 'type': 'spdt'}, 'props': {'closed': 0},
          'description': 'Burglar-alarm window: click during simulation to open or shut it; shut, C connects to NC, '

@@ -900,6 +900,442 @@
    ]
   },
   {
+   "id": "car",
+   "name": "Car",
+   "prefix": "CAR",
+   "display": "car",
+   "aliases": [
+    "Car"
+   ],
+   "cmPins": [
+    "S",
+    "F",
+    "RESET"
+   ],
+   "model": {
+    "kind": "car"
+   },
+   "props": {
+    "speed": 3
+   },
+   "description": "Animated race car: drives along its track once S goes high (faster with a higher speed), raises F at the finish and goes back to the start while RESET is high",
+   "graphics": [
+    {
+     "rect": [
+      -90,
+      -45,
+      330,
+      70
+     ]
+    },
+    {
+     "line": [
+      -90,
+      -10,
+      240,
+      -10
+     ]
+    },
+    {
+     "line": [
+      220,
+      -45,
+      220,
+      25
+     ]
+    },
+    {
+     "line": [
+      -110,
+      -20,
+      -90,
+      -20
+     ]
+    },
+    {
+     "line": [
+      -110,
+      10,
+      -90,
+      10
+     ]
+    },
+    {
+     "line": [
+      20,
+      25,
+      20,
+      80
+     ]
+    },
+    {
+     "text": "S",
+     "at": [
+      -84,
+      -20
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "F",
+     "at": [
+      -84,
+      10
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "RESET",
+     "at": [
+      20,
+      18
+     ],
+     "size": 6
+    }
+   ],
+   "pins": [
+    {
+     "name": "S",
+     "at": [
+      -110,
+      -20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "F",
+     "at": [
+      -110,
+      10
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "RESET",
+     "at": [
+      20,
+      80
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "rocket",
+   "name": "Rocket",
+   "prefix": "R",
+   "display": "rocket",
+   "aliases": [
+    "Rocket"
+   ],
+   "cmPins": [
+    "+",
+    "-"
+   ],
+   "model": {
+    "kind": "rocket"
+   },
+   "description": "Animated rocket: lifts off when + goes high against -, and is back on its pad once the input drops after the flight",
+   "graphics": [
+    {
+     "rect": [
+      -70,
+      20,
+      120,
+      60
+     ]
+    },
+    {
+     "line": [
+      -90,
+      30,
+      -70,
+      30
+     ]
+    },
+    {
+     "line": [
+      -90,
+      60,
+      -70,
+      60
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      -64,
+      30
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "text": "-",
+     "at": [
+      -64,
+      60
+     ],
+     "size": 7,
+     "align": "left"
+    },
+    {
+     "line": [
+      40,
+      -260,
+      40,
+      20
+     ]
+    },
+    {
+     "line": [
+      30,
+      -260,
+      50,
+      -260
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      -90,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "-",
+     "at": [
+      -90,
+      60
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
+   "id": "stepper",
+   "name": "Stepper Motor",
+   "prefix": "M",
+   "display": "stepper",
+   "label": "100H",
+   "aliases": [
+    "Stepper"
+   ],
+   "cmPins": [
+    "1",
+    "COMA",
+    "2",
+    "3",
+    "COMB",
+    "4"
+   ],
+   "model": {
+    "kind": "stepper"
+   },
+   "spice": {
+    "line": "L{name}1 {1} {name}_1 {value}\nR{name}1 {name}_1 {COMA} 10\nR{name}1p {1} {COMA} 1k\nL{name}2 {2} {name}_2 {value}\nR{name}2 {name}_2 {COMA} 10\nR{name}2p {2} {COMA} 1k\nL{name}3 {3} {name}_3 {value}\nR{name}3 {name}_3 {COMB} 10\nR{name}3p {3} {COMB} 1k\nL{name}4 {4} {name}_4 {value}\nR{name}4 {name}_4 {COMB} 10\nR{name}4p {4} {COMB} 1k"
+   },
+   "description": "Unipolar stepper motor: coils 1 and 2 on COMA, 3 and 4 on COMB (each the label inductance and 10 ohm); the rotor turns to the energized coils: 1, 3, 2, 4 in sequence is a full turn",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      70
+     ]
+    },
+    {
+     "line": [
+      -100,
+      -100,
+      -60,
+      -100
+     ]
+    },
+    {
+     "line": [
+      -60,
+      -100,
+      -45,
+      -55
+     ]
+    },
+    {
+     "line": [
+      -100,
+      -60,
+      -70,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -100,
+      60,
+      -70,
+      60
+     ]
+    },
+    {
+     "line": [
+      -100,
+      100,
+      -60,
+      100
+     ]
+    },
+    {
+     "line": [
+      -60,
+      100,
+      -45,
+      55
+     ]
+    },
+    {
+     "line": [
+      100,
+      -80,
+      60,
+      -80
+     ]
+    },
+    {
+     "line": [
+      60,
+      -80,
+      50,
+      -50
+     ]
+    },
+    {
+     "line": [
+      100,
+      80,
+      60,
+      80
+     ]
+    },
+    {
+     "line": [
+      60,
+      80,
+      50,
+      50
+     ]
+    },
+    {
+     "text": "1",
+     "at": [
+      -92,
+      -108
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "text": "2",
+     "at": [
+      -92,
+      -68
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "text": "3",
+     "at": [
+      -92,
+      52
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "text": "4",
+     "at": [
+      -92,
+      92
+     ],
+     "size": 6,
+     "align": "left"
+    },
+    {
+     "text": "A",
+     "at": [
+      92,
+      -88
+     ],
+     "size": 6,
+     "align": "right"
+    },
+    {
+     "text": "B",
+     "at": [
+      92,
+      72
+     ],
+     "size": 6,
+     "align": "right"
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -100,
+      -100
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "COMA",
+     "at": [
+      100,
+      -80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "2",
+     "at": [
+      -100,
+      -60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "3",
+     "at": [
+      -100,
+      60
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "COMB",
+     "at": [
+      100,
+      80
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "4",
+     "at": [
+      -100,
+      100
+     ],
+     "dir": "in"
+    }
+   ]
+  },
+  {
    "id": "window",
    "name": "Window",
    "prefix": "W",

@@ -1,9 +1,11 @@
-// Co-simulation shim for ngspice's d_cosim XSPICE code model: runs one of our
+// Co-simulation shim for ngspice's d_cosim XSPICE code model: runs our
 // digital chip models (the same C++ the digital simulator uses) inside an
-// analog/mixed SPICE simulation. The deck names the symbol in sim_args:
-//   .model chip d_cosim simulation="libcmcosim.so" sim_args=["74161"]
-//   Au1 [inputs...] [outputs...] chip
-// Ports follow the symbol's pin order: inputs, then outputs.
+// analog/mixed SPICE simulation. The deck names the symbols in sim_args,
+// each optionally with memory contents ("prom32;data=0a 1f ..."); all the
+// chips of a circuit share one instance (ngspice crashes with several):
+//   .model chips d_cosim simulation="libcmcosim.so" sim_args=["74161" "7493"]
+//   Acosim [inputs of each chip...] [outputs of each chip...] chips
+// Each chip's ports follow its symbol's pin order: inputs, then outputs.
 
 #include "core/Circuit.h"
 #include "library/LibraryRegistry.h"
@@ -93,9 +95,11 @@ public:
         }
     }
 
-    // Runs queued events up to the target time; stops early, at the time
-    // of the first output change, after reporting it.
-    void step(co_info* info)
+    // Runs queued events up to the target time, then reports the outputs
+    // that changed. Not stopping early at a change: ngspice may have taken
+    // later time points without calling, and an output dated before them
+    // makes it crash; the change goes out at this step instead.
+    void step(co_info* info, unsigned int firstOutput)
     {
         const std::uint64_t target = std::uint64_t(std::llround(info->vtime / kTick));
         if (m_dirty) {
@@ -103,8 +107,7 @@ public:
             m_model->evaluate(*this);
         }
         while (!m_queue.empty() && m_queue.begin()->first <= target) {
-            const std::uint64_t t = m_queue.begin()->first;
-            m_now = t;
+            m_now = m_queue.begin()->first;
             std::vector<Event> due = std::move(m_queue.begin()->second);
             m_queue.erase(m_queue.begin());
             bool wake = false;
@@ -113,22 +116,15 @@ public:
                 else m_value[e.pin] = e.value;
             }
             if (wake) m_model->wake(*this);
-            bool reported = false;
-            for (int k = 0; k < m_outputs.size(); ++k) {
-                const Logic v = m_value[m_outputs[k]];
-                if (v == m_reported[k]) continue;
-                m_reported[k] = v;
-                Digital_t d{v == Logic::L0 ? ZERO : v == Logic::L1 ? ONE : UNKNOWN,
-                            v == Logic::Z ? HI_IMPEDANCE : STRONG};
-                info->out_fn(info, unsigned(k), &d);
-                reported = true;
-            }
-            if (reported && t < target) {
-                info->vtime = double(t) * kTick;
-                return;
-            }
         }
         m_now = target;
+        for (int k = 0; k < m_outputs.size(); ++k) {
+            const Logic v = m_value[m_outputs[k]];
+            if (v == m_reported[k]) continue;
+            m_reported[k] = v;
+            Digital_t d{v == Logic::L0 ? ZERO : v == Logic::L1 ? ONE : UNKNOWN, v == Logic::Z ? HI_IMPEDANCE : STRONG};
+            info->out_fn(info, firstOutput + unsigned(k), &d);
+        }
     }
 
     // ModelContext
@@ -156,11 +152,29 @@ private:
     bool m_settling = true, m_dirty = false;
 };
 
-void stepFn(co_info* info) { static_cast<Chip*>(info->handle)->step(info); }
-void inFn(co_info* info, unsigned int port, Digital_t* v) { static_cast<Chip*>(info->handle)->input(port, v); }
+// The chips of one d_cosim instance, their ports one after another.
+struct Group {
+    std::vector<std::unique_ptr<Chip>> chips;
+    std::vector<unsigned int> firstInput, firstOutput;
+};
+
+void stepFn(co_info* info)
+{
+    auto* g = static_cast<Group*>(info->handle);
+    for (size_t i = 0; i < g->chips.size(); ++i) g->chips[i]->step(info, g->firstOutput[i]);
+}
+void inFn(co_info* info, unsigned int port, Digital_t* v)
+{
+    auto* g = static_cast<Group*>(info->handle);
+    for (size_t i = g->chips.size(); i-- > 0;)
+        if (port >= g->firstInput[i]) {
+            g->chips[i]->input(port - g->firstInput[i], v);
+            return;
+        }
+}
 void cleanupFn(co_info* info)
 {
-    delete static_cast<Chip*>(info->handle);
+    delete static_cast<Group*>(info->handle);
     info->handle = nullptr;
 }
 
@@ -172,27 +186,43 @@ extern "C" Q_DECL_EXPORT void Cosim_setup(co_info* info)
     LibraryRegistry& lib = LibraryRegistry::instance();
     if (lib.all().isEmpty())
         lib.loadBuiltin();
-    const QString id = info->sim_argc > 0 ? QString::fromUtf8(info->sim_argv[0]) : QString();
-    // ngspice lower-cases the deck, sim_args included
-    const SymbolDef* s = lib.find(id);
-    for (const SymbolDef* candidate : lib.all())
-        if (!s && candidate->id.compare(id, Qt::CaseInsensitive) == 0) s = candidate;
-    Component c;
-    c.symbolId = s ? s->id : id;
-    QString error;
-    std::unique_ptr<Model> model = s ? createModel(*s, c, &error) : nullptr;
-    if (!model) {
-        fprintf(stderr, "cmcosim: no digital model for '%s' %s\n", qPrintable(id), qPrintable(error));
-        info->in_count = info->out_count = info->inout_count = 0;
-        return;
-    }
-    auto* chip = new Chip(*s, std::move(model));
-    info->handle = chip;
-    info->in_count = unsigned(chip->inputs());
-    info->out_count = unsigned(chip->outputs());
-    info->inout_count = 0;
+    // the functions first: ngspice calls them even when the setup fails
     info->step = stepFn;
     info->in_fn = inFn;
     info->cleanup = cleanupFn;
     info->method = Both;
+    info->in_count = info->out_count = info->inout_count = 0;
+    auto group = std::make_unique<Group>();
+    info->handle = group.get();
+    unsigned int ins = 0, outs = 0;
+    for (unsigned int a = 0; a < info->sim_argc; ++a) {
+        // "id;key=value;...": ngspice lower-cases the deck, sim_args included
+        const QStringList parts = QString::fromUtf8(info->sim_argv[a]).split(u';');
+        const QString id = parts.first().trimmed();
+        const SymbolDef* s = lib.find(id);
+        for (const SymbolDef* candidate : lib.all())
+            if (!s && candidate->id.compare(id, Qt::CaseInsensitive) == 0) s = candidate;
+        Component c;
+        c.symbolId = s ? s->id : id;
+        for (const QString& kv : parts.mid(1))
+            if (const qsizetype eq = kv.indexOf(u'='); eq > 0)
+                c.props.insert(kv.left(eq).trimmed(), kv.mid(eq + 1).replace(u',', u' '));
+        QString error;
+        std::unique_ptr<Model> model = s ? createModel(*s, c, &error) : nullptr;
+        if (!model) {
+            fprintf(stderr, "cmcosim: no digital model for '%s' %s\n", qPrintable(id), qPrintable(error));
+            group->chips.clear();
+            info->handle = group.release();
+            return;
+        }
+        auto chip = std::make_unique<Chip>(*s, std::move(model));
+        group->firstInput.push_back(ins);
+        group->firstOutput.push_back(outs);
+        ins += unsigned(chip->inputs());
+        outs += unsigned(chip->outputs());
+        group->chips.push_back(std::move(chip));
+    }
+    info->handle = group.release();
+    info->in_count = ins;
+    info->out_count = outs;
 }
