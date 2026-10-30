@@ -21,6 +21,7 @@ class WireItem;
 class TextNoteItem;
 class TitleBlockItem;
 class LibraryRegistry;
+struct SymbolDef;
 namespace sim { class EventSimulator; }
 
 class SchematicScene : public QGraphicsScene {
@@ -67,6 +68,9 @@ public:
     bool hasSelection() const { return !selectedItems().isEmpty(); }
     Selection selection() const;
     void editItem(QGraphicsItem* item);
+    // RAM/ROM contents: the "data" property, or the live memory while simulating.
+    static bool isMemory(const SymbolDef& symbol);
+    void editMemory(ItemId id);
     // Selects components whose designator, label or device name contains
     // text (case-insensitive); returns how many were selected.
     int findAndSelect(const QString& text);
@@ -128,12 +132,15 @@ signals:
     void cursorMoved(QPointF scenePos);
     // Zoom tool click: factor > 1 zooms in around the point
     void zoomRequested(QPointF scenePos, double factor);
+    // Right click with the select tool; item is null over empty space.
+    void contextMenuRequested(QGraphicsItem* item, QPoint screenPos);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* e) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e) override;
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
     void keyPressEvent(QKeyEvent* e) override;
     void drawBackground(QPainter* p, const QRectF& rect) override;
     void drawForeground(QPainter* p, const QRectF& rect) override;
@@ -153,6 +160,7 @@ private:
     void onTitleBlockChanged();
     void scheduleNetlist();
     void rebuildNetlist();
+    void updateSceneRect();
 
     // wire tool
     void wireClick(QPointF p);
@@ -244,6 +252,7 @@ private:
     bool m_showPinDots = true;
     int m_highlightNet = -1;
     bool m_exporting = false;
+    bool m_suppressMenu = false;        // the right press ended a wire or a tool
 };
 
 } // namespace cm

@@ -3733,8 +3733,11 @@
     "~WE"
    ],
    "label": "RAM1K",
-   "description": "Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high",
-   "floatInputs": 1
+   "description": "Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high; initial contents as hex bytes in the \"data\" property",
+   "floatInputs": 1,
+   "props": {
+    "data": ""
+   }
   },
   {
    "id": "PROM32",

@@ -14,6 +14,8 @@
 #include "ui/PreferencesDialog.h"
 #include "ui/WaveformView.h"
 #include "ui/SchematicView.h"
+#include "ui/TextNoteItem.h"
+#include "ui/TitleBlockItem.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -29,6 +31,7 @@
 #include <QInputDialog>
 #include <QSaveFile>
 #include <QLabel>
+#include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPainter>
@@ -333,6 +336,8 @@ void MainWindow::createActions()
         m_view->zoomBy(factor);
         m_view->centerOn(at);
     });
+
+    connect(m_scene, &SchematicScene::contextMenuRequested, this, &MainWindow::showContextMenu);
 
     m_duplicate = new QAction(tr("Dup&licate"), this);
     m_duplicate->setShortcut(Qt::CTRL | Qt::Key_D);
@@ -861,6 +866,53 @@ bool MainWindow::saveMacro()
     updateTitle();
     statusBar()->showMessage(tr("Saved macro %1 (Macros category of the device library)").arg(m_macroName), 5000);
     return true;
+}
+
+// CircuitMaker's right-click menu: the item's own editors, then the edit commands.
+void MainWindow::showContextMenu(QGraphicsItem* item, QPoint screenPos)
+{
+    updateActions();
+    QMenu menu(this);
+    auto* comp = qgraphicsitem_cast<ComponentItem*>(item);
+    const bool memory = comp && SchematicScene::isMemory(*comp->symbol());
+    if (m_scene->simulating()) {
+        if (!memory)
+            return;
+        menu.addAction(tr("Edit PROM/&RAM..."), this, [this, id = comp->id()] { m_scene->editMemory(id); });
+        menu.exec(screenPos);
+        return;
+    }
+    if (comp) {
+        const QString kind = comp->symbol()->model.value(u"kind").toString();
+        if (memory)
+            menu.addAction(tr("Edit PROM/&RAM..."), this, [this, id = comp->id()] { m_scene->editMemory(id); });
+        const QString edit = kind == u"dataseq" ? tr("Edit &Data Sequencer...")
+                           : kind == u"pulser"  ? tr("Edit P&ulser...")
+                           : comp->symbol()->netLabel ? tr("Edit &Terminal Name...")
+                           : tr("Device &Properties...");
+        QAction* props = menu.addAction(edit, this, [this, item] { m_scene->editItem(item); });
+        menu.setDefaultAction(memory ? menu.actions().first() : props);
+        if (selectedMacro())
+            menu.addAction(m_expandMacro);
+        menu.addAction(m_topicHelp);
+        menu.addSeparator();
+    } else if (item && item->type() == TextNoteItem::Type) {
+        menu.setDefaultAction(menu.addAction(tr("Edit &Text..."), this, [this, item] { m_scene->editItem(item); }));
+        menu.addSeparator();
+    } else if (item && item->type() == TitleBlockItem::Type) {
+        menu.setDefaultAction(menu.addAction(tr("Edit Title &Block..."), this, [this, item] { m_scene->editItem(item); }));
+        menu.addSeparator();
+    }
+    if (m_scene->hasSelection()) {
+        menu.addActions({m_cut, m_copy, m_delete, m_duplicate});
+        if (!m_scene->selection().components.isEmpty()) {
+            menu.addSeparator();
+            menu.addActions({m_rotate, m_mirror});
+        }
+    } else {
+        menu.addActions({m_paste, m_selectAll});
+    }
+    menu.exec(screenPos);
 }
 
 void MainWindow::expandMacro()

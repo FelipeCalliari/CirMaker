@@ -17,6 +17,7 @@ private slots:
     void transceiver74245();
     void ramWriteRead();
     void promRead();
+    void ramContentsAndLiveEdit();
     void decoder74155();
     void parity74280();
     void keypadConnects();
@@ -291,6 +292,34 @@ void TestChips::promRead()
     b.sim.interact(cs, QStringLiteral("toggle"));     // deselect: outputs float
     b.sim.step(3);
     QCOMPARE(b.value(c, u, QStringLiteral("D0")), Logic::Z);
+}
+
+void TestChips::ramContentsAndLiveEdit()
+{
+    Circuit c;
+    Component ram;
+    ram.symbolId = QStringLiteral("RAM1K");
+    ram.designator = QStringLiteral("U1");
+    ram.props = {{QStringLiteral("data"), QStringLiteral("AB CD")}};
+    const ItemId u = c.addComponent(ram);
+    const ItemId a0 = source(c, u, QStringLiteral("A0"), -600, 0);
+    for (int i = 1; i < 10; ++i) tieLow(c, u, QStringLiteral("A%1").arg(i));
+    tieLow(c, u, QStringLiteral("~CS"));
+    const ItemId vcc = place(c, QStringLiteral("vcc"), {-2000, -2000});
+    label(c, vcc, QStringLiteral("VCC"), QStringLiteral("HIGH"));
+    label(c, u, QStringLiteral("~WE"), QStringLiteral("HIGH"));     // read only, keeps the contents
+    Bench b(c);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0xab);
+    QVector<int> words = b.sim.memory(u);
+    QCOMPARE(words.size(), 1024);
+    QCOMPARE(words[1], 0xcd);
+    words[0] = 0x5a;
+    b.sim.setMemory(u, words);                         // Edit PROM/RAM while simulating
+    b.sim.step(3);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x5a);
+    b.sim.interact(a0, QStringLiteral("toggle"));
+    b.sim.step(3);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0xcd);
 }
 
 void TestChips::decoder74155()

@@ -873,6 +873,13 @@ public:
         }
         driveBus(ctx, m_data, cs == 1 && addr ? std::optional<int>(m_mem[*addr]) : std::nullopt);
     }
+    QVector<int> memory() const override { return m_mem; }
+    void setMemory(ModelContext& ctx, const QVector<int>& words) override
+    {
+        for (int i = 0; i < m_mem.size(); ++i)
+            m_mem[i] = words.value(i) & 0xff;
+        evaluate(ctx);
+    }
 
 private:
     QVector<int> m_addr, m_data;

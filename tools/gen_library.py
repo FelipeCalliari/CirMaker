@@ -375,8 +375,9 @@ def cm_chips():
         cm_chip('RAM1K', 'Static RAM 1K x 8',
                 rev(D(10, 'A')), ['~CS', '~WE'] + [{'name': f'D{i}', 'dir': 'inout'} for i in range(7, -1, -1)],
                 {'kind': 'ram'}, rev(D(10, 'A')) + rev(D(8)) + ['~CS', '~WE'], -120, -120,
-                aliases=['1K RAM'], title='RAM 1Kx8',
-                description='Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high'),
+                aliases=['1K RAM'], title='RAM 1Kx8', props={'data': ''},
+                description='Static RAM, 1024 x 8: ~WE low writes, high reads; outputs float when ~CS is high; '
+                            'initial contents as hex bytes in the "data" property'),
         cm_chip('PROM32', 'PROM 32 x 8', ['~CS', '', '', ''] + rev(D(5, 'A')), [''] + rev(D(8)),
                 {'kind': 'rom'}, ['~CS'] + rev(D(5, 'A')) + rev(D(8)), -120, -120,
                 aliases=['PROM32'], title='PROM 32x8', props={'data': ''},

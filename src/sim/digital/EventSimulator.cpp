@@ -361,4 +361,20 @@ QVariantMap EventSimulator::persistentProps(ItemId id) const
     return it == m_byId.cend() ? QVariantMap{} : m_inst[*it].model->persistentProps();
 }
 
+QVector<int> EventSimulator::memory(ItemId id) const
+{
+    auto it = m_byId.constFind(id);
+    return it == m_byId.cend() ? QVector<int>{} : m_inst[*it].model->memory();
+}
+
+void EventSimulator::setMemory(ItemId id, const QVector<int>& words)
+{
+    auto it = m_byId.constFind(id);
+    if (it == m_byId.cend())
+        return;
+    Context ctx(*this, *it);
+    m_inst[*it].model->setMemory(ctx, words);
+    runInstant();
+}
+
 } // namespace cm::sim

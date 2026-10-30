@@ -20,6 +20,8 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | HotKeys de dispositivo (0–9, a–z, A–Z) | ✅ | |
 | Mostrar nomes dos nós / pontos nos pinos | ✅ | |
 | Grade, bloco de título | ✅ | |
+| Menu do botão direito (Device Properties, Edit PROM/RAM, Edit Data Sequencer, Edit Pulser, Edit Terminal Name, recortar/copiar/girar...) | ✅ | |
+| Folha que cresce com o circuito (rolar/zoom até qualquer peça) | ✅ | |
 | Borda com zonas (Borders) | ❌ | |
 | Auto Wire Routing / Quick Connect / Single Click Connect | 🟡 | arrastar a partir do pino; sem roteamento automático |
 | Set Label Positions, Group Items | ❌ | |
@@ -35,6 +37,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Navegador por categorias e busca | ✅ | |
 | Portas, flip-flops, 74xx/40xx de portas, MSI usados no curso | ✅ | 74LS74/73/112, 74139 e 74153 como pacote inteiro; 74LS181 falta |
 | Entradas/saídas digitais (chaves, teclados, displays, pulser, SCOPE) | ✅ | |
+| Edit PROM/RAM (grade hexadecimal, carregar/salvar .hex/.bin, edição ao vivo durante a simulação) | ✅ | RAM1K e PROM32 |
 | Data Sequencer + Pattern Editor | ✅ | clock interno/externo, níveis analógicos (fontes PWL); importado do `.ckt` |
 | 7-seg com decodificador, displays ASCII/hex | ✅ | |
 | Peças analógicas comuns | ✅ | R, C, L, diodos, BJT, MOSFET, amp-op, fontes, gerador, multímetro |

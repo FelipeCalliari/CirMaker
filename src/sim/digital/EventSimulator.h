@@ -43,6 +43,9 @@ public:
     void interact(ItemId id, const QString& action, int value = 0);
     // Properties that interactive models want saved (switch positions...).
     QVariantMap persistentProps(ItemId id) const;
+    // Live memory contents of a RAM/ROM; setMemory updates the outputs.
+    QVector<int> memory(ItemId id) const;
+    void setMemory(ItemId id, const QVector<int>& words);
     // Records every change of these nets (for the digital waveform view).
     void watch(const QVector<int>& nets);
     using History = QVector<std::pair<std::uint64_t, Logic>>;

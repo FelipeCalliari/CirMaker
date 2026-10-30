@@ -7,11 +7,13 @@
 #include "ui/MainWindow.h"
 #include "ui/PropertiesDialog.h"
 #include "ui/DataSequencerDialog.h"
+#include "ui/MemoryEditorDialog.h"
 
 #include <QComboBox>
 #include "ui/SchematicScene.h"
 #include "ui/WireItem.h"
 
+#include <QContextMenuEvent>
 #include <QGraphicsView>
 #include <QPainter>
 
@@ -38,6 +40,9 @@ private slots:
     void ledColourProperty();
     void patternEditorFills();
     void dataSequencerDialogKeepsWords();
+    void memoryEditorText();
+    void contextMenuSelectsItem();
+    void sceneGrowsWithItems();
     void screenshot();
 };
 
@@ -332,6 +337,44 @@ void TestGui::dataSequencerDialogKeepsWords()
     QCOMPARE(r.props.value(QStringLiteral("data")).toString(), QStringLiteral("01 02 04"));
     QCOMPARE(r.props.value(QStringLiteral("lines")).toInt(), 16);
     QCOMPARE(r.props.value(QStringLiteral("stop")).toInt(), 2);
+}
+
+void TestGui::memoryEditorText()
+{
+    const QVector<int> w = MemoryEditorDialog::fromText(QStringLiteral("1 ab,FF;100"), 8);
+    QCOMPARE(w, (QVector<int>{0x01, 0xab, 0xff, 0x00, 0, 0, 0, 0}));
+    QCOMPARE(MemoryEditorDialog::toText(w), QStringLiteral("01 AB FF"));
+    QCOMPARE(MemoryEditorDialog::fromText(QStringLiteral("1 2 3"), 2).size(), 2);
+    MemoryEditorDialog dlg(QStringLiteral("RAM"), w);
+    QCOMPARE(dlg.words(), w);
+}
+
+void TestGui::contextMenuSelectsItem()
+{
+    ViewFixture f;
+    const ItemId other = place(f.circuit, QStringLiteral("and2"), {-200, 0});
+    const ItemId id = place(f.circuit, QStringLiteral("and2"), {100, 0});
+    for (QGraphicsItem* it : f.scene.items())
+        if (auto* c = qgraphicsitem_cast<ComponentItem*>(it); c && c->id() == other) c->setSelected(true);
+    QList<QGraphicsItem*> hits;
+    connect(&f.scene, &SchematicScene::contextMenuRequested, this, [&](QGraphicsItem* it, QPoint) { hits << it; });
+    const QPoint p = f.at({100, 0});
+    QContextMenuEvent e(QContextMenuEvent::Mouse, p, f.view.viewport()->mapToGlobal(p));
+    QApplication::sendEvent(f.view.viewport(), &e);
+    QCOMPARE(hits.size(), 1);
+    auto* item = qgraphicsitem_cast<ComponentItem*>(hits.first());
+    QVERIFY(item && item->id() == id);
+    QCOMPARE(f.scene.selectedItems(), (QList<QGraphicsItem*>{item}));   // right click selects only it
+}
+
+void TestGui::sceneGrowsWithItems()
+{
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    place(circuit, QStringLiteral("and2"), {9000, 6000});
+    scene.refreshNetlist();
+    QVERIFY(scene.sceneRect().contains(QPointF(9500, 6500)));
 }
 
 QTEST_MAIN(TestGui)

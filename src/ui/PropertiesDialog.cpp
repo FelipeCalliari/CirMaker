@@ -69,6 +69,8 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         }
         if (it.key() == u"travel")
             continue;
+        if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
+            continue;       // edited with Edit PROM/RAM
         if (v.typeId() == QMetaType::Int || v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Double) {
             auto* spin = new QSpinBox;
             spin->setRange(0, 1000000);

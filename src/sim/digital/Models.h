@@ -55,6 +55,9 @@ public:
     virtual QVector<LinkPath> links() const { return {}; }
     // Properties to persist back into the component (e.g. switch position).
     virtual QVariantMap persistentProps() const { return {}; }
+    // Memory contents (RAM/ROM); empty for models without memory.
+    virtual QVector<int> memory() const { return {}; }
+    virtual void setMemory(ModelContext&, const QVector<int>& /*words*/) {}
 };
 
 // Creates the model named by symbol.model["kind"]; nullptr if the symbol has

@@ -76,6 +76,7 @@ private:
     void editMacro();
     void deleteMacro();
     const SymbolDef* selectedMacro() const;
+    void showContextMenu(QGraphicsItem* item, QPoint screenPos);
 
     void addRecent(const QString& path);
     void rebuildRecentMenu();

@@ -8,6 +8,7 @@
 #include "ui/ComponentItem.h"
 #include "ui/Hotkeys.h"
 #include "ui/DataSequencerDialog.h"
+#include "ui/MemoryEditorDialog.h"
 #include "ui/PropertiesDialog.h"
 #include "ui/SymbolPainter.h"
 #include "ui/TextNoteItem.h"
@@ -17,6 +18,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QInputDialog>
@@ -208,7 +210,19 @@ void SchematicScene::rebuildNetlist()
     m_flatWarnings.clear();
     m_flat = macros::flatten(*m_circuit, m_library, &m_flatWarnings);
     m_netlist = NetlistBuilder::build(simCircuit(), m_library);
+    updateSceneRect();
     update();
+}
+
+// The default sheet, grown so there is room to scroll past every item.
+void SchematicScene::updateSceneRect()
+{
+    QRectF r(-2000, -1500, 6000, 4500);
+    for (QGraphicsItem* it : items())
+        if (it != m_ghost && !it->parentItem())
+            r |= it->sceneBoundingRect().adjusted(-1000, -1000, 1000, 1000);
+    if (r != sceneRect())
+        setSceneRect(r);
 }
 
 // ---------------------------------------------------------------- tools
@@ -915,6 +929,49 @@ void SchematicScene::editItem(QGraphicsItem* item)
     }
 }
 
+bool SchematicScene::isMemory(const SymbolDef& symbol)
+{
+    const QString kind = symbol.model.value(u"kind").toString();
+    return kind == u"ram" || kind == u"rom";
+}
+
+void SchematicScene::editMemory(ItemId id)
+{
+    const Component* current = m_circuit->component(id);
+    const ComponentItem* item = m_componentItems.value(id);
+    if (!current || !item || !isMemory(*item->symbol()))
+        return;
+    const QString title = tr("Edit PROM/RAM %1").arg(current->designator);
+    if (m_sim) {
+        const QVector<int> words = m_sim->memory(id);
+        if (words.isEmpty())
+            return;
+        MemoryEditorDialog dlg(title, words, dialogParent());
+        if (dlg.exec() == QDialog::Accepted && dlg.words() != words) {
+            m_sim->setMemory(id, dlg.words());
+            update();
+        }
+        return;
+    }
+    int addressBits = 0;
+    static const QRegularExpression address(QStringLiteral("^A\\d+$"));
+    for (const SymbolPin& p : item->symbol()->pins)
+        if (address.match(p.name).hasMatch()) ++addressBits;
+    const QString before = current->props.value(QStringLiteral("data")).toString();
+    MemoryEditorDialog dlg(title, MemoryEditorDialog::fromText(before, 1 << addressBits), dialogParent());
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+    const QString text = MemoryEditorDialog::toText(dlg.words());
+    if (text == MemoryEditorDialog::toText(MemoryEditorDialog::fromText(before, 1 << addressBits)))
+        return;
+    Component after = *current;
+    after.props.insert(QStringLiteral("data"), text);
+    Selection b, a;
+    b.components << *current;
+    a.components << after;
+    m_undo->push(new ModifyItemsCommand(m_circuit, b, a, tr("Edit %1 contents").arg(current->designator)));
+}
+
 int SchematicScene::findAndSelect(const QString& text)
 {
     clearSelection();
@@ -1127,6 +1184,7 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         return;
     }
     if (e->button() == Qt::RightButton) {
+        m_suppressMenu = !m_wirePoints.isEmpty() || m_tool != Tool::Select;
         if (!m_wirePoints.isEmpty())
             m_wirePoints.size() >= 2 ? finishWire() : cancelWire();
         else if (m_tool != Tool::Select)
@@ -1398,6 +1456,30 @@ void SchematicScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
             return;
         }
     }
+}
+
+void SchematicScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
+{
+    if (std::exchange(m_suppressMenu, false) || m_ghost || !m_wirePoints.isEmpty() || m_tool != Tool::Select)
+        return;
+    QGraphicsItem* hit = nullptr;
+    for (QGraphicsItem* it : items(e->scenePos())) {
+        if (it == m_ghost)
+            continue;
+        if (it->type() == ComponentItem::Type || it->type() == WireItem::Type || it->type() == TextNoteItem::Type
+            || it->type() == TitleBlockItem::Type) {
+            hit = it;
+            break;
+        }
+    }
+    if (!simulating()) {
+        if (!hit || !hit->isSelected())
+            clearSelection();
+        if (hit)
+            hit->setSelected(true);
+    }
+    e->accept();
+    emit contextMenuRequested(hit, e->screenPos());
 }
 
 void SchematicScene::keyPressEvent(QKeyEvent* e)

@@ -441,7 +441,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
                 c.props.insert(QStringLiteral("offset"), QString::number((hi + lo) / 2));
             }
             c.label = s->defaultLabel;
-        } else if (kind == u"rom" && !d.data.isEmpty()) {
+        } else if ((kind == u"rom" || kind == u"ram") && !d.data.isEmpty()) {
             QStringList bytes;
             for (int b : d.data)
                 bytes << QStringLiteral("%1").arg(b, 2, 16, QChar(u'0')).toUpper();
