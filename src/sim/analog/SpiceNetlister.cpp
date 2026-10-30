@@ -173,12 +173,17 @@ private:
     {
         const QString kind = s.model.value(u"kind").toString();
         const QString name = uniqueName(c);
-        if (!s.spice.isEmpty()) {
-            emitTemplate(c, s, name);
-            noteCurrent(c, s.spice.value(u"line").toString().left(1), name);
-            if (s.spice.value(u"line").toString().startsWith(u'V'))
+        // the part's own SPICE line and models (Edit/Select Spice Model) win
+        const QString own = c.props.value(QStringLiteral("spice")).toString().trimmed();
+        if (const QString models = c.props.value(QStringLiteral("spiceModels")).toString().trimmed(); !models.isEmpty())
+            addModel(models);           // one block: identical parts share it
+        if (!own.isEmpty() || !s.spice.isEmpty()) {
+            const QString line = own.isEmpty() ? s.spice.value(u"line").toString() : own;
+            emitTemplate(c, s, name, line);
+            noteCurrent(c, line.left(1), name);
+            if (line.startsWith(u'V'))
                 m_deck.sourceOfDesignator.insert(c.designator, u'V' + name);
-            else if (s.spice.value(u"line").toString().startsWith(u'I'))
+            else if (line.startsWith(u'I'))
                 m_deck.sourceOfDesignator.insert(c.designator, u'I' + name);
             return;
         }
@@ -191,10 +196,9 @@ private:
         emitDigital(c, s, name, kind);
     }
 
-    void emitTemplate(const Component& c, const SymbolDef& s, const QString& name)
+    void emitTemplate(const Component& c, const SymbolDef& s, const QString& name, const QString& tpl)
     {
         static const QRegularExpression placeholder(QStringLiteral("\\{([^}]+)\\}"));
-        const QString tpl = s.spice.value(u"line").toString();
         QString out;
         int last = 0;
         for (auto it = placeholder.globalMatch(tpl); it.hasNext();) {

@@ -2524,142 +2524,172 @@ Saída do SPICE:
 <context>
     <name>cm::PropertiesDialog</name>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="28"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="29"/>
         <source>High time (ticks)</source>
         <translation>Tempo em nível alto (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="29"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="30"/>
         <source>Low time (ticks)</source>
         <translation>Tempo em nível baixo (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="30"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="31"/>
         <source>Initial state (0/1)</source>
         <translation>Estado inicial (0/1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="31"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="32"/>
         <source>Closed (0/1)</source>
         <translation>Fechada (0/1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="32"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="33"/>
         <source>Value</source>
         <translation>Valor</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="33"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="34"/>
         <source>Colour</source>
         <translation>Cor</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="34"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="35"/>
         <source>Propagation delay (ticks)</source>
         <translation>Atraso de propagação (ticks)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="40"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="41"/>
         <source>Red</source>
         <translation>Vermelho</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="41"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="42"/>
         <source>Green</source>
         <translation>Verde</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="42"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="43"/>
         <source>Yellow</source>
         <translation>Amarelo</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="43"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="44"/>
         <source>Blue</source>
         <translation>Azul</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="44"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="45"/>
         <source>Orange</source>
         <translation>Laranja</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="45"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="46"/>
         <source>White</source>
         <translation>Branco</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="54"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="55"/>
         <source>%1 properties</source>
         <translation>Propriedades de %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="62"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="63"/>
         <source>&amp;Designator:</source>
         <translation>&amp;Designador:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="64"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="65"/>
         <source>&amp;Net name:</source>
         <translation>Nome da &amp;rede:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="64"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="65"/>
         <source>&amp;Label:</source>
         <translation>&amp;Rótulo:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="67"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="68"/>
         <source>Show d&amp;esignator</source>
         <translation>Mostrar d&amp;esignador</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="68"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="69"/>
         <source>Show la&amp;bel</source>
         <translation>Mostrar &amp;rótulo</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="111"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="112"/>
         <source>PCB and parts list</source>
         <translation>PCB e lista de peças</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="115"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="116"/>
         <source>&amp;Package (footprint):</source>
         <translation>&amp;Encapsulamento (footprint):</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="117"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="118"/>
         <source>P&amp;in numbers...</source>
         <translation>Numeração dos p&amp;inos...</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="118"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="119"/>
         <source>Package pin numbers used by the PCB netlist</source>
         <translation>Números dos pinos do encapsulamento usados no netlist de PCB</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="121"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="122"/>
         <source>Exclude from the &amp;PCB netlist</source>
         <translation>Excluir do netlist de &amp;PCB</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="123"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="124"/>
         <source>Exclude from the parts &amp;list (BOM)</source>
         <translation>Excluir da &amp;lista de peças (BOM)</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="140"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="131"/>
+        <source>SPICE</source>
+        <translation>SPICE</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="135"/>
+        <source>(generated)</source>
+        <translation>(gerada)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="136"/>
+        <source>Replaces the part&apos;s SPICE line. {name} is its name, {value} its label, {pin} the node of a pin (e.g. {1}, {A}), {prop:x} a property; the first letter is the SPICE prefix (X for a subcircuit)</source>
+        <translation>Substitui a linha SPICE da peça. {name} é o nome dela, {value} o rótulo, {pino} o nó de um pino (ex.: {1}, {A}), {prop:x} uma propriedade; a primeira letra é o prefixo SPICE (X para subcircuito)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="139"/>
+        <source>&amp;Line:</source>
+        <translation>&amp;Linha:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="141"/>
+        <source>.model / .subckt ... .ends lines this part needs</source>
+        <translation>linhas .model / .subckt ... .ends que esta peça usa</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="143"/>
+        <source>&amp;Models:</source>
+        <translation>&amp;Modelos:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="157"/>
         <source>Pin numbers</source>
         <translation>Numeração dos pinos</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="143"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="160"/>
         <source>Pin</source>
         <translation>Pino</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="143"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="160"/>
         <source>Package pin</source>
         <translation>Pino do encapsulamento</translation>
     </message>
@@ -3195,27 +3225,27 @@ Saída do SPICE:
 <context>
     <name>cm::TitleBlockDialog</name>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="204"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="228"/>
         <source>Title block</source>
         <translation>Bloco de título</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="211"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="235"/>
         <source>&amp;Title:</source>
         <translation>&amp;Título:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="212"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="236"/>
         <source>&amp;Author:</source>
         <translation>&amp;Autor:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="213"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="237"/>
         <source>&amp;Date:</source>
         <translation>&amp;Data:</translation>
     </message>
     <message>
-        <location filename="../src/ui/PropertiesDialog.cpp" line="214"/>
+        <location filename="../src/ui/PropertiesDialog.cpp" line="238"/>
         <source>&amp;Revision:</source>
         <translation>&amp;Revisão:</translation>
     </message>

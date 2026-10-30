@@ -28,7 +28,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Group Items (portas no mesmo encapsulamento) | ✅ | U1A, U1B...; ao colocar, a porta entra no primeiro encapsulamento com vaga; pinos por parte no netlist de PCB e no BOM; importado do `.ckt` |
 | Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |
 | Copiar esquemático/formas de onda para a área de transferência como imagem | ✅ | Ctrl+Shift+C; formas de onda pelo Editar ou menu da janela |
-| Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | 🟡 | designador, rótulo, parâmetros, textos visíveis, encapsulamento, excluir do PCB/BOM, numeração dos pinos; sem prefixo SPICE |
+| Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | ✅ | designador, rótulo, parâmetros, textos visíveis, encapsulamento, excluir do PCB/BOM, numeração dos pinos, linha SPICE própria (prefixo, modelo, subcircuito) |
 | Cores e fontes configuráveis (Colors, Device/Text Font) | ✅ | Preferências: fundo, grade, dispositivos, fios, barramentos, texto, seleção, níveis lógicos; fontes de dispositivo e de texto |
 
 ## Biblioteca

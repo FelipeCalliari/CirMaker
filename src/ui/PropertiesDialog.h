@@ -9,6 +9,7 @@ class QLineEdit;
 class QSpinBox;
 class QCheckBox;
 class QComboBox;
+class QPlainTextEdit;
 
 namespace cm {
 
@@ -32,7 +33,9 @@ private:
     bool m_designatorDefault, m_labelDefault;   // the symbol's visibility
     QCheckBox *m_excludePcb = nullptr, *m_excludeBom = nullptr;
     QLineEdit* m_package = nullptr;
-    QString m_pins;                     // "pins" property, edited in its own table
+    QString m_pins;
+    QLineEdit* m_spiceLine = nullptr;
+    QPlainTextEdit* m_spiceModels = nullptr;                     // "pins" property, edited in its own table
     void editPins(const SymbolDef& symbol);
 };
 

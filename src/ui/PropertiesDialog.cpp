@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QGroupBox>
 #include <QHeaderView>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
@@ -90,7 +91,7 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break"
             || it.key() == u"probe"
             || it.key() == u"package" || it.key() == u"excludePcb" || it.key() == u"excludeBom"
-            || it.key() == u"pins")
+            || it.key() == u"pins" || it.key() == u"spice" || it.key() == u"spiceModels")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM
@@ -125,6 +126,22 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         pf->addRow(m_excludePcb);
         pf->addRow(m_excludeBom);
         form->addRow(pcb);
+
+        // CircuitMaker's Edit/Select Spice Model: the part's own netlist line
+        auto* spice = new QGroupBox(tr("SPICE"));
+        auto* sf = new QFormLayout(spice);
+        m_spiceLine = new QLineEdit(c.props.value(QStringLiteral("spice")).toString());
+        const QString builtIn = symbol.spice.value(u"line").toString();
+        m_spiceLine->setPlaceholderText(builtIn.isEmpty() ? tr("(generated)") : builtIn.section(u'\n', 0, 0));
+        m_spiceLine->setToolTip(tr("Replaces the part's SPICE line. {name} is its name, {value} its label, {pin} the node "
+                                   "of a pin (e.g. {1}, {A}), {prop:x} a property; the first letter is the SPICE prefix "
+                                   "(X for a subcircuit)"));
+        sf->addRow(tr("&Line:"), m_spiceLine);
+        m_spiceModels = new QPlainTextEdit(c.props.value(QStringLiteral("spiceModels")).toString());
+        m_spiceModels->setPlaceholderText(tr(".model / .subckt ... .ends lines this part needs"));
+        m_spiceModels->setMaximumHeight(80);
+        sf->addRow(tr("&Models:"), m_spiceModels);
+        form->addRow(spice);
     }
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -190,6 +207,13 @@ Component PropertiesDialog::result() const
     };
     flag(m_excludePcb, QStringLiteral("excludePcb"));
     flag(m_excludeBom, QStringLiteral("excludeBom"));
+    if (m_spiceLine) {
+        const QString line = m_spiceLine->text().trimmed(), models = m_spiceModels->toPlainText().trimmed();
+        if (line.isEmpty()) c.props.remove(QStringLiteral("spice"));
+        else c.props.insert(QStringLiteral("spice"), line);
+        if (models.isEmpty()) c.props.remove(QStringLiteral("spiceModels"));
+        else c.props.insert(QStringLiteral("spiceModels"), models);
+    }
     if (m_pins.isEmpty()) c.props.remove(QStringLiteral("pins"));
     else c.props.insert(QStringLiteral("pins"), m_pins);
     if (m_package) {

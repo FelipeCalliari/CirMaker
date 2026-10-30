@@ -48,6 +48,7 @@ private slots:
     void blocksAndExpressions();
     void transmissionLineDelay();
     void unijunctions();
+    void ownSpiceLine();
     void importedExamplesSimulate();
 
 private:
@@ -1099,6 +1100,27 @@ void TestAnalog::unijunctions()
     const spice::Result rp = simulate(p, &deck);
     QVERIFY2(rp.ok, qPrintable(rp.error + u'\n' + deck.text));
     QVERIFY2(rp.last(QStringLiteral("an")).value_or(0) > 4.9, qPrintable(QString::number(rp.last(QStringLiteral("an")).value_or(0))));
+}
+
+void TestAnalog::ownSpiceLine()
+{
+    requireEngine();
+    Circuit c;
+    divider(c);
+    // R2 becomes a subcircuit of two 500 ohm resistors, and a diode with its own model
+    for (const Component& comp : c.components()) {
+        if (comp.designator != u"R2") continue;
+        Component r = comp;
+        r.props.insert(QStringLiteral("spice"), QStringLiteral("X{name} {1} {2} HALVES"));
+        r.props.insert(QStringLiteral("spiceModels"), QStringLiteral(".subckt HALVES a b\nR1 a m 500\nR2 m b 500\n.ends HALVES"));
+        c.updateComponent(r);
+    }
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    QVERIFY2(deck.text.contains(QStringLiteral("Xr2 out 0 HALVES")), qPrintable(deck.text));
+    QVERIFY(qAbs(r.last(QStringLiteral("out")).value_or(0) - 5) < 1e-6);
 }
 
 void TestAnalog::importedExamplesSimulate()
