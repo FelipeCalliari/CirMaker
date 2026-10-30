@@ -520,7 +520,7 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
     }
 
     // ---- wires: scale, then pin attached ends to our pins
-    QHash<ItemId, int> wireNetOf;               // our wire -> CM net
+    QMap<ItemId, int> wireNetOf;                // our wire -> CM net (ordered: same result every run)
     struct Entry { QPointF at; QPointF from; QString name; int cmNet; };
     QVector<Entry> entries;                     // wire ends on a bus, named as in CircuitMaker
     for (const CktWire& w : file.wires) {
