@@ -300,6 +300,8 @@ void TestCktImport::exportRoundTrip()
         else {
             different << QFileInfo(path).fileName();
             if (qEnvironmentVariableIsSet("CM_CKT_EXPORT_DIFF")) {
+                qInfo("%s: %d shorts read back (%s); skipped %s", qPrintable(path), back.shorts,
+                      qPrintable(back.warnings.join(u"; ")), qPrintable(rep.skipped.join(u", ")));
                 const QStringList pa = partition(a, skipped), pb = partition(b, {});
                 for (const QString& g : pa) if (!pb.contains(g)) qInfo("  - %s", qPrintable(g));
                 for (const QString& g : pb) if (!pa.contains(g)) qInfo("  + %s", qPrintable(g));

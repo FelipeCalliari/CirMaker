@@ -10,11 +10,13 @@
 #include <QHash>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSet>
 #include <QTransform>
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <optional>
 
 namespace cm::CktExporter {
 
@@ -43,10 +45,39 @@ QString join(const QVector<int>& v)
 
 QString rect(const QRect& r) { return join({r.left(), r.top(), r.right(), r.bottom()}); }
 
+// A bus or bus-entry name as CircuitMaker stores it: the characters read as
+// base-64 digits (0-9, A-Z, a-z, _) minus 64^length; up to 5 characters.
+std::optional<int> encodeName(const QString& name)
+{
+    if (name.isEmpty() || name.size() > 5) return std::nullopt;
+    qint64 code = 0, base = 1;
+    for (QChar c : name) {
+        int d;
+        if (c >= u'0' && c <= u'9') d = c.unicode() - '0';
+        else if (c >= u'A' && c <= u'Z') d = c.unicode() - 'A' + 10;
+        else if (c >= u'a' && c <= u'z') d = c.unicode() - 'a' + 36;
+        else if (c == u'_') d = 62;
+        else return std::nullopt;
+        code = code * 64 + d;
+        base *= 64;
+    }
+    return int(code - base);
+}
+
+// A bus name: plain numbers are stored as they are.
+std::optional<int> busCode(const QString& name)
+{
+    static const QRegularExpression digits(QStringLiteral("^[1-9]\\d{0,8}$"));
+    if (digits.match(name).hasMatch()) return name.toInt();
+    return encodeName(name);
+}
+
+// The lower median: the importer takes the upper median of the opposite
+// differences, so an even number of votes comes back to the same place.
 int median(QVector<double> v)
 {
     std::sort(v.begin(), v.end());
-    return int(std::lround(v[v.size() / 2]));
+    return int(std::lround(v[(v.size() - 1) / 2]));
 }
 
 struct Device {
@@ -164,6 +195,80 @@ QString trailer()
     return l.join(u'\n');
 }
 
+struct WireOut {
+    QVector<QPoint> pts;            // CircuitMaker units
+    int pin[2] = {0, 0}, dev[2] = {0, 0}, onWire[2] = {0, 0};
+    int net = -1;                   // ours
+};
+
+bool onSegment(QPoint p, QPoint a, QPoint b)
+{
+    const qint64 cross = qint64(b.x() - a.x()) * (p.y() - a.y()) - qint64(b.y() - a.y()) * (p.x() - a.x());
+    return cross == 0 && p.x() >= std::min(a.x(), b.x()) && p.x() <= std::max(a.x(), b.x())
+           && p.y() >= std::min(a.y(), b.y()) && p.y() <= std::max(a.y(), b.y());
+}
+
+bool onPolyline(QPoint p, const QVector<QPoint>& pts)
+{
+    for (int k = 0; k + 1 < pts.size(); ++k)
+        if (onSegment(p, pts[k], pts[k + 1])) return true;
+    return false;
+}
+
+// CircuitMaker's pins are not always where ours are: a wire ending on its
+// pin, or routed along our narrower symbol, can run over the tip of another
+// pin. CircuitMaker does not connect it but draws it so; move such segments
+// a grid step aside (a stub keeps an end on its pin).
+void clearPinTips(QVector<WireOut>& outs, const QVector<Device>& devices, const Netlist& netlist)
+{
+    struct Tip { QPoint at; int net; };
+    QVector<Tip> tips;
+    for (const Device& d : devices)
+        for (int k = 1; k <= d.lib->pinCount; ++k)
+            tips << Tip{d.pinAt(k), d.ourPin[k - 1] < 0 ? -1 : netlist.netOf(d.c->id, d.ourPin[k - 1])};
+    auto crossesTip = [&](const QVector<QPoint>& pts, int net) {
+        for (int k = 0; k + 1 < pts.size(); ++k)
+            for (const Tip& t : std::as_const(tips))
+                if ((t.net != net || t.net < 0) && onSegment(t.at, pts[k], pts[k + 1])) return true;
+        return false;
+    };
+    for (int i = 0; i < outs.size(); ++i) {
+        WireOut& o = outs[i];
+        if (!crossesTip(o.pts, o.net)) continue;
+        // ends of other wires: those on this one must stay on it, those of
+        // other nets must not come to lie on it
+        QVector<QPoint> held, foreign;
+        for (int j = 0; j < outs.size(); ++j) {
+            if (j == i) continue;
+            for (QPoint end : {outs[j].pts.first(), outs[j].pts.last()}) {
+                if (outs[j].net == o.net && onPolyline(end, o.pts)) held << end;
+                else if (outs[j].net != o.net) foreign << end;
+            }
+        }
+        for (int k = 0; k + 1 < o.pts.size(); ++k) {
+            QVector<QPoint> one{o.pts[k], o.pts[k + 1]};
+            if (!crossesTip(one, o.net)) continue;
+            const bool horizontal = one[0].y() == one[1].y();
+            if (!horizontal && one[0].x() != one[1].x()) continue;
+            for (int off : {3, -3, 6, -6}) {
+                QVector<QPoint> trial = o.pts;
+                int a = k;
+                if (a == 0) { trial.prepend(trial.first()); ++a; }
+                if (a + 1 == trial.size() - 1) trial.append(trial.last());
+                const QPoint d = horizontal ? QPoint(0, off) : QPoint(off, 0);
+                trial[a] += d;
+                trial[a + 1] += d;
+                if (crossesTip(trial, o.net)) continue;
+                if (std::any_of(held.cbegin(), held.cend(), [&](QPoint p) { return !onPolyline(p, trial); })) continue;
+                if (std::any_of(foreign.cbegin(), foreign.cend(), [&](QPoint p) { return onPolyline(p, trial); })) continue;
+                o.pts = trial;
+                k = a;
+                break;
+            }
+        }
+    }
+}
+
 } // namespace
 
 const CmLibDevice* deviceFor(const SymbolDef& s, const CmDeviceLib& lib)
@@ -189,11 +294,47 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         return n.pins.size() + n.wires.size() > 1 ? net + 1 : 0;
     };
 
+    // ---- bus lines, and the net labels on them: their entries
+    QVector<const Wire*> buses;
+    for (const Wire& w : circuit.wires()) {
+        if (!w.bus || w.points.size() < 2) continue;
+        if (busCode(w.name)) buses << &w;
+        else rep.skipped << QStringLiteral("bus %1").arg(w.name);
+    }
+    struct BusEntry { QPointF at; int bus; int code; };
+    QVector<BusEntry> entries;
+    QSet<ItemId> entryLabels;
+    for (const Component& c : circuit.components()) {
+        const SymbolDef* s = library.find(c.symbolId);
+        if (!s || !s->netLabel || s->pins.isEmpty()) continue;
+        const QPointF at = library.pinScenePos(c, 0);
+        // an entry is where a wire ends on the bus; a label merely lying on
+        // one is a terminal
+        const bool wireEnds = std::any_of(circuit.wires().cbegin(), circuit.wires().cend(), [&](const Wire& w) {
+            return !w.bus && !w.points.isEmpty()
+                   && (WireGeometry::near(w.points.first(), at) || WireGeometry::near(w.points.last(), at));
+        });
+        for (int b = 0; wireEnds && b < buses.size(); ++b) {
+            if (!WireGeometry::onPolyline(at, buses[b]->points)) continue;
+            // numbered entries belong to their bus: "DATA.3" on bus DATA is 3
+            const QString prefix = buses[b]->name + u'.';
+            const QString number = c.label.startsWith(prefix) ? c.label.mid(prefix.size()) : QString();
+            bool numeric = false;
+            const int n = number.toInt(&numeric);
+            const std::optional<int> code = numeric && n >= 0 ? std::optional<int>(n) : encodeName(c.label);
+            // a second label at an entry stays a terminal, tied to it below
+            if (!code || std::any_of(entries.cbegin(), entries.cend(), [&](const BusEntry& e) { return e.at == at; })) break;
+            entries << BusEntry{at, b, *code};
+            entryLabels << c.id;
+            break;
+        }
+    }
+
     // ---- devices
     QVector<Device> devices;
     for (const Component& c : circuit.components()) {
         const SymbolDef* s = library.find(c.symbolId);
-        if (!s) continue;
+        if (!s || entryLabels.contains(c.id)) continue;
         Device d;
         d.c = &c;
         d.s = s;
@@ -208,13 +349,23 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         Component turned = c;
         turned.pos = {};
         d.turn = LibraryRegistry::placement(turned);
-        QVector<double> xs, ys;
+        // the origin that puts CircuitMaker's pins where ours are; like the
+        // importer, from the pins wires end on, one vote per wire end, so a
+        // symbol of another width comes back where it was
+        QVector<double> xs, ys, allX, allY;
         for (int k = 1; k <= d.lib->pinCount; ++k) {
             if (d.ourPin[k - 1] < 0) continue;
-            const QPointF at = library.pinScenePos(c, d.ourPin[k - 1]) * kToCm - d.turn.map(QPointF(d.lib->pins[k - 1]));
-            xs << at.x();
-            ys << at.y();
+            const QPointF pin = library.pinScenePos(c, d.ourPin[k - 1]);
+            const QPointF at = pin * kToCm - d.turn.map(QPointF(d.lib->pins[k - 1]));
+            allX << at.x();
+            allY << at.y();
+            for (const Wire& w : circuit.wires()) {
+                if (w.bus || w.points.isEmpty()) continue;
+                const int ends = WireGeometry::near(w.points.first(), pin) + WireGeometry::near(w.points.last(), pin);
+                for (int n = 0; n < ends; ++n) { xs << at.x(); ys << at.y(); }
+            }
         }
+        if (xs.isEmpty()) { xs = allX; ys = allY; }
         d.origin = xs.isEmpty() ? toCm(c.pos) : QPoint(median(xs), median(ys));
         devices << d;
     }
@@ -373,27 +524,39 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     }
     rep.devices = int(devices.size());
 
-    // ---- wires: each end on a device pin or on another wire
+    // ---- wires: each end on a device pin, a bus line or another wire; the
+    // bus lines come first, so wire j + 1 of the file is buses[j]
     QVector<const Wire*> wires;
     QVector<ItemId> wireIds;
     for (auto it = circuit.wires().cbegin(); it != circuit.wires().cend(); ++it) {
-        if (it->bus) {
-            rep.skipped << QStringLiteral("bus %1").arg(it->name);
-            continue;
-        }
-        if (it->points.size() < 2) continue;
+        if (it->bus || it->points.size() < 2) continue;
         wires << &*it;
         wireIds << it.key();
     }
+    const int nb = int(buses.size());
     QStringList wireRecords;
+    for (const Wire* b : std::as_const(buses)) {
+        QStringList rec;
+        rec << join({*busCode(b->name), 0, 1, 0, 0, 0x20, 0, 0, 0, 0, 0, int(b->points.size())});
+        for (QPointF p : b->points) rec << join({toCm(p).x(), toCm(p).y()});
+        wireRecords << rec.join(u'\n');
+    }
+    QVector<WireOut> outs;
     for (int i = 0; i < wires.size(); ++i) {
         const Wire& w = *wires[i];
-        QVector<QPoint> pts;
+        WireOut o;
+        QVector<QPoint>& pts = o.pts;
+        int (&pin)[2] = o.pin, (&dev)[2] = o.dev, (&onWire)[2] = o.onWire;
         for (QPointF p : w.points) pts << toCm(p);
-        int pin[2] = {0, 0}, dev[2] = {0, 0}, onWire[2] = {0, 0};
         for (int e = 0; e < 2; ++e) {
             const QPointF end = e == 0 ? w.points.first() : w.points.last();
             bool found = false;
+            for (const BusEntry& be : std::as_const(entries)) {
+                if (found || !WireGeometry::near(be.at, end)) continue;
+                found = true;
+                pin[e] = be.code;
+                onWire[e] = be.bus + 1;
+            }
             for (int j = 0; j < devices.size() && !found; ++j) {
                 const Device& d = devices[j];
                 for (int k = 1; k <= d.lib->pinCount && !found; ++k) {
@@ -421,13 +584,37 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             for (int j = 0; j < wires.size() && !found; ++j) {
                 if (j == i || !WireGeometry::onPolyline(end, wires[j]->points)) continue;
                 found = true;
-                onWire[e] = j + 1;
+                onWire[e] = nb + j + 1;
             }
         }
-        const int net = netNumber(netlist.wireNet.value(wireIds[i], -1));
+        pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
+        if (pts.size() == 1) pts << pts.first();
+        o.net = netlist.wireNet.value(wireIds[i], -1);
+        outs << o;
+    }
+    // terminals at a bus entry: a zero-length wire from the terminal to the entry
+    for (int j = 0; j < devices.size(); ++j) {
+        if (!devices[j].s->netLabel || devices[j].ourPin.isEmpty() || devices[j].ourPin[0] < 0) continue;
+        const QPointF at = library.pinScenePos(*devices[j].c, devices[j].ourPin[0]);
+        for (const BusEntry& be : std::as_const(entries)) {
+            if (!WireGeometry::near(be.at, at)) continue;
+            WireOut o;
+            o.pts = {devices[j].pinAt(1), devices[j].pinAt(1)};
+            o.pin[0] = 1;
+            o.dev[0] = j + 1;
+            o.pin[1] = be.code;
+            o.onWire[1] = be.bus + 1;
+            o.net = netlist.netOf(devices[j].c->id, devices[j].ourPin[0]);
+            outs << o;
+            break;
+        }
+    }
+    clearPinTips(outs, devices, netlist);
+    for (const WireOut& o : std::as_const(outs)) {
         QStringList rec;
-        rec << join({pin[0], pin[1], net, 0, 0, 0, 0, dev[0], dev[1], onWire[0], onWire[1], int(pts.size())});
-        for (QPoint p : pts) rec << join({p.x(), p.y()});
+        rec << join({o.pin[0], o.pin[1], netNumber(o.net), 0, 0, 0, 0, o.dev[0], o.dev[1], o.onWire[0], o.onWire[1],
+                     int(o.pts.size())});
+        for (QPoint p : o.pts) rec << join({p.x(), p.y()});
         wireRecords << rec.join(u'\n');
     }
     rep.wires = int(wireRecords.size());
