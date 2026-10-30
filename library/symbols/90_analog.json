@@ -4624,6 +4624,986 @@
      "dir": "in"
     }
    ]
+  },
+  {
+   "id": "ujt",
+   "name": "N-UJT",
+   "prefix": "Q",
+   "label": "2N2646",
+   "aliases": [
+    "N-UJT"
+   ],
+   "cmPins": [
+    "E",
+    "B1",
+    "B2"
+   ],
+   "spice": {
+    "line": "X{name} {E} {B1} {B2} UJT_GEN",
+    "subckt": [
+     ".subckt UJT_GEN e b1 b2",
+     "Rb2 b2 x 2.4k",
+     "Ve e e1 0",
+     "D1 e1 x DUJT",
+     "Bb1 x b1 I=v(x,b1)/3.6k*(1+40*tanh(max(i(Ve),0)/2m))",
+     "Cx x b1 1n",
+     ".model DUJT D(Is=1e-14 Rs=10 Cjo=10p)",
+     ".ends UJT_GEN"
+    ]
+   },
+   "description": "Unijunction transistor (eta 0.6, Rbb 6k): fires when E rises above 0.6 V(B2,B1) + 0.6 V",
+   "graphics": [
+    {
+     "circle": [
+      5,
+      0,
+      30
+     ]
+    },
+    {
+     "line": [
+      -50,
+      -30,
+      -20,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -30,
+      0,
+      -10
+     ]
+    },
+    {
+     "path": "M -8 -14 L 0 -10 L -4 -18"
+    },
+    {
+     "line": [
+      5,
+      -25,
+      5,
+      25
+     ]
+    },
+    {
+     "line": [
+      5,
+      -20,
+      30,
+      -40
+     ]
+    },
+    {
+     "line": [
+      30,
+      -40,
+      30,
+      -60
+     ]
+    },
+    {
+     "line": [
+      5,
+      20,
+      30,
+      40
+     ]
+    },
+    {
+     "line": [
+      30,
+      40,
+      30,
+      60
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "E",
+     "at": [
+      -50,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "B1",
+     "at": [
+      30,
+      60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "B2",
+     "at": [
+      30,
+      -60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "put",
+   "name": "PUT",
+   "prefix": "Q",
+   "label": "2N6027",
+   "aliases": [
+    "PUT"
+   ],
+   "cmPins": [
+    "A",
+    "G",
+    "K"
+   ],
+   "spice": {
+    "line": "X{name} {A} {G} {K} PUT_GEN",
+    "subckt": [
+     ".subckt PUT_GEN a g k",
+     "Qp x g a PPUT",
+     "Qn g x k NPUT",
+     "Rx x k 10k",
+     ".model PPUT PNP(Bf=20 Is=1e-14 Cje=5p Cjc=5p)",
+     ".model NPUT NPN(Bf=100 Is=1e-14 Cje=5p Cjc=5p)",
+     ".ends PUT_GEN"
+    ]
+   },
+   "description": "Programmable unijunction transistor: conducts A to K once A rises 0.6 V above G",
+   "graphics": [
+    {
+     "line": [
+      50,
+      0,
+      14,
+      0
+     ]
+    },
+    {
+     "path": "M 14 -12 L 14 12 L -14 0 Z"
+    },
+    {
+     "line": [
+      -14,
+      -12,
+      -14,
+      12
+     ]
+    },
+    {
+     "line": [
+      -14,
+      0,
+      -50,
+      0
+     ]
+    },
+    {
+     "line": [
+      14,
+      -12,
+      30,
+      -30
+     ]
+    },
+    {
+     "line": [
+      30,
+      -30,
+      50,
+      -30
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "A",
+     "at": [
+      50,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "G",
+     "at": [
+      50,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "K",
+     "at": [
+      -50,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "nlv",
+   "name": "NLV Source",
+   "prefix": "B",
+   "label": "NLV",
+   "aliases": [
+    "NLV Source"
+   ],
+   "cmPins": [
+    "V+",
+    "V-"
+   ],
+   "props": {
+    "expr": "0"
+   },
+   "spice": {
+    "line": "B{name} {V+} {V-} V={prop:expr}"
+   },
+   "description": "Nonlinear voltage source: V = the \"expr\" property, a SPICE expression of node voltages (v(out), v(a,b)), currents of sources (i(v1)) and time",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      25
+     ]
+    },
+    {
+     "line": [
+      0,
+      -70,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      0,
+      25,
+      0,
+      70
+     ]
+    },
+    {
+     "text": "NL",
+     "at": [
+      0,
+      0
+     ],
+     "size": 9
+    },
+    {
+     "text": "+",
+     "at": [
+      14,
+      -34
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "V+",
+     "at": [
+      0,
+      -70
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "V-",
+     "at": [
+      0,
+      70
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "nli",
+   "name": "NLI Source",
+   "prefix": "B",
+   "label": "NLI",
+   "aliases": [
+    "NLI Source"
+   ],
+   "cmPins": [
+    "I+",
+    "I-"
+   ],
+   "props": {
+    "expr": "0"
+   },
+   "spice": {
+    "line": "B{name} {I+} {I-} I={prop:expr}"
+   },
+   "description": "Nonlinear current source: I (out of I-) = the \"expr\" property, a SPICE expression",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      25
+     ]
+    },
+    {
+     "line": [
+      0,
+      -70,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      0,
+      25,
+      0,
+      70
+     ]
+    },
+    {
+     "line": [
+      0,
+      -14,
+      0,
+      14
+     ]
+    },
+    {
+     "path": "M -6 6 L 0 14 L 6 6"
+    }
+   ],
+   "pins": [
+    {
+     "name": "I+",
+     "at": [
+      0,
+      -70
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "I-",
+     "at": [
+      0,
+      70
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "adc8",
+   "name": "ADC8",
+   "prefix": "U",
+   "label": "ADC8",
+   "aliases": [
+    "ADC8"
+   ],
+   "cmPins": [
+    "Vin",
+    "VREF+",
+    "VREF-",
+    "SC",
+    "OE",
+    "EOC",
+    "D0",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "D7"
+   ],
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "Vin",
+     "",
+     "VREF+",
+     "VREF-",
+     "",
+     "SC",
+     "OE"
+    ],
+    "right": [
+     {
+      "name": "D7",
+      "dir": "out"
+     },
+     {
+      "name": "D6",
+      "dir": "out"
+     },
+     {
+      "name": "D5",
+      "dir": "out"
+     },
+     {
+      "name": "D4",
+      "dir": "out"
+     },
+     {
+      "name": "D3",
+      "dir": "out"
+     },
+     {
+      "name": "D2",
+      "dir": "out"
+     },
+     {
+      "name": "D1",
+      "dir": "out"
+     },
+     {
+      "name": "D0",
+      "dir": "out"
+     },
+     {
+      "name": "EOC",
+      "dir": "out"
+     }
+    ],
+    "leftStart": -60,
+    "rightStart": -90,
+    "title": "ADC8"
+   },
+   "spice": {
+    "line": "R{name}in {Vin} {VREF-} 1Meg\nB{name}eoc {EOC} 0 V=5\nB{name}0 {D0} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/1)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/2))\nB{name}1 {D1} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/2)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/4))\nB{name}2 {D2} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/4)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/8))\nB{name}3 {D3} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/8)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/16))\nB{name}4 {D4} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/16)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/32))\nB{name}5 {D5} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/32)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/64))\nB{name}6 {D6} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/64)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/128))\nB{name}7 {D7} 0 V=5*(floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/128)-2*floor(min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)/256))"
+   },
+   "description": "8-bit analog-to-digital converter (analog simulation): D = (Vin - VREF-) / (VREF+ - VREF-) x 256, outputs 0/5 V, converting continuously"
+  },
+  {
+   "id": "dac8",
+   "name": "DAC8",
+   "prefix": "U",
+   "label": "DAC8",
+   "aliases": [
+    "DAC8"
+   ],
+   "cmPins": [
+    "D7",
+    "D6",
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "VREF-",
+    "VREF+",
+    "Vout"
+   ],
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "D7",
+     "D6",
+     "D5",
+     "D4",
+     "D3",
+     "D2",
+     "D1",
+     "D0"
+    ],
+    "right": [
+     {
+      "name": "Vout",
+      "dir": "out"
+     },
+     "",
+     {
+      "name": "VREF+",
+      "dir": "in"
+     },
+     {
+      "name": "VREF-",
+      "dir": "in"
+     }
+    ],
+    "leftStart": -90,
+    "rightStart": -30,
+    "title": "DAC8"
+   },
+   "spice": {
+    "line": "B{name} {Vout} 0 V=v({VREF-})+(v({VREF+})-v({VREF-}))*((v({D0})>2.5?1:0)+(v({D1})>2.5?2:0)+(v({D2})>2.5?4:0)+(v({D3})>2.5?8:0)+(v({D4})>2.5?16:0)+(v({D5})>2.5?32:0)+(v({D6})>2.5?64:0)+(v({D7})>2.5?128:0))/256"
+   },
+   "description": "8-bit digital-to-analog converter (analog simulation): Vout = VREF- + (VREF+ - VREF-) x D / 256, inputs high above 2.5 V"
+  },
+  {
+   "id": "tline",
+   "name": "Lossless Line",
+   "prefix": "T",
+   "label": "LLTR",
+   "aliases": [
+    "LossLessLine"
+   ],
+   "cmPins": [
+    "N1+",
+    "N1-",
+    "N2+",
+    "N2-"
+   ],
+   "props": {
+    "z0": "50",
+    "td": "10n"
+   },
+   "spice": {
+    "line": "T{name} {N1+} {N1-} {N2+} {N2-} Z0={prop:z0} TD={prop:td}"
+   },
+   "description": "Lossless transmission line: impedance z0, delay td",
+   "graphics": [
+    {
+     "rect": [
+      -130,
+      -20,
+      260,
+      40
+     ]
+    },
+    {
+     "line": [
+      -160,
+      -10,
+      -130,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -160,
+      10,
+      -130,
+      10
+     ]
+    },
+    {
+     "line": [
+      130,
+      -10,
+      160,
+      -10
+     ]
+    },
+    {
+     "line": [
+      130,
+      10,
+      160,
+      10
+     ]
+    },
+    {
+     "text": "Z0",
+     "at": [
+      0,
+      0
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "N1+",
+     "at": [
+      -160,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N1-",
+     "at": [
+      -160,
+      10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N2+",
+     "at": [
+      160,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N2-",
+     "at": [
+      160,
+      10
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "coax",
+   "name": "Coax",
+   "prefix": "T",
+   "label": "COAX",
+   "aliases": [
+    "Coax"
+   ],
+   "cmPins": [
+    "N1+",
+    "N1-",
+    "N2+",
+    "N2-"
+   ],
+   "props": {
+    "z0": "50",
+    "td": "10n"
+   },
+   "spice": {
+    "line": "T{name} {N1+} {N1-} {N2+} {N2-} Z0={prop:z0} TD={prop:td}"
+   },
+   "description": "Coaxial cable as a lossless line: impedance z0, delay td; N2- is the shield",
+   "graphics": [
+    {
+     "rect": [
+      -130,
+      -24,
+      260,
+      48
+     ]
+    },
+    {
+     "line": [
+      -130,
+      -10,
+      130,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -160,
+      -10,
+      -130,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -160,
+      10,
+      -130,
+      10
+     ]
+    },
+    {
+     "line": [
+      130,
+      -10,
+      160,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -20,
+      24,
+      -20,
+      150
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "N1+",
+     "at": [
+      -160,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N1-",
+     "at": [
+      -160,
+      10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N2+",
+     "at": [
+      160,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N2-",
+     "at": [
+      -20,
+      150
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "twisted_pair",
+   "name": "Twisted Pair",
+   "prefix": "T",
+   "label": "PAIR",
+   "aliases": [
+    "TwistedPair"
+   ],
+   "cmPins": [
+    "N1+",
+    "N1-",
+    "N2+",
+    "N2-"
+   ],
+   "props": {
+    "z0": "100",
+    "td": "10n"
+   },
+   "spice": {
+    "line": "T{name} {N1+} {N1-} {N2+} {N2-} Z0={prop:z0} TD={prop:td}"
+   },
+   "description": "Twisted pair as a lossless line: impedance z0, delay td",
+   "graphics": [
+    {
+     "path": "M -130 -10 Q -110 10 -90 -10 Q -70 10 -50 -10 Q -30 10 -10 -10 Q 10 10 30 -10 Q 50 10 70 -10 Q 90 10 110 -10 L 130 -10"
+    },
+    {
+     "path": "M -130 10 Q -110 -10 -90 10 Q -70 -10 -50 10 Q -30 -10 -10 10 Q 10 -10 30 10 Q 50 -10 70 10 Q 90 -10 110 10 L 130 10"
+    },
+    {
+     "line": [
+      -160,
+      -10,
+      -130,
+      -10
+     ]
+    },
+    {
+     "line": [
+      -160,
+      10,
+      -130,
+      10
+     ]
+    },
+    {
+     "line": [
+      130,
+      -10,
+      160,
+      -10
+     ]
+    },
+    {
+     "line": [
+      130,
+      10,
+      160,
+      10
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "N1+",
+     "at": [
+      -160,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N1-",
+     "at": [
+      -160,
+      10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N2+",
+     "at": [
+      160,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N2-",
+     "at": [
+      160,
+      10
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "gain_block",
+   "name": "Gain",
+   "prefix": "A",
+   "label": "x1",
+   "aliases": [
+    "gain"
+   ],
+   "cmPins": [
+    "IN",
+    "OUT"
+   ],
+   "props": {
+    "gain": "1"
+   },
+   "spice": {
+    "line": "B{name} {OUT} 0 V={prop:gain}*v({IN})\nR{name} {IN} 0 1Meg"
+   },
+   "description": "Gain block (analog): OUT = gain x IN, referred to ground",
+   "graphics": [
+    {
+     "path": "M -50 -40 L 60 0 L -50 40 Z"
+    },
+    {
+     "line": [
+      -80,
+      0,
+      -50,
+      0
+     ]
+    },
+    {
+     "line": [
+      60,
+      0,
+      130,
+      0
+     ]
+    },
+    {
+     "text": "K",
+     "at": [
+      -20,
+      0
+     ],
+     "size": 10
+    }
+   ],
+   "pins": [
+    {
+     "name": "IN",
+     "at": [
+      -80,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "OUT",
+     "at": [
+      130,
+      0
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
+   "id": "divider_block",
+   "name": "Divider",
+   "prefix": "A",
+   "label": "÷",
+   "aliases": [
+    "divider"
+   ],
+   "cmPins": [
+    "NUM",
+    "DEN",
+    "OUT"
+   ],
+   "spice": {
+    "line": "B{name} {OUT} 0 V=v({NUM})/(abs(v({DEN}))<1e-9?1e-9:v({DEN}))\nR{name}a {NUM} 0 1Meg\nR{name}b {DEN} 0 1Meg"
+   },
+   "description": "Divider block (analog): OUT = NUM / DEN, referred to ground",
+   "graphics": [
+    {
+     "rect": [
+      -50,
+      -40,
+      110,
+      80
+     ]
+    },
+    {
+     "text": "÷",
+     "at": [
+      5,
+      0
+     ],
+     "size": 16
+    },
+    {
+     "line": [
+      -80,
+      -30,
+      -50,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -80,
+      30,
+      -50,
+      30
+     ]
+    },
+    {
+     "line": [
+      60,
+      0,
+      130,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "NUM",
+     "at": [
+      -80,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "DEN",
+     "at": [
+      -80,
+      30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "OUT",
+     "at": [
+      130,
+      0
+     ],
+     "dir": "out"
+    }
+   ]
   }
  ]
 }

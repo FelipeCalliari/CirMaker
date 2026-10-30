@@ -641,7 +641,7 @@ def analog():
          'description': 'Voltmeter (mode V) or ammeter (mode A) between + and -',
          'graphics': [R(-80, -50, 160, 100), L(-80, 50, -80, 80), L(80, 50, 80, 80), T('+', -70, 40, 9), T('-', 70, 40, 9)],
          'pins': [pin('+', -80, 80), pin('-', 80, 80)]},
-    ] + power_parts() + misc_parts() + controlled_sources()
+    ] + power_parts() + misc_parts() + controlled_sources() + rare_parts()
 
 N = '\n'   # separates the lines of a multi-element template
 MODELS['J2N3819'] = '.model J2N3819 NJF(Beta=1.304m Betatce=-.5 Rd=1 Rs=1 Lambda=2.25m Vto=-3 Vtotc=-2.5m Is=33.57f Cgd=1.6p Cgs=2.414p)'
@@ -779,6 +779,115 @@ def controlled_sources():
         source('iswitch', 'I->Switch', 'I->Switch', sense + 'W{name} {1} {2} V{name}s ISW_GEN',
                'Current-controlled switch: 1-2 closed (1 ohm) while I(3->4) is above 1 mA', '1mA',
                [L(30, -40, 30, -10), L(30, -10, 50, 25), L(30, 25, 30, 40), C(30, -10, 2), C(30, 25, 2)], ['ISW_GEN']),
+    ]
+
+
+# UJT: base divider (2.4k + 3.6k, eta 0.6) whose lower half conducts more
+# with emitter current -- the negative resistance of a relaxation oscillator
+UJT = ['.subckt UJT_GEN e b1 b2',
+       'Rb2 b2 x 2.4k',
+       'Ve e e1 0',
+       'D1 e1 x DUJT',
+       'Bb1 x b1 I=v(x,b1)/3.6k*(1+40*tanh(max(i(Ve),0)/2m))',
+       'Cx x b1 1n',
+       '.model DUJT D(Is=1e-14 Rs=10 Cjo=10p)',
+       '.ends UJT_GEN']
+# PUT: an SCR fired from the anode side; the gate sets the peak voltage
+PUT = ['.subckt PUT_GEN a g k',
+       'Qp x g a PPUT',
+       'Qn g x k NPUT',
+       'Rx x k 10k',
+       '.model PPUT PNP(Bf=20 Is=1e-14 Cje=5p Cjc=5p)',
+       '.model NPUT NPN(Bf=100 Is=1e-14 Cje=5p Cjc=5p)',
+       '.ends PUT_GEN']
+
+
+def rare_parts():
+    D = lambda n, p='D': [f'{p}{i}' for i in range(n)]
+    bit = lambda i: f'(floor(c/{2 ** i})-2*floor(c/{2 ** (i + 1)}))'
+    # ADC: code = (Vin - Vref-)/(Vref+ - Vref-) x 256, clamped; outputs 0/5 V
+    code = 'min(max(floor((v({Vin})-v({VREF-}))/max(v({VREF+})-v({VREF-}),1e-9)*256),0),255)'
+    adc_lines = ['R{name}in {Vin} {VREF-} 1Meg', 'B{name}eoc {EOC} 0 V=5']
+    for i in range(8):
+        adc_lines.append(f'B{{name}}{i} {{D{i}}} 0 V=5*{bit(i).replace("c", code)}')
+    dac_code = '+'.join(f'(v({{D{i}}})>2.5?{2 ** i}:0)' for i in range(8))
+    return [
+        {'id': 'ujt', 'name': 'N-UJT', 'prefix': 'Q', 'label': '2N2646', 'aliases': ['N-UJT'],
+         'cmPins': ['E', 'B1', 'B2'], 'spice': sp('X{name} {E} {B1} {B2} UJT_GEN', subckt=UJT),
+         'description': 'Unijunction transistor (eta 0.6, Rbb 6k): fires when E rises above 0.6 V(B2,B1) + 0.6 V',
+         'graphics': [C(5, 0, 30), L(-50, -30, -20, -30), L(-20, -30, 0, -10), P('M -8 -14 L 0 -10 L -4 -18'),
+                      L(5, -25, 5, 25), L(5, -20, 30, -40), L(30, -40, 30, -60), L(5, 20, 30, 40), L(30, 40, 30, 60)],
+         'pins': [pin('E', -50, -30, 'in'), pin('B1', 30, 60), pin('B2', 30, -60)]},
+        {'id': 'put', 'name': 'PUT', 'prefix': 'Q', 'label': '2N6027', 'aliases': ['PUT'],
+         'cmPins': ['A', 'G', 'K'], 'spice': sp('X{name} {A} {G} {K} PUT_GEN', subckt=PUT),
+         'description': 'Programmable unijunction transistor: conducts A to K once A rises 0.6 V above G',
+         'graphics': [L(50, 0, 14, 0), P('M 14 -12 L 14 12 L -14 0 Z'), L(-14, -12, -14, 12), L(-14, 0, -50, 0),
+                      L(14, -12, 30, -30), L(30, -30, 50, -30)],
+         'pins': [pin('A', 50, 0), pin('G', 50, -30, 'in'), pin('K', -50, 0)]},
+        {'id': 'nlv', 'name': 'NLV Source', 'prefix': 'B', 'label': 'NLV', 'aliases': ['NLV Source'],
+         'cmPins': ['V+', 'V-'], 'props': {'expr': '0'}, 'spice': sp('B{name} {V+} {V-} V={prop:expr}'),
+         'description': 'Nonlinear voltage source: V = the "expr" property, a SPICE expression of node voltages '
+                        '(v(out), v(a,b)), currents of sources (i(v1)) and time',
+         'graphics': [C(0, 0, 25), L(0, -70, 0, -25), L(0, 25, 0, 70), T('NL', 0, 0, 9), T('+', 14, -34, 9)],
+         'pins': [pin('V+', 0, -70), pin('V-', 0, 70)]},
+        {'id': 'nli', 'name': 'NLI Source', 'prefix': 'B', 'label': 'NLI', 'aliases': ['NLI Source'],
+         'cmPins': ['I+', 'I-'], 'props': {'expr': '0'}, 'spice': sp('B{name} {I+} {I-} I={prop:expr}'),
+         'description': 'Nonlinear current source: I (out of I-) = the "expr" property, a SPICE expression',
+         'graphics': [C(0, 0, 25), L(0, -70, 0, -25), L(0, 25, 0, 70), L(0, -14, 0, 14), P('M -6 6 L 0 14 L 6 6')],
+         'pins': [pin('I+', 0, -70), pin('I-', 0, 70)]},
+        {'id': 'adc8', 'name': 'ADC8', 'prefix': 'U', 'label': 'ADC8', 'aliases': ['ADC8'],
+         'cmPins': ['Vin', 'VREF+', 'VREF-', 'SC', 'OE', 'EOC'] + D(8),
+         'shape': {'type': 'box', 'width': 160, 'pitch': 30, 'left': ['Vin', '', 'VREF+', 'VREF-', '', 'SC', 'OE'],
+                   'right': [{'name': f'D{i}', 'dir': 'out'} for i in range(7, -1, -1)] + [{'name': 'EOC', 'dir': 'out'}],
+                   'leftStart': -60, 'rightStart': -90, 'title': 'ADC8'},
+         'spice': sp(N.join(adc_lines)),
+         'description': '8-bit analog-to-digital converter (analog simulation): D = (Vin - VREF-) / (VREF+ - VREF-) x 256, '
+                        'outputs 0/5 V, converting continuously'},
+        {'id': 'dac8', 'name': 'DAC8', 'prefix': 'U', 'label': 'DAC8', 'aliases': ['DAC8'],
+         'cmPins': [f'D{i}' for i in range(7, -1, -1)] + ['VREF-', 'VREF+', 'Vout'],
+         'shape': {'type': 'box', 'width': 160, 'pitch': 30, 'left': [f'D{i}' for i in range(7, -1, -1)],
+                   'right': [{'name': 'Vout', 'dir': 'out'}, '', {'name': 'VREF+', 'dir': 'in'}, {'name': 'VREF-', 'dir': 'in'}],
+                   'leftStart': -90, 'rightStart': -30, 'title': 'DAC8'},
+         'spice': sp('B{name} {Vout} 0 V=v({VREF-})+(v({VREF+})-v({VREF-}))*(' + dac_code + ')/256'),
+         'description': '8-bit digital-to-analog converter (analog simulation): Vout = VREF- + (VREF+ - VREF-) x D / 256, '
+                        'inputs high above 2.5 V'},
+        {'id': 'tline', 'name': 'Lossless Line', 'prefix': 'T', 'label': 'LLTR', 'aliases': ['LossLessLine'],
+         'cmPins': ['N1+', 'N1-', 'N2+', 'N2-'], 'props': {'z0': '50', 'td': '10n'},
+         'spice': sp('T{name} {N1+} {N1-} {N2+} {N2-} Z0={prop:z0} TD={prop:td}'),
+         'description': 'Lossless transmission line: impedance z0, delay td',
+         'graphics': [R(-130, -20, 260, 40), L(-160, -10, -130, -10), L(-160, 10, -130, 10), L(130, -10, 160, -10),
+                      L(130, 10, 160, 10), T('Z0', 0, 0, 9)],
+         'pins': [pin('N1+', -160, -10), pin('N1-', -160, 10), pin('N2+', 160, -10), pin('N2-', 160, 10)]},
+        {'id': 'coax', 'name': 'Coax', 'prefix': 'T', 'label': 'COAX', 'aliases': ['Coax'],
+         'cmPins': ['N1+', 'N1-', 'N2+', 'N2-'], 'props': {'z0': '50', 'td': '10n'},
+         'spice': sp('T{name} {N1+} {N1-} {N2+} {N2-} Z0={prop:z0} TD={prop:td}'),
+         'description': 'Coaxial cable as a lossless line: impedance z0, delay td; N2- is the shield',
+         'graphics': [R(-130, -24, 260, 48), L(-130, -10, 130, -10), L(-160, -10, -130, -10), L(-160, 10, -130, 10),
+                      L(130, -10, 160, -10), L(-20, 24, -20, 150)],
+         'pins': [pin('N1+', -160, -10), pin('N1-', -160, 10), pin('N2+', 160, -10), pin('N2-', -20, 150)]},
+        {'id': 'twisted_pair', 'name': 'Twisted Pair', 'prefix': 'T', 'label': 'PAIR', 'aliases': ['TwistedPair'],
+         'cmPins': ['N1+', 'N1-', 'N2+', 'N2-'], 'props': {'z0': '100', 'td': '10n'},
+         'spice': sp('T{name} {N1+} {N1-} {N2+} {N2-} Z0={prop:z0} TD={prop:td}'),
+         'description': 'Twisted pair as a lossless line: impedance z0, delay td',
+         'graphics': [P('M -130 -10 Q -110 10 -90 -10 Q -70 10 -50 -10 Q -30 10 -10 -10 Q 10 10 30 -10 Q 50 10 70 -10 '
+                        'Q 90 10 110 -10 L 130 -10'),
+                      P('M -130 10 Q -110 -10 -90 10 Q -70 -10 -50 10 Q -30 -10 -10 10 Q 10 -10 30 10 Q 50 -10 70 10 '
+                        'Q 90 -10 110 10 L 130 10'),
+                      L(-160, -10, -130, -10), L(-160, 10, -130, 10), L(130, -10, 160, -10), L(130, 10, 160, 10)],
+         'pins': [pin('N1+', -160, -10), pin('N1-', -160, 10), pin('N2+', 160, -10), pin('N2-', 160, 10)]},
+        {'id': 'gain_block', 'name': 'Gain', 'prefix': 'A', 'label': 'x1', 'aliases': ['gain'],
+         'cmPins': ['IN', 'OUT'], 'props': {'gain': '1'},
+         'spice': sp('B{name} {OUT} 0 V={prop:gain}*v({IN})' + N + 'R{name} {IN} 0 1Meg'),
+         'description': 'Gain block (analog): OUT = gain x IN, referred to ground',
+         'graphics': [P('M -50 -40 L 60 0 L -50 40 Z'), L(-80, 0, -50, 0), L(60, 0, 130, 0), T('K', -20, 0, 10)],
+         'pins': [pin('IN', -80, 0, 'in'), pin('OUT', 130, 0, 'out')]},
+        {'id': 'divider_block', 'name': 'Divider', 'prefix': 'A', 'label': '÷', 'aliases': ['divider'],
+         'cmPins': ['NUM', 'DEN', 'OUT'],
+         'spice': sp('B{name} {OUT} 0 V=v({NUM})/(abs(v({DEN}))<1e-9?1e-9:v({DEN}))' + N + 'R{name}a {NUM} 0 1Meg' + N
+                     + 'R{name}b {DEN} 0 1Meg'),
+         'description': 'Divider block (analog): OUT = NUM / DEN, referred to ground',
+         'graphics': [R(-50, -40, 110, 80), T('÷', 5, 0, 16), L(-80, -30, -50, -30), L(-80, 30, -50, 30), L(60, 0, 130, 0)],
+         'pins': [pin('NUM', -80, -30, 'in'), pin('DEN', -80, 30, 'in'), pin('OUT', 130, 0, 'out')]},
     ]
 
 
