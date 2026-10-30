@@ -43,7 +43,8 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | 7-seg com decodificador, displays ASCII/hex | ✅ | |
 | Peças analógicas comuns | ✅ | R, C, L, diodos, BJT, MOSFET, amp-op, fontes, gerador, multímetro |
 | 555, relé SPDT, transformador (simples e com derivação central), optoacoplador, SCR, TRIAC | ✅ | modelos SPICE; o relé também chaveia na simulação digital |
-| Válvulas, motores, alto-falantes, reguladores, JFET/UJT, cristal, fusível | ❌ | importados como `?` |
+| Válvulas, motores, alto-falantes, reguladores, JFET, cristal, fusível, ponte retificadora, Darlington, buzzer, solenoide | ✅ | modelos SPICE simplificados (motor/solenoide = R+L, alto-falante/buzzer = R, válvulas pela lei de 3/2) |
+| UJT, PUT, fontes controladas (V->I etc.), ADC/DAC, PLL, linhas de transmissão | ❌ | importados como `?` |
 | Macros (subcircuitos com símbolo próprio, Expand Macro) | 🟡 | New/Edit/Save/Expand/Delete, aninhadas, embutidas no `.cmq`, Macro Lock com senha; símbolo gerado (caixa), sem editor de símbolo |
 
 ## Simulação digital

@@ -2566,6 +2566,1106 @@
      "dir": "passive"
     }
    ]
+  },
+  {
+   "id": "crystal",
+   "name": "Crystal",
+   "prefix": "Y",
+   "label": "4Meg",
+   "aliases": [
+    "Crystal"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "X{name} {1} {2} XTAL_GEN params: f={value}",
+    "subckt": [
+     ".subckt XTAL_GEN 1 2 params: f=4Meg",
+     "Rm 1 a 50",
+     "Lm a b {1/(4*3.14159265*3.14159265*f*f*20e-15)}",
+     "Cm b 2 20f",
+     "C0 1 2 5p",
+     ".ends XTAL_GEN"
+    ]
+   },
+   "description": "Quartz crystal: series resonance at the label frequency (SPICE units: 4Meg = 4 MHz)",
+   "graphics": [
+    {
+     "line": [
+      -40,
+      0,
+      -12,
+      0
+     ]
+    },
+    {
+     "line": [
+      -12,
+      -16,
+      -12,
+      16
+     ]
+    },
+    {
+     "rect": [
+      -7,
+      -20,
+      14,
+      40
+     ]
+    },
+    {
+     "line": [
+      12,
+      -16,
+      12,
+      16
+     ]
+    },
+    {
+     "line": [
+      12,
+      0,
+      40,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -40,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      40,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "fuse",
+   "name": "Fuse",
+   "prefix": "F",
+   "label": "1A",
+   "aliases": [
+    "Fuse"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "R{name} {1} {2} 10m"
+   },
+   "description": "Fuse (10 milliohm; it does not blow in the simulation)",
+   "graphics": [
+    {
+     "line": [
+      -70,
+      0,
+      -40,
+      0
+     ]
+    },
+    {
+     "rect": [
+      -40,
+      -10,
+      80,
+      20
+     ]
+    },
+    {
+     "path": "M -30 0 Q -15 -12 0 0 Q 15 12 30 0"
+    },
+    {
+     "line": [
+      40,
+      0,
+      70,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -70,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      70,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "fw_bridge",
+   "name": "FW Bridge",
+   "prefix": "D",
+   "label": "BRIDGE",
+   "aliases": [
+    "FW Bridge"
+   ],
+   "cmPins": [
+    "AC1",
+    "+",
+    "AC2",
+    "-"
+   ],
+   "spice": {
+    "line": "D{name}a {AC1} {+} DBRIDGE\nD{name}b {AC2} {+} DBRIDGE\nD{name}c {-} {AC1} DBRIDGE\nD{name}d {-} {AC2} DBRIDGE",
+    "models": [
+     ".model DBRIDGE D(Is=14.11n N=1.984 Rs=33.89m Bv=600 Ibv=10u)"
+    ]
+   },
+   "description": "Full-wave bridge rectifier: AC on AC1/AC2, DC on + and -",
+   "graphics": [
+    {
+     "path": "M -60 -10 L 0 -70 L 60 -10 L 0 50 Z"
+    },
+    {
+     "path": "M -36 -46 L -24 -34 L -38 -32 Z"
+    },
+    {
+     "path": "M 24 -46 L 36 -34 L 38 -48 Z"
+    },
+    {
+     "path": "M -36 26 L -24 14 L -22 28 Z"
+    },
+    {
+     "path": "M 24 14 L 36 26 L 22 28 Z"
+    },
+    {
+     "line": [
+      -100,
+      -10,
+      -60,
+      -10
+     ]
+    },
+    {
+     "line": [
+      60,
+      -10,
+      110,
+      -10
+     ]
+    },
+    {
+     "line": [
+      0,
+      -120,
+      0,
+      -70
+     ]
+    },
+    {
+     "line": [
+      0,
+      50,
+      0,
+      90
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      10,
+      -100
+     ],
+     "size": 9
+    },
+    {
+     "text": "-",
+     "at": [
+      10,
+      80
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "AC1",
+     "at": [
+      -100,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "+",
+     "at": [
+      0,
+      -120
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "AC2",
+     "at": [
+      110,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "-",
+     "at": [
+      0,
+      90
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "njfet",
+   "name": "N-JFET",
+   "prefix": "J",
+   "label": "2N3819",
+   "aliases": [
+    "N-JFET"
+   ],
+   "cmPins": [
+    "D",
+    "G",
+    "S"
+   ],
+   "spice": {
+    "line": "J{name} {D} {G} {S} J2N3819",
+    "models": [
+     ".model J2N3819 NJF(Beta=1.304m Betatce=-.5 Rd=1 Rs=1 Lambda=2.25m Vto=-3 Vtotc=-2.5m Is=33.57f Cgd=1.6p Cgs=2.414p)"
+    ]
+   },
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      30
+     ]
+    },
+    {
+     "line": [
+      -40,
+      0,
+      -6,
+      0
+     ]
+    },
+    {
+     "path": "M -14 -6 L -6 0 L -14 6"
+    },
+    {
+     "line": [
+      -6,
+      -24,
+      -6,
+      24
+     ]
+    },
+    {
+     "line": [
+      -6,
+      -16,
+      30,
+      -16
+     ]
+    },
+    {
+     "line": [
+      30,
+      -16,
+      30,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -6,
+      16,
+      30,
+      16
+     ]
+    },
+    {
+     "line": [
+      30,
+      16,
+      30,
+      60
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "D",
+     "at": [
+      30,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "G",
+     "at": [
+      -40,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "S",
+     "at": [
+      30,
+      60
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "pnp_darlington",
+   "name": "PNP Darlington",
+   "prefix": "Q",
+   "label": "DARL",
+   "aliases": [
+    "PNP Darling1"
+   ],
+   "cmPins": [
+    "C",
+    "B",
+    "E"
+   ],
+   "spice": {
+    "line": "X{name} {C} {B} {E} DARL_PNP",
+    "models": [
+     ".model Q2N3906 PNP(Is=1.41f Xti=3 Eg=1.11 Vaf=18.7 Bf=180.7 Ne=1.5 Ikf=80m Xtb=1.5 Br=4.977 Nc=2 Rc=2.5 Cjc=9.728p Mjc=.5776 Vjc=.75 Fc=.5 Cje=8.063p Mje=.3677 Vje=.75 Tr=33.42n Tf=179.3p Itf=.4 Vtf=4 Xtf=6 Rb=10)"
+    ],
+    "subckt": [
+     ".subckt DARL_PNP c b e",
+     "Q1 c b x Q2N3906",
+     "Q2 c x e Q2N3906",
+     "R1 x e 10k",
+     ".ends DARL_PNP"
+    ]
+   },
+   "description": "PNP Darlington pair (two 2N3906)",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      32
+     ]
+    },
+    {
+     "line": [
+      -80,
+      0,
+      -10,
+      0
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -20,
+      -10,
+      20
+     ]
+    },
+    {
+     "line": [
+      -10,
+      -8,
+      30,
+      -40
+     ]
+    },
+    {
+     "line": [
+      30,
+      -40,
+      30,
+      -70
+     ]
+    },
+    {
+     "line": [
+      -10,
+      8,
+      30,
+      40
+     ]
+    },
+    {
+     "line": [
+      30,
+      40,
+      30,
+      70
+     ]
+    },
+    {
+     "path": "M -10 -8 L 1 -11 L -4 -1 Z"
+    },
+    {
+     "text": "2",
+     "at": [
+      14,
+      0
+     ],
+     "size": 8
+    }
+   ],
+   "pins": [
+    {
+     "name": "C",
+     "at": [
+      30,
+      70
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "B",
+     "at": [
+      -80,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "E",
+     "at": [
+      30,
+      -70
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "regulator3",
+   "name": "Voltage Regulator",
+   "prefix": "U",
+   "label": "7805",
+   "aliases": [
+    "Regulator3"
+   ],
+   "cmPins": [
+    "IN",
+    "GND",
+    "OUT"
+   ],
+   "props": {
+    "volts": "5"
+   },
+   "spice": {
+    "line": "B{name} {OUT} {GND} V=max(min(v({IN},{GND})-2, {prop:volts}), 0)\nR{name} {IN} {GND} 100k"
+   },
+   "description": "Three-terminal regulator: OUT = the \"volts\" property while IN is 2 V above it",
+   "graphics": [
+    {
+     "rect": [
+      -60,
+      -60,
+      120,
+      80
+     ]
+    },
+    {
+     "text": "REG",
+     "at": [
+      0,
+      -30
+     ],
+     "size": 10
+    },
+    {
+     "text": "IN",
+     "at": [
+      -40,
+      -30
+     ],
+     "size": 7
+    },
+    {
+     "text": "OUT",
+     "at": [
+      40,
+      -30
+     ],
+     "size": 7
+    },
+    {
+     "line": [
+      -90,
+      -30,
+      -60,
+      -30
+     ]
+    },
+    {
+     "line": [
+      60,
+      -30,
+      90,
+      -30
+     ]
+    },
+    {
+     "line": [
+      0,
+      20,
+      0,
+      80
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "IN",
+     "at": [
+      -90,
+      -30
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "GND",
+     "at": [
+      0,
+      80
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "OUT",
+     "at": [
+      90,
+      -30
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "buzzer",
+   "name": "Piezo Buzzer",
+   "prefix": "LS",
+   "label": "1k",
+   "aliases": [
+    "Piezo Buzzer"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "R{name} {1} {2} {value}"
+   },
+   "description": "Piezo buzzer, simulated as a resistive load",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      30
+     ]
+    },
+    {
+     "circle": [
+      0,
+      0,
+      18
+     ]
+    },
+    {
+     "line": [
+      -100,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "line": [
+      30,
+      0,
+      100,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -100,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      100,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "speaker",
+   "name": "Speaker",
+   "prefix": "LS",
+   "label": "8",
+   "aliases": [
+    "Speaker"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "R{name} {1} {2} {value}"
+   },
+   "description": "Loudspeaker, simulated as its resistance",
+   "graphics": [
+    {
+     "rect": [
+      -10,
+      -20,
+      20,
+      40
+     ]
+    },
+    {
+     "path": "M 10 -20 L 40 -45 L 40 45 L 10 20"
+    },
+    {
+     "line": [
+      -30,
+      -50,
+      0,
+      -50
+     ]
+    },
+    {
+     "line": [
+      0,
+      -50,
+      0,
+      -20
+     ]
+    },
+    {
+     "line": [
+      -30,
+      50,
+      0,
+      50
+     ]
+    },
+    {
+     "line": [
+      0,
+      50,
+      0,
+      20
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -30,
+      -50
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      -30,
+      50
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "dc_motor",
+   "name": "DC Motor",
+   "prefix": "M",
+   "label": "10",
+   "aliases": [
+    "DC Motor"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "R{name} {1} {name}_m {value}\nL{name} {name}_m {2} 1m"
+   },
+   "description": "DC motor, simulated as its winding (resistance from the label, 1 mH)",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      30
+     ]
+    },
+    {
+     "text": "M",
+     "at": [
+      0,
+      0
+     ],
+     "size": 14
+    },
+    {
+     "line": [
+      -80,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "line": [
+      30,
+      0,
+      80,
+      0
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -80,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      80,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "solenoid",
+   "name": "Solenoid",
+   "prefix": "L",
+   "label": "50",
+   "aliases": [
+    "Solenoid"
+   ],
+   "cmPins": [
+    "1",
+    "2"
+   ],
+   "spice": {
+    "line": "R{name} {1} {name}_m {value}\nL{name} {name}_m {2} 10m"
+   },
+   "description": "Solenoid coil (resistance from the label, 10 mH)",
+   "graphics": [
+    {
+     "line": [
+      -70,
+      0,
+      -40,
+      0
+     ]
+    },
+    {
+     "path": "M -40 0 Q -30 -16 -20 0 Q -10 -16 0 0 Q 10 -16 20 0 Q 30 -16 40 0"
+    },
+    {
+     "line": [
+      40,
+      0,
+      70,
+      0
+     ]
+    },
+    {
+     "rect": [
+      -40,
+      8,
+      80,
+      8
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "1",
+     "at": [
+      -70,
+      0
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "2",
+     "at": [
+      70,
+      0
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "triode",
+   "name": "Triode",
+   "prefix": "V",
+   "label": "12AX7",
+   "aliases": [
+    "Triode"
+   ],
+   "cmPins": [
+    "P",
+    "G",
+    "K"
+   ],
+   "spice": {
+    "line": "B{name} {P} {K} I=1.15e-6*pow(max(100*v({G},{K})+v({P},{K}), 0), 1.5)\nR{name}g {G} {K} 1G\nC{name} {G} {K} 2p"
+   },
+   "description": "Vacuum triode (3/2-power law, mu = 100, like a 12AX7 section)",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      45
+     ]
+    },
+    {
+     "line": [
+      0,
+      -90,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -25,
+      20,
+      -25
+     ]
+    },
+    {
+     "line": [
+      -90,
+      0,
+      -30,
+      0
+     ]
+    },
+    {
+     "path": "M -24 0 L -16 0 M -8 0 L 0 0 M 8 0 L 16 0"
+    },
+    {
+     "path": "M -20 25 L 20 25 L 20 30"
+    },
+    {
+     "line": [
+      -40,
+      80,
+      -40,
+      30
+     ]
+    },
+    {
+     "line": [
+      -40,
+      30,
+      -20,
+      25
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "P",
+     "at": [
+      0,
+      -90
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "G",
+     "at": [
+      -90,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "K",
+     "at": [
+      -40,
+      80
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "tetrode",
+   "name": "Tetrode",
+   "prefix": "V",
+   "label": "TETRODE",
+   "aliases": [
+    "Tetrode"
+   ],
+   "cmPins": [
+    "P",
+    "S",
+    "G",
+    "K"
+   ],
+   "spice": {
+    "line": "B{name} {P} {K} I=1e-6*pow(max(20*v({G},{K})+v({S},{K}), 0), 1.5)*v({P},{K})/(abs(v({P},{K}))+20)\nB{name}s {S} {K} I=0.2e-6*pow(max(20*v({G},{K})+v({S},{K}), 0), 1.5)\nR{name}g {G} {K} 1G\nR{name}p {P} {K} 10Meg"
+   },
+   "description": "Vacuum tetrode (screen grid S); simplified 3/2-power law",
+   "graphics": [
+    {
+     "circle": [
+      0,
+      0,
+      45
+     ]
+    },
+    {
+     "line": [
+      0,
+      -90,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      -20,
+      -25,
+      20,
+      -25
+     ]
+    },
+    {
+     "line": [
+      -90,
+      10,
+      -30,
+      10
+     ]
+    },
+    {
+     "path": "M -24 10 L -16 10 M -8 10 L 0 10 M 8 10 L 16 10"
+    },
+    {
+     "path": "M -24 -8 L -16 -8 M -8 -8 L 0 -8 M 8 -8 L 16 -8"
+    },
+    {
+     "line": [
+      20,
+      -8,
+      90,
+      -8
+     ]
+    },
+    {
+     "path": "M -20 25 L 20 25 L 20 30"
+    },
+    {
+     "line": [
+      -40,
+      80,
+      -40,
+      30
+     ]
+    },
+    {
+     "line": [
+      -40,
+      30,
+      -20,
+      25
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "P",
+     "at": [
+      0,
+      -90
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "S",
+     "at": [
+      90,
+      -10
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "G",
+     "at": [
+      -90,
+      10
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "K",
+     "at": [
+      -40,
+      80
+     ],
+     "dir": "passive"
+    }
+   ]
   }
  ]
 }

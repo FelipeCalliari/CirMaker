@@ -641,7 +641,108 @@ def analog():
          'description': 'Voltmeter (mode V) or ammeter (mode A) between + and -',
          'graphics': [R(-80, -50, 160, 100), L(-80, 50, -80, 80), L(80, 50, 80, 80), T('+', -70, 40, 9), T('-', 70, 40, 9)],
          'pins': [pin('+', -80, 80), pin('-', 80, 80)]},
-    ] + power_parts()
+    ] + power_parts() + misc_parts()
+
+N = '\n'   # separates the lines of a multi-element template
+MODELS['J2N3819'] = '.model J2N3819 NJF(Beta=1.304m Betatce=-.5 Rd=1 Rs=1 Lambda=2.25m Vto=-3 Vtotc=-2.5m Is=33.57f Cgd=1.6p Cgs=2.414p)'
+MODELS['DBRIDGE'] = '.model DBRIDGE D(Is=14.11n N=1.984 Rs=33.89m Bv=600 Ibv=10u)'
+# crystal: series R-L-C at the label's frequency plus the holder capacitance
+XTAL = ['.subckt XTAL_GEN 1 2 params: f=4Meg',
+        'Rm 1 a 50',
+        'Lm a b {1/(4*3.14159265*3.14159265*f*f*20e-15)}',
+        'Cm b 2 20f',
+        'C0 1 2 5p',
+        '.ends XTAL_GEN']
+DARLINGTON_PNP = ['.subckt DARL_PNP c b e',
+                  'Q1 c b x Q2N3906',
+                  'Q2 c x e Q2N3906',
+                  'R1 x e 10k',
+                  '.ends DARL_PNP']
+
+
+def misc_parts():
+    lead = lambda x0, y0, x1, y1: L(x0, y0, x1, y1)
+    return [
+        {'id': 'crystal', 'name': 'Crystal', 'prefix': 'Y', 'label': '4Meg', 'aliases': ['Crystal'],
+         'cmPins': ['1', '2'], 'spice': sp('X{name} {1} {2} XTAL_GEN params: f={value}', subckt=XTAL),
+         'description': 'Quartz crystal: series resonance at the label frequency (SPICE units: 4Meg = 4 MHz)',
+         'graphics': [L(-40, 0, -12, 0), L(-12, -16, -12, 16), R(-7, -20, 14, 40), L(12, -16, 12, 16), L(12, 0, 40, 0)],
+         'pins': [pin('1', -40, 0), pin('2', 40, 0)]},
+        {'id': 'fuse', 'name': 'Fuse', 'prefix': 'F', 'label': '1A', 'aliases': ['Fuse'],
+         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {2} 10m'),
+         'description': 'Fuse (10 milliohm; it does not blow in the simulation)',
+         'graphics': [L(-70, 0, -40, 0), R(-40, -10, 80, 20), P('M -30 0 Q -15 -12 0 0 Q 15 12 30 0'), L(40, 0, 70, 0)],
+         'pins': [pin('1', -70, 0), pin('2', 70, 0)]},
+        {'id': 'fw_bridge', 'name': 'FW Bridge', 'prefix': 'D', 'label': 'BRIDGE', 'aliases': ['FW Bridge'],
+         'cmPins': ['AC1', '+', 'AC2', '-'],
+         'spice': sp('D{name}a {AC1} {+} DBRIDGE' + N + 'D{name}b {AC2} {+} DBRIDGE' + N + 'D{name}c {-} {AC1} DBRIDGE' + N
+                     + 'D{name}d {-} {AC2} DBRIDGE', 'DBRIDGE'),
+         'description': 'Full-wave bridge rectifier: AC on AC1/AC2, DC on + and -',
+         'graphics': [P('M -60 -10 L 0 -70 L 60 -10 L 0 50 Z'), P('M -36 -46 L -24 -34 L -38 -32 Z'),
+                      P('M 24 -46 L 36 -34 L 38 -48 Z'), P('M -36 26 L -24 14 L -22 28 Z'), P('M 24 14 L 36 26 L 22 28 Z'),
+                      L(-100, -10, -60, -10), L(60, -10, 110, -10), L(0, -120, 0, -70), L(0, 50, 0, 90),
+                      T('+', 10, -100, 9), T('-', 10, 80, 9)],
+         'pins': [pin('AC1', -100, -10), pin('+', 0, -120), pin('AC2', 110, -10), pin('-', 0, 90)]},
+        {'id': 'njfet', 'name': 'N-JFET', 'prefix': 'J', 'label': '2N3819', 'aliases': ['N-JFET'],
+         'cmPins': ['D', 'G', 'S'], 'spice': sp('J{name} {D} {G} {S} J2N3819', 'J2N3819'),
+         'graphics': [C(0, 0, 30), L(-40, 0, -6, 0), P('M -14 -6 L -6 0 L -14 6'), L(-6, -24, -6, 24),
+                      L(-6, -16, 30, -16), L(30, -16, 30, -60), L(-6, 16, 30, 16), L(30, 16, 30, 60)],
+         'pins': [pin('D', 30, -60), pin('G', -40, 0, 'in'), pin('S', 30, 60)]},
+        {'id': 'pnp_darlington', 'name': 'PNP Darlington', 'prefix': 'Q', 'label': 'DARL', 'aliases': ['PNP Darling1'],
+         'cmPins': ['C', 'B', 'E'], 'spice': sp('X{name} {C} {B} {E} DARL_PNP', 'Q2N3906', subckt=DARLINGTON_PNP),
+         'description': 'PNP Darlington pair (two 2N3906)',
+         'graphics': [C(0, 0, 32), L(-80, 0, -10, 0), L(-10, -20, -10, 20), L(-10, -8, 30, -40), L(30, -40, 30, -70),
+                      L(-10, 8, 30, 40), L(30, 40, 30, 70), P('M -10 -8 L 1 -11 L -4 -1 Z'), T('2', 14, 0, 8)],
+         'pins': [pin('C', 30, 70), pin('B', -80, 0), pin('E', 30, -70)]},
+        {'id': 'regulator3', 'name': 'Voltage Regulator', 'prefix': 'U', 'label': '7805', 'aliases': ['Regulator3'],
+         'cmPins': ['IN', 'GND', 'OUT'], 'props': {'volts': '5'},
+         'spice': sp('B{name} {OUT} {GND} V=max(min(v({IN},{GND})-2, {prop:volts}), 0)' + N + 'R{name} {IN} {GND} 100k'),
+         'description': 'Three-terminal regulator: OUT = the "volts" property while IN is 2 V above it',
+         'graphics': [R(-60, -60, 120, 80), T('REG', 0, -30, 10), T('IN', -40, -30, 7), T('OUT', 40, -30, 7),
+                      L(-90, -30, -60, -30), L(60, -30, 90, -30), L(0, 20, 0, 80)],
+         'pins': [pin('IN', -90, -30), pin('GND', 0, 80), pin('OUT', 90, -30)]},
+        {'id': 'buzzer', 'name': 'Piezo Buzzer', 'prefix': 'LS', 'label': '1k', 'aliases': ['Piezo Buzzer'],
+         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {2} {value}'),
+         'description': 'Piezo buzzer, simulated as a resistive load',
+         'graphics': [C(0, 0, 30), C(0, 0, 18), L(-100, 0, -30, 0), L(30, 0, 100, 0)],
+         'pins': [pin('1', -100, 0), pin('2', 100, 0)]},
+        {'id': 'speaker', 'name': 'Speaker', 'prefix': 'LS', 'label': '8', 'aliases': ['Speaker'],
+         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {2} {value}'),
+         'description': 'Loudspeaker, simulated as its resistance',
+         'graphics': [R(-10, -20, 20, 40), P('M 10 -20 L 40 -45 L 40 45 L 10 20'), L(-30, -50, 0, -50), L(0, -50, 0, -20),
+                      L(-30, 50, 0, 50), L(0, 50, 0, 20)],
+         'pins': [pin('1', -30, -50), pin('2', -30, 50)]},
+        {'id': 'dc_motor', 'name': 'DC Motor', 'prefix': 'M', 'label': '10', 'aliases': ['DC Motor'],
+         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {name}_m {value}' + N + 'L{name} {name}_m {2} 1m'),
+         'description': 'DC motor, simulated as its winding (resistance from the label, 1 mH)',
+         'graphics': [C(0, 0, 30), T('M', 0, 0, 14), L(-80, 0, -30, 0), L(30, 0, 80, 0)],
+         'pins': [pin('1', -80, 0), pin('2', 80, 0)]},
+        {'id': 'solenoid', 'name': 'Solenoid', 'prefix': 'L', 'label': '50', 'aliases': ['Solenoid'],
+         'cmPins': ['1', '2'], 'spice': sp('R{name} {1} {name}_m {value}' + N + 'L{name} {name}_m {2} 10m'),
+         'description': 'Solenoid coil (resistance from the label, 10 mH)',
+         'graphics': [L(-70, 0, -40, 0), P('M -40 0 Q -30 -16 -20 0 Q -10 -16 0 0 Q 10 -16 20 0 Q 30 -16 40 0'),
+                      L(40, 0, 70, 0), R(-40, 8, 80, 8)],
+         'pins': [pin('1', -70, 0), pin('2', 70, 0)]},
+        {'id': 'triode', 'name': 'Triode', 'prefix': 'V', 'label': '12AX7', 'aliases': ['Triode'],
+         'cmPins': ['P', 'G', 'K'],
+         'spice': sp('B{name} {P} {K} I=1.15e-6*pow(max(100*v({G},{K})+v({P},{K}), 0), 1.5)' + N
+                     + 'R{name}g {G} {K} 1G' + N + 'C{name} {G} {K} 2p'),
+         'description': 'Vacuum triode (3/2-power law, mu = 100, like a 12AX7 section)',
+         'graphics': [C(0, 0, 45), L(0, -90, 0, -25), L(-20, -25, 20, -25), L(-90, 0, -30, 0),
+                      P('M -24 0 L -16 0 M -8 0 L 0 0 M 8 0 L 16 0'), P('M -20 25 L 20 25 L 20 30'),
+                      L(-40, 80, -40, 30), L(-40, 30, -20, 25)],
+         'pins': [pin('P', 0, -90), pin('G', -90, 0, 'in'), pin('K', -40, 80)]},
+        {'id': 'tetrode', 'name': 'Tetrode', 'prefix': 'V', 'label': 'TETRODE', 'aliases': ['Tetrode'],
+         'cmPins': ['P', 'S', 'G', 'K'],
+         'spice': sp('B{name} {P} {K} I=1e-6*pow(max(20*v({G},{K})+v({S},{K}), 0), 1.5)*v({P},{K})/(abs(v({P},{K}))+20)'
+                     + N + 'B{name}s {S} {K} I=0.2e-6*pow(max(20*v({G},{K})+v({S},{K}), 0), 1.5)' + N
+                     + 'R{name}g {G} {K} 1G' + N + 'R{name}p {P} {K} 10Meg'),
+         'description': 'Vacuum tetrode (screen grid S); simplified 3/2-power law',
+         'graphics': [C(0, 0, 45), L(0, -90, 0, -25), L(-20, -25, 20, -25), L(-90, 10, -30, 10),
+                      P('M -24 10 L -16 10 M -8 10 L 0 10 M 8 10 L 16 10'), P('M -24 -8 L -16 -8 M -8 -8 L 0 -8 M 8 -8 L 16 -8'),
+                      L(20, -8, 90, -8), P('M -20 25 L 20 25 L 20 30'), L(-40, 80, -40, 30), L(-40, 30, -20, 25)],
+         'pins': [pin('P', 0, -90), pin('S', 90, -10), pin('G', -90, 10, 'in'), pin('K', -40, 80)]},
+    ]
 
 
 # 555 timer: divider, two comparators, a latch (with a small RC so it is not

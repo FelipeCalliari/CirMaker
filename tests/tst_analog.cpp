@@ -36,6 +36,10 @@ private slots:
     void triacBothWays();
     void deviceProbeCurrents();
     void exportsSubcircuit();
+    void regulatorAndBridge();
+    void crystalResonance();
+    void miscPartsSimulate_data();
+    void miscPartsSimulate();
     void importedExamplesSimulate();
 
 private:
@@ -793,6 +797,91 @@ void TestAnalog::exportsSubcircuit()
     Circuit none;
     part(none, QStringLiteral("resistor"), QStringLiteral("R1"));
     QVERIFY(spice::subcircuit(none, library(), NetlistBuilder::build(none, library()), QStringLiteral("x"), &error).isEmpty());
+}
+
+void TestAnalog::regulatorAndBridge()
+{
+    requireEngine();
+    Circuit c;
+    const ItemId br = part(c, QStringLiteral("fw_bridge"), QStringLiteral("D1"));
+    const ItemId reg = part(c, QStringLiteral("regulator3"), QStringLiteral("U1"));
+    supply(c, QStringLiteral("AC"), QStringLiteral("12"));
+    ground(c, QStringLiteral("G"));
+    wire(c, br, QStringLiteral("AC1"), QStringLiteral("AC"));
+    wire(c, br, QStringLiteral("AC2"), QStringLiteral("G"));
+    wire(c, br, QStringLiteral("+"), QStringLiteral("RAW"));
+    wire(c, br, QStringLiteral("-"), QStringLiteral("NEG"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("RAW"), QStringLiteral("NEG"));
+    wire(c, reg, QStringLiteral("IN"), QStringLiteral("RAW"));
+    wire(c, reg, QStringLiteral("GND"), QStringLiteral("NEG"));
+    wire(c, reg, QStringLiteral("OUT"), QStringLiteral("OUT"));
+    resistor(c, QStringLiteral("100"), QStringLiteral("OUT"), QStringLiteral("NEG"));
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const double raw = r.last(QStringLiteral("raw")).value() - r.last(QStringLiteral("neg")).value();
+    QVERIFY2(raw > 10 && raw < 11.5, qPrintable(QString::number(raw)));             // two diode drops
+    const double out = r.last(QStringLiteral("out")).value() - r.last(QStringLiteral("neg")).value();
+    QVERIFY2(qAbs(out - 5) < 0.01, qPrintable(QString::number(out)));
+}
+
+void TestAnalog::crystalResonance()
+{
+    requireEngine();
+    Circuit c;
+    const ItemId x = part(c, QStringLiteral("crystal"), QStringLiteral("Y1"), QStringLiteral("1Meg"));
+    const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V1"));
+    ground(c, QStringLiteral("G"));
+    wire(c, g, QStringLiteral("+"), QStringLiteral("IN"));
+    wire(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    wire(c, x, QStringLiteral("1"), QStringLiteral("IN"));
+    wire(c, x, QStringLiteral("2"), QStringLiteral("OUT"));
+    resistor(c, QStringLiteral("50"), QStringLiteral("OUT"), QStringLiteral("G"));
+    AnalysisSettings a{true, AnalysisSettings::Type::AC};
+    a.acStart = QStringLiteral("900k");
+    a.acStop = QStringLiteral("1.1Meg");
+    a.acPointsPerDecade = 2000;
+    c.setAnalysis(a);
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const spice::Vector* f = r.find(QStringLiteral("frequency"));
+    const spice::Vector* out = r.find(QStringLiteral("out"));
+    int peak = 0;
+    for (int i = 0; i < out->size(); ++i)
+        if (std::abs(out->complex[i]) > std::abs(out->complex[peak])) peak = i;
+    const double fpeak = f->isComplex() ? f->complex[peak].real() : f->real[peak];
+    QVERIFY2(qAbs(fpeak - 1e6) < 2e3, qPrintable(QString::number(fpeak)));          // series resonance
+}
+
+void TestAnalog::miscPartsSimulate_data()
+{
+    QTest::addColumn<QString>("symbol");
+    for (const char* id : {"fuse", "njfet", "pnp_darlington", "buzzer", "speaker", "dc_motor", "solenoid", "triode", "tetrode"})
+        QTest::newRow(id) << QString::fromLatin1(id);
+}
+
+// every pin through 10k to its own node, one pin driven by 10 V: the deck
+// must build and reach an operating point
+void TestAnalog::miscPartsSimulate()
+{
+    QFETCH(QString, symbol);
+    requireEngine();
+    Circuit c;
+    const ItemId u = part(c, symbol, QStringLiteral("X1"));
+    supply(c, QStringLiteral("VP"), QStringLiteral("10"));
+    ground(c, QStringLiteral("G"));
+    const SymbolDef& s = *library().find(symbol);
+    for (int i = 0; i < s.pins.size(); ++i) {
+        const QString net = QStringLiteral("N%1").arg(i);
+        wire(c, u, s.pins[i].name, net);
+        resistor(c, QStringLiteral("10k"), net, i == 0 ? QStringLiteral("VP") : QStringLiteral("G"));
+    }
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
 }
 
 void TestAnalog::importedExamplesSimulate()
