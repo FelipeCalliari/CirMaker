@@ -71,6 +71,7 @@ private slots:
     void hexKeyTakesKeyboard();
     void switchesClickFastAndKeyboard();
     void dragDesignator();
+    void clickSelectsWire();
     void screenshot();
 };
 
@@ -810,6 +811,26 @@ void TestGui::dragDesignator()
     QCOMPARE(f.circuit.component(u)->pos, QPointF(0, 0));   // the part stays
     f.undo.undo();
     QVERIFY(!f.circuit.component(u)->designatorAt.has_value());
+}
+
+// A click on a wire selects it; Delete removes it.
+void TestGui::clickSelectsWire()
+{
+    ViewFixture f;
+    const ItemId id = f.circuit.addWire({0, {{-100, 0}, {100, 0}}});
+    // with a vertex a reshape would tidy away (imported wires have them)
+    const ItemId other = f.circuit.addWire({0, {{-100, 100}, {0, 100}, {100, 100}}});
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({0, 0}));
+    QCOMPARE(f.scene.selection().wires.size(), 1);
+    QCOMPARE(f.scene.selection().wires.first().id, id);
+    // its end too
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at({-100, 100}));
+    QCOMPARE(f.scene.selection().wires.size(), 1);
+    QCOMPARE(f.scene.selection().wires.first().id, other);
+    QCOMPARE(f.undo.count(), 0);                             // a click changes nothing
+    f.scene.deleteSelection();
+    QVERIFY(!f.circuit.wire(other));
+    QVERIFY(f.circuit.wire(id));
 }
 
 QTEST_MAIN(TestGui)

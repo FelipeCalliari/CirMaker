@@ -1824,6 +1824,9 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
         if (!item)
             return;
         item->clearPreview();
+        // a click only selects the wire (it stays selected for Delete)
+        if (snap(e->scenePos()) == edit.start)
+            return;
         if (pts != edit.original && pts.size() >= 2) {
             Selection before, after;
             before.wires << *m_circuit->wire(edit.wire);
@@ -1831,6 +1834,7 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
             w.points = pts;
             after.wires << w;
             m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Reshape wire")));
+            if (WireItem* again = m_wireItems.value(edit.wire)) again->setSelected(true);
         }
         return;
     }
