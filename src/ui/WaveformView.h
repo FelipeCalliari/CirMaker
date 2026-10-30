@@ -36,6 +36,22 @@ public:
 
     static QColor traceColor(int index);
 
+    // Analysis window tools: zoom (fit restores), cursors A and B, a trace
+    // computed from others, and a stored reference shown dashed.
+    void fit();
+    void zoomX(double factor, double around);
+    void zoomY(double factor, double around);
+    void setLogX(bool on);
+    bool logX() const { return m_logX; }
+    void setCursors(std::optional<double> a, std::optional<double> b);
+    // "T1-T2", "T1*2", "abs(T3)", "db(T1)": T<n> is the n-th trace; false
+    // with a message when the expression is not understood.
+    bool addMathTrace(const QString& expression, QString* error = nullptr);
+    void store();                   // keeps the shown traces as the reference
+    void clearStored();
+    const QVector<Trace>& traces() const { return m_traces; }
+    std::pair<double, double> xRange() const { return {m_x0, m_x1}; }
+
 signals:
     // The breakpoint box of a digital lane was clicked (0 off, 1 on 0, 2 on 1).
     void breakChanged(int lane, int condition);
@@ -47,6 +63,8 @@ protected:
     void paintEvent(QPaintEvent*) override;
     void mouseMoveEvent(QMouseEvent* e) override;
     void mousePressEvent(QMouseEvent* e) override;
+    void mouseDoubleClickEvent(QMouseEvent* e) override;
+    void wheelEvent(QWheelEvent* e) override;
     void leaveEvent(QEvent*) override;
     void contextMenuEvent(QContextMenuEvent* e) override;
 
@@ -68,6 +86,11 @@ private:
     std::optional<double> m_cursorX;
     bool m_digital = false;
     QVector<Lane> m_lanes;
+    std::optional<double> m_cursorA, m_cursorB;
+    QVector<double> m_storedX;
+    QVector<Trace> m_stored;
+    QString m_storedTitle;
+    double valueAt(const Trace& t, double x) const;
     quint64 m_now = 0;
 };
 

@@ -6,6 +6,10 @@
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QFileDialog>
+#include <QInputDialog>
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QWheelEvent>
 #include <QMenu>
 #include <QPainter>
 #include <QPainterPath>
@@ -83,6 +87,14 @@ QRectF WaveformView::breakBox(int lane) const
 
 void WaveformView::mousePressEvent(QMouseEvent* e)
 {
+    // analysis plot: click places cursor A, Shift+click cursor B
+    if (!m_digital && !m_x.isEmpty() && e->button() == Qt::LeftButton && plotRect().contains(e->position())) {
+        const double x = m_x[indexAt(pixelToX(e->position().x()))];
+        if (e->modifiers() & Qt::ShiftModifier) m_cursorB = x;
+        else m_cursorA = x;
+        update();
+        return;
+    }
     if (m_digital && e->button() == Qt::LeftButton) {
         for (int i = 0; i < m_lanes.size(); ++i) {
             if (m_lanes[i].breakOn >= 0 && breakBox(i).adjusted(-3, -3, 3, 3).contains(e->position())) {
@@ -186,6 +198,13 @@ void WaveformView::setData(const QString& title, const QString& xLabel, const QS
     m_logX = logX;
     m_digital = false;
     m_cursorX.reset();
+    m_cursorA.reset();
+    m_cursorB.reset();
+    fit();
+}
+
+void WaveformView::fit()
+{
     if (!m_x.isEmpty()) {
         m_x0 = m_x.first();
         m_x1 = m_x.last();
@@ -200,6 +219,97 @@ void WaveformView::setData(const QString& title, const QString& xLabel, const QS
         m_y1 = hi + pad;
         if (m_y1 - m_y0 < 1e-12) { m_y0 -= 0.5; m_y1 += 0.5; }
     }
+    update();
+}
+
+void WaveformView::zoomX(double factor, double around)
+{
+    if (m_logX && m_x0 > 0) {
+        const double a = std::log10(std::max(around, 1e-300)), l0 = std::log10(m_x0), l1 = std::log10(m_x1);
+        m_x0 = std::pow(10, a - (a - l0) / factor);
+        m_x1 = std::pow(10, a + (l1 - a) / factor);
+    } else {
+        m_x0 = around - (around - m_x0) / factor;
+        m_x1 = around + (m_x1 - around) / factor;
+    }
+    update();
+}
+
+void WaveformView::zoomY(double factor, double around)
+{
+    m_y0 = around - (around - m_y0) / factor;
+    m_y1 = around + (m_y1 - around) / factor;
+    update();
+}
+
+void WaveformView::setLogX(bool on)
+{
+    if (on && (m_x.isEmpty() || m_x.first() <= 0)) return;     // log needs positive x
+    m_logX = on;
+    update();
+}
+
+void WaveformView::setCursors(std::optional<double> a, std::optional<double> b)
+{
+    m_cursorA = a;
+    m_cursorB = b;
+    update();
+}
+
+double WaveformView::valueAt(const Trace& t, double x) const
+{
+    const int i = indexAt(x);
+    return i >= 0 && i < t.y.size() ? t.y[i] : qQNaN();
+}
+
+bool WaveformView::addMathTrace(const QString& expression, QString* error)
+{
+    auto fail = [&](const QString& why) { if (error) *error = why; return false; };
+    static const QRegularExpression func(QStringLiteral("^\\s*(abs|db)\\s*\\(\\s*[Tt](\\d+)\\s*\\)\\s*$"));
+    static const QRegularExpression binary(
+        QStringLiteral("^\\s*(?:[Tt](\\d+)|([-+]?[\\d.]+(?:[eE][-+]?\\d+)?))\\s*([-+*/])\\s*(?:[Tt](\\d+)|([-+]?[\\d.]+(?:[eE][-+]?\\d+)?))\\s*$"));
+    auto trace = [&](const QString& n) -> const Trace* {
+        const int i = n.toInt() - 1;
+        return i >= 0 && i < m_traces.size() ? &m_traces[i] : nullptr;
+    };
+    Trace out{expression.trimmed(), {}, traceColor(int(m_traces.size()))};
+    if (const auto m = func.match(expression); m.hasMatch()) {
+        const Trace* a = trace(m.captured(2));
+        if (!a) return fail(tr("There is no trace T%1").arg(m.captured(2)));
+        for (double v : a->y)
+            out.y << (m.captured(1) == u"abs" ? std::abs(v) : 20 * std::log10(std::max(std::abs(v), 1e-30)));
+    } else if (const auto m = binary.match(expression); m.hasMatch()) {
+        const Trace* a = m.captured(1).isEmpty() ? nullptr : trace(m.captured(1));
+        const Trace* b = m.captured(4).isEmpty() ? nullptr : trace(m.captured(4));
+        if ((!m.captured(1).isEmpty() && !a) || (!m.captured(4).isEmpty() && !b))
+            return fail(tr("There is no such trace"));
+        if (!a && !b) return fail(tr("Use at least one trace"));
+        const QChar op = m.captured(3).at(0);
+        for (int i = 0; i < m_x.size(); ++i) {
+            const double x = a ? a->y.value(i, qQNaN()) : m.captured(2).toDouble();
+            const double y = b ? b->y.value(i, qQNaN()) : m.captured(5).toDouble();
+            out.y << (op == u'+' ? x + y : op == u'-' ? x - y : op == u'*' ? x * y : y != 0 ? x / y : qQNaN());
+        }
+    } else {
+        return fail(tr("Write T1-T2, T1*2, abs(T1) or db(T1)"));
+    }
+    m_traces << out;
+    update();
+    return true;
+}
+
+void WaveformView::store()
+{
+    m_storedX = m_x;
+    m_stored = m_traces;
+    m_storedTitle = m_title;
+    update();
+}
+
+void WaveformView::clearStored()
+{
+    m_stored.clear();
+    m_storedX.clear();
     update();
 }
 
@@ -299,9 +409,21 @@ void WaveformView::paintEvent(QPaintEvent*)
     p.drawRect(r);
     p.drawText(QRectF(r.left(), r.bottom() + 20, r.width(), 18), Qt::AlignHCenter, m_xLabel);
 
-    // traces
+    // traces; the stored reference dashed underneath
     p.save();
     p.setClipRect(r.adjusted(-1, -1, 1, 1));
+    for (const Trace& t : std::as_const(m_stored)) {
+        QPainterPath path;
+        bool started = false;
+        for (int i = 0; i < m_storedX.size() && i < t.y.size(); ++i) {
+            if (!std::isfinite(t.y[i])) { started = false; continue; }
+            const QPointF pt(xToPixel(m_storedX[i]), yToPixel(t.y[i]));
+            if (started) path.lineTo(pt); else path.moveTo(pt);
+            started = true;
+        }
+        p.setPen(QPen(t.color.lighter(140), 1.2, Qt::DashLine));
+        p.drawPath(path);
+    }
     for (const Trace& t : std::as_const(m_traces)) {
         QPainterPath path;
         bool started = false;
@@ -323,8 +445,9 @@ void WaveformView::paintEvent(QPaintEvent*)
     p.drawText(QRectF(8, 4, r.left() - 10, 20), Qt::AlignLeft | Qt::AlignVCenter, m_title);
     lx = std::max(lx, 8 + p.fontMetrics().horizontalAdvance(m_title) + 20.0);
     const int idx = m_cursorX ? indexAt(*m_cursorX) : -1;
-    for (const Trace& t : std::as_const(m_traces)) {
-        QString text = t.name;
+    for (int n = 0; n < m_traces.size(); ++n) {
+        const Trace& t = m_traces[n];
+        QString text = QStringLiteral("T%1 %2").arg(n + 1).arg(t.name);
         if (idx >= 0 && idx < t.y.size())
             text += QStringLiteral(" = ") + siFormat(t.y[idx], m_yUnit, 4);
         p.setPen(QPen(t.color, 3));
@@ -348,6 +471,58 @@ void WaveformView::paintEvent(QPaintEvent*)
         p.setPen(textColor);
         p.drawText(QRectF(px + 4, r.top() + 2, 140, 16), Qt::AlignLeft, siFormat(m_x[idx], m_xUnit, 5));
     }
+
+    // cursors A and B with the differences between them
+    const std::pair<std::optional<double>, QString> marks[] = {{m_cursorA, QStringLiteral("A")}, {m_cursorB, QStringLiteral("B")}};
+    for (const auto& [x, name] : marks) {
+        if (!x) continue;
+        const double px = xToPixel(*x);
+        p.setPen(QPen(QColor(0xc0, 0x40, 0x00), 1.2));
+        p.drawLine(QPointF(px, r.top()), QPointF(px, r.bottom()));
+        p.drawText(QPointF(px + 3, r.bottom() - 4), name);
+    }
+    if (m_cursorA || m_cursorB) {
+        QStringList lines;
+        if (m_cursorA) lines << QStringLiteral("A: %1").arg(siFormat(*m_cursorA, m_xUnit, 5));
+        if (m_cursorB) lines << QStringLiteral("B: %1").arg(siFormat(*m_cursorB, m_xUnit, 5));
+        if (m_cursorA && m_cursorB) {
+            const double dx = *m_cursorB - *m_cursorA;
+            lines << QStringLiteral("ΔX: %1").arg(siFormat(dx, m_xUnit, 5));
+            if (m_xUnit == u"s" && dx != 0) lines << QStringLiteral("1/ΔX: %1").arg(siFormat(1 / std::abs(dx), QStringLiteral("Hz"), 5));
+            for (int i = 0; i < m_traces.size(); ++i)
+                lines << QStringLiteral("ΔT%1: %2").arg(i + 1).arg(siFormat(valueAt(m_traces[i], *m_cursorB) - valueAt(m_traces[i], *m_cursorA), m_yUnit, 4));
+        }
+        const QFontMetrics fm(p.font());
+        const QRectF box(r.left() + 6, r.top() + 6, 40 + fm.horizontalAdvance(QStringLiteral("ΔT9: -000.0 mV")) + 30,
+                         lines.size() * fm.height() + 8);
+        p.setPen(QPen(pal.color(QPalette::Mid), 1));
+        p.setBrush(pal.color(QPalette::Base));
+        p.drawRect(box);
+        p.setPen(textColor);
+        p.drawText(box.adjusted(5, 4, -5, -4), Qt::AlignLeft | Qt::AlignTop, lines.join(u'\n'));
+    }
+}
+
+void WaveformView::wheelEvent(QWheelEvent* e)
+{
+    if (m_x.isEmpty() || m_digital) return QWidget::wheelEvent(e);
+    const double factor = std::pow(1.25, e->angleDelta().y() / 120.0);
+    const QPointF at = e->position();
+    if (e->modifiers() & Qt::ControlModifier)
+        zoomY(factor, m_y0 + (plotRect().bottom() - at.y()) / plotRect().height() * (m_y1 - m_y0));
+    else
+        zoomX(factor, pixelToX(at.x()));
+    e->accept();
+}
+
+void WaveformView::mouseDoubleClickEvent(QMouseEvent* e)
+{
+    if (!m_x.isEmpty() && !m_digital) {
+        fit();
+        e->accept();
+        return;
+    }
+    QWidget::mouseDoubleClickEvent(e);
 }
 
 void WaveformView::mouseMoveEvent(QMouseEvent* e)
@@ -388,6 +563,29 @@ void WaveformView::contextMenuEvent(QContextMenuEvent* e)
         menu.exec(e->globalPos());
         return;
     }
+    menu.addAction(tr("&Fit"), this, &WaveformView::fit);
+    QAction* log = menu.addAction(tr("&Logarithmic X"), this, [this](bool on) { setLogX(on); });
+    log->setCheckable(true);
+    log->setChecked(m_logX);
+    log->setEnabled(!m_x.isEmpty() && m_x.first() > 0);
+    if (m_cursorA || m_cursorB)
+        menu.addAction(tr("Clear cursors"), this, [this] { setCursors({}, {}); });
+    menu.addAction(tr("Add &math trace..."), this, [this] {
+        QStringList names;
+        for (int i = 0; i < m_traces.size(); ++i) names << QStringLiteral("T%1 = %2").arg(i + 1).arg(m_traces[i].name);
+        bool ok = false;
+        const QString expr = QInputDialog::getText(this, tr("Math trace"),
+                                                   names.join(u'\n') + QStringLiteral("\n\n") + tr("Expression (T1-T2, T1*2, abs(T1), db(T1)):"),
+                                                   QLineEdit::Normal, QStringLiteral("T1-T2"), &ok);
+        QString error;
+        if (ok && !addMathTrace(expr, &error))
+            QMessageBox::warning(this, tr("Math trace"), error);
+    });
+    menu.addSeparator();
+    menu.addAction(tr("&Store as reference"), this, &WaveformView::store);
+    if (!m_stored.isEmpty())
+        menu.addAction(tr("Clear reference"), this, &WaveformView::clearStored);
+    menu.addSeparator();
     menu.addAction(tr("Copy data (CSV)"), this, [this] { QApplication::clipboard()->setText(toCsv()); });
     menu.addAction(tr("Save data as CSV..."), this, [this] {
         const QString path = QFileDialog::getSaveFileName(this, tr("Save waveforms"), QStringLiteral("waveforms.csv"),

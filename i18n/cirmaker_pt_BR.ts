@@ -2891,54 +2891,115 @@ Saída do SPICE:
 <context>
     <name>cm::WaveformView</name>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="164"/>
+        <location filename="../src/ui/WaveformView.cpp" line="176"/>
         <source>ticks</source>
         <translation>ticks</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="261"/>
+        <location filename="../src/ui/WaveformView.cpp" line="278"/>
+        <source>There is no trace T%1</source>
+        <translation>Não existe a curva T%1</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="285"/>
+        <source>There is no such trace</source>
+        <translation>Essa curva não existe</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="286"/>
+        <source>Use at least one trace</source>
+        <translation>Use pelo menos uma curva</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="294"/>
+        <source>Write T1-T2, T1*2, abs(T1) or db(T1)</source>
+        <translation>Escreva T1-T2, T1*2, abs(T1) ou db(T1)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="371"/>
         <source>Run an analog analysis to see waveforms here.
 Use the Probe tool to choose which nets to plot.</source>
         <translation>Rode uma análise analógica para ver as formas de onda aqui.
 Use a ponta de prova para escolher as redes traçadas.</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="386"/>
+        <location filename="../src/ui/WaveformView.cpp" line="561"/>
         <source>Copy image</source>
         <translation>Copiar imagem</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="391"/>
+        <location filename="../src/ui/WaveformView.cpp" line="566"/>
+        <source>&amp;Fit</source>
+        <translation>&amp;Enquadrar</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="567"/>
+        <source>&amp;Logarithmic X</source>
+        <translation>X &amp;logarítmico</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="572"/>
+        <source>Clear cursors</source>
+        <translation>Remover cursores</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="573"/>
+        <source>Add &amp;math trace...</source>
+        <translation>Adicionar curva &amp;calculada...</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="577"/>
+        <location filename="../src/ui/WaveformView.cpp" line="582"/>
+        <source>Math trace</source>
+        <translation>Curva calculada</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="578"/>
+        <source>Expression (T1-T2, T1*2, abs(T1), db(T1)):</source>
+        <translation>Expressão (T1-T2, T1*2, abs(T1), db(T1)):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="585"/>
+        <source>&amp;Store as reference</source>
+        <translation>&amp;Guardar como referência</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="587"/>
+        <source>Clear reference</source>
+        <translation>Remover referência</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="589"/>
         <source>Copy data (CSV)</source>
         <translation>Copiar dados (CSV)</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="392"/>
+        <location filename="../src/ui/WaveformView.cpp" line="590"/>
         <source>Save data as CSV...</source>
         <translation>Salvar dados como CSV...</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="393"/>
+        <location filename="../src/ui/WaveformView.cpp" line="591"/>
         <source>Save waveforms</source>
         <translation>Salvar formas de onda</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="394"/>
+        <location filename="../src/ui/WaveformView.cpp" line="592"/>
         <source>CSV file (*.csv)</source>
         <translation>Arquivo CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="402"/>
+        <location filename="../src/ui/WaveformView.cpp" line="600"/>
         <source>Save image...</source>
         <translation>Salvar imagem...</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="403"/>
+        <location filename="../src/ui/WaveformView.cpp" line="601"/>
         <source>Save plot image</source>
         <translation>Salvar imagem do gráfico</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="404"/>
+        <location filename="../src/ui/WaveformView.cpp" line="602"/>
         <source>PNG image (*.png)</source>
         <translation>Imagem PNG (*.png)</translation>
     </message>

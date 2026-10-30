@@ -11,6 +11,7 @@
 #include "ui/SignalGenDialog.h"
 #include "ui/PreferencesDialog.h"
 #include "ui/Theme.h"
+#include "ui/WaveformView.h"
 
 #include <QComboBox>
 #include "ui/SchematicScene.h"
@@ -56,6 +57,7 @@ private slots:
     void groupItemsAndPlacement();
     void themeColours();
     void deviceProbeCycles();
+    void analysisWindowTools();
     void screenshot();
 };
 
@@ -614,6 +616,35 @@ void TestGui::deviceProbeCycles()
     }
     QCOMPARE(modes, (QStringList{"I", "P", "Z", ""}));
     QVERIFY(f.circuit.probes().isEmpty());              // not a net probe
+}
+
+void TestGui::analysisWindowTools()
+{
+    WaveformView w;
+    w.resize(600, 300);
+    const QVector<double> x{0, 1, 2, 3};
+    w.setData(QStringLiteral("t"), QStringLiteral("Time"), QStringLiteral("s"), QStringLiteral("V"), x,
+              {{QStringLiteral("a"), {1, 2, 3, 4}, Qt::red}, {QStringLiteral("b"), {1, 1, 1, -1}, Qt::blue}}, false);
+    QVERIFY(w.addMathTrace(QStringLiteral("T1-T2")));
+    QCOMPARE(w.traces().last().y, (QVector<double>{0, 1, 2, 5}));
+    QVERIFY(w.addMathTrace(QStringLiteral(" abs( t2 ) ")));
+    QCOMPARE(w.traces().last().y, (QVector<double>{1, 1, 1, 1}));
+    QVERIFY(w.addMathTrace(QStringLiteral("T1*2")));
+    QCOMPARE(w.traces().last().y, (QVector<double>{2, 4, 6, 8}));
+    QString error;
+    QVERIFY(!w.addMathTrace(QStringLiteral("T9+1"), &error) && !error.isEmpty());
+    QVERIFY(!w.addMathTrace(QStringLiteral("sin(T1)"), &error));
+    QCOMPARE(w.traces().size(), 5);
+
+    w.zoomX(2, 1.5);                                    // around the middle
+    QCOMPARE(w.xRange(), (std::pair<double, double>{0.75, 2.25}));
+    w.fit();
+    QCOMPARE(w.xRange(), (std::pair<double, double>{0, 3}));
+    w.setLogX(true);
+    QVERIFY(!w.logX());                                 // x starts at 0
+    w.store();
+    w.setCursors(1.0, 3.0);
+    QVERIFY(!w.grab().isNull());                        // paints cursors and the reference
 }
 
 QTEST_MAIN(TestGui)
