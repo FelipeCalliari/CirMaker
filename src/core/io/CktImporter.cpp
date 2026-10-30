@@ -400,9 +400,13 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         const SymbolDef* s = library.findByAlias(cmName);
         Component c;
         c.designator = d.designator;
-        // 512 marks a mirrored device: 692 = mirrored and turned 180 degrees
-        c.mirrored = d.angle >= 512 && d.angle < 1024;
-        c.rotation = rotationFromAngle(c.mirrored ? d.angle - 512 : d.angle);
+        // the low 9 bits hold the angle and 0x200 marks a mirrored device
+        // (692 = mirrored and turned 180 degrees); higher bits are left over
+        // from older versions
+        const int angle = d.angle & 0x1ff;
+        const bool valid = angle == 0 || angle == 90 || angle == 180 || angle == 270;
+        c.mirrored = valid && (d.angle & 0x200);
+        c.rotation = valid ? rotationFromAngle(angle) : 0;
         c.pos = scaled(QPointF(d.x, d.y));
         if (!s) {
             rep.unmapped[cmName]++;

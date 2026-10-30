@@ -75,7 +75,7 @@ void TestCktImport::importsAllCircuits()
     // regression guard for symbol geometry (138 before the CircuitMaker
     // layouts); what remains is mostly analog symbols and stale net numbers
     // in the files themselves
-    QVERIFY2(shorts <= 30, qPrintable(QString::number(shorts)));
+    QVERIFY2(shorts <= 10, qPrintable(QString::number(shorts)));
     QStringList missing;
     for (auto it = unmapped.cbegin(); it != unmapped.cend(); ++it)
         missing << QStringLiteral("%1 x%2").arg(it.key()).arg(it.value());
