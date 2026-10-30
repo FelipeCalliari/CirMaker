@@ -1,4 +1,5 @@
 #include "ui/TitleBlockItem.h"
+#include "ui/Theme.h"
 
 #include "ui/SchematicScene.h"
 
@@ -23,7 +24,7 @@ void TitleBlockItem::sync(const TitleBlock& tb)
 
 void TitleBlockItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 {
-    const QColor ink = isSelected() ? QColor(0x00, 0x60, 0xff) : QColor(0x10, 0x10, 0x30);
+    const QColor ink = isSelected() ? theme().selection : theme().text;
     p->setPen(QPen(ink, 1.6));
     p->setBrush(Qt::NoBrush);
     const QRectF frame(0, 0, kWidth, kHeight);

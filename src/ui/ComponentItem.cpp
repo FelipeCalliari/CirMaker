@@ -1,6 +1,7 @@
 #include "ui/ComponentItem.h"
 
 #include "library/LibraryRegistry.h"
+#include "ui/Theme.h"
 
 #include "library/SymbolDef.h"
 #include "ui/SchematicScene.h"
@@ -19,10 +20,6 @@ namespace {
 
 constexpr int kIdle = INT_MIN;     // not simulating: displays stay blank
 
-const QColor kInk(0x00, 0x00, 0x00);
-const QColor kSelected(0x00, 0x60, 0xff);
-const QColor kHigh(0xe0, 0x10, 0x10);
-const QColor kLow(0x10, 0x50, 0xc0);
 const QColor kLampOff(0xff, 0xff, 0xff);
 
 QString hexDigit(int v) { return v < 0 ? QStringLiteral("-") : QString::number(v, 16).toUpper(); }
@@ -131,7 +128,7 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
         state = m_c.props.value(QStringLiteral("value"), m_symbol->defaultProps.value(QStringLiteral("value"))).toInt();
     }
 
-    const QColor ink = isSelected() ? kSelected : kInk;
+    const QColor ink = isSelected() ? theme().selection : theme().device;
     p->setRenderHint(QPainter::Antialiasing);
     paintDynamic(p, state, live, ink);
     // push buttons: the plunger travels while held
@@ -308,45 +305,45 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         };
         const int lit = live && state > 0 ? state : 0;
         for (int i = 0; i < 7; ++i) {
-            QPen pen(lit >> i & 1 ? kHigh : QColor(0xe8, 0xe0, 0xe0), 8, Qt::SolidLine, Qt::RoundCap);
+            QPen pen(lit >> i & 1 ? theme().high : QColor(0xe8, 0xe0, 0xe0), 8, Qt::SolidLine, Qt::RoundCap);
             p->setPen(pen);
             p->drawLine(seg[i]);
         }
         p->setPen(Qt::NoPen);
-        p->setBrush(lit >> 7 & 1 ? kHigh : QColor(0xe8, 0xe0, 0xe0));
+        p->setBrush(lit >> 7 & 1 ? theme().high : QColor(0xe8, 0xe0, 0xe0));
         p->drawEllipse(c + QPointF(w + 12, h), 5, 5);
     } else if (d == u"logicswitch") {
         // lever from the output pivot to the 1 (upper) or 0 (lower) contact
         const bool on = state == 1;
-        p->setPen(QPen(on ? kHigh : ink, 2, Qt::SolidLine, Qt::RoundCap));
+        p->setPen(QPen(on ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
         p->drawLine(QPointF(20, 0), on ? QPointF(-4, -11) : QPointF(-6, 9));
         p->setPen(Qt::NoPen);
-        p->setBrush(on ? kHigh : ink);
+        p->setBrush(on ? theme().high : ink);
         p->drawEllipse(QPointF(20, 0), 3, 3);
         if (live)
             SymbolPainter::uprightText(p, QPointF(-14, on ? -22 : 22), on ? QStringLiteral("1") : QStringLiteral("0"), 9, 0,
-                                       on ? kHigh : kLow);
+                                       on ? theme().high : theme().low);
     } else if (d == u"pulser") {
         if (live) {
-            p->setBrush(state == 1 ? kHigh : kLow);
+            p->setBrush(state == 1 ? theme().high : theme().low);
             p->drawEllipse(body.topRight() + QPointF(-9, 9), 5, 5);
         }
     } else if (d == u"dataseq") {
         // present address while simulating
         if (live && state >= 0)
-            SymbolPainter::uprightText(p, QPointF(0, 60), QStringLiteral("%1").arg(state, 2, 16, QChar(u'0')).toUpper(), 9, 0, kHigh);
+            SymbolPainter::uprightText(p, QPointF(0, 60), QStringLiteral("%1").arg(state, 2, 16, QChar(u'0')).toUpper(), 9, 0, theme().high);
     } else if (d == u"spst" || d == u"button") {
         const auto cs = circles();
         const QString type = m_symbol->model.value(u"type").toString();
         if (d == u"spst" && cs.size() >= 2) {
             const QPointF a(cs[0]->v[0], cs[0]->v[1]), b(cs[1]->v[0], cs[1]->v[1]);
-            p->setPen(QPen(live && state == 1 ? kHigh : ink, 2, Qt::SolidLine, Qt::RoundCap));
+            p->setPen(QPen(live && state == 1 ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(a, state == 1 ? b : a + (b - a) * 0.85 + QPointF(0, -(b - a).manhattanLength() * 0.45));
         } else if (type == u"spdt" && cs.size() >= 3) {
             // lever from the common contact to NC at rest, to NO while held
             const QPointF com(cs[0]->v[0], cs[0]->v[1]);
             const QPointF to = live && state == 1 ? QPointF(cs[2]->v[0], cs[2]->v[1]) : QPointF(cs[1]->v[0], cs[1]->v[1]);
-            p->setPen(QPen(live && state == 1 ? kHigh : ink, 2, Qt::SolidLine, Qt::RoundCap));
+            p->setPen(QPen(live && state == 1 ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(com, com + (to - com) * 0.88);
         }
     } else if (d == u"hexkey") {

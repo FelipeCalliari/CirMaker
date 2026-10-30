@@ -1435,6 +1435,7 @@ void MainWindow::applyPreferences()
     m_scene->setGridVisible(p.gridVisible);
     m_view->setDefaultZoom(p.zoomPercent / 100.0);
     m_speed->setValue(p.ticksPerFrame);
+    m_scene->applyTheme();
 }
 
 void MainWindow::showDigitalWaveforms()

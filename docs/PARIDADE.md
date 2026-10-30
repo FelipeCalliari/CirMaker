@@ -29,7 +29,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Merge (inserir outro circuito) | ✅ | `.cmq` ou `.ckt`, abaixo do circuito atual |
 | Copiar esquemático/formas de onda para a área de transferência como imagem | ✅ | Ctrl+Shift+C; formas de onda pelo Editar ou menu da janela |
 | Propriedades: Package, Exclude From PCB/Parts, Spice prefix, Pins | 🟡 | designador, rótulo, parâmetros e visibilidade dos textos |
-| Cores e fontes configuráveis (Colors, Device/Text Font) | ❌ | cores fixas no estilo do CM |
+| Cores e fontes configuráveis (Colors, Device/Text Font) | ✅ | Preferências: fundo, grade, dispositivos, fios, barramentos, texto, seleção, níveis lógicos; fontes de dispositivo e de texto |
 
 ## Biblioteca
 

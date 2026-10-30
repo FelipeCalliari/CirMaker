@@ -1,6 +1,10 @@
 #include "ui/PreferencesDialog.h"
 
 #include <QCheckBox>
+#include <QColorDialog>
+#include <QFontComboBox>
+#include <QGridLayout>
+#include <QPushButton>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -24,6 +28,7 @@ Preferences Preferences::load()
                                                                                                           : GridStyle::Lines;
     p.zoomPercent = std::clamp(s.value(QStringLiteral("prefs/zoomPercent"), p.zoomPercent).toInt(), 20, 400);
     p.ticksPerFrame = std::clamp(s.value(QStringLiteral("prefs/ticksPerFrame"), p.ticksPerFrame).toInt(), 1, 1000);
+    p.theme = Theme::current();
     return p;
 }
 
@@ -35,10 +40,11 @@ void Preferences::save() const
     s.setValue(QStringLiteral("prefs/gridStyle"), gridStyle == GridStyle::Lines ? QStringLiteral("lines") : QStringLiteral("dots"));
     s.setValue(QStringLiteral("prefs/zoomPercent"), zoomPercent);
     s.setValue(QStringLiteral("prefs/ticksPerFrame"), ticksPerFrame);
+    Theme::setCurrent(theme);
 }
 
 PreferencesDialog::PreferencesDialog(const Preferences& prefs, QWidget* parent)
-    : QDialog(parent), m_initialLanguage(prefs.language)
+    : QDialog(parent), m_initialLanguage(prefs.language), m_theme(prefs.theme)
 {
     setWindowTitle(tr("Preferences"));
     auto* layout = new QVBoxLayout(this);
@@ -84,10 +90,59 @@ PreferencesDialog::PreferencesDialog(const Preferences& prefs, QWidget* parent)
     sf->addRow(tr("Initial &speed:"), m_ticks);
     layout->addWidget(sim);
 
+    // CircuitMaker's Colors, Device Font and Text Font
+    auto* look = new QGroupBox(tr("Colours and fonts"));
+    auto* lg = new QGridLayout(look);
+    const std::pair<QString, QColor Theme::*> colors[] = {
+        {tr("Background"), &Theme::background}, {tr("Grid"), &Theme::grid}, {tr("Devices"), &Theme::device},
+        {tr("Wires"), &Theme::wire}, {tr("Buses"), &Theme::bus}, {tr("Text"), &Theme::text},
+        {tr("Selection"), &Theme::selection}, {tr("Logic high"), &Theme::high}, {tr("Logic low"), &Theme::low}};
+    int i = 0;
+    for (const auto& [caption, member] : colors) {
+        auto* b = new QPushButton(caption);
+        m_colorButtons.insert(b, member);
+        connect(b, &QPushButton::clicked, this, [this, b, caption] {
+            QColor Theme::*m = m_colorButtons.value(b);
+            const QColor c = QColorDialog::getColor(m_theme.*m, this, caption);
+            if (c.isValid()) m_theme.*m = c;
+            showColors();
+        });
+        lg->addWidget(b, i / 3, i % 3);
+        ++i;
+    }
+    auto* fonts = new QFormLayout;
+    m_deviceFont = new QFontComboBox;
+    m_deviceFont->setCurrentFont(QFont(m_theme.deviceFont));
+    m_textFont = new QFontComboBox;
+    m_textFont->setCurrentFont(m_theme.textFont.isEmpty() ? font() : QFont(m_theme.textFont));
+    fonts->addRow(tr("&Device font:"), m_deviceFont);
+    fonts->addRow(tr("&Text font:"), m_textFont);
+    lg->addLayout(fonts, 3, 0, 1, 3);
+    auto* reset = new QPushButton(tr("&Restore defaults"));
+    connect(reset, &QPushButton::clicked, this, [this] {
+        m_theme = Theme();
+        m_deviceFont->setCurrentFont(QFont(m_theme.deviceFont));
+        m_textFont->setCurrentFont(font());
+        showColors();
+    });
+    lg->addWidget(reset, 4, 2);
+    layout->addWidget(look);
+    showColors();
+
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     layout->addWidget(buttons);
+}
+
+// each colour button shows its colour as a swatch
+void PreferencesDialog::showColors()
+{
+    for (auto it = m_colorButtons.cbegin(); it != m_colorButtons.cend(); ++it) {
+        QPixmap swatch(16, 16);
+        swatch.fill(m_theme.*it.value());
+        it.key()->setIcon(QIcon(swatch));
+    }
 }
 
 Preferences PreferencesDialog::result() const
@@ -98,6 +153,10 @@ Preferences PreferencesDialog::result() const
     p.gridStyle = m_gridStyle->currentIndex() == 1 ? Preferences::GridStyle::Lines : Preferences::GridStyle::Dots;
     p.zoomPercent = m_zoom->value();
     p.ticksPerFrame = m_ticks->value();
+    p.theme = m_theme;
+    p.theme.deviceFont = m_deviceFont->currentFont().family();
+    const QString text = m_textFont->currentFont().family();
+    p.theme.textFont = text == font().family() && m_theme.textFont.isEmpty() ? QString() : text;
     return p;
 }
 

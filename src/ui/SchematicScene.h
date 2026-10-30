@@ -108,6 +108,8 @@ public:
     void refreshNetlist() { rebuildNetlist(); }
     // Re-reads symbols after a library change (a macro was redefined).
     void refreshSymbols();
+    // Redraws everything after a colour or font change.
+    void applyTheme();
 
     // title block (no-ops while simulating)
     void editTitleBlock();

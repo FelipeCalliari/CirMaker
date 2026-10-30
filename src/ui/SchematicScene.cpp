@@ -14,6 +14,7 @@
 #include "ui/SignalGenDialog.h"
 #include "ui/SymbolPainter.h"
 #include "ui/TextNoteItem.h"
+#include "ui/Theme.h"
 #include "ui/TitleBlockItem.h"
 #include "ui/WaveformView.h"
 #include "ui/WireItem.h"
@@ -43,7 +44,6 @@ using WireGeometry::simplify;
 
 namespace {
 
-const QColor kInk(0x10, 0x10, 0x30);
 const QString kMime = QStringLiteral("application/x-cirmaker-qt");
 
 Selection fromCircuit(const Circuit& c)
@@ -244,6 +244,17 @@ void SchematicScene::updateSceneRect()
 }
 
 // ---------------------------------------------------------------- tools
+
+void SchematicScene::applyTheme()
+{
+    for (TextNoteItem* t : std::as_const(m_textItems))
+        if (const TextNote* n = m_circuit->text(t->id())) t->sync(*n);
+    for (ComponentItem* c : std::as_const(m_componentItems)) c->update();
+    for (WireItem* w : std::as_const(m_wireItems)) w->update();
+    if (m_titleItem) m_titleItem->update();
+    invalidate();
+    update();
+}
 
 void SchematicScene::setRestrictions(const QStringList& options)
 {
@@ -1392,14 +1403,14 @@ int SchematicScene::simState(ItemId id) const { return m_sim ? m_sim->componentS
 QColor SchematicScene::wireColor(ItemId id) const
 {
     if (!m_sim || m_exporting || !m_trace)
-        return QColor(0x00, 0x30, 0xff);
+        return theme().wire;
     switch (m_sim->netValue(m_netlist.wireNet.value(id, -1))) {
-    case sim::Logic::L1: return {0xe0, 0x10, 0x10};
-    case sim::Logic::L0: return {0x10, 0x50, 0xc0};
+    case sim::Logic::L1: return theme().high;
+    case sim::Logic::L0: return theme().low;
     case sim::Logic::X: return {0xf0, 0x90, 0x00};
     case sim::Logic::Z: return {0x90, 0x90, 0x90};
     }
-    return kInk;
+    return theme().device;
 }
 
 void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
@@ -1804,7 +1815,7 @@ void SchematicScene::keyPressEvent(QKeyEvent* e)
 
 void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
 {
-    p->fillRect(rect, Qt::white);
+    p->fillRect(rect, theme().background);
     if (m_border)
         drawBorder(p);
     if (!m_gridVisible || m_exporting)
@@ -1825,7 +1836,7 @@ void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
             lines << QLineF(x, rect.top(), x, rect.bottom());
         for (double y = y0; y < rect.bottom(); y += step)
             lines << QLineF(rect.left(), y, rect.right(), y);
-        p->setPen(QPen(QColor(0xd8, 0xd8, 0xd8), 0));
+        p->setPen(QPen(theme().grid, 0));
         p->drawLines(lines);
         return;
     }
@@ -1833,13 +1844,13 @@ void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
     for (double y = y0; y < rect.bottom(); y += step)
         for (double x = x0; x < rect.right(); x += step)
             (isMajor(x) && isMajor(y) ? majorDots : minorDots) << QPointF(x, y);
-    QPen pen(QColor(0xa8, 0xac, 0xbc));
+    QPen pen(theme().grid.darker(125));
     pen.setCosmetic(true);
     pen.setWidthF(1.5);
     pen.setCapStyle(Qt::RoundCap);
     p->setPen(pen);
     p->drawPoints(minorDots.constData(), int(minorDots.size()));
-    pen.setColor(QColor(0x70, 0x74, 0x88));
+    pen.setColor(theme().grid.darker(190));
     pen.setWidthF(2.5);
     p->setPen(pen);
     p->drawPoints(majorDots.constData(), int(majorDots.size()));
@@ -1849,7 +1860,7 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
 {
     p->setRenderHint(QPainter::Antialiasing);
     p->setPen(Qt::NoPen);
-    p->setBrush(QColor(0x00, 0x30, 0xff));
+    p->setBrush(theme().wire);
     for (QPointF j : std::as_const(m_netlist.junctions))
         p->drawEllipse(j, 4, 4);
 
@@ -1875,7 +1886,7 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
                           : v == sim::Logic::L0 ? QColor(0x30, 0xc0, 0x40)
                           : v == sim::Logic::X ? QColor(0xf0, 0x90, 0x00) : QColor(0xa0, 0xa0, 0xff);
         const QRectF lamp(m_cursor + QPointF(8, -26), QSizeF(18, 18));
-        p->setPen(QPen(kInk, 1));
+        p->setPen(QPen(theme().device, 1));
         p->setBrush(fill);
         p->drawEllipse(lamp);
         QFont f = p->font();
@@ -1887,7 +1898,7 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
     // pin dots: pins with a wire attached
     if (m_showPinDots) {
         p->setPen(Qt::NoPen);
-        p->setBrush(QColor(0x00, 0x30, 0xff));
+        p->setBrush(theme().wire);
         for (const ComponentItem* item : std::as_const(m_componentItems)) {
             if (item->symbol()->netLabel) continue;
             for (int i = 0; i < item->symbol()->pins.size(); ++i) {
@@ -2024,7 +2035,7 @@ void SchematicScene::drawBorder(QPainter* p) const
     const QRectF inner = borderRect();
     const QRectF outer = inner.adjusted(-kBorderMargin, -kBorderMargin, kBorderMargin, kBorderMargin);
     p->save();
-    p->setPen(QPen(kInk, 1.5));
+    p->setPen(QPen(theme().device, 1.5));
     p->setBrush(Qt::NoBrush);
     p->drawRect(outer);
     p->drawRect(inner);

@@ -1,4 +1,5 @@
 #include "ui/SymbolPainter.h"
+#include "ui/Theme.h"
 
 #include <QFontMetricsF>
 #include <QHash>
@@ -50,7 +51,7 @@ QPainterPath parsePath(const QString& d)
 
 QFont schematicFont(double pointSize, bool bold)
 {
-    QFont f(QStringLiteral("Courier New"));
+    QFont f(theme().deviceFont);
     f.setStyleHint(QFont::TypeWriter);
     f.setFamilies({QStringLiteral("Courier New"), QStringLiteral("Liberation Mono"), QStringLiteral("DejaVu Sans Mono"),
                    QStringLiteral("monospace")});

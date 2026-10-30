@@ -1,9 +1,14 @@
 #pragma once
 
+#include "ui/Theme.h"
+
 #include <QDialog>
+#include <QHash>
 
 class QCheckBox;
 class QComboBox;
+class QFontComboBox;
+class QPushButton;
 class QSpinBox;
 
 namespace cm {
@@ -16,6 +21,7 @@ struct Preferences {
     GridStyle gridStyle = GridStyle::Lines;
     int zoomPercent = 60;       // initial zoom and upper limit of "fit to window"
     int ticksPerFrame = 2;
+    Theme theme;                // colours and fonts
 
     static Preferences load();
     void save() const;
@@ -34,6 +40,10 @@ private:
     QSpinBox* m_zoom;
     QSpinBox* m_ticks;
     QString m_initialLanguage;
+    Theme m_theme;
+    QHash<QPushButton*, QColor Theme::*> m_colorButtons;
+    QFontComboBox *m_deviceFont, *m_textFont;
+    void showColors();
 };
 
 } // namespace cm

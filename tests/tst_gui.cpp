@@ -9,6 +9,8 @@
 #include "ui/DataSequencerDialog.h"
 #include "ui/MemoryEditorDialog.h"
 #include "ui/SignalGenDialog.h"
+#include "ui/PreferencesDialog.h"
+#include "ui/Theme.h"
 
 #include <QComboBox>
 #include "ui/SchematicScene.h"
@@ -52,6 +54,7 @@ private slots:
     void labelPositionsAndBorder();
     void signalGenDialog();
     void groupItemsAndPlacement();
+    void themeColours();
     void screenshot();
 };
 
@@ -576,6 +579,26 @@ void TestGui::groupItemsAndPlacement()
         if (c.symbolId == u"7400") shown << shownDesignator(*library().find(c.symbolId), c);
     shown.sort();
     QCOMPARE(shown, (QStringList{"U1A", "U1B", "U1C", "U1D", "U4A"}));
+}
+
+void TestGui::themeColours()
+{
+    const Theme saved = Theme::current();
+    Theme t;
+    t.wire = Qt::darkGreen;
+    t.background = QColor(0x20, 0x20, 0x20);
+    t.deviceFont = QStringLiteral("DejaVu Sans Mono");
+    Theme::setCurrent(t);
+    QCOMPARE(Theme::load(), t);                        // kept in the settings
+    Circuit circuit;
+    QUndoStack undo;
+    SchematicScene scene(&circuit, &undo, library());
+    QCOMPARE(scene.wireColor(1), QColor(Qt::darkGreen));
+    Preferences p = Preferences::load();
+    QCOMPARE(p.theme, t);
+    PreferencesDialog dlg(p);
+    QCOMPARE(dlg.result().theme.wire, QColor(Qt::darkGreen));
+    Theme::setCurrent(saved);
 }
 
 QTEST_MAIN(TestGui)

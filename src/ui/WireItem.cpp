@@ -1,4 +1,5 @@
 #include "ui/WireItem.h"
+#include "ui/Theme.h"
 
 #include "ui/SchematicScene.h"
 #include "ui/SymbolPainter.h"
@@ -73,12 +74,12 @@ QPainterPath WireItem::shape() const { return m_shape; }
 void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 {
     const SchematicScene* sc = qobject_cast<SchematicScene*>(scene());
-    QColor color = sc && sc->simulating() ? sc->wireColor(m_w.id) : QColor(0x00, 0x30, 0xff);
+    QColor color = sc && sc->simulating() ? sc->wireColor(m_w.id) : theme().wire;
     if (m_w.bus)
-        color = Qt::black;
+        color = theme().bus;
     QPen pen(color, m_w.bus ? 8.0 : 1.6);
     if (isSelected()) {
-        pen.setColor(QColor(0x00, 0x60, 0xff));
+        pen.setColor(theme().selection);
         pen.setWidthF(m_w.bus ? 8.0 : 2.2);
     } else if (sc && sc->simulating() && !m_w.bus) {
         pen.setWidthF(2.0);
@@ -103,8 +104,8 @@ void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
         const QSizeF size(fm.horizontalAdvance(m_w.name) + 10, fm.height() + 4);
         const QPointF centre = end + dir * (size.height() / 2 + 2);
         const QRectF box(centre - QPointF(size.width() / 2, size.height() / 2), size);
-        p->setPen(QPen(Qt::black, 1.4));
-        p->setBrush(Qt::white);
+        p->setPen(QPen(theme().bus, 1.4));
+        p->setBrush(theme().background);
         p->drawRect(box);
         p->drawText(box, Qt::AlignCenter, m_w.name);
     }

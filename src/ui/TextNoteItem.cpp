@@ -1,4 +1,5 @@
 #include "ui/TextNoteItem.h"
+#include "ui/Theme.h"
 
 #include "ui/SchematicScene.h"
 
@@ -18,6 +19,7 @@ TextNoteItem::TextNoteItem(const TextNote& t)
 QFont TextNoteItem::font() const
 {
     QFont f;
+    if (!theme().textFont.isEmpty()) f.setFamily(theme().textFont);
     f.setPointSizeF(m_t.pointSize);
     return f;
 }
@@ -35,10 +37,10 @@ void TextNoteItem::sync(const TextNote& t)
 void TextNoteItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 {
     p->setFont(font());
-    p->setPen(isSelected() ? QColor(0x00, 0x60, 0xff) : QColor(0x10, 0x10, 0x30));
+    p->setPen(isSelected() ? theme().selection : theme().text);
     p->drawText(m_rect.adjusted(2, 2, -2, -2), Qt::AlignLeft | Qt::AlignTop, m_t.text);
     if (isSelected()) {
-        p->setPen(QPen(QColor(0x00, 0x60, 0xff), 0, Qt::DotLine));
+        p->setPen(QPen(theme().selection, 0, Qt::DotLine));
         p->drawRect(m_rect);
     }
 }
