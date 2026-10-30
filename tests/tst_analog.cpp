@@ -23,6 +23,11 @@ private slots:
     void dataSequencerPwl();
     void generatorWaves_data();
     void generatorWaves();
+    void fourierMath();
+    void fourierOfTransient();
+    void transferFunction();
+    void noiseSpectrum();
+    void sweeps();
     void importedExamplesSimulate();
 
 private:
@@ -342,6 +347,182 @@ void TestAnalog::generatorWaves()
     QVERIFY(std::isfinite(v));
     if (!std::isnan(expected))
         QVERIFY2(qAbs(v - expected) < 0.05, qPrintable(QString::number(v)));
+}
+
+namespace {
+
+// V1 (vsource) - R1 - OUT - R2 - ground
+Circuit* divider(Circuit& c, const QString& r1 = QStringLiteral("1k"))
+{
+    const ItemId v = part(c, QStringLiteral("vsource"), QStringLiteral("V1"), QStringLiteral("10"));
+    const ItemId a = part(c, QStringLiteral("resistor"), QStringLiteral("R1"), r1);
+    const ItemId b = part(c, QStringLiteral("resistor"), QStringLiteral("R2"), QStringLiteral("1k"));
+    label(c, v, QStringLiteral("+"), QStringLiteral("IN"));
+    label(c, a, QStringLiteral("1"), QStringLiteral("IN"));
+    label(c, a, QStringLiteral("2"), QStringLiteral("OUT"));
+    label(c, b, QStringLiteral("1"), QStringLiteral("OUT"));
+    label(c, b, QStringLiteral("2"), QStringLiteral("G"));
+    label(c, v, QStringLiteral("-"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    return &c;
+}
+
+} // namespace
+
+void TestAnalog::fourierMath()
+{
+    QVector<double> t, sine, square;
+    for (int i = 0; i <= 4000; ++i) {
+        const double x = i * 2e-3 / 4000;                    // two periods of 1 kHz
+        t << x;
+        sine << 0.5 + 2 * std::sin(2 * M_PI * 1e3 * x);
+        square << (std::fmod(x * 1e3, 1.0) < 0.5 ? 1.0 : -1.0);
+    }
+    const spice::Fourier f = spice::fourier(t, sine, 1e3, 9);
+    QCOMPARE(f.magnitude.size(), 10);
+    QVERIFY(qAbs(f.magnitude[0] - 0.5) < 1e-3);
+    QVERIFY(qAbs(f.magnitude[1] - 2) < 1e-3);
+    QVERIFY(qAbs(f.phase[1]) < 1);
+    QVERIFY(f.thd < 0.1);
+    const spice::Fourier q = spice::fourier(t, square, 1e3, 9);
+    QVERIFY(qAbs(q.magnitude[1] - 4 / M_PI) < 0.01);         // 4/pi, odd harmonics 1/n
+    QVERIFY(qAbs(q.magnitude[3] - 4 / (3 * M_PI)) < 0.01);
+    QVERIFY(q.magnitude[2] < 0.01);
+    QVERIFY(q.thd > 35 && q.thd < 45);                       // 9 harmonics of a square: ~42 %
+    QVERIFY(spice::fourier(t, sine, 100, 5).magnitude.isEmpty());   // shorter than a period
+}
+
+void TestAnalog::fourierOfTransient()
+{
+    requireEngine();
+    Circuit c;
+    const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V1"), {},
+                          {{QStringLiteral("amplitude"), QStringLiteral("3")}, {QStringLiteral("frequency"), QStringLiteral("1k")}});
+    const ItemId r = part(c, QStringLiteral("resistor"), QStringLiteral("R1"), QStringLiteral("1k"));
+    label(c, g, QStringLiteral("+"), QStringLiteral("OUT"));
+    label(c, r, QStringLiteral("1"), QStringLiteral("OUT"));
+    label(c, r, QStringLiteral("2"), QStringLiteral("G"));
+    label(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    AnalysisSettings a{true, AnalysisSettings::Type::Fourier};
+    a.tranStop = QStringLiteral("3m");
+    a.tranStep = QStringLiteral("2u");
+    c.setAnalysis(a);
+    spice::Deck deck;
+    const spice::Result res = simulate(c, &deck);
+    QVERIFY2(res.ok, qPrintable(res.error));
+    QCOMPARE(deck.generatorFrequency, 1000.0);
+    QVERIFY(deck.text.contains(QStringLiteral(".tran 2u 3m")));
+    const spice::Fourier f = spice::fourier(res.find(QStringLiteral("time"))->real, res.find(QStringLiteral("out"))->real,
+                                            deck.generatorFrequency, 5);
+    QVERIFY2(qAbs(f.magnitude[1] - 3) < 0.02, qPrintable(QString::number(f.magnitude[1])));
+    QVERIFY(f.thd < 1);
+}
+
+void TestAnalog::transferFunction()
+{
+    requireEngine();
+    Circuit c;
+    divider(c);
+    AnalysisSettings a{true, AnalysisSettings::Type::TransferFunction};
+    a.output = QStringLiteral("OUT");
+    a.inputSource = QStringLiteral("V1");
+    c.setAnalysis(a);
+    spice::Deck deck;
+    const spice::Result res = simulate(c, &deck);
+    QVERIFY2(res.ok, qPrintable(res.error + u'\n' + deck.text));
+    QCOMPARE(res.plotType, QStringLiteral("tf"));
+    double tf = 0, zin = 0, zout = 0;
+    for (auto it = res.vectors.cbegin(); it != res.vectors.cend(); ++it) {
+        if (it.key().contains(u"transfer")) tf = it->real.value(0);
+        if (it.key().contains(u"input_impedance")) zin = it->real.value(0);
+        if (it.key().contains(u"output_impedance")) zout = it->real.value(0);
+    }
+    QVERIFY(qAbs(tf - 0.5) < 1e-6);
+    QVERIFY(qAbs(zin - 2000) < 1e-3);
+    QVERIFY(qAbs(zout - 500) < 1e-3);
+
+    a.output = QStringLiteral("NOWHERE");
+    c.setAnalysis(a);
+    QVERIFY(!spice::build(c, library(), NetlistBuilder::build(c, library())).ok);
+}
+
+void TestAnalog::noiseSpectrum()
+{
+    requireEngine();
+    Circuit c;
+    divider(c);
+    AnalysisSettings a{true, AnalysisSettings::Type::Noise};
+    a.output = QStringLiteral("out");                  // net names are case-insensitive
+    a.inputSource = QStringLiteral("V1");
+    a.acStart = QStringLiteral("10");
+    a.acStop = QStringLiteral("10k");
+    a.acPointsPerDecade = 5;
+    c.setAnalysis(a);
+    spice::Deck deck;
+    const spice::Result res = simulate(c, &deck);
+    QVERIFY2(res.ok, qPrintable(res.error + u'\n' + deck.text));
+    QCOMPARE(res.scale, QStringLiteral("frequency"));
+    const spice::Vector* onoise = res.find(QStringLiteral("onoise_spectrum"));
+    QVERIFY(onoise && onoise->size() > 10);
+    // two 1k resistors in parallel at 27 C: sqrt(4kTR) = 2.88 nV/sqrt(Hz)
+    QVERIFY2(qAbs(onoise->real.value(0) - 2.88e-9) < 0.1e-9, qPrintable(QString::number(onoise->real.value(0))));
+}
+
+void TestAnalog::sweeps()
+{
+    Circuit c;
+    divider(c);
+    AnalysisSettings a{true, AnalysisSettings::Type::OperatingPoint};
+    a.sweep = AnalysisSettings::Sweep::Temperature;
+    a.tempStart = QStringLiteral("0");
+    a.tempStop = QStringLiteral("100");
+    a.tempStep = QStringLiteral("25");
+    c.setAnalysis(a);
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QString error;
+    QVector<spice::Run> runs = spice::buildRuns(c, library(), nl, &error);
+    QVERIFY(error.isEmpty());
+    QCOMPARE(runs.size(), 5);
+    QVERIFY(runs[2].deck.text.contains(QStringLiteral(".temp 50\n.op")));
+
+    a.sweep = AnalysisSettings::Sweep::Parameter;
+    a.paramDevice = QStringLiteral("R1");
+    a.paramStart = QStringLiteral("1k");
+    a.paramStop = QStringLiteral("3k");
+    a.paramStep = QStringLiteral("1k");
+    c.setAnalysis(a);
+    runs = spice::buildRuns(c, library(), nl, &error);
+    QCOMPARE(runs.size(), 3);
+    QCOMPARE(runs[1].label, QStringLiteral("R1 = 2000"));
+    QVERIFY(runs[1].deck.text.contains(QStringLiteral(" 2000\n")));
+
+    a.sweep = AnalysisSettings::Sweep::MonteCarlo;
+    a.mcRuns = 4;
+    a.mcTolerance = QStringLiteral("20");
+    c.setAnalysis(a);
+    runs = spice::buildRuns(c, library(), nl, &error);
+    QCOMPARE(runs.size(), 4);
+    QVERIFY(runs[0].deck.text.contains(QStringLiteral(" 1k\n")) || runs[0].deck.text.contains(QStringLiteral(" 1000\n")));
+    QVERIFY(runs[1].deck.text != runs[2].deck.text);
+
+    a.paramStep = QStringLiteral("-1k");               // runs away from the stop value
+    a.sweep = AnalysisSettings::Sweep::Parameter;
+    c.setAnalysis(a);
+    runs = spice::buildRuns(c, library(), nl, &error);
+    QVERIFY(runs.isEmpty() && !error.isEmpty());
+
+    // the parameter sweep really changes the result
+    requireEngine();
+    a.paramStep = QStringLiteral("2k");
+    c.setAnalysis(a);
+    error.clear();
+    runs = spice::buildRuns(c, library(), nl, &error);
+    QCOMPARE(runs.size(), 2);
+    const double v1 = spice::NgspiceEngine::instance().run(runs[0].deck.text).last(QStringLiteral("out")).value_or(0);
+    const double v3 = spice::NgspiceEngine::instance().run(runs[1].deck.text).last(QStringLiteral("out")).value_or(0);
+    QVERIFY(qAbs(v1 - 5) < 1e-6);
+    QVERIFY(qAbs(v3 - 2.5) < 1e-6);
 }
 
 void TestAnalog::importedExamplesSimulate()

@@ -4,6 +4,8 @@
 
 #include <QJsonArray>
 #include <QRegularExpression>
+#include <complex>
+#include <QRandomGenerator>
 #include <QSet>
 
 #include <cmath>
@@ -224,6 +226,11 @@ private:
         const double off = number(p, "offset", 0), period = 1 / freq;
         const QString wave = p.value(QStringLiteral("wave")).toString().toLower();
         const bool current = p.value(QStringLiteral("current")).toBool();
+        if (m_deck.generatorFrequency == 0)
+            m_deck.generatorFrequency = wave == u"pulse"                    ? 1 / std::max(number(p, "period", 1e-3), 1e-12)
+                                      : wave == u"am" || wave == u"fm"      ? number(p, "carrier", 10e3)
+                                      : wave == u"exp" || wave == u"pwl"    ? 0
+                                                                            : freq;
         const QString kind = current ? QStringLiteral("I") : QStringLiteral("V");
         const QString ac = p.value(QStringLiteral("ac"), true).toBool()
                                ? QStringLiteral(" AC %1 %2").arg(num("acMag", 1), num("acPhase", 0))
@@ -499,12 +506,26 @@ private:
     bool m_digitalModels = false;
 };
 
-QString analysisLine(const AnalysisSettings& a, const Deck& deck, QString* error)
+QString analysisLine(const AnalysisSettings& a, const Deck& deck, const Netlist& netlist, QString* error)
 {
+    auto source = [&](const QString& designator) {
+        const QString src = deck.sourceOfDesignator.value(designator);
+        if (src.isEmpty())
+            *error = QStringLiteral("'%1' is not a voltage or current source").arg(designator);
+        return src;
+    };
+    auto output = [&]() -> QString {
+        for (int n = 0; n < netlist.nets.size(); ++n)
+            if (netlist.nets[n].name.compare(a.output, Qt::CaseInsensitive) == 0)
+                return deck.nodeOfNet.value(n);
+        *error = QStringLiteral("output net '%1' not found (name it with a net label)").arg(a.output);
+        return {};
+    };
     switch (a.type) {
     case AnalysisSettings::Type::OperatingPoint:
         return QStringLiteral(".op");
     case AnalysisSettings::Type::Transient:
+    case AnalysisSettings::Type::Fourier:
         return QStringLiteral(".tran %1 %2").arg(a.tranStep, a.tranStop);
     case AnalysisSettings::Type::AC:
         return QStringLiteral(".ac dec %1 %2 %3").arg(a.acPointsPerDecade).arg(a.acStart, a.acStop);
@@ -516,23 +537,152 @@ QString analysisLine(const AnalysisSettings& a, const Deck& deck, QString* error
         }
         return QStringLiteral(".dc %1 %2 %3 %4").arg(src, a.dcStart, a.dcStop, a.dcStep);
     }
+    case AnalysisSettings::Type::TransferFunction: {
+        const QString out = output(), src = source(a.inputSource);
+        return error->isEmpty() ? QStringLiteral(".tf v(%1) %2").arg(out, src) : QString();
+    }
+    case AnalysisSettings::Type::Noise: {
+        const QString out = output(), src = source(a.inputSource);
+        return error->isEmpty() ? QStringLiteral(".noise v(%1) %2 dec %3 %4 %5")
+                                      .arg(out, src).arg(a.acPointsPerDecade).arg(a.acStart, a.acStop)
+                                : QString();
+    }
     }
     return {};
 }
 
 } // namespace
 
-Deck build(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist)
+Deck build(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, const QString& extra)
 {
     Deck deck = Builder(circuit, library, netlist).run();
     QString error;
-    const QString line = analysisLine(circuit.analysis(), deck, &error);
+    const QString line = analysisLine(circuit.analysis(), deck, netlist, &error);
     if (!error.isEmpty()) {
         deck.ok = false;
         deck.warnings << error;
     }
+    const AnalysisSettings& a = circuit.analysis();
+    if (a.type == AnalysisSettings::Type::Noise && deck.ok) {
+        // .noise needs an AC value on its input source
+        const QString src = deck.sourceOfDesignator.value(a.inputSource);
+        QStringList lines = deck.text.split(u'\n');
+        for (QString& l : lines)
+            if (l.startsWith(src + u' ', Qt::CaseInsensitive) && !l.contains(QStringLiteral(" AC "), Qt::CaseInsensitive))
+                l += QStringLiteral(" AC 1");
+        deck.text = lines.join(u'\n');
+    }
+    if (!extra.isEmpty())
+        deck.text += extra + u'\n';
     deck.text += line + QStringLiteral("\n.end\n");
     return deck;
+}
+
+namespace {
+
+QVector<double> range(const QString& start, const QString& stop, const QString& step, QString* error)
+{
+    const auto a = parseNumber(start), b = parseNumber(stop), d = parseNumber(step);
+    if (!a || !b || !d || *d == 0 || (*b - *a) / *d < 0) {
+        *error = QStringLiteral("invalid sweep %1 to %2 step %3").arg(start, stop, step);
+        return {};
+    }
+    QVector<double> out;
+    for (int i = 0; i <= 200; ++i) {
+        const double v = *a + i * *d;
+        if ((*d > 0 && v > *b + std::abs(*d) * 1e-9) || (*d < 0 && v < *b - std::abs(*d) * 1e-9)) break;
+        out << v;
+    }
+    return out;
+}
+
+} // namespace
+
+QVector<Run> buildRuns(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, QString* error)
+{
+    const AnalysisSettings& a = circuit.analysis();
+    QVector<Run> runs;
+    switch (a.sweep) {
+    case AnalysisSettings::Sweep::None:
+        runs << Run{QString(), build(circuit, library, netlist)};
+        break;
+    case AnalysisSettings::Sweep::Temperature:
+        for (double t : range(a.tempStart, a.tempStop, a.tempStep, error))
+            runs << Run{QStringLiteral("%1 °C").arg(formatNumber(t)),
+                        build(circuit, library, netlist, QStringLiteral(".temp %1").arg(formatNumber(t)))};
+        break;
+    case AnalysisSettings::Sweep::Parameter: {
+        const Component* device = nullptr;
+        for (const Component& c : circuit.components())
+            if (c.designator == a.paramDevice) device = &c;
+        if (!device) {
+            *error = QStringLiteral("device '%1' not found for the parameter sweep").arg(a.paramDevice);
+            break;
+        }
+        for (double v : range(a.paramStart, a.paramStop, a.paramStep, error)) {
+            auto copy = std::make_unique<Circuit>();
+            for (Component c : circuit.components()) {
+                if (c.id == device->id) c.label = formatNumber(v);
+                copy->addComponent(c);
+            }
+            copy->setAnalysis(a);
+            runs << Run{QStringLiteral("%1 = %2").arg(a.paramDevice, formatNumber(v)), build(*copy, library, netlist)};
+        }
+        break;
+    }
+    case AnalysisSettings::Sweep::MonteCarlo: {
+        // every R, C and L value within +-tolerance, uniformly; run 1 is nominal
+        const double tol = parseNumber(a.mcTolerance).value_or(10) / 100;
+        QRandomGenerator rng(12345);
+        for (int run = 0; run < std::clamp(a.mcRuns, 1, 200); ++run) {
+            auto copy = std::make_unique<Circuit>();
+            for (Component c : circuit.components()) {
+                const SymbolDef* s = library.find(c.symbolId);
+                const QString prefix = s ? s->prefix : QString();
+                if (run > 0 && (prefix == u"R" || prefix == u"C" || prefix == u"L"))
+                    if (const auto v = parseNumber(c.label.isEmpty() ? s->defaultLabel : c.label))
+                        c.label = formatNumber(*v * (1 + tol * (2 * rng.generateDouble() - 1)));
+                copy->addComponent(c);
+            }
+            copy->setAnalysis(a);
+            runs << Run{run == 0 ? QStringLiteral("nominal") : QStringLiteral("run %1").arg(run + 1),
+                        build(*copy, library, netlist)};
+        }
+        break;
+    }
+    }
+    if (runs.isEmpty() && error->isEmpty())
+        *error = QStringLiteral("the sweep has no points");
+    return runs;
+}
+
+Fourier fourier(const QVector<double>& time, const QVector<double>& y, double f0, int harmonics)
+{
+    Fourier f;
+    if (time.size() < 2 || f0 <= 0) return f;
+    const double t1 = time.last(), t0 = t1 - 1 / f0;        // the last full period
+    if (t0 < time.first()) return f;
+    constexpr int N = 512;
+    QVector<double> s(N);
+    int k = 0;
+    for (int i = 0; i < N; ++i) {
+        const double t = t0 + (t1 - t0) * i / N;
+        while (k + 1 < time.size() - 1 && time[k + 1] < t) ++k;
+        const double ta = time[k], tb = time[k + 1];
+        s[i] = tb > ta ? y[k] + (y[k + 1] - y[k]) * (t - ta) / (tb - ta) : y[k];
+    }
+    double sumSq = 0;
+    for (int h = 0; h <= harmonics; ++h) {
+        std::complex<double> acc;
+        for (int i = 0; i < N; ++i) acc += s[i] * std::polar(1.0, -2 * M_PI * h * i / N);
+        const double mag = (h == 0 ? 1.0 : 2.0) * std::abs(acc) / N;
+        f.frequency << h * f0;
+        f.magnitude << mag;
+        f.phase << (h == 0 ? 0.0 : std::arg(acc) * 180 / M_PI + 90);   // relative to sine
+        if (h >= 2) sumSq += mag * mag;
+    }
+    f.thd = harmonics >= 2 && f.magnitude.value(1) > 0 ? std::sqrt(sumSq) / f.magnitude[1] * 100 : 0;
+    return f;
 }
 
 } // namespace cm::spice

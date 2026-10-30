@@ -18,7 +18,30 @@ private slots:
     void titleBlockRoundTrip();
     void titleBlockUndo();
     void protelNetlist();
+    void analysisRoundTrip();
 };
+
+void TestDocument::analysisRoundTrip()
+{
+    Circuit c;
+    AnalysisSettings a;
+    a.analogMode = true;
+    a.type = AnalysisSettings::Type::Noise;
+    a.output = QStringLiteral("OUT");
+    a.inputSource = QStringLiteral("V1");
+    a.fourierFreq = QStringLiteral("50");
+    a.fourierHarmonics = 12;
+    a.sweep = AnalysisSettings::Sweep::MonteCarlo;
+    a.mcRuns = 7;
+    a.mcTolerance = QStringLiteral("5");
+    a.paramDevice = QStringLiteral("R3");
+    a.tempStep = QStringLiteral("10");
+    a.breakEdge = false;
+    c.setAnalysis(a);
+    Circuit loaded;
+    QVERIFY(NativeFormat::deserialize(NativeFormat::serialize(c), loaded, nullptr));
+    QCOMPARE(loaded.analysis(), a);
+}
 
 void TestDocument::bomGroupsAndSorts()
 {

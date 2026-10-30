@@ -70,7 +70,7 @@ private:
     void editAnalysis();
     void runAnalog();
     void analogFinished();
-    void showAnalogResults(const spice::Result& r);
+    void showAnalogResults(const QVector<spice::Result>& results);
     void showDigitalWaveforms();
     void applyPreferences();
     // Macros menu
@@ -123,8 +123,8 @@ private:
     QAction *m_digitalMode, *m_analogMode, *m_analysisSetup, *m_toolProbe;
     WaveformView* m_waves;
     QDockWidget* m_wavesDock;
-    QFutureWatcher<spice::Result> m_analogWatcher;
-    spice::Deck m_runningDeck;
+    QFutureWatcher<QVector<spice::Result>> m_analogWatcher;
+    QVector<spice::Run> m_runs;         // the decks being simulated (one per sweep point)
 };
 
 } // namespace cm

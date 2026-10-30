@@ -70,92 +70,218 @@
 <context>
     <name>cm::AnalysisDialog</name>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="17"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="40"/>
         <source>Analog analysis</source>
         <translation>Análise analógica</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="21"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="44"/>
         <source>Operating point (DC bias)</source>
         <translation>Ponto de operação (polarização DC)</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="21"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="44"/>
         <source>Transient (time domain)</source>
         <translation>Transitório (domínio do tempo)</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="21"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="44"/>
         <source>AC sweep (frequency response)</source>
         <translation>Varredura AC (resposta em frequência)</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="22"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="45"/>
         <source>DC sweep</source>
         <translation>Varredura DC</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="23"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="45"/>
+        <source>Fourier (harmonics of the transient)</source>
+        <translation>Fourier (harmônicas do transiente)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="45"/>
+        <source>Transfer function (DC gain, impedances)</source>
+        <translation>Função de transferência (ganho DC, impedâncias)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="46"/>
+        <source>Noise</source>
+        <translation>Ruído</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="47"/>
         <source>&amp;Analysis:</source>
         <translation>&amp;Análise:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="35"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="59"/>
         <source>Node voltages and meter readings are shown on the schematic.</source>
         <translation>As tensões dos nós e as leituras dos multímetros aparecem no esquemático.</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="40"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="64"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="94"/>
         <source>Stop &amp;time:</source>
         <translation>&amp;Tempo final:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="41"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="65"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="95"/>
         <source>Maximum &amp;step:</source>
         <translation>&amp;Passo máximo:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="49"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="71"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="114"/>
         <source>&amp;Start frequency (Hz):</source>
         <translation>Frequência &amp;inicial (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="50"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="72"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="115"/>
         <source>St&amp;op frequency (Hz):</source>
         <translation>Frequência &amp;final (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="51"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="73"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="116"/>
         <source>&amp;Points per decade:</source>
         <translation>&amp;Pontos por década:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="52"/>
-        <source>Signal generators are the AC sources (1 V).</source>
-        <translation>Os geradores de sinal são as fontes AC (1 V).</translation>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="74"/>
+        <source>Signal generators are the AC sources (magnitude and phase in their properties).</source>
+        <translation>Os geradores de sinais são as fontes AC (magnitude e fase nas propriedades deles).</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="61"/>
+        <source>Signal generators are the AC sources (1 V).</source>
+        <translation type="vanished">Os geradores de sinal são as fontes AC (1 V).</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="83"/>
         <source>S&amp;weep source:</source>
         <translation>&amp;Fonte varrida:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="62"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="84"/>
         <source>Sta&amp;rt:</source>
         <translation>&amp;Início:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="63"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="85"/>
         <source>Sto&amp;p:</source>
         <translation>&amp;Fim:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="64"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="86"/>
         <source>Ste&amp;p:</source>
         <translation>Pa&amp;sso:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="67"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="92"/>
+        <source>first signal generator&apos;s</source>
+        <translation>a do primeiro gerador de sinais</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="96"/>
+        <source>&amp;Fundamental (Hz):</source>
+        <translation>&amp;Fundamental (Hz):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="97"/>
+        <source>&amp;Harmonics:</source>
+        <translation>&amp;Harmônicas:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="98"/>
+        <source>The last period of the transient is analysed; the THD is shown in the status bar.</source>
+        <translation>Analisa o último período do transiente; a THD aparece na barra de status.</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="103"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="112"/>
+        <source>&amp;Output net:</source>
+        <translation>Rede de &amp;saída:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="104"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="113"/>
+        <source>&amp;Input source:</source>
+        <translation>Fonte de &amp;entrada:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="120"/>
+        <source>Repeat the analysis</source>
+        <translation>Repetir a análise</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <source>Once</source>
+        <translation>Uma vez</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <source>Temperature sweep</source>
+        <translation>Varredura de temperatura</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <source>Parameter sweep</source>
+        <translation>Varredura de parâmetro</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <source>Monte Carlo</source>
+        <translation>Monte Carlo</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="137"/>
+        <source>From (°C):</source>
+        <translation>De (°C):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="138"/>
+        <source>To (°C):</source>
+        <translation>Até (°C):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="139"/>
+        <source>Step (°C):</source>
+        <translation>Passo (°C):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="145"/>
+        <source>De&amp;vice (its value):</source>
+        <translation>&amp;Dispositivo (o valor dele):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="146"/>
+        <source>From:</source>
+        <translation>De:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="147"/>
+        <source>To:</source>
+        <translation>Até:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="148"/>
+        <source>Step:</source>
+        <translation>Passo:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="152"/>
+        <source>&amp;Runs:</source>
+        <translation>&amp;Execuções:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="153"/>
+        <source>&amp;Tolerance of R, C, L (%):</source>
+        <translation>&amp;Tolerância de R, C, L (%):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="160"/>
         <source>Values accept SPICE suffixes: 10m, 4.7k, 1Meg, 100u, 1n.</source>
         <translation>Os valores aceitam sufixos SPICE: 10m, 4.7k, 1Meg, 100u, 1n.</translation>
     </message>
@@ -1689,31 +1815,31 @@ Coloque dispositivos Input e Output (categoria General) onde os pinos da macro s
     </message>
     <message>
         <location filename="../src/ui/MainWindow.cpp" line="1460"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1486"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1497"/>
         <source>The SPICE engine is not available:
 %1</source>
         <translation>O motor SPICE não está disponível:
 %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1477"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1488"/>
         <source>Analysis settings</source>
         <translation>Configuração da análise</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1486"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1493"/>
-        <location filename="../src/ui/MainWindow.cpp" line="1510"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1497"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1512"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1539"/>
         <source>Analog simulation</source>
         <translation>Simulação analógica</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1510"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1539"/>
         <source>SPICE could not simulate the circuit.</source>
         <translation>O SPICE não conseguiu simular o circuito.</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1513"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1543"/>
         <source>Netlist:
 %1
 SPICE output:
@@ -1724,42 +1850,110 @@ Saída do SPICE:
 %2</translation>
     </message>
     <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1576"/>
+        <source>Transfer function V(%1)/%2: %3</source>
+        <translation>Função de transferência V(%1)/%2: %3</translation>
+    </message>
+    <message>
         <location filename="../src/ui/MainWindow.cpp" line="1577"/>
+        <source>Input impedance: %1</source>
+        <translation>Impedância de entrada: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1577"/>
+        <source>Output impedance: %1</source>
+        <translation>Impedância de saída: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1579"/>
+        <source>Transfer function</source>
+        <translation>Função de transferência</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1635"/>
+        <source>Operating point sweep</source>
+        <translation>Varredura do ponto de operação</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1643"/>
         <source>Operating point: node voltages are shown on the wires</source>
         <translation>Ponto de operação: as tensões dos nós aparecem nos fios</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1605"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1650"/>
+        <source>output noise</source>
+        <translation>ruído na saída</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1650"/>
+        <source>input noise</source>
+        <translation>ruído na entrada</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1692"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1711"/>
+        <source>Fourier analysis</source>
+        <translation>Análise de Fourier</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1692"/>
+        <source>Set the fundamental frequency (no signal generator found).</source>
+        <translation>Defina a frequência fundamental (nenhum gerador de sinais encontrado).</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1707"/>
+        <source>%1: THD %2%</source>
+        <translation>%1: THD %2%</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1711"/>
+        <source>The transient is shorter than one period of %1.</source>
+        <translation>O transiente é mais curto que um período de %1.</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1715"/>
+        <source>Fourier (harmonic peaks)</source>
+        <translation>Fourier (picos das harmônicas)</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1735"/>
         <source>Transient</source>
         <translation>Transitório</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1605"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1735"/>
         <source>Time</source>
         <translation>Tempo</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1607"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1737"/>
         <source>AC sweep (magnitude)</source>
         <translation>Varredura AC (módulo)</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1607"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1715"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1737"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1739"/>
         <source>Frequency</source>
         <translation>Frequência</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1609"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1739"/>
+        <source>Noise spectral density</source>
+        <translation>Densidade espectral de ruído</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/MainWindow.cpp" line="1742"/>
         <source>DC sweep</source>
         <translation>Varredura DC</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1616"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1749"/>
         <source>About CirMaker Qt</source>
         <translation>Sobre o CirMaker Qt</translation>
     </message>
     <message>
-        <location filename="../src/ui/MainWindow.cpp" line="1617"/>
+        <location filename="../src/ui/MainWindow.cpp" line="1750"/>
         <source>&lt;h3&gt;CirMaker Qt %1&lt;/h3&gt;&lt;p&gt;A schematic editor and digital logic simulator in the spirit of CircuitMaker 2000, built with Qt %2.&lt;/p&gt;&lt;p&gt;Opens CircuitMaker 2000 text circuits (.ckt). The device library is an independent reimplementation; no files from the original product are included.&lt;/p&gt;</source>
         <translation>&lt;h3&gt;CirMaker Qt %1&lt;/h3&gt;&lt;p&gt;Editor de esquemáticos e simulador lógico digital no espírito do CircuitMaker 2000, feito com Qt %2.&lt;/p&gt;&lt;p&gt;Abre circuitos texto do CircuitMaker 2000 (.ckt). A biblioteca de dispositivos é uma reimplementação independente; nenhum arquivo do produto original é incluído.&lt;/p&gt;</translation>
     </message>
@@ -2531,7 +2725,7 @@ Saída do SPICE:
     <message>
         <location filename="../src/ui/SignalGenDialog.cpp" line="182"/>
         <source>No &quot;+ time value&quot; lines in %1</source>
-        <translation>Nenhuma linha "+ tempo valor" em %1</translation>
+        <translation>Nenhuma linha &quot;+ tempo valor&quot; em %1</translation>
     </message>
 </context>
 <context>

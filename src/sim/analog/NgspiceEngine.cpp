@@ -56,6 +56,7 @@ struct NgspiceEngine::Api {
     int (*circ)(char**) = nullptr;
     char* (*curPlot)() = nullptr;
     char** (*allVecs)(char*) = nullptr;
+    char** (*allPlots)() = nullptr;         // optional
     VectorInfo* (*vecInfo)(char*) = nullptr;
 };
 
@@ -113,6 +114,7 @@ bool NgspiceEngine::load(QString* why)
     api->curPlot = reinterpret_cast<decltype(api->curPlot)>(m_lib->resolve("ngSpice_CurPlot"));
     api->allVecs = reinterpret_cast<decltype(api->allVecs)>(m_lib->resolve("ngSpice_AllVecs"));
     api->vecInfo = reinterpret_cast<decltype(api->vecInfo)>(m_lib->resolve("ngGet_Vec_Info"));
+    api->allPlots = reinterpret_cast<decltype(api->allPlots)>(m_lib->resolve("ngSpice_AllPlots"));
     if (!api->init || !api->command || !api->circ || !api->curPlot || !api->allVecs || !api->vecInfo) {
         m_loadError = QStringLiteral("libngspice does not export the shared-library API");
         delete api;
@@ -178,8 +180,16 @@ Result NgspiceEngine::run(const QString& netlist)
     r.plotType = plot;
     while (!r.plotType.isEmpty() && r.plotType.back().isDigit())
         r.plotType.chop(1);
-    if (r.plotType != u"const") {
-        QByteArray plotName = plot.toLocal8Bit();
+    // the current plot first; then the others of this run (".noise" makes a
+    // spectrum and an integrated plot), without overwriting its vectors
+    QStringList plots{plot};
+    if (m_api->allPlots)
+        if (char** all = m_api->allPlots())
+            for (int i = 0; all[i]; ++i)
+                if (const QString p = QString::fromLocal8Bit(all[i]); p != plot && p != u"const") plots << p;
+    for (const QString& name : std::as_const(plots)) {
+        if (name == u"const") continue;
+        QByteArray plotName = name.toLocal8Bit();
         if (char** names = m_api->allVecs(plotName.data())) {
             for (int i = 0; names[i]; ++i) {
                 QByteArray full = plotName + '.' + QByteArray(names[i]);
@@ -187,6 +197,7 @@ Result NgspiceEngine::run(const QString& netlist)
                 if (!info) continue;
                 Vector v;
                 v.name = QString::fromLocal8Bit(info->v_name).toLower();
+                if (r.vectors.contains(v.name)) continue;
                 if (info->v_compdata) {
                     v.complex.resize(info->v_length);
                     for (int k = 0; k < info->v_length; ++k)
@@ -199,7 +210,8 @@ Result NgspiceEngine::run(const QString& netlist)
         }
     }
     if (r.plotType == u"tran") r.scale = QStringLiteral("time");
-    else if (r.plotType == u"ac") r.scale = QStringLiteral("frequency");
+    else if (r.plotType == u"ac" || (r.plotType == u"noise" && r.vectors.contains(QStringLiteral("frequency"))))
+        r.scale = QStringLiteral("frequency");
     else if (r.plotType == u"dc") {
         for (auto it = r.vectors.cbegin(); it != r.vectors.cend(); ++it)
             if (it.key().endsWith(QStringLiteral("sweep")))

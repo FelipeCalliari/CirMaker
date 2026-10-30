@@ -104,7 +104,7 @@ MainWindow::MainWindow()
         if (lane < m_scene->waveformLanes().size())
             m_scene->setBreakCondition(m_scene->waveformLanes()[lane].component, condition);
     });
-    connect(&m_analogWatcher, &QFutureWatcher<spice::Result>::finished, this, &MainWindow::analogFinished);
+    connect(&m_analogWatcher, &QFutureWatcher<QVector<spice::Result>>::finished, this, &MainWindow::analogFinished);
 
     createActions();
     createMenus();
@@ -1471,7 +1471,18 @@ void MainWindow::editAnalysis()
             sources << c.designator;
     }
     sources.sort();
-    AnalysisDialog dlg(m_circuit->analysis(), sources, this);
+    QStringList devices, nets;
+    for (const Component& c : m_circuit->components()) {
+        const SymbolDef* s = LibraryRegistry::instance().find(c.symbolId);
+        if (s && !s->netLabel && !c.designator.isEmpty() && !s->spice.isEmpty()) devices << c.designator;
+    }
+    devices.sort();
+    m_scene->refreshNetlist();
+    const Netlist& nl = m_scene->netlist();
+    for (int n = 0; n < nl.nets.size(); ++n)
+        if (nl.nets[n].name != QStringLiteral("N%1").arg(n + 1) && !nets.contains(nl.nets[n].name)) nets << nl.nets[n].name;
+    nets.sort();
+    AnalysisDialog dlg(m_circuit->analysis(), sources, nets, devices, this);
     if (dlg.exec() != QDialog::Accepted)
         return;
     m_undo->push(new SetAnalysisCommand(m_circuit, dlg.result(), tr("Analysis settings")));
@@ -1488,15 +1499,31 @@ void MainWindow::runAnalog()
     }
     m_scene->refreshNetlist();
     const SchematicScene::AnalogInput input = m_scene->analogInput();
-    m_runningDeck = spice::build(*input.circuit, LibraryRegistry::instance(), input.netlist);
-    if (!m_runningDeck.ok) {
-        QMessageBox::warning(this, tr("Analog simulation"), m_runningDeck.warnings.join(u'\n'));
+    QString error;
+    m_runs = spice::buildRuns(*input.circuit, LibraryRegistry::instance(), input.netlist, &error);
+    QStringList warnings = error.isEmpty() ? QStringList() : QStringList{error};
+    bool ok = !m_runs.isEmpty();
+    for (const spice::Run& run : std::as_const(m_runs)) {
+        ok &= run.deck.ok;
+        for (const QString& w : run.deck.warnings)
+            if (!warnings.contains(w)) warnings << w;
+    }
+    if (!ok) {
+        QMessageBox::warning(this, tr("Analog simulation"), warnings.join(u'\n'));
         return;
     }
-    if (!m_runningDeck.warnings.isEmpty())
-        statusBar()->showMessage(m_runningDeck.warnings.join(QStringLiteral("; ")), 10000);
-    const QString text = m_runningDeck.text;
-    m_analogWatcher.setFuture(QtConcurrent::run([text] { return spice::NgspiceEngine::instance().run(text); }));
+    if (!warnings.isEmpty())
+        statusBar()->showMessage(warnings.join(QStringLiteral("; ")), 10000);
+    QStringList texts;
+    for (const spice::Run& run : std::as_const(m_runs)) texts << run.deck.text;
+    m_analogWatcher.setFuture(QtConcurrent::run([texts] {
+        QVector<spice::Result> results;
+        for (const QString& text : texts) {
+            results << spice::NgspiceEngine::instance().run(text);
+            if (!results.last().ok) break;
+        }
+        return results;
+    }));
     QApplication::setOverrideCursor(Qt::BusyCursor);
     updateActions();
 }
@@ -1504,34 +1531,60 @@ void MainWindow::runAnalog()
 void MainWindow::analogFinished()
 {
     QApplication::restoreOverrideCursor();
-    const spice::Result r = m_analogWatcher.result();
+    const QVector<spice::Result> results = m_analogWatcher.result();
     updateActions();
-    if (!r.ok) {
+    if (results.isEmpty() || !results.last().ok) {
+        const int failed = int(results.size()) - 1;
+        const spice::Result r = results.value(failed);
         QMessageBox box(QMessageBox::Critical, tr("Analog simulation"), tr("SPICE could not simulate the circuit."),
                         QMessageBox::Ok, this);
-        box.setInformativeText(r.error);
-        box.setDetailedText(tr("Netlist:\n%1\nSPICE output:\n%2").arg(m_runningDeck.text, r.log));
+        box.setInformativeText(m_runs.value(failed).label.isEmpty() ? r.error
+                                                                    : m_runs.value(failed).label + u": " + r.error);
+        box.setDetailedText(tr("Netlist:\n%1\nSPICE output:\n%2").arg(m_runs.value(failed).deck.text, r.log));
         box.exec();
         return;
     }
-    showAnalogResults(r);
+    showAnalogResults(results);
 }
 
-void MainWindow::showAnalogResults(const spice::Result& r)
+void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
 {
-    const spice::Deck& deck = m_runningDeck;
+    const spice::Result& r = results.first();
+    const spice::Deck& deck = m_runs.first().deck;
     const Netlist& nl = m_scene->netlist();
-    auto voltage = [&](const QString& node) -> double {
+    const AnalysisSettings& analysis = m_circuit->analysis();
+    const bool sweep = results.size() > 1;
+    auto voltage = [&](const spice::Result& res, const QString& node) -> double {
         if (node == u"0") return 0;
-        return r.last(node).value_or(qQNaN());
+        return res.last(node).value_or(qQNaN());
     };
-    auto netVoltage = [&](ItemId id, int pin) { return voltage(deck.nodeOfNet.value(nl.netOf(id, pin), QStringLiteral("0"))); };
+    auto netVoltage = [&](ItemId id, int pin) { return voltage(r, deck.nodeOfNet.value(nl.netOf(id, pin), QStringLiteral("0"))); };
+
+    // transfer function: three numbers per run
+    if (r.plotType == u"tf") {
+        QStringList lines;
+        for (int i = 0; i < results.size(); ++i) {
+            const spice::Result& res = results[i];
+            QString tf, zin, zout;
+            for (auto it = res.vectors.cbegin(); it != res.vectors.cend(); ++it) {
+                const double v = it->real.value(0, it->isComplex() ? it->complex[0].real() : qQNaN());
+                if (it.key().contains(u"transfer")) tf = QString::number(v, 'g', 6);
+                else if (it.key().contains(u"input_impedance")) zin = WaveformView::siFormat(v, QStringLiteral("Ω"), 5);
+                else if (it.key().contains(u"output_impedance")) zout = WaveformView::siFormat(v, QStringLiteral("Ω"), 5);
+            }
+            if (sweep) lines << QStringLiteral("<b>%1</b>").arg(m_runs[i].label);
+            lines << tr("Transfer function V(%1)/%2: %3").arg(analysis.output, analysis.inputSource, tf)
+                  << tr("Input impedance: %1").arg(zin) << tr("Output impedance: %1").arg(zout);
+        }
+        QMessageBox::information(this, tr("Transfer function"), lines.join(QStringLiteral("<br>")));
+        return;
+    }
 
     // meters and displays read the operating point / final values
     SchematicScene::AnalogOverlay overlay;
     for (auto it = deck.meters.cbegin(); it != deck.meters.cend(); ++it) {
         const spice::Meter& m = it.value();
-        const double v = m.amps ? r.last(m.current).value_or(qQNaN()) : voltage(m.plus) - voltage(m.minus);
+        const double v = m.amps ? r.last(m.current).value_or(qQNaN()) : voltage(r, m.plus) - voltage(r, m.minus);
         overlay.meterText.insert(it.key(), WaveformView::siFormat(v, m.amps ? QStringLiteral("A") : QStringLiteral("V"), 4));
     }
     for (const Component& c : m_circuit->components()) {
@@ -1569,8 +1622,21 @@ void MainWindow::showAnalogResults(const spice::Result& r)
     }
 
     if (r.plotType == u"op") {
+        if (sweep) {
+            // one line per run: the plotted nodes' voltages
+            QStringList rows{QStringLiteral("<tr><th></th>")};
+            for (const auto& [label, node] : std::as_const(plotted)) rows.first() += QStringLiteral("<th>%1</th>").arg(label);
+            for (int i = 0; i < results.size(); ++i) {
+                QString row = QStringLiteral("<tr><td>%1</td>").arg(m_runs[i].label);
+                for (const auto& [label, node] : std::as_const(plotted))
+                    row += QStringLiteral("<td>%1</td>").arg(WaveformView::siFormat(voltage(results[i], node), QStringLiteral("V"), 4));
+                rows << row + QStringLiteral("</tr>");
+            }
+            QMessageBox::information(this, tr("Operating point sweep"),
+                                     QStringLiteral("<table cellspacing=6>%1</table>").arg(rows.join(QString())));
+        }
         for (int n = 0; n < nl.nets.size(); ++n) {
-            const double v = voltage(deck.nodeOfNet.value(n));
+            const double v = voltage(r, deck.nodeOfNet.value(n));
             if (std::isfinite(v)) overlay.netVoltage.insert(n, v);
         }
         m_scene->setAnalogOverlay(overlay);
@@ -1579,34 +1645,101 @@ void MainWindow::showAnalogResults(const spice::Result& r)
     }
     m_scene->setAnalogOverlay(overlay);
 
+    const bool noise = r.plotType == u"noise";
+    if (noise)
+        plotted = {{tr("output noise"), QStringLiteral("onoise_spectrum")}, {tr("input noise"), QStringLiteral("inoise_spectrum")}};
     const spice::Vector* scale = r.find(r.scale);
     if (!scale) return;
     const bool ac = r.plotType == u"ac";
-    QVector<double> x;
-    for (int i = 0; i < scale->size(); ++i)
-        x << (scale->isComplex() ? scale->complex[i].real() : scale->real[i]);
+    auto xOf = [](const spice::Vector& v) {
+        QVector<double> x;
+        for (int i = 0; i < v.size(); ++i) x << (v.isComplex() ? v.complex[i].real() : v.real[i]);
+        return x;
+    };
+    const QVector<double> x = xOf(*scale);
     if (plotted.isEmpty()) {
         for (auto it = r.vectors.cbegin(); it != r.vectors.cend() && plotted.size() < 6; ++it)
             if (it.key() != r.scale && !it.key().contains(u'#'))
                 plotted << std::pair{it.key(), it.key()};
     }
-    QVector<WaveformView::Trace> traces;
-    for (int i = 0; i < plotted.size(); ++i) {
-        const spice::Vector* v = plotted[i].second == u"0" ? nullptr : r.find(plotted[i].second);
-        WaveformView::Trace t{plotted[i].first, {}, WaveformView::traceColor(probeNets.isEmpty() ? i : i)};
-        for (int k = 0; k < x.size(); ++k) {
-            if (!v) t.y << 0;
-            else if (ac) t.y << 20 * std::log10(std::max(std::abs(v->complex.value(k)), 1e-30));
-            else t.y << v->real.value(k);
+    // y of one node in one run, on that run's own x
+    auto yOf = [&](const spice::Result& res, const QString& node, int n) {
+        const spice::Vector* v = node == u"0" ? nullptr : res.find(node);
+        QVector<double> y;
+        for (int k = 0; k < n; ++k) {
+            if (!v) y << 0;
+            else if (v->isComplex()) y << 20 * std::log10(std::max(std::abs(v->complex.value(k)), 1e-30));
+            else y << v->real.value(k);
         }
-        traces << t;
+        return y;
+    };
+    // another run's curve on the first run's x (time steps differ between runs)
+    auto resample = [&](const QVector<double>& rx, const QVector<double>& ry) {
+        QVector<double> y;
+        int k = 0;
+        for (double t : x) {
+            while (k + 2 < rx.size() && rx[k + 1] < t) ++k;
+            if (rx.size() < 2) { y << ry.value(0, qQNaN()); continue; }
+            const double a = rx[k], b = rx[k + 1];
+            y << (b > a ? ry[k] + (ry[k + 1] - ry[k]) * std::clamp((t - a) / (b - a), 0.0, 1.0) : ry[k]);
+        }
+        return y;
+    };
+
+    if (analysis.type == AnalysisSettings::Type::Fourier) {
+        const double f0 = spice::parseNumber(analysis.fourierFreq).value_or(deck.generatorFrequency);
+        if (f0 <= 0) {
+            QMessageBox::warning(this, tr("Fourier analysis"), tr("Set the fundamental frequency (no signal generator found)."));
+            return;
+        }
+        QVector<double> fx;
+        QVector<WaveformView::Trace> traces;
+        QStringList thd;
+        for (int i = 0; i < results.size(); ++i) {
+            const spice::Vector* t = results[i].find(QStringLiteral("time"));
+            if (!t) continue;
+            for (const auto& [label, node] : std::as_const(plotted)) {
+                const spice::Fourier f = spice::fourier(xOf(*t), yOf(results[i], node, t->size()), f0, analysis.fourierHarmonics);
+                if (f.magnitude.isEmpty()) continue;
+                fx = f.frequency;
+                const QString name = sweep ? label + u" @ " + m_runs[i].label : label;
+                traces << WaveformView::Trace{name, f.magnitude, WaveformView::traceColor(int(traces.size()))};
+                thd << tr("%1: THD %2%").arg(name, QString::number(f.thd, 'f', 2));
+            }
+        }
+        if (traces.isEmpty()) {
+            QMessageBox::warning(this, tr("Fourier analysis"), tr("The transient is shorter than one period of %1.")
+                                                                   .arg(WaveformView::siFormat(f0, QStringLiteral("Hz"))));
+            return;
+        }
+        m_waves->setData(tr("Fourier (harmonic peaks)"), tr("Frequency"), QStringLiteral("Hz"), QStringLiteral("V"), fx,
+                         traces, false);
+        statusBar()->showMessage(thd.join(QStringLiteral("   ")), 20000);
+        m_wavesDock->show();
+        m_wavesDock->raise();
+        return;
+    }
+
+    QVector<WaveformView::Trace> traces;
+    for (int i = 0; i < results.size(); ++i) {
+        const spice::Vector* sc = results[i].find(results[i].scale);
+        if (!sc) continue;
+        const QVector<double> rx = xOf(*sc);
+        for (const auto& [label, node] : std::as_const(plotted)) {
+            const QVector<double> y = yOf(results[i], node, int(rx.size()));
+            traces << WaveformView::Trace{sweep ? label + u" @ " + m_runs[i].label : label, i == 0 ? y : resample(rx, y),
+                                          WaveformView::traceColor(int(traces.size()))};
+        }
     }
     if (r.plotType == u"tran")
         m_waves->setData(tr("Transient"), tr("Time"), QStringLiteral("s"), QStringLiteral("V"), x, traces, false);
     else if (ac)
         m_waves->setData(tr("AC sweep (magnitude)"), tr("Frequency"), QStringLiteral("Hz"), QStringLiteral("dB"), x, traces, true);
+    else if (noise)
+        m_waves->setData(tr("Noise spectral density"), tr("Frequency"), QStringLiteral("Hz"), QStringLiteral("V/√Hz"), x,
+                         traces, true);
     else
-        m_waves->setData(tr("DC sweep"), m_circuit->analysis().dcSource, QStringLiteral("V"), QStringLiteral("V"), x, traces, false);
+        m_waves->setData(tr("DC sweep"), analysis.dcSource, QStringLiteral("V"), QStringLiteral("V"), x, traces, false);
     m_wavesDock->show();
     m_wavesDock->raise();
 }

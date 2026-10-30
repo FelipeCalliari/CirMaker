@@ -21,7 +21,8 @@ QPointF point(const QJsonValue& v)
     return {a.at(0).toDouble(), a.at(1).toDouble()};
 }
 
-const char* const kAnalysisTypes[] = {"op", "tran", "ac", "dc"};
+const char* const kAnalysisTypes[] = {"op", "tran", "ac", "dc", "fourier", "tf", "noise"};
+const char* const kSweeps[] = {"none", "temp", "param", "montecarlo"};
 
 QJsonObject analysisToJson(const AnalysisSettings& a)
 {
@@ -29,7 +30,13 @@ QJsonObject analysisToJson(const AnalysisSettings& a)
             {u"tranStop"_s, a.tranStop}, {u"tranStep"_s, a.tranStep},
             {u"acStart"_s, a.acStart}, {u"acStop"_s, a.acStop}, {u"acPoints"_s, a.acPointsPerDecade},
             {u"dcSource"_s, a.dcSource}, {u"dcStart"_s, a.dcStart}, {u"dcStop"_s, a.dcStop}, {u"dcStep"_s, a.dcStep},
-            {u"breakEdge"_s, a.breakEdge}, {u"breakAll"_s, a.breakAll}};
+            {u"breakEdge"_s, a.breakEdge}, {u"breakAll"_s, a.breakAll},
+            {u"fourierFreq"_s, a.fourierFreq}, {u"fourierHarmonics"_s, a.fourierHarmonics},
+            {u"output"_s, a.output}, {u"inputSource"_s, a.inputSource},
+            {u"sweep"_s, QString::fromLatin1(kSweeps[int(a.sweep)])},
+            {u"tempStart"_s, a.tempStart}, {u"tempStop"_s, a.tempStop}, {u"tempStep"_s, a.tempStep},
+            {u"paramDevice"_s, a.paramDevice}, {u"paramStart"_s, a.paramStart}, {u"paramStop"_s, a.paramStop},
+            {u"paramStep"_s, a.paramStep}, {u"mcRuns"_s, a.mcRuns}, {u"mcTolerance"_s, a.mcTolerance}};
 }
 
 QJsonObject faultsToJson(const FaultSettings& f)
@@ -57,7 +64,7 @@ AnalysisSettings analysisFromJson(const QJsonObject& o)
         return a;
     a.analogMode = o.value(u"analog").toBool();
     const QString type = o.value(u"type").toString();
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < int(std::size(kAnalysisTypes)); ++i)
         if (type == QLatin1String(kAnalysisTypes[i]))
             a.type = AnalysisSettings::Type(i);
     a.tranStop = o.value(u"tranStop").toString(a.tranStop);
@@ -67,6 +74,23 @@ AnalysisSettings analysisFromJson(const QJsonObject& o)
     a.acPointsPerDecade = o.value(u"acPoints").toInt(a.acPointsPerDecade);
     a.dcSource = o.value(u"dcSource").toString();
     a.breakEdge = o.value(u"breakEdge").toBool(a.breakEdge);
+    a.fourierFreq = o.value(u"fourierFreq").toString();
+    a.fourierHarmonics = o.value(u"fourierHarmonics").toInt(a.fourierHarmonics);
+    a.output = o.value(u"output").toString();
+    a.inputSource = o.value(u"inputSource").toString();
+    const QString sweep = o.value(u"sweep").toString();
+    for (int i = 0; i < int(std::size(kSweeps)); ++i)
+        if (sweep == QLatin1String(kSweeps[i]))
+            a.sweep = AnalysisSettings::Sweep(i);
+    a.tempStart = o.value(u"tempStart").toString(a.tempStart);
+    a.tempStop = o.value(u"tempStop").toString(a.tempStop);
+    a.tempStep = o.value(u"tempStep").toString(a.tempStep);
+    a.paramDevice = o.value(u"paramDevice").toString();
+    a.paramStart = o.value(u"paramStart").toString(a.paramStart);
+    a.paramStop = o.value(u"paramStop").toString(a.paramStop);
+    a.paramStep = o.value(u"paramStep").toString(a.paramStep);
+    a.mcRuns = o.value(u"mcRuns").toInt(a.mcRuns);
+    a.mcTolerance = o.value(u"mcTolerance").toString(a.mcTolerance);
     a.breakAll = o.value(u"breakAll").toBool(a.breakAll);
     a.dcStart = o.value(u"dcStart").toString(a.dcStart);
     a.dcStop = o.value(u"dcStop").toString(a.dcStop);

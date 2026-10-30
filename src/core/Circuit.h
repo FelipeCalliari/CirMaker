@@ -52,13 +52,26 @@ struct TitleBlock {
 
 // Analog (SPICE) analysis to run. Values are SPICE numbers ("1m", "10k").
 struct AnalysisSettings {
-    enum class Type { OperatingPoint, Transient, AC, DCSweep };
+    enum class Type { OperatingPoint, Transient, AC, DCSweep, Fourier, TransferFunction, Noise };
+    // Repeats the analysis: over temperatures, over a device's values, or
+    // with random tolerances (Monte Carlo); the curves are overlaid.
+    enum class Sweep { None, Temperature, Parameter, MonteCarlo };
     bool analogMode = false;
     Type type = Type::Transient;
     QString tranStop = QStringLiteral("10m"), tranStep = QStringLiteral("10u");
     QString acStart = QStringLiteral("10"), acStop = QStringLiteral("1Meg");
     int acPointsPerDecade = 20;
     QString dcSource, dcStart = QStringLiteral("0"), dcStop = QStringLiteral("5"), dcStep = QStringLiteral("0.05");
+    // Fourier: of the transient; empty frequency = the first signal generator's
+    QString fourierFreq;
+    int fourierHarmonics = 9;
+    // Transfer function and noise: output net name, input source designator
+    QString output, inputSource;
+    Sweep sweep = Sweep::None;
+    QString tempStart = QStringLiteral("0"), tempStop = QStringLiteral("100"), tempStep = QStringLiteral("25");
+    QString paramDevice, paramStart = QStringLiteral("1k"), paramStop = QStringLiteral("10k"), paramStep = QStringLiteral("3k");
+    int mcRuns = 10;
+    QString mcTolerance = QStringLiteral("10");      // percent, on R, C and L values
     // Digital breakpoints (CircuitMaker Digital Options): level or edge
     // conditions, all of them or any one.
     bool breakEdge = true, breakAll = false;
