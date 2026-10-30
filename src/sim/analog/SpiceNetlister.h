@@ -63,6 +63,10 @@ QString subcircuit(const Circuit& circuit, const LibraryRegistry& library, const
 // Fourier analysis of the last period of a transient waveform.
 Fourier fourier(const QVector<double>& time, const QVector<double>& y, double f0, int harmonics);
 
+// The d_cosim library that runs our chip models inside ngspice, at a path
+// ngspice can read (it lower-cases the deck); empty when not available.
+QString cosimLibrary();
+
 // SPICE number: 4.7k, 10u, 1Meg, 2.2nF ... (units after the scale are ignored).
 std::optional<double> parseNumber(const QString& text);
 QString formatNumber(double v);

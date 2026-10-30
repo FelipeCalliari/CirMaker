@@ -65,7 +65,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Recurso | Estado | Observação |
 | --- | --- | --- |
 | Ponto de operação, transitório, AC, varredura DC | ✅ | ngspice |
-| Modo misto (XSPICE) | 🟡 | portas e FFs; CIs MSI não |
+| Modo misto (XSPICE) | ✅ | portas e FFs como modelos XSPICE; CIs MSI rodam o próprio modelo digital dentro do ngspice (d_cosim, `libcmcosim.so`); CIs com pinos bidirecionais (RAM, 74245) ainda não |
 | Parameter Sweep, Fourier, Transfer Function, Noise, Temperature, Monte Carlo | ✅ | varreduras repetem qualquer análise e sobrepõem as curvas; Fourier com THD |
 | Impedance plot | ✅ | ponta Z na análise AC (\|V/I\| em dBΩ) |
 | Janela de análise: cursores, zoom, escala, matemática de ondas, store/recall | ✅ | roda = zoom X, Ctrl+roda = zoom Y, duplo clique enquadra; clique/Shift+clique = cursores A/B com ΔX, 1/ΔX, ΔY; X log; curvas T1-T2, abs, dB; referência tracejada |

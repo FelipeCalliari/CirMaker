@@ -4,6 +4,10 @@
 
 #include <QJsonArray>
 #include <QRegularExpression>
+#include <QFile>
+#include <QFileInfo>
+#include <QDir>
+#include <QCoreApplication>
 #include <complex>
 #include <QRandomGenerator>
 #include <QSet>
@@ -514,6 +518,18 @@ private:
             const QString q = digitalOut(c, s.pinIndex(QStringLiteral("Q")), dacIn, dacOut);
             const QString qn = digitalOut(c, s.pinIndex(QStringLiteral("~Q")), dacIn, dacOut);
             m_lines << QStringLiteral("A%1 %2 %3 %4 %5 %6 %7 %8").arg(name, data, clk, set, reset, q, qn, jk ? u"cm_jkff"_s : u"cm_dff"_s);
+        } else if (const QString lib = cosimLibrary(); !lib.isEmpty() && std::none_of(s.pins.cbegin(), s.pins.cend(), [](const SymbolPin& p) {
+                       return p.dir == SymbolPin::Dir::InOut; })) {
+            // MSI chips: the digital simulator's own model, co-simulated by
+            // XSPICE d_cosim; ports are the inputs, then the outputs, in pin order
+            QStringList ins, outs;
+            for (int i = 0; i < s.pins.size(); ++i)
+                if (s.pins[i].dir != SymbolPin::Dir::Out) ins << digitalIn(c, s, i, adcIn, adcOut);
+            for (int i = 0; i < s.pins.size(); ++i)
+                if (s.pins[i].dir == SymbolPin::Dir::Out) outs << digitalOut(c, i, dacIn, dacOut);
+            const QString model = QStringLiteral("cm_cosim_%1").arg(sanitize(s.id));
+            addModel(QStringLiteral(".model %1 d_cosim simulation=\"%2\" sim_args=[\"%3\"]").arg(model, lib, s.id));
+            m_lines << QStringLiteral("A%1 [%2] [%3] %4").arg(name, ins.join(u' '), outs.join(u' '), model);
         } else {
             m_deck.warnings << QStringLiteral("%1 (%2) has no analog model and is left out").arg(c.designator, s.name);
             return;
@@ -576,6 +592,34 @@ QString analysisLine(const AnalysisSettings& a, const Deck& deck, const Netlist&
 }
 
 } // namespace
+
+QString cosimLibrary()
+{
+    static const QString path = [] {
+        QStringList candidates{qEnvironmentVariable("CM_COSIM")};
+        if (QCoreApplication::instance())
+            candidates << QCoreApplication::applicationDirPath() + QStringLiteral("/libcmcosim.so");
+#ifdef CM_COSIM_BUILD_PATH
+        candidates << QStringLiteral(CM_COSIM_BUILD_PATH);
+#endif
+        QString found;
+        for (const QString& c : std::as_const(candidates))
+            if (!c.isEmpty() && QFileInfo::exists(c)) { found = QFileInfo(c).canonicalFilePath(); break; }
+        if (found.isEmpty()) return QString();
+        // ngspice lower-cases the path in the deck: publish the library under
+        // a lower-case name if its own is not
+        if (found != found.toLower() || found.contains(u' ')) {
+            const QString dir = QDir::tempPath() + QStringLiteral("/cmcosim-%1").arg(QString::number(qHash(QDir::homePath()), 16));
+            QDir().mkpath(dir);
+            const QString link = dir + QStringLiteral("/libcmcosim.so");
+            QFile::remove(link);
+            if (!QFile::link(found, link) && !QFile::copy(found, link)) return QString();
+            found = link;
+        }
+        return found == found.toLower() && !found.contains(u' ') ? found : QString();
+    }();
+    return path;
+}
 
 Deck build(const Circuit& circuit, const LibraryRegistry& library, const Netlist& netlist, const QString& extra)
 {

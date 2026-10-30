@@ -9,6 +9,8 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets Svg PrintSupport Concu
 qt_standard_project_setup(I18N_SOURCE_LANGUAGE en I18N_TRANSLATED_LANGUAGES pt_BR)
 
 # --- core: data model, connectivity, file formats, symbol library (no widgets)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)     # the static libraries also go into the co-simulation shim
+
 add_library(cmcore STATIC
     src/core/Circuit.h src/core/Circuit.cpp
     src/core/NetlistBuilder.h src/core/NetlistBuilder.cpp
@@ -38,6 +40,14 @@ add_library(cmsim STATIC
     src/sim/digital/EventSimulator.h src/sim/digital/EventSimulator.cpp
 )
 target_link_libraries(cmsim PUBLIC cmcore)
+
+# --- co-simulation shim: our chip models inside ngspice (d_cosim)
+add_library(cmcosim SHARED src/sim/cosim/CmCosim.cpp)
+target_link_libraries(cmcosim PRIVATE cmsim cmlibdata)
+set_target_properties(cmcosim PROPERTIES PREFIX "lib" OUTPUT_NAME cmcosim CXX_VISIBILITY_PRESET hidden)
+# it runs inside the application's process: bind its own copies of our code
+target_link_options(cmcosim PRIVATE -Wl,-Bsymbolic)
+target_compile_definitions(cmsim PUBLIC CM_COSIM_BUILD_PATH="$<TARGET_FILE:cmcosim>")
 
 # --- symbol library data, embedded as resources
 file(GLOB SYMBOL_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/library/symbols/*.json)

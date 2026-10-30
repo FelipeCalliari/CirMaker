@@ -49,6 +49,7 @@ private slots:
     void transmissionLineDelay();
     void unijunctions();
     void ownSpiceLine();
+    void mixedModeCounter();
     void importedExamplesSimulate();
 
 private:
@@ -1121,6 +1122,47 @@ void TestAnalog::ownSpiceLine()
     QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
     QVERIFY2(deck.text.contains(QStringLiteral("Xr2 out 0 HALVES")), qPrintable(deck.text));
     QVERIFY(qAbs(r.last(QStringLiteral("out")).value_or(0) - 5) < 1e-6);
+}
+
+// An MSI chip inside the analog simulation runs the digital model through
+// XSPICE d_cosim: a 7493 counts the pulser's falling edges.
+void TestAnalog::mixedModeCounter()
+{
+    requireEngine();
+    if (spice::cosimLibrary().isEmpty())
+        QSKIP("co-simulation library not built");
+    Circuit c;
+    const ItemId p = part(c, QStringLiteral("pulser"), QStringLiteral("P1"), {},
+                          {{QStringLiteral("high"), 10}, {QStringLiteral("low"), 10}});      // 20 us period
+    const ItemId u = part(c, QStringLiteral("7493"), QStringLiteral("U1"));
+    wire(c, p, QStringLiteral("Q"), QStringLiteral("CLK"));
+    wire(c, u, QStringLiteral("~CKA"), QStringLiteral("CLK"));
+    wire(c, u, QStringLiteral("QA"), QStringLiteral("QA"));
+    wire(c, u, QStringLiteral("~CKB"), QStringLiteral("QA"));
+    for (const char* q : {"QB", "QC", "QD"}) wire(c, u, QString::fromLatin1(q), QString::fromLatin1(q));
+    wire(c, u, QStringLiteral("R01"), QStringLiteral("G"));
+    wire(c, u, QStringLiteral("R02"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    for (const char* q : {"QA", "QB", "QC", "QD"}) resistor(c, QStringLiteral("10k"), QString::fromLatin1(q), QStringLiteral("G"));
+    transient(c, QStringLiteral("200u"), QStringLiteral("0.5u"));
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    QVERIFY2(deck.text.contains(QStringLiteral("d_cosim")), qPrintable(deck.text));
+    const spice::Vector* t = r.find(QStringLiteral("time"));
+    auto count = [&](double when) {
+        int i = 0;
+        while (i + 1 < t->size() && t->real[i] < when) ++i;
+        int v = 0, bit = 0;
+        for (const char* q : {"qa", "qb", "qc", "qd"})
+            v |= int(r.find(QString::fromLatin1(q))->real[i] > 2.5) << bit++;
+        return v;
+    };
+    // the pulser starts low, rises at 10 us and falls at 20 us, 40 us, ...
+    QCOMPARE(count(15e-6), 0);
+    QCOMPARE(count(25e-6), 1);
+    QCOMPARE(count(105e-6), 5);
+    QCOMPARE(count(185e-6), 9);
 }
 
 void TestAnalog::importedExamplesSimulate()
