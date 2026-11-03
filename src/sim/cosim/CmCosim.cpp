@@ -5,7 +5,9 @@
 // chips of a circuit share one instance (ngspice crashes with several):
 //   .model chips d_cosim simulation="libcmcosim.so" sim_args=["74161" "7493"]
 //   Acosim [inputs of each chip...] [outputs of each chip...] chips
-// Each chip's ports follow its symbol's pin order: inputs, then outputs.
+// Each chip's ports follow its symbol's pin order: inputs (bidirectional
+// pins too), then outputs; a bidirectional pin has two outputs, its level
+// and whether it drives (the deck switches the pin with the second).
 
 #include "core/Circuit.h"
 #include "library/LibraryRegistry.h"
@@ -62,13 +64,17 @@ public:
     Chip(const SymbolDef& s, std::unique_ptr<Model> model) : m_model(std::move(model))
     {
         m_value.assign(s.pins.size(), Logic::X);
+        m_seen.assign(s.pins.size(), Logic::X);
         m_port.assign(s.pins.size(), -1);
+        m_bidir.assign(s.pins.size(), false);
         for (int i = 0; i < s.pins.size(); ++i)
             if (s.pins[i].dir != SymbolPin::Dir::Out) m_inputs << i;
         for (int i = 0; i < s.pins.size(); ++i)
-            if (s.pins[i].dir == SymbolPin::Dir::Out) {
+            if (s.pins[i].dir == SymbolPin::Dir::Out || s.pins[i].dir == SymbolPin::Dir::InOut) {
                 m_port[i] = int(m_outputs.size());
                 m_outputs << i;
+                m_bidir[i] = s.pins[i].dir == SymbolPin::Dir::InOut;
+                m_ports += m_bidir[i] ? 2 : 1;
             }
         m_reported.assign(m_outputs.size(), Logic::Z);
         m_model->init(*this);
@@ -77,14 +83,14 @@ public:
     }
 
     int inputs() const { return int(m_inputs.size()); }
-    int outputs() const { return int(m_outputs.size()); }
+    int outputs() const { return m_ports; }
 
     void input(unsigned int port, Digital_t* v)
     {
         if (port >= unsigned(m_inputs.size())) return;
         const Logic l = v->strength == HI_IMPEDANCE ? Logic::Z
                       : v->state == ZERO ? Logic::L0 : v->state == ONE ? Logic::L1 : Logic::X;
-        Logic& now = m_value[m_inputs[int(port)]];
+        Logic& now = m_seen[m_inputs[int(port)]];
         // the bridge reports "unknown" while an analog edge crosses between
         // its thresholds; keep the last level so 1 -> X -> 0 is still a falling edge
         if (l == Logic::X && isKnown(now))
@@ -118,18 +124,34 @@ public:
             if (wake) m_model->wake(*this);
         }
         m_now = target;
+        unsigned int port = firstOutput;
         for (int k = 0; k < m_outputs.size(); ++k) {
-            const Logic v = m_value[m_outputs[k]];
+            const int pin = m_outputs[k];
+            const Logic v = m_value[pin];
+            const unsigned int here = port;
+            port += m_bidir[pin] ? 2 : 1;
             if (v == m_reported[k]) continue;
             m_reported[k] = v;
             Digital_t d{v == Logic::L0 ? ZERO : v == Logic::L1 ? ONE : UNKNOWN, v == Logic::Z ? HI_IMPEDANCE : STRONG};
-            info->out_fn(info, firstOutput + unsigned(k), &d);
+            if (m_bidir[pin]) {
+                // the level (held while floating) and the switch that connects it
+                if (v != Logic::Z) info->out_fn(info, here, &d);
+                Digital_t on{v == Logic::Z ? ZERO : ONE, STRONG};
+                info->out_fn(info, here + 1, &on);
+            } else {
+                info->out_fn(info, here, &d);
+            }
         }
     }
 
     // ModelContext
     std::uint64_t now() const override { return m_now; }
-    Logic input(int pin) const override { return pin >= 0 && pin < int(m_value.size()) ? m_value[pin] : Logic::X; }
+    // inputs read what the deck reports; an output reads its own level
+    Logic input(int pin) const override
+    {
+        if (pin < 0 || pin >= int(m_value.size())) return Logic::X;
+        return m_port[pin] >= 0 && !m_bidir[pin] ? m_value[pin] : m_seen[pin];
+    }
     bool connected(int) const override { return true; }
     void drive(int pin, Drive d, std::uint32_t delay) override
     {
@@ -145,8 +167,10 @@ private:
     struct Event { int pin; Logic value; };
     std::unique_ptr<Model> m_model;
     QVector<int> m_inputs, m_outputs;
-    std::vector<Logic> m_value, m_reported;
+    std::vector<Logic> m_value, m_seen, m_reported;    // driven, read, last reported
     std::vector<int> m_port;
+    std::vector<bool> m_bidir;
+    int m_ports = 0;
     std::map<std::uint64_t, std::vector<Event>> m_queue;
     std::uint64_t m_now = 0;
     bool m_settling = true, m_dirty = false;

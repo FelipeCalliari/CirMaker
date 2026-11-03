@@ -413,7 +413,6 @@ private:
             addModel(QStringLiteral(".model cm_%1 d_%1(%2)").arg(QLatin1String(g), d));
         addModel(QStringLiteral(".model cm_inv d_inverter(%1)").arg(d));
         addModel(QStringLiteral(".model cm_buf d_buffer(%1)").arg(d));
-        addModel(QStringLiteral(".model cm_tri d_tristate(delay=%1)").arg(formatNumber(kTickSeconds / 100)));
         addModel(QStringLiteral(".model cm_dff d_dff(clk_delay=%1 set_delay=%1 reset_delay=%1 %2)")
                      .arg(formatNumber(kTickSeconds / 100), d));
         addModel(QStringLiteral(".model cm_jkff d_jkff(clk_delay=%1 set_delay=%1 reset_delay=%1 %2)")
@@ -444,6 +443,19 @@ private:
         dacIn << d;
         dacOut << node(c, pin);
         return d;
+    }
+    // A tri-state output: digital level <d>v and enable <d>e. A DAC cannot
+    // float, so the level reaches the pin through a switch the enable closes
+    // (an unknown enable, 2.5 V, leaves it open).
+    void tristateOut(const Component& c, const QString& name, int pin, const QString& d, QStringList& dacIn, QStringList& dacOut)
+    {
+        const QString level = QStringLiteral("b%1_%2").arg(c.id).arg(pin), on = QStringLiteral("e%1_%2").arg(c.id).arg(pin);
+        dacIn << d + u'v' << d + u'e';
+        dacOut << level << on;
+        addModel(QStringLiteral(".model cm_tsw sw(vt=3.75 vh=0.25 ron=10 roff=1e12)"));
+        m_lines << QStringLiteral("S%1_%2 %3 %4 %5 0 cm_tsw").arg(name).arg(pin).arg(level, node(c, pin), on);
+        m_lines << QStringLiteral("Rb%1_%2 %3 0 1Meg").arg(c.id).arg(pin).arg(level);
+        m_lines << QStringLiteral("Re%1_%2 %3 0 1Meg").arg(c.id).arg(pin).arg(on);
     }
     void bridges(const Component& c, const QStringList& adcIn, const QStringList& adcOut,
                  const QStringList& dacIn, const QStringList& dacOut)
@@ -544,11 +556,14 @@ private:
                 m_lines << QStringLiteral("A%1 [%2] %3 cm_%4").arg(name, inputs.join(u' '), out, model);
             }
         } else if (kind == u"tribuf") {
+            // the buffered level reaches the pin through a switch the enable closes
             const QString in = digitalIn(c, s, s.pinIndex(QStringLiteral("A")), adcIn, adcOut);
-            const QString en = port(c, s, {"EN", "OE", "G"}, adcIn, adcOut);
-            const QString out = digitalOut(c, s.pinIndex(QStringLiteral("Y")), dacIn, dacOut);
-            m_lines << QStringLiteral("A%1 %2 %3 %4 cm_tri").arg(name, in, en, out);
-            m_deck.warnings << QStringLiteral("%1: tri-state outputs drive 2.5 V when disabled in analog mode").arg(c.designator);
+            QString en = port(c, s, {"EN", "OE", "G"}, adcIn, adcOut);
+            const int y = s.pinIndex(QStringLiteral("Y"));
+            const QString d = QStringLiteral("d%1_%2").arg(c.id).arg(y);
+            m_lines << QStringLiteral("A%1 %2 %3v cm_buf").arg(name, in, d);
+            m_lines << QStringLiteral("A%1e %2 %3e cm_buf").arg(name, en, d);
+            tristateOut(c, name, y, d, dacIn, dacOut);
         } else if (kind == u"dff" || kind == u"jkff") {
             const bool jk = kind == u"jkff";
             QString data = jk ? port(c, s, {"J"}, adcIn, adcOut) + u' ' + port(c, s, {"K"}, adcIn, adcOut)
@@ -560,15 +575,23 @@ private:
             const QString q = digitalOut(c, s.pinIndex(QStringLiteral("Q")), dacIn, dacOut);
             const QString qn = digitalOut(c, s.pinIndex(QStringLiteral("~Q")), dacIn, dacOut);
             m_lines << QStringLiteral("A%1 %2 %3 %4 %5 %6 %7 %8").arg(name, data, clk, set, reset, q, qn, jk ? u"cm_jkff"_s : u"cm_dff"_s);
-        } else if (const QString lib = cosimLibrary(); !lib.isEmpty() && std::none_of(s.pins.cbegin(), s.pins.cend(), [](const SymbolPin& p) {
-                       return p.dir == SymbolPin::Dir::InOut; })) {
+        } else if (const QString lib = cosimLibrary(); !lib.isEmpty()) {
             // MSI chips: the digital simulator's own model, co-simulated by
-            // XSPICE d_cosim; ports are the inputs, then the outputs, in pin order
+            // XSPICE d_cosim; ports are the inputs, then the outputs, in pin
+            // order. A bidirectional pin is an input, and two outputs: its
+            // level, and a switch joining that level to the pin while it drives.
             QStringList ins, outs;
             for (int i = 0; i < s.pins.size(); ++i)
                 if (s.pins[i].dir != SymbolPin::Dir::Out) ins << digitalIn(c, s, i, adcIn, adcOut);
-            for (int i = 0; i < s.pins.size(); ++i)
-                if (s.pins[i].dir == SymbolPin::Dir::Out) outs << digitalOut(c, i, dacIn, dacOut);
+            for (int i = 0; i < s.pins.size(); ++i) {
+                if (s.pins[i].dir == SymbolPin::Dir::Out) {
+                    outs << digitalOut(c, i, dacIn, dacOut);
+                } else if (s.pins[i].dir == SymbolPin::Dir::InOut) {
+                    const QString d = QStringLiteral("d%1_%2").arg(c.id).arg(i);
+                    outs << d + u'v' << d + u'e';
+                    tristateOut(c, name, i, d, dacIn, dacOut);
+                }
+            }
             // the chip, and memory contents it starts with ("prom32;data=0a,1f,..":
             // ngspice splits sim_args at spaces, even quoted)
             QString spec = s.id;

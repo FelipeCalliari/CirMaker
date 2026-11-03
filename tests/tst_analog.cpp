@@ -54,6 +54,8 @@ private slots:
     void unijunctions();
     void ownSpiceLine();
     void mixedModeCounter();
+    void mixedModeRam();
+    void mixedModeTristate();
     void importedExamplesSimulate();
 
 private:
@@ -1337,6 +1339,82 @@ void TestAnalog::mixedModeCounter()
     QCOMPARE(count(25e-6), 1);
     QCOMPARE(count(105e-6), 5);
     QCOMPARE(count(185e-6), 9);
+}
+
+// A RAM in the analog simulation: its data pins float while it writes and
+// drive while it reads. D0 is fed through 1k from a source that is 5 V
+// while the RAM writes and 0 V after; reading, the RAM holds D0 high.
+void TestAnalog::mixedModeRam()
+{
+    requireEngine();
+    if (spice::cosimLibrary().isEmpty())
+        QSKIP("co-simulation library not built");
+    Circuit c;
+    const ItemId u = part(c, QStringLiteral("RAM1K"), QStringLiteral("U1"));
+    for (int i = 0; i < 10; ++i) wire(c, u, QStringLiteral("A%1").arg(i), QStringLiteral("G"));
+    wire(c, u, QStringLiteral("~CS"), QStringLiteral("G"));
+    wire(c, u, QStringLiteral("~WE"), QStringLiteral("WE"));
+    wire(c, u, QStringLiteral("D0"), QStringLiteral("D0"));
+    wire(c, u, QStringLiteral("D1"), QStringLiteral("D1"));
+    ground(c, QStringLiteral("G"));
+    auto pwl = [&](const QString& net, const QString& points) {
+        const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V%1").arg(c.components().size()), {},
+                              {{QStringLiteral("wave"), QStringLiteral("pwl")}, {QStringLiteral("pwl"), points}});
+        wire(c, g, QStringLiteral("+"), net);
+        wire(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    };
+    pwl(QStringLiteral("WE"), QStringLiteral("0 0\n50u 0\n51u 5\n200u 5"));          // write, then read
+    pwl(QStringLiteral("SRC"), QStringLiteral("0 5\n70u 5\n71u 0\n200u 0"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("SRC"), QStringLiteral("D0"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("G"), QStringLiteral("D1"));
+    transient(c, QStringLiteral("150u"), QStringLiteral("0.5u"));
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    QVERIFY2(deck.text.contains(QStringLiteral("cm_tsw")), qPrintable(deck.text));
+    const spice::Vector* t = r.find(QStringLiteral("time"));
+    auto at = [&](const char* net, double when) {
+        int i = 0;
+        while (i + 1 < t->size() && t->real[i] < when) ++i;
+        return r.find(QString::fromLatin1(net))->real[i];
+    };
+    QVERIFY2(at("d0", 30e-6) > 4.9, qPrintable(QString::number(at("d0", 30e-6))));     // writing: the source alone
+    QVERIFY2(at("d1", 30e-6) < 0.1, qPrintable(QString::number(at("d1", 30e-6))));
+    QVERIFY2(at("d0", 120e-6) > 4.5, qPrintable(QString::number(at("d0", 120e-6))));   // reading: the stored 1
+    QVERIFY2(at("d1", 120e-6) < 0.5, qPrintable(QString::number(at("d1", 120e-6))));
+}
+
+// A disabled tri-state buffer floats in the analog simulation: Y follows
+// the 2 V it is pulled to; enabled, it drives its input's 5 V.
+void TestAnalog::mixedModeTristate()
+{
+    requireEngine();
+    Circuit c;
+    const ItemId b = part(c, QStringLiteral("tribuf"), QStringLiteral("U1"));
+    wire(c, b, QStringLiteral("A"), QStringLiteral("HI"));
+    wire(c, b, QStringLiteral("EN"), QStringLiteral("EN"));
+    wire(c, b, QStringLiteral("Y"), QStringLiteral("Y"));
+    supply(c, QStringLiteral("HI"), QStringLiteral("5"));
+    supply(c, QStringLiteral("TWO"), QStringLiteral("2"));
+    resistor(c, QStringLiteral("1k"), QStringLiteral("TWO"), QStringLiteral("Y"));
+    const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V9"), {},
+                          {{QStringLiteral("wave"), QStringLiteral("pwl")}, {QStringLiteral("pwl"), QStringLiteral("0 0\n50u 0\n51u 5\n100u 5")}});
+    wire(c, g, QStringLiteral("+"), QStringLiteral("EN"));
+    wire(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    transient(c, QStringLiteral("100u"), QStringLiteral("0.5u"));
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const spice::Vector* t = r.find(QStringLiteral("time"));
+    auto at = [&](double when) {
+        int i = 0;
+        while (i + 1 < t->size() && t->real[i] < when) ++i;
+        return r.find(QStringLiteral("y"))->real[i];
+    };
+    QVERIFY2(qAbs(at(30e-6) - 2) < 0.05, qPrintable(QString::number(at(30e-6))));
+    QVERIFY2(at(90e-6) > 4.9, qPrintable(QString::number(at(90e-6))));
+    QVERIFY(deck.warnings.filter(QStringLiteral("2.5 V")).isEmpty());
 }
 
 void TestAnalog::importedExamplesSimulate()
