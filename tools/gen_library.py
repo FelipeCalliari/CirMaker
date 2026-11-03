@@ -1118,10 +1118,42 @@ def transformer_lines(secondaries):
     return N.join(lines)
 
 
+# MC1496 balanced modulator, from the datasheet's equivalent circuit: a
+# Gilbert cell (carrier quad over the signal pair) with two current sinks.
+MC1496 = ['.subckt MC1496_GEN g1 vca vcb vsa vsb vee bias outa outb g2',
+          'Qs1 ta vsa g1 QMC1496', 'Qs2 tb vsb g2 QMC1496',
+          'Qc1 outa vca ta QMC1496', 'Qc2 outb vcb ta QMC1496',
+          'Qc3 outb vca tb QMC1496', 'Qc4 outa vcb tb QMC1496',
+          'Qi1 g1 bias e1 QMC1496', 'Qi2 g2 bias e2 QMC1496',
+          'Re1 e1 vee 500', 'Re2 e2 vee 500', 'Db bias eb DMC1496', 'Rb eb vee 500',
+          '.model QMC1496 NPN(BF=100 IS=1e-15 VAF=100)', '.model DMC1496 D(IS=1e-15)',
+          '.ends MC1496_GEN']
+
+
 def cm_devices():
     winding = lambda x0, y0, y1, dx: [P(f'M {x0} {y0} ' + ' '.join(
         f'Q {x0 + dx} {y0 + (i + .5) * (y1 - y0) / 4} {x0} {y0 + (i + 1) * (y1 - y0) / 4}' for i in range(4)))]
     return [
+        {'id': 'mc1496', 'name': 'MC1496', 'prefix': 'U', 'label': 'MC1496', 'aliases': ['MC1496'], 'package': 'DIP14',
+         'cmPins': ['G1', 'VC+', 'VC-', 'VS+', 'VS-', 'VEE', 'BIAS', 'OUT+', 'OUT-', 'G2'],
+         'shape': {'type': 'box', 'width': 160, 'pitch': 30, 'left': ['G1', 'VC+', 'VC-', 'VS+', 'VS-'],
+                   'right': ['G2', 'OUT-', 'OUT+', 'BIAS', 'VEE'], 'leftStart': -60, 'rightStart': -60, 'title': 'MC1496'},
+         'spice': sp('X{name} {G1} {VC+} {VC-} {VS+} {VS-} {VEE} {BIAS} {OUT+} {OUT-} {G2} MC1496_GEN', subckt=MC1496),
+         'description': 'Balanced modulator/demodulator: the carrier (VC) switches the signal (VS) between the outputs; '
+                        'gain resistor between G1 and G2, bias current into BIAS, VEE the negative supply'},
+        # frequency to voltage: the netlister measures the period in the
+        # co-simulation (ftov_core) and outputs frequency / cycles
+        {'id': 'ftov', 'name': 'F->V Source', 'prefix': 'V', 'label': 'FCVS', 'aliases': ['F->V Source'],
+         'cmPins': ['NC+', 'NC-', 'N+', 'N-'], 'props': {'vil': '1', 'vih': '2', 'cycles': '1k'},
+         'description': 'Frequency-controlled voltage source: N+ - N- = frequency of NC+ - NC- / cycles per volt; '
+                        'the input counts a cycle when it rises above VIH after falling below VIL',
+         'graphics': [R(-70, -80, 80, 180), L(-90, -60, -70, -60), L(-90, 80, -70, 80), L(10, -60, 30, -60), L(10, 80, 30, 80),
+                      T('f', -45, 15, 14), T('V', -5, 15, 14), L(-35, 10, -15, 10), P('M -21 6 L -15 10 L -21 14'),
+                      T('+', -60, -50, 9), T('-', -60, 70, 9), T('+', 0, -50, 9), T('-', 0, 70, 9)],
+         'pins': [pin('NC+', -90, -60), pin('NC-', -90, 80), pin('N+', 30, -60), pin('N-', 30, 80)]},
+        {'id': 'ftov_core', 'name': 'F->V counter', 'prefix': 'X', 'hidden': True, 'model': {'kind': 'ftov'},
+         'description': 'Period meter inside F->V Source: F0..F23 = frequency of IN in hertz',
+         'pins': [pin('IN', -40, 0, 'in')] + [pin(f'F{i}', 40, i * 10, 'out') for i in range(24)]},
         {'id': 'trans_ratio', 'name': 'Transformer (ratio)', 'prefix': 'T', 'label': '1TO1', 'aliases': ['Trans2'],
          'cmPins': ['P1', 'P2', 'S1', 'S2'], 'props': {'ratio': '1', 'rp': '0.1', 'rs': '0.1'},
          'spice': sp(transformer_lines([('S1', 'S2', '{prop:ratio}')])),

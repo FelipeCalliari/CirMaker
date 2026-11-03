@@ -215,6 +215,10 @@ private:
         }
         const QString kind = s.model.value(u"kind").toString();
         const QString name = uniqueName(c);
+        if (s.id == u"ftov") {
+            emitFtoV(c, s, name);
+            return;
+        }
         // the part's own SPICE line and models (Edit/Select Spice Model) win
         const QString own = c.props.value(QStringLiteral("spice")).toString().trimmed();
         if (const QString models = c.props.value(QStringLiteral("spiceModels")).toString().trimmed(); !models.isEmpty())
@@ -470,6 +474,40 @@ private:
         dacOut << node(c, pin);
         return d;
     }
+    // F->V Source: the input difference, digitised at VIL/VIH, times its
+    // rising edges in the co-simulation (ftov_core gives the frequency in
+    // hertz as 24 bits); the output is that number over the cycles per volt.
+    void emitFtoV(const Component& c, const SymbolDef& s, const QString& name)
+    {
+        const QString lib = cosimLibrary();
+        if (lib.isEmpty()) {
+            m_deck.warnings << QStringLiteral("%1 (%2) needs the co-simulation library and is left out").arg(c.designator, s.name);
+            return;
+        }
+        const QVariantMap p = props(c, s);
+        auto num = [&](const char* key, double fallback) {
+            return formatNumber(parseNumber(p.value(QLatin1String(key)).toString()).value_or(fallback));
+        };
+        const QString diff = name + QStringLiteral("_in"), din = QStringLiteral("d%1_in").arg(c.id);
+        m_lines << QStringLiteral("B%1i %2 0 V=v(%3,%4)").arg(name, diff, node(c, s, QStringLiteral("NC+")), node(c, s, QStringLiteral("NC-")));
+        m_lines << QStringLiteral("R%1i %2 0 1Meg").arg(name, diff);
+        addModel(QStringLiteral(".model %1_adc adc_bridge(in_low=%2 in_high=%3)").arg(name, num("vil", 1), num("vih", 2)));
+        m_lines << QStringLiteral("A%1a [%2] [%3] %1_adc").arg(name, diff, din);
+        QStringList bits, levels, sum;
+        for (int i = 0; i < 24; ++i) {
+            bits << QStringLiteral("d%1_f%2").arg(c.id).arg(i);
+            levels << QStringLiteral("%1_f%2").arg(name).arg(i);
+            sum << QStringLiteral("v(%1)*%2").arg(levels.last()).arg(1 << i);
+        }
+        digitalModels();
+        m_lines << QStringLiteral("A%1d [%2] [%3] cm_dac").arg(name, bits.join(u' '), levels.join(u' '));
+        for (const QString& l : std::as_const(levels))
+            m_lines << QStringLiteral("R%1 %1 0 1Meg").arg(l);
+        m_lines << QStringLiteral("B%1 %2 %3 V=(%4)/5/%5").arg(name, node(c, s, QStringLiteral("N+")), node(c, s, QStringLiteral("N-")),
+                                                            sum.join(u'+'), num("cycles", 1000));
+        m_cosim << Cosim{QStringLiteral("ftov_core"), {din}, bits};
+    }
+
     // A tri-state output: digital level <d>v and enable <d>e. A DAC cannot
     // float, so the level reaches the pin through a switch the enable closes
     // (an unknown enable, 2.5 V, leaves it open).

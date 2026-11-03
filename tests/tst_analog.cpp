@@ -56,6 +56,8 @@ private slots:
     void mixedModeCounter();
     void mixedModeRam();
     void mixedModeTristate();
+    void frequencyToVoltage();
+    void balancedModulator();
     void gateOscillatorFromInitialConditions();
     void importedExamplesSimulate();
 
@@ -1442,6 +1444,85 @@ void TestAnalog::gateOscillatorFromInitialConditions()
         bestCrossings = std::max(bestCrossings, crossings);
     }
     QVERIFY2(bestCrossings >= 4, qPrintable(QString::number(bestCrossings)));
+}
+
+// F->V Source: a 2 kHz square wave at 1k cycles per volt gives 2 V.
+void TestAnalog::frequencyToVoltage()
+{
+    requireEngine();
+    if (spice::cosimLibrary().isEmpty())
+        QSKIP("co-simulation library not built");
+    Circuit c;
+    const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V1"), {},
+                          {{QStringLiteral("wave"), QStringLiteral("pulse")}, {QStringLiteral("low"), QStringLiteral("0")},
+                           {QStringLiteral("high"), QStringLiteral("5")}, {QStringLiteral("period"), QStringLiteral("500u")},
+                           {QStringLiteral("width"), QStringLiteral("250u")}});
+    wire(c, g, QStringLiteral("+"), QStringLiteral("IN"));
+    wire(c, g, QStringLiteral("-"), QStringLiteral("G"));
+    const ItemId f = part(c, QStringLiteral("ftov"), QStringLiteral("V2"));
+    wire(c, f, QStringLiteral("NC+"), QStringLiteral("IN"));
+    wire(c, f, QStringLiteral("NC-"), QStringLiteral("G"));
+    wire(c, f, QStringLiteral("N+"), QStringLiteral("OUT"));
+    wire(c, f, QStringLiteral("N-"), QStringLiteral("G"));
+    resistor(c, QStringLiteral("10k"), QStringLiteral("OUT"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    transient(c, QStringLiteral("3m"), QStringLiteral("5u"));
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
+    const double v = r.last(QStringLiteral("out")).value_or(0);
+    QVERIFY2(qAbs(v - 2) < 0.02, qPrintable(QString::number(v) + u'\n' + deck.text));
+}
+
+// MC1496: carrier and signal multiply; with no signal the balanced output
+// carries no carrier.
+void TestAnalog::balancedModulator()
+{
+    requireEngine();
+    double swings[2] = {};
+    for (int k = 0; k < 2; ++k) {
+        Circuit c;
+        const ItemId u = part(c, QStringLiteral("mc1496"), QStringLiteral("U1"));
+        supply(c, QStringLiteral("VCC"), QStringLiteral("12"));
+        supply(c, QStringLiteral("VEE"), QStringLiteral("-8"));
+        wire(c, u, QStringLiteral("VEE"), QStringLiteral("VEE"));
+        resistor(c, QStringLiteral("6.8k"), QStringLiteral("G"), QStringLiteral("BIAS"));   // about 1 mA (datasheet)
+        wire(c, u, QStringLiteral("BIAS"), QStringLiteral("BIAS"));
+        resistor(c, QStringLiteral("1k"), QStringLiteral("G1"), QStringLiteral("G2"));
+        wire(c, u, QStringLiteral("G1"), QStringLiteral("G1"));
+        wire(c, u, QStringLiteral("G2"), QStringLiteral("G2"));
+        wire(c, u, QStringLiteral("OUT+"), QStringLiteral("OUTA"));
+        wire(c, u, QStringLiteral("OUT-"), QStringLiteral("OUTB"));
+        resistor(c, QStringLiteral("3.9k"), QStringLiteral("VCC"), QStringLiteral("OUTA"));
+        resistor(c, QStringLiteral("3.9k"), QStringLiteral("VCC"), QStringLiteral("OUTB"));
+        // carrier: 0.1 V of 10 kHz on VC+ around VC- at 6 V; the signal a DC level
+        supply(c, QStringLiteral("CREF"), QStringLiteral("6"));
+        const ItemId g = part(c, QStringLiteral("siggen"), QStringLiteral("V9"), {},
+                              {{QStringLiteral("frequency"), QStringLiteral("10k")}, {QStringLiteral("amplitude"), QStringLiteral("0.1")}});
+        wire(c, g, QStringLiteral("+"), QStringLiteral("VCA"));
+        wire(c, g, QStringLiteral("-"), QStringLiteral("CREF"));
+        wire(c, u, QStringLiteral("VC+"), QStringLiteral("VCA"));
+        wire(c, u, QStringLiteral("VC-"), QStringLiteral("CREF"));
+        supply(c, QStringLiteral("SIG"), k ? QStringLiteral("0.1") : QStringLiteral("0"));
+        wire(c, u, QStringLiteral("VS+"), QStringLiteral("SIG"));
+        wire(c, u, QStringLiteral("VS-"), QStringLiteral("G"));
+        ground(c, QStringLiteral("G"));
+        transient(c, QStringLiteral("300u"), QStringLiteral("1u"));
+        const spice::Result r = simulate(c);
+        QVERIFY2(r.ok, qPrintable(r.error));
+        const spice::Vector* a = r.find(QStringLiteral("outa"));
+        const spice::Vector* b = r.find(QStringLiteral("outb"));
+        QVERIFY(a && b);
+        double lo = 1e9, hi = -1e9;
+        for (int i = a->size() / 2; i < a->size(); ++i) {
+            lo = std::min(lo, a->real[i] - b->real[i]);
+            hi = std::max(hi, a->real[i] - b->real[i]);
+        }
+        swings[k] = hi - lo;
+    }
+    // balanced, the carrier is suppressed; a signal lets it through
+    QVERIFY2(swings[0] < 0.05, qPrintable(QString::number(swings[0])));
+    QVERIFY2(swings[1] > 10 * swings[0] && swings[1] > 0.1, qPrintable(QString::number(swings[1])));
 }
 
 void TestAnalog::importedExamplesSimulate()

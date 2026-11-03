@@ -449,6 +449,13 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                                   p.value(QStringLiteral("fr"), QStringLiteral("5k")).toString(),
                                   p.value(QStringLiteral("rs"), QStringLiteral("100")).toString());
         }
+        if (s.id == u"ftov") {
+            const QVariantMap p = c.props;
+            modelKind = QStringLiteral("alias:XFTOV {VIL=%1 VIH=%2 CYCLES=%3}")
+                            .arg(p.value(QStringLiteral("vil"), QStringLiteral("1")).toString(),
+                                 p.value(QStringLiteral("vih"), QStringLiteral("2")).toString(),
+                                 p.value(QStringLiteral("cycles"), QStringLiteral("1k")).toString());
+        }
         QVector<int> data;
         if (l.type == 0x50) {                           // PROM: 32 bytes after the record
             data = dataBytes(c);

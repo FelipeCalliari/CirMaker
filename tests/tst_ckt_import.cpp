@@ -499,6 +499,18 @@ void TestCktImport::symbolPinGeometry()
         QSKIP("set CM_PIN_GEOMETRY=1");
     CmDeviceLib cmLib;
     QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    if (const QString dev = qEnvironmentVariable("CM_PIN_DEVICE"); !dev.isEmpty()) {
+        // one Device.lib device: its pins, names and strings
+        for (const CmLibDevice& d : cmLib.devices())
+            if (d.name.contains(dev, Qt::CaseInsensitive)) {
+                QStringList pins;
+                for (int k = 0; k < d.pins.size(); ++k)
+                    pins << QStringLiteral("%1:%2(%3,%4)").arg(k + 1).arg(d.pinNames.value(k)).arg(d.pins[k].x()).arg(d.pins[k].y());
+                qInfo("%s type %d prefix %s value %s kind %s spice %s pkg %s | %s", qPrintable(d.name), d.type, qPrintable(d.prefix),
+                      qPrintable(d.value), qPrintable(d.kind), qPrintable(d.spice), qPrintable(d.package), qPrintable(pins.join(u' ')));
+            }
+        return;
+    }
     for (const SymbolDef* s : library().all()) {
         if (s->cmPins.isEmpty()) continue;
         const CmLibDevice* d = CktExporter::deviceFor(*s, cmLib);

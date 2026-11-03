@@ -1094,6 +1094,35 @@ private:
     QVector<int> m_mem;
 };
 
+// ------------------------------------------------------------ F->V Source
+
+// Period meter of the F->V Source (analog only, in the co-simulation whose
+// tick is a nanosecond): F0..F23 = the frequency of IN in hertz, from the
+// last two rising edges.
+class FreqMeter : public Model {
+public:
+    explicit FreqMeter(const Pins& p) : m_in(p.at(QStringLiteral("IN"))), m_f(p.run(QStringLiteral("F"))) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        if (m_in >= 0 && m_edge(ctx, m_in)) {
+            const std::uint64_t now = ctx.now();
+            if (m_previous && now > *m_previous)
+                m_hertz = int(std::min<double>(std::llround(1e9 / double(now - *m_previous)), (1 << 24) - 1));
+            m_previous = now;
+        }
+        for (int i = 0; i < m_f.size(); ++i)
+            if (m_f[i] >= 0) ctx.drive(m_f[i], strong(fromBool(m_hertz >> i & 1)), 1);
+    }
+    int state() const override { return m_hertz; }
+
+private:
+    int m_in;
+    QVector<int> m_f;
+    Edge m_edge;
+    std::optional<std::uint64_t> m_previous;
+    int m_hertz = 0;
+};
+
 // ------------------------------------------------------------ 4x4 keypad
 
 // Key matrix: while key k is held, row k/4 connects to column k%4.
@@ -1188,6 +1217,7 @@ std::unique_ptr<Model> createChipModel(const SymbolDef& s, const Component& c, Q
     if (kind == u"parity") return std::make_unique<Parity>(p);
     if (kind == u"transceiver") return std::make_unique<Transceiver>(p);
     if (kind == u"keymatrix") return std::make_unique<KeyMatrix>(p);
+    if (kind == u"ftov") return std::make_unique<FreqMeter>(p);
     if (kind == u"johnson") return std::make_unique<Johnson4017>(p);
     if (kind == u"updown169") return std::make_unique<UpDown169>(p, s.model.value(u"modulus").toInt(16));
     if (kind == u"reg173") return std::make_unique<Register173>(p);

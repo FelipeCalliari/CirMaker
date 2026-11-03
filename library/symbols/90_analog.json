@@ -6953,6 +6953,440 @@
    ]
   },
   {
+   "id": "mc1496",
+   "name": "MC1496",
+   "prefix": "U",
+   "label": "MC1496",
+   "aliases": [
+    "MC1496"
+   ],
+   "package": "DIP14",
+   "cmPins": [
+    "G1",
+    "VC+",
+    "VC-",
+    "VS+",
+    "VS-",
+    "VEE",
+    "BIAS",
+    "OUT+",
+    "OUT-",
+    "G2"
+   ],
+   "shape": {
+    "type": "box",
+    "width": 160,
+    "pitch": 30,
+    "left": [
+     "G1",
+     "VC+",
+     "VC-",
+     "VS+",
+     "VS-"
+    ],
+    "right": [
+     "G2",
+     "OUT-",
+     "OUT+",
+     "BIAS",
+     "VEE"
+    ],
+    "leftStart": -60,
+    "rightStart": -60,
+    "title": "MC1496"
+   },
+   "spice": {
+    "line": "X{name} {G1} {VC+} {VC-} {VS+} {VS-} {VEE} {BIAS} {OUT+} {OUT-} {G2} MC1496_GEN",
+    "subckt": [
+     ".subckt MC1496_GEN g1 vca vcb vsa vsb vee bias outa outb g2",
+     "Qs1 ta vsa g1 QMC1496",
+     "Qs2 tb vsb g2 QMC1496",
+     "Qc1 outa vca ta QMC1496",
+     "Qc2 outb vcb ta QMC1496",
+     "Qc3 outb vca tb QMC1496",
+     "Qc4 outa vcb tb QMC1496",
+     "Qi1 g1 bias e1 QMC1496",
+     "Qi2 g2 bias e2 QMC1496",
+     "Re1 e1 vee 500",
+     "Re2 e2 vee 500",
+     "Db bias eb DMC1496",
+     "Rb eb vee 500",
+     ".model QMC1496 NPN(BF=100 IS=1e-15 VAF=100)",
+     ".model DMC1496 D(IS=1e-15)",
+     ".ends MC1496_GEN"
+    ]
+   },
+   "description": "Balanced modulator/demodulator: the carrier (VC) switches the signal (VS) between the outputs; gain resistor between G1 and G2, bias current into BIAS, VEE the negative supply"
+  },
+  {
+   "id": "ftov",
+   "name": "F->V Source",
+   "prefix": "V",
+   "label": "FCVS",
+   "aliases": [
+    "F->V Source"
+   ],
+   "cmPins": [
+    "NC+",
+    "NC-",
+    "N+",
+    "N-"
+   ],
+   "props": {
+    "vil": "1",
+    "vih": "2",
+    "cycles": "1k"
+   },
+   "description": "Frequency-controlled voltage source: N+ - N- = frequency of NC+ - NC- / cycles per volt; the input counts a cycle when it rises above VIH after falling below VIL",
+   "graphics": [
+    {
+     "rect": [
+      -70,
+      -80,
+      80,
+      180
+     ]
+    },
+    {
+     "line": [
+      -90,
+      -60,
+      -70,
+      -60
+     ]
+    },
+    {
+     "line": [
+      -90,
+      80,
+      -70,
+      80
+     ]
+    },
+    {
+     "line": [
+      10,
+      -60,
+      30,
+      -60
+     ]
+    },
+    {
+     "line": [
+      10,
+      80,
+      30,
+      80
+     ]
+    },
+    {
+     "text": "f",
+     "at": [
+      -45,
+      15
+     ],
+     "size": 14
+    },
+    {
+     "text": "V",
+     "at": [
+      -5,
+      15
+     ],
+     "size": 14
+    },
+    {
+     "line": [
+      -35,
+      10,
+      -15,
+      10
+     ]
+    },
+    {
+     "path": "M -21 6 L -15 10 L -21 14"
+    },
+    {
+     "text": "+",
+     "at": [
+      -60,
+      -50
+     ],
+     "size": 9
+    },
+    {
+     "text": "-",
+     "at": [
+      -60,
+      70
+     ],
+     "size": 9
+    },
+    {
+     "text": "+",
+     "at": [
+      0,
+      -50
+     ],
+     "size": 9
+    },
+    {
+     "text": "-",
+     "at": [
+      0,
+      70
+     ],
+     "size": 9
+    }
+   ],
+   "pins": [
+    {
+     "name": "NC+",
+     "at": [
+      -90,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "NC-",
+     "at": [
+      -90,
+      80
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N+",
+     "at": [
+      30,
+      -60
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "N-",
+     "at": [
+      30,
+      80
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
+   "id": "ftov_core",
+   "name": "F->V counter",
+   "prefix": "X",
+   "hidden": true,
+   "model": {
+    "kind": "ftov"
+   },
+   "description": "Period meter inside F->V Source: F0..F23 = frequency of IN in hertz",
+   "pins": [
+    {
+     "name": "IN",
+     "at": [
+      -40,
+      0
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "F0",
+     "at": [
+      40,
+      0
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F1",
+     "at": [
+      40,
+      10
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F2",
+     "at": [
+      40,
+      20
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F3",
+     "at": [
+      40,
+      30
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F4",
+     "at": [
+      40,
+      40
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F5",
+     "at": [
+      40,
+      50
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F6",
+     "at": [
+      40,
+      60
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F7",
+     "at": [
+      40,
+      70
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F8",
+     "at": [
+      40,
+      80
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F9",
+     "at": [
+      40,
+      90
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F10",
+     "at": [
+      40,
+      100
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F11",
+     "at": [
+      40,
+      110
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F12",
+     "at": [
+      40,
+      120
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F13",
+     "at": [
+      40,
+      130
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F14",
+     "at": [
+      40,
+      140
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F15",
+     "at": [
+      40,
+      150
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F16",
+     "at": [
+      40,
+      160
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F17",
+     "at": [
+      40,
+      170
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F18",
+     "at": [
+      40,
+      180
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F19",
+     "at": [
+      40,
+      190
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F20",
+     "at": [
+      40,
+      200
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F21",
+     "at": [
+      40,
+      210
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F22",
+     "at": [
+      40,
+      220
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "F23",
+     "at": [
+      40,
+      230
+     ],
+     "dir": "out"
+    }
+   ]
+  },
+  {
    "id": "trans_ratio",
    "name": "Transformer (ratio)",
    "prefix": "T",
