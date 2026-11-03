@@ -67,7 +67,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 
 | Recurso | Estado | Observação |
 | --- | --- | --- |
-| Ponto de operação, transitório, AC, varredura DC | ✅ | ngspice |
+| Ponto de operação, transitório, AC, varredura DC | ✅ | ngspice; os 64 exemplos analógicos do CM simulam (fora os marcados "Not for Simulation" e os com peças sem equivalente); um transitório sem ponto de operação (oscilador de portas) parte das condições iniciais (UIC), com aviso; fontes DC idênticas em paralelo viram uma só; peças com o modelo SPICE apagado no CM ficam fora da simulação, como no CM |
 | Modo misto (XSPICE) | ✅ | portas e FFs como modelos XSPICE; CIs MSI rodam o próprio modelo digital dentro do ngspice (d_cosim, `libcmcosim.so`); pinos bidirecionais (RAM, 74245) entram pelo ADC e saem por uma chave que só fecha quando o chip força o pino, de modo que soltam o barramento de verdade; o buffer 3-state também (antes forçava 2,5 V desabilitado) |
 | Parameter Sweep, Fourier, Transfer Function, Noise, Temperature, Monte Carlo | ✅ | varreduras repetem qualquer análise e sobrepõem as curvas; Fourier com THD |
 | Impedance plot | ✅ | ponta Z na análise AC (\|V/I\| em dBΩ) |

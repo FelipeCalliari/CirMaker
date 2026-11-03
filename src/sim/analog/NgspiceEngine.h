@@ -27,6 +27,7 @@ struct Result {
     QString plotType;                           // "op", "tran", "ac", "dc"
     QString scale;                              // name of the x vector: "time", "frequency", ...
     QHash<QString, Vector> vectors;
+    bool fromInitialConditions = false;         // the transient skipped the operating point (UIC)
 
     const Vector* find(const QString& name) const;
     // Value of a node voltage / current at the last point (operating point).
@@ -41,9 +42,13 @@ public:
     static NgspiceEngine& instance();
 
     bool available(QString* why = nullptr);
+    // A transient whose operating point does not converge (a gate
+    // oscillator: event-driven feedback has no steady state) is run again
+    // from the initial conditions, as SPICE's UIC.
     Result run(const QString& netlist);
 
 private:
+    Result runOnce(const QString& netlist);
     NgspiceEngine() = default;
     bool load(QString* why);
     void unload();

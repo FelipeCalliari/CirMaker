@@ -56,6 +56,7 @@ private slots:
     void mixedModeCounter();
     void mixedModeRam();
     void mixedModeTristate();
+    void gateOscillatorFromInitialConditions();
     void importedExamplesSimulate();
 
 private:
@@ -1415,6 +1416,32 @@ void TestAnalog::mixedModeTristate()
     QVERIFY2(qAbs(at(30e-6) - 2) < 0.05, qPrintable(QString::number(at(30e-6))));
     QVERIFY2(at(90e-6) > 4.9, qPrintable(QString::number(at(90e-6))));
     QVERIFY(deck.warnings.filter(QStringLiteral("2.5 V")).isEmpty());
+}
+
+// A NAND gate with RC feedback has no operating point: the transient
+// starts from the initial conditions instead, and oscillates (Osc1.ckt).
+void TestAnalog::gateOscillatorFromInitialConditions()
+{
+    requireEngine();
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Osc1.ckt");
+    if (!QFile::exists(path))
+        QSKIP("Osc1.ckt not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    transient(c, QStringLiteral("2m"), QStringLiteral("2u"));
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error));
+    QVERIFY(r.fromInitialConditions);
+    int bestCrossings = 0;
+    for (auto it = r.vectors.cbegin(); it != r.vectors.cend(); ++it) {
+        if (it.key() == u"time" || it.value().isComplex()) continue;
+        int crossings = 0;
+        for (int i = 1; i < it.value().size(); ++i)
+            crossings += (it.value().real[i - 1] < 2.5) != (it.value().real[i] < 2.5);
+        bestCrossings = std::max(bestCrossings, crossings);
+    }
+    QVERIFY2(bestCrossings >= 4, qPrintable(QString::number(bestCrossings)));
 }
 
 void TestAnalog::importedExamplesSimulate()

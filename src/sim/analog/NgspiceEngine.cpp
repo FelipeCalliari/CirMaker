@@ -141,6 +141,27 @@ void NgspiceEngine::unload()
 
 Result NgspiceEngine::run(const QString& netlist)
 {
+    Result r = runOnce(netlist);
+    if (r.ok || !r.error.contains(QStringLiteral("operating point"), Qt::CaseInsensitive))
+        return r;
+    QStringList lines = netlist.split(u'\n');
+    bool changed = false;
+    for (QString& l : lines)
+        if (l.startsWith(QStringLiteral(".tran "), Qt::CaseInsensitive) && !l.contains(QStringLiteral("uic"), Qt::CaseInsensitive)) {
+            l += QStringLiteral(" uic");
+            changed = true;
+        }
+    if (!changed)
+        return r;
+    Result again = runOnce(lines.join(u'\n'));
+    if (!again.ok)
+        return r;
+    again.fromInitialConditions = true;
+    return again;
+}
+
+Result NgspiceEngine::runOnce(const QString& netlist)
+{
     QMutexLocker lock(&m_mutex);
     Result r;
     if (!m_api && !load(&r.error))

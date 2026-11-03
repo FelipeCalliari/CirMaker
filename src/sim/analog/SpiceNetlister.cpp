@@ -82,6 +82,27 @@ public:
             addModel(QStringLiteral(".model cm_cosim d_cosim simulation=\"%1\" sim_args=[%2]").arg(cosimLibrary(), args.join(u' ')));
             m_lines << QStringLiteral("Acosim [%1] [%2] cm_cosim").arg(ins.join(u' '), outs.join(u' '));
         }
+        // identical DC sources between the same nodes (two +10V supplies on
+        // one net) make the matrix singular: the first one stands for all
+        {
+            static const QRegularExpression dc(QStringLiteral("^V(\\S+) (\\S+) (\\S+) DC (\\S+)$"));
+            QHash<QString, QString> first;          // "n+ n- value" -> source name
+            QHash<QString, QString> merged;         // dropped source -> kept one
+            for (int i = 0; i < m_lines.size();) {
+                const auto m = dc.match(m_lines[i]);
+                if (!m.hasMatch()) { ++i; continue; }
+                const QString key = m.captured(2) + u' ' + m.captured(3) + u' ' + m.captured(4);
+                if (const auto it = first.constFind(key); it != first.cend()) {
+                    merged.insert(u'V' + m.captured(1), *it);
+                    m_lines.removeAt(i);
+                    continue;
+                }
+                first.insert(key, u'V' + m.captured(1));
+                ++i;
+            }
+            for (auto it = m_deck.sourceOfDesignator.begin(); it != m_deck.sourceOfDesignator.end(); ++it)
+                if (const auto k = merged.constFind(it.value()); k != merged.cend()) it.value() = *k;
+        }
         // every node keeps a DC path to ground, so open inputs never make
         // the matrix singular
         for (const QString& node : std::as_const(m_usedNodes))

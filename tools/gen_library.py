@@ -1222,11 +1222,13 @@ def power_parts():
                      'L{name}a {S1} {name}_a {prop:ls}\nR{name}a {name}_a {CT} 0.1\n'
                      'L{name}b {CT} {name}_b {prop:ls}\nR{name}b {name}_b {S2} 0.1\n'
                      'K{name}1 L{name}p L{name}a 0.999\nK{name}2 L{name}p L{name}b 0.999\nK{name}3 L{name}a L{name}b 0.999'),
-         'description': 'Centre-tapped transformer: primary P1-P2 (right), secondary halves S1-CT and CT-S2 of ls each',
-         'graphics': [P('M 40 -30 Q 28 -22.5 40 -15 Q 28 -7.5 40 0 Q 28 7.5 40 15 Q 28 22.5 40 30')]
-                     + coil(-40, -50, 50) + [L(16, -40, 16, 40), L(24, -40, 24, 40), L(40, -30, 60, -30), L(40, 30, 60, 30),
-                                             L(-60, -50, -40, -50), L(-60, 50, -40, 50), L(-60, 0, -40, 0)],
-         'pins': [pin('P1', 60, -30), pin('P2', 60, 30), pin('S1', -60, -50), pin('CT', -60, 0), pin('S2', -60, 50)]},
+         # pins where CircuitMaker's CTTransformer has them: primary left, secondary right
+         'description': 'Centre-tapped transformer: primary P1-P2 (left), secondary halves S1-CT and CT-S2 of ls each',
+         'graphics': coil(-30, -30, 20)
+                     + [P('M 20 -60 ' + ' '.join(f'Q 8 {-60 + (i + .5) * 13.75} 20 {-60 + (i + 1) * 13.75}' for i in range(8)))]
+                     + [L(-4, -60, -4, 50), L(4, -60, 4, 50), L(-50, -30, -30, -30), L(-50, 20, -30, 20),
+                        L(20, -60, 40, -60), L(20, 0, 40, 0), L(20, 50, 40, 50)],
+         'pins': [pin('P1', -50, -30), pin('P2', -50, 20), pin('S1', 40, -60), pin('CT', 40, 0), pin('S2', 40, 50)]},
         {'id': 'optoisolator', 'name': 'Opto Isolator', 'prefix': 'U', 'label': '4N25', 'aliases': ['Opto Isolator'],
          'cmPins': ['A', 'C', 'COL', 'E'],
          'spice': sp('D{name} {A} {name}_k DLED\nV{name} {name}_k {C} 0\nQ{name} {COL} {name}_b {E} Q2N3904\n'

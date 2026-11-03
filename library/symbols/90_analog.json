@@ -2058,68 +2058,68 @@
    "spice": {
     "line": "L{name}p {P1} {name}_p {prop:lp}\nR{name}p {name}_p {P2} 0.1\nL{name}a {S1} {name}_a {prop:ls}\nR{name}a {name}_a {CT} 0.1\nL{name}b {CT} {name}_b {prop:ls}\nR{name}b {name}_b {S2} 0.1\nK{name}1 L{name}p L{name}a 0.999\nK{name}2 L{name}p L{name}b 0.999\nK{name}3 L{name}a L{name}b 0.999"
    },
-   "description": "Centre-tapped transformer: primary P1-P2 (right), secondary halves S1-CT and CT-S2 of ls each",
+   "description": "Centre-tapped transformer: primary P1-P2 (left), secondary halves S1-CT and CT-S2 of ls each",
    "graphics": [
     {
-     "path": "M 40 -30 Q 28 -22.5 40 -15 Q 28 -7.5 40 0 Q 28 7.5 40 15 Q 28 22.5 40 30"
+     "path": "M -30 -30 Q -18 -23.75 -30 -17.5 Q -18 -11.25 -30 -5.0 Q -18 1.25 -30 7.5 Q -18 13.75 -30 20.0"
     },
     {
-     "path": "M -40 -50 Q -28 -37.5 -40 -25.0 Q -28 -12.5 -40 0.0 Q -28 12.5 -40 25.0 Q -28 37.5 -40 50.0"
-    },
-    {
-     "line": [
-      16,
-      -40,
-      16,
-      40
-     ]
+     "path": "M 20 -60 Q 8 -53.125 20 -46.25 Q 8 -39.375 20 -32.5 Q 8 -25.625 20 -18.75 Q 8 -11.875 20 -5.0 Q 8 1.875 20 8.75 Q 8 15.625 20 22.5 Q 8 29.375 20 36.25 Q 8 43.125 20 50.0"
     },
     {
      "line": [
-      24,
-      -40,
-      24,
-      40
-     ]
-    },
-    {
-     "line": [
-      40,
-      -30,
-      60,
-      -30
-     ]
-    },
-    {
-     "line": [
-      40,
-      30,
-      60,
-      30
-     ]
-    },
-    {
-     "line": [
+      -4,
       -60,
-      -50,
-      -40,
-      -50
-     ]
-    },
-    {
-     "line": [
-      -60,
-      50,
-      -40,
+      -4,
       50
      ]
     },
     {
      "line": [
+      4,
       -60,
+      4,
+      50
+     ]
+    },
+    {
+     "line": [
+      -50,
+      -30,
+      -30,
+      -30
+     ]
+    },
+    {
+     "line": [
+      -50,
+      20,
+      -30,
+      20
+     ]
+    },
+    {
+     "line": [
+      20,
+      -60,
+      40,
+      -60
+     ]
+    },
+    {
+     "line": [
+      20,
       0,
-      -40,
+      40,
       0
+     ]
+    },
+    {
+     "line": [
+      20,
+      50,
+      40,
+      50
      ]
     }
    ],
@@ -2127,7 +2127,7 @@
     {
      "name": "P1",
      "at": [
-      60,
+      -50,
       -30
      ],
      "dir": "passive"
@@ -2135,23 +2135,23 @@
     {
      "name": "P2",
      "at": [
-      60,
-      30
+      -50,
+      20
      ],
      "dir": "passive"
     },
     {
      "name": "S1",
      "at": [
-      -60,
-      -50
+      40,
+      -60
      ],
      "dir": "passive"
     },
     {
      "name": "CT",
      "at": [
-      -60,
+      40,
       0
      ],
      "dir": "passive"
@@ -2159,7 +2159,7 @@
     {
      "name": "S2",
      "at": [
-      -60,
+      40,
       50
      ],
      "dir": "passive"

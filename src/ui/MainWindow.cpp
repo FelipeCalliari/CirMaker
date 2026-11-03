@@ -1795,6 +1795,9 @@ void MainWindow::analogFinished()
         box.exec();
         return;
     }
+    if (results.last().fromInitialConditions)
+        statusBar()->showMessage(tr("No operating point (the circuit oscillates): the transient started from the "
+                                    "initial conditions (UIC)"), 8000);
     showAnalogResults(results);
 }
 
