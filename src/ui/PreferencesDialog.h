@@ -22,6 +22,7 @@ struct Preferences {
     int zoomPercent = 60;       // initial zoom and upper limit of "fit to window"
     int ticksPerFrame = 2;
     int stepTicks = 0;          // Step: this many ticks (CircuitMaker's step size); 0 = to the next event
+    bool conflictsUnknown = false;  // outputs that disagree make the node unknown (CircuitMaker: the last device wins)
     Theme theme;                // colours and fonts
 
     static Preferences load();
@@ -40,6 +41,7 @@ private:
     QComboBox* m_gridStyle;
     QSpinBox* m_zoom;
     QSpinBox* m_ticks;
+    QCheckBox* m_conflicts;
     QSpinBox* m_step;
     QString m_initialLanguage;
     Theme m_theme;

@@ -7,6 +7,7 @@
 #include "library/LibraryRegistry.h"
 #include "library/Macros.h"
 #include "sim/digital/EventSimulator.h"
+#include "sim/digital/Models.h"
 #include "ui/ComponentItem.h"
 #include "ui/Hotkeys.h"
 #include "ui/DataSequencerDialog.h"
@@ -716,7 +717,7 @@ void SchematicScene::setPropDelays(int ticks)
     for (const Component& c : selection().components) {
         const SymbolDef* s = m_library.find(c.symbolId);
         const QString kind = s ? s->model.value(u"kind").toString() : QString();
-        if (kind != u"gate" && kind != u"dff" && kind != u"jkff" && kind != u"tribuf") continue;
+        if (!sim::hasPropagationDelay(kind)) continue;
         before.components << c;
         Component n = c;
         n.props.insert(QStringLiteral("delay"), std::clamp(ticks, 1, 14));
@@ -1332,6 +1333,8 @@ void SchematicScene::run()
             faults::apply(*m_faulted, m_netlist, m_library, false);
         }
         m_sim = std::make_unique<sim::EventSimulator>();
+        m_contentionShown = m_oscillationShown = false;
+        m_sim->setConflictsUnknown(m_conflictsUnknown);
         m_sim->build(simCircuit(), m_library, m_netlist);
         m_sim->reset();
         m_lanes.clear();
@@ -1445,6 +1448,16 @@ void SchematicScene::advance()
                 break;
             }
         }
+    }
+    // said once per run: the circuit may still be what the author meant
+    if (!m_contentionShown && m_sim->contention()) {
+        m_contentionShown = true;
+        emit statusMessage(m_conflictsUnknown ? tr("Outputs in conflict: the node is unknown (X)")
+                                              : tr("Outputs in conflict on a node: the device that comes last wins, as in CircuitMaker"));
+    }
+    if (!m_oscillationShown && m_sim->oscillated()) {
+        m_oscillationShown = true;
+        emit statusMessage(tr("The circuit oscillates without delay (zero-delay feedback did not settle)"));
     }
     emit simTimeChanged(m_sim->time());
     update();
@@ -1572,6 +1585,16 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         if (e->button() == Qt::LeftButton && m_tool != Tool::Probe) {
             m_simPressed = true;
             simInteractPress(e);
+        } else if (e->button() == Qt::LeftButton && m_sim) {
+            // Probe Tool: a click flips the node, Shift+click floats it (CircuitMaker)
+            if (const int net = netAt(e->scenePos()); net >= 0) {
+                const sim::Logic now = m_sim->netValue(net);
+                const sim::Logic to = (e->modifiers() & Qt::ShiftModifier) ? sim::Logic::Z
+                                    : now == sim::Logic::L1 ? sim::Logic::L0 : sim::Logic::L1;
+                if (!m_sim->inject(net, to))
+                    emit statusMessage(tr("The node is driven by an output: its level stays"));
+                update();
+            }
         }
         return;
     }
@@ -2307,6 +2330,26 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         for (auto it = best.cbegin(); it != best.cend(); ++it)
             if (it.key() >= 0)
                 p->drawText(it.value().second + QPointF(3, -4), m_netlist.nets[it.key()].name);
+    }
+
+    // propagation delays in a rounded box at each device's centre (Show Prop Delays)
+    if (m_showPropDelays) {
+        QFont f = SymbolPainter::schematicFont(9);
+        f.setBold(true);
+        p->setFont(f);
+        const QFontMetricsF fm(f);
+        for (const ComponentItem* item : std::as_const(m_componentItems)) {
+            if (item == m_ghost || !sim::hasPropagationDelay(item->symbol()->model.value(u"kind").toString()))
+                continue;
+            const QString text = QString::number(std::clamp(item->component().props.value(QStringLiteral("delay"), 1).toInt(), 1, 14));
+            const QPointF at = item->sceneBoundingRect().center();
+            const QRectF box(at - QPointF(fm.horizontalAdvance(text) / 2 + 4, fm.height() / 2 + 1),
+                             QSizeF(fm.horizontalAdvance(text) + 8, fm.height() + 2));
+            p->setPen(QPen(QColor(0x00, 0x60, 0x00), 1));
+            p->setBrush(QColor(0xf0, 0xff, 0xf0));
+            p->drawRoundedRect(box, 4, 4);
+            p->drawText(box, Qt::AlignCenter, text);
+        }
     }
 
     // probes: numbered flags in their trace colours

@@ -37,7 +37,7 @@ public:
     void drive(int pin, Drive d, std::uint32_t delay) override
     {
         if (pin >= 0)
-            m_sim.schedule(m_sim.m_now + delay, m_comp, pin, d);
+            m_sim.schedule(m_sim.m_now + delay + (delay ? m_sim.m_inst[m_comp].model->extraDelay : 0), m_comp, pin, d);
     }
     void wakeAfter(std::uint32_t ticks) override { m_sim.schedule(m_sim.m_now + std::max(1u, ticks), m_comp, -1, {}); }
     void linksChanged() override { m_sim.m_linksDirty = true; }
@@ -99,6 +99,7 @@ void EventSimulator::reset()
     m_now = 0;
     m_seq = 0;
     m_oscillated = false;
+    m_contention = false;
     m_netValue.assign(m_netCount, Logic::Z);
     for (Instance& in : m_inst)
         std::fill(in.out.begin(), in.out.end(), released());
@@ -282,11 +283,24 @@ void EventSimulator::resolve(const QSet<int>& dirtyNets, QSet<int>& changedNets)
 
     QSet<int> toValue = groups;
     for (int g : groups) {
-        Logic s = Logic::Z;
+        // outputs that disagree: as in CircuitMaker, the one of the device
+        // that comes last in the circuit wins (or, optionally, unknown)
+        Logic all = Logic::Z, last = Logic::Z;
+        int lastInst = -1;
         for (int net : m_groupNets[g])
             for (auto [inst, pin] : m_netPins[net])
-                if (const Drive& d = m_inst[inst].out[pin]; d.strength == Strength::Strong)
-                    s = combine(s, d.value);
+                if (const Drive& d = m_inst[inst].out[pin]; d.strength == Strength::Strong) {
+                    all = combine(all, d.value);
+                    if (inst > lastInst) {
+                        last = d.value;
+                        lastInst = inst;
+                    } else if (inst == lastInst) {
+                        last = combine(last, d.value);
+                    }
+                }
+        if (all == Logic::X && last != Logic::X)
+            m_contention = true;
+        const Logic s = m_conflictsUnknown ? all : last;
         if (s != m_groupStrong[g]) {
             m_groupStrong[g] = s;
             for (int nb : m_weakNeighbours[g])
@@ -353,6 +367,33 @@ void EventSimulator::interact(ItemId id, const QString& action, int value)
     Context ctx(*this, *it);
     m_inst[*it].model->interact(ctx, action, value);
     runInstant();
+}
+
+bool EventSimulator::inject(int net, Logic value)
+{
+    if (net < 0 || net >= int(m_netValue.size()))
+        return false;
+    const int g = m_group[net];
+    if (m_groupStrong[g] != Logic::Z)
+        return false;               // a driven node keeps its drivers' level
+    for (int n : m_groupNets[g])
+        for (auto [inst, pin] : m_netPins[n])
+            if (m_inst[inst].out[pin].strength != Strength::None)
+                return false;       // pulled up or down, too
+    QSet<int> changed;
+    for (int n : m_groupNets[g]) {
+        if (m_netValue[n] == value) continue;
+        m_netValue[n] = value;
+        changed.insert(n);
+        if (m_watched.contains(n)) {
+            History& h = m_history[n];
+            if (!h.isEmpty() && h.last().first == m_now) h.last().second = value;
+            else h.append({m_now, value});
+        }
+    }
+    evaluateFanout(changed);
+    runInstant();
+    return true;
 }
 
 QVariantMap EventSimulator::persistentProps(ItemId id) const

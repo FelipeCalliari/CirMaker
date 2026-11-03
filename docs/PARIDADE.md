@@ -56,9 +56,10 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Recurso | Estado | Observação |
 | --- | --- | --- |
 | Run/Pause, Step, Reset, Trace | ✅ | F10, F9, Ctrl+Q, F11 |
-| Probe Tool (estado do nó) | ✅ | lâmpada H/L/X/Z no cursor durante a simulação; pontas de prova alimentam as ondas |
+| Probe Tool (estado do nó) | ✅ | lâmpada H/L/X/Z no cursor durante a simulação; clique inverte o nó e Shift+clique o deixa em tristate (um nó forçado por uma saída mantém o nível); pontas de prova alimentam as ondas |
 | Formas de onda digitais (SCOPE / Active Probe) | ✅ | |
-| Atrasos de propagação por dispositivo | ✅ | 1–14 ticks |
+| Atrasos de propagação por dispositivo | ✅ | 1–14 ticks em portas, flip-flops e CIs MSI; lidos e gravados no `.ckt` (4º número do registro, menos um); Show Prop Delays mostra o atraso no centro de cada dispositivo |
+| Saídas em conflito num nó | ✅ | como no CM, vence o dispositivo que vem por último no circuito (verificado no CM via Wine); opção nas Preferências para deixar o nó em X; aviso na barra de status |
 | Breakpoints | ✅ | caixinhas dos SCOPEs nas formas de onda (0/1); Nível/Borda × E/Ou |
 | Digital Options (tick em tempo real etc.) | ✅ | velocidade em ticks/quadro; tamanho do passo em ticks (10 = um ciclo) ou até o próximo evento |
 

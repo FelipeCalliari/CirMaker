@@ -8,7 +8,7 @@
 // as CR CR LF). Normalising CR LF to LF first reproduces text-mode reads.
 //
 // Records:
-//   device: name; type x y angle pinMax; [v>4.011: extra]; nets[0..pinMax];
+//   device: name; type x y delay-1 pinMax; [v>4.011: extra]; nets[0..pinMax];
 //           string; 4 ints; value(+rect); designator(+rect); string(+rect);
 //           3 strings; [v>4.0: kind, package]; count; ints[0..count];
 //           8 ints; prefix; [v>4.011: 3 ints (n1 last), n1 ints, n2, n2 ints, 0
@@ -134,6 +134,7 @@ Device readDevice(Reader& r, double version)
     d.type = head[0];
     d.x = head[1];
     d.y = head[2];
+    d.delay = std::clamp(head[3] + 1, 1, 14);   // stored less one
     const int pinMax = head[4];
     if (modern) {
         r.integer();
@@ -494,6 +495,8 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         const bool valid = angle == 0 || angle == 90 || angle == 180 || angle == 270;
         c.mirrored = valid && (d.angle & 0x200);
         c.rotation = valid ? rotationFromAngle(angle) : 0;
+        if (d.delay > 1)
+            c.props.insert(QStringLiteral("delay"), d.delay);
         // CircuitMaker mirrors after turning: a mirrored quarter turn is
         // our mirror with the opposite turn
         if (c.mirrored && (angle == 90 || angle == 270)) c.rotation = (c.rotation + 2) % 4;

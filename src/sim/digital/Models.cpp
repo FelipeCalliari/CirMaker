@@ -4,6 +4,7 @@
 #include "library/SymbolDef.h"
 
 #include <QJsonObject>
+#include <QSet>
 
 #include <cmath>
 
@@ -645,7 +646,23 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
     }
     QString chipError;
     std::unique_ptr<Model> chip = createChipModel(s, c, &chipError);
+    if (chip && hasPropagationDelay(kind))
+        chip->extraDelay = std::uint32_t(delay - 1);
     return chip ? std::move(chip) : fail(chipError);
+}
+
+bool hasPropagationDelay(const QString& kind)
+{
+    static const QSet<QString> with{
+        QStringLiteral("gate"), QStringLiteral("dff"), QStringLiteral("jkff"), QStringLiteral("tribuf"),
+        QStringLiteral("adder"), QStringLiteral("alu181"), QStringLiteral("bcd7seg"), QStringLiteral("comparator"),
+        QStringLiteral("decoder"), QStringLiteral("decoder155"), QStringLiteral("dual"), QStringLiteral("johnson"),
+        QStringLiteral("latch75"), QStringLiteral("mux"), QStringLiteral("mux2"), QStringLiteral("parity"),
+        QStringLiteral("piso"), QStringLiteral("ram"), QStringLiteral("rom"), QStringLiteral("reg173"),
+        QStringLiteral("register"), QStringLiteral("ripple"), QStringLiteral("shift"), QStringLiteral("shift95"),
+        QStringLiteral("sync"), QStringLiteral("transceiver"), QStringLiteral("tribus"), QStringLiteral("updown"),
+        QStringLiteral("updown1"), QStringLiteral("updown169")};
+    return with.contains(kind);
 }
 
 } // namespace cm::sim

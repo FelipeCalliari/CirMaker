@@ -7,6 +7,10 @@
 #include "library/Macros.h"
 
 #include <QDirIterator>
+#include <functional>
+#include <QElapsedTimer>
+#include <QRegularExpression>
+#include "sim/digital/EventSimulator.h"
 
 using namespace cm;
 using namespace cm::test;
@@ -27,6 +31,8 @@ private slots:
     void userLibMacros();
     void closedContacts();
     void memoryCircuitWritesAndReads();
+    void digitalSweep();
+    void propagationDelaysRoundTrip();
 
 private:
     static QStringList circuitFiles();
@@ -432,6 +438,137 @@ void TestCktImport::memoryCircuitWritesAndReads()
     QCOMPARE(shown(), 0x00);
     address(0x124);
     QCOMPARE(shown(), 0x00);
+}
+
+// The propagation delay is the device record's fourth number, less one
+// (seen by setting a delay in CircuitMaker and saving).
+void TestCktImport::propagationDelaysRoundTrip()
+{
+    const QString libPath = CmDeviceLib::locate();
+    if (libPath.isEmpty())
+        QSKIP("CircuitMaker 2000 is not installed");
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(libPath));
+    Circuit a;
+    const ItemId inv = place(a, QStringLiteral("inv"), {0, 0}, QStringLiteral("U1"));
+    Component n = *a.component(inv);
+    n.props.insert(QStringLiteral("delay"), 7);
+    a.updateComponent(n);
+    place(a, QStringLiteral("74161"), {300, 0}, QStringLiteral("U2"));
+    const QByteArray data = CktExporter::write(a, library(), cmLib);
+    Circuit b;
+    QVERIFY(CktImporter::importData(data, b, library(), nullptr, nullptr));
+    QHash<QString, int> delays;
+    for (const Component& comp : b.components())
+        delays.insert(comp.designator.left(2), comp.props.value(QStringLiteral("delay"), 1).toInt());
+    QCOMPARE(delays.value(QStringLiteral("U1")), 7);
+    QCOMPARE(delays.value(QStringLiteral("U2")), 1);
+}
+
+// Diagnostic (CM_DIGITAL_SWEEP=1): runs every circuit digitally and lists
+// warnings, oscillation and nets left unknown. CM_SWEEP_ONLY=<file suffix>
+// limits it to one circuit; with CM_SWEEP_NET=<net> it explains the first
+// tick that net is unknown (or tick CM_SWEEP_AT), and CM_SWEEP_SHOW=<ticks>
+// prints the displays every that many ticks.
+void TestCktImport::digitalSweep()
+{
+    if (qEnvironmentVariableIsEmpty("CM_DIGITAL_SWEEP"))
+        QSKIP("set CM_DIGITAL_SWEEP=1");
+    QHash<QString, int> warningKinds;
+    const QString only = qEnvironmentVariable("CM_SWEEP_ONLY"), traceNet = qEnvironmentVariable("CM_SWEEP_NET");
+    for (const QString& path : circuitFiles()) {
+        if (!only.isEmpty() && !path.endsWith(only)) continue;
+        Circuit c;
+        if (!CktImporter::import(path, c, library(), nullptr, nullptr)) continue;
+        const Netlist nl = NetlistBuilder::build(c, library());
+        sim::EventSimulator s;
+        if (!s.build(c, library(), nl)) continue;
+        if (!only.isEmpty())
+            for (const Component& comp : c.components())
+                if (comp.props.contains(QStringLiteral("data"))) {
+                    const SymbolDef* sd = library().find(comp.symbolId);
+                    QStringList pins;
+                    for (int i = 0; i < sd->pins.size(); ++i) pins << sd->pins[i].name + u'=' + nl.nets[nl.netOf(comp.id, i)].name;
+                    qInfo("%s %s data=%s pins %s", qPrintable(comp.designator), qPrintable(comp.symbolId),
+                          qPrintable(comp.props.value(QStringLiteral("data")).toString().left(120)), qPrintable(pins.join(u' ')));
+                }
+        QElapsedTimer t; t.start();
+        s.reset();
+        if (!traceNet.isEmpty()) {
+            // first tick a net goes unknown, with the inputs of the parts driving it
+            int net = -1;
+            for (int n = 0; n < nl.nets.size(); ++n) if (nl.nets[n].name == traceNet) net = n;
+            auto show = [&](int n) { const sim::Logic l = s.netValue(n);
+                return QString(l == sim::Logic::L0 ? u'0' : l == sim::Logic::L1 ? u'1' : l == sim::Logic::Z ? u'Z' : u'X'); };
+            const int at = qEnvironmentVariableIntValue("CM_SWEEP_AT");
+            QSet<int> seen;
+            std::function<void(int, int)> explain = [&](int n, int depth) {
+                if (depth > 3 || seen.contains(n)) return;
+                seen.insert(n);
+                for (const PinRef& r : nl.nets[n].pins) {
+                    const Component* o = c.component(r.component);
+                    const SymbolDef* os = library().find(o->symbolId);
+                    if (os->pins[r.pin].dir == SymbolPin::Dir::In || os->netLabel) continue;
+                    QStringList ins;
+                    for (int i = 0; i < os->pins.size(); ++i)
+                        if (os->pins[i].dir != SymbolPin::Dir::Out)
+                            ins << os->pins[i].name + u'=' + show(nl.netOf(o->id, i)) + u'(' + nl.nets[nl.netOf(o->id, i)].name + u')';
+                    qInfo("%*s%s %s drives %s=%s; inputs %s", depth * 2, "", qPrintable(o->designator), qPrintable(o->symbolId),
+                          qPrintable(os->pins[r.pin].name), qPrintable(show(n)), qPrintable(ins.join(u' ')));
+                    if (depth < 3)
+                        for (int i = 0; i < os->pins.size(); ++i)
+                            if (os->pins[i].dir != SymbolPin::Dir::Out && (at || s.netValue(nl.netOf(o->id, i)) == sim::Logic::X))
+                                explain(nl.netOf(o->id, i), depth + 1);
+                }
+            };
+            for (int t = 0; t < 5000; ++t) {
+                if (at ? t == at : s.netValue(net) == sim::Logic::X) {
+                    qInfo("%s X at tick %d", qPrintable(traceNet), t);
+                    explain(net, 0);
+                    break;
+                }
+                s.step(1);
+            }
+        }
+        if (!only.isEmpty() && qEnvironmentVariableIsSet("CM_SWEEP_SHOW")) {
+            for (int k = 0; k < 12; ++k) {
+                s.step(qEnvironmentVariableIntValue("CM_SWEEP_SHOW"));
+                QStringList shown;
+                for (const Component& comp : c.components())
+                    if (comp.symbolId.contains(u"display") || comp.symbolId.contains(u"seg"))
+                        shown << comp.designator + u'=' + QString::number(s.componentState(comp.id), 16);
+                qInfo("t=%llu %s", (unsigned long long)s.time(), qPrintable(shown.join(u' ')));
+            }
+        }
+        s.step(5000);
+        const qint64 ms = t.elapsed();
+        int xs = 0;
+        QStringList xnames;
+        for (int n = 0; n < nl.nets.size(); ++n) {
+            if (nl.nets[n].pins.size() < 2) continue;
+            if (s.netValue(n) == sim::Logic::X) {
+                ++xs;
+                if (xnames.size() < 4) {
+                    QStringList on;
+                    for (const PinRef& r : nl.nets[n].pins) {
+                        const Component* o = c.component(r.component);
+                        const SymbolDef* os = library().find(o->symbolId);
+                        if (!os->netLabel) on << o->designator + u'/' + o->symbolId + u'.' + os->pins[r.pin].name;
+                    }
+                    xnames << nl.nets[n].name + u'[' + on.join(u' ') + u']';
+                }
+            }
+        }
+        for (const QString& w : s.warnings()) {
+            QString k = w; k.remove(QRegularExpression(QStringLiteral("^[^:]*: ")));
+            warningKinds[k]++;
+        }
+        if (xs || s.oscillated() || !s.warnings().isEmpty() || ms > 300)
+            qInfo("%s: X=%d %s osc=%d %lldms warn=%s", qPrintable(QFileInfo(path).fileName()), xs, qPrintable(xnames.join(u',')),
+                  int(s.oscillated()), ms, qPrintable(s.warnings().mid(0, 3).join(u"; ")));
+    }
+    for (auto it = warningKinds.cbegin(); it != warningKinds.cend(); ++it)
+        qInfo("warning x%d: %s", it.value(), qPrintable(it.key()));
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

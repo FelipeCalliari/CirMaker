@@ -12,6 +12,7 @@ private slots:
     void asyncJkCounterCounts();
     void pushButtonWithPullUp();
     void triStateBus();
+    void probeInjects();
     void dataSequencerInternalClock();
     void dataSequencerExternalClock();
 };
@@ -91,6 +92,31 @@ void TestSimulator::pushButtonWithPullUp()
     QCOMPARE(bench.sim.componentState(lamp), 1);
 }
 
+// Probe Tool injection: an undriven node takes the level (or Z) until
+// something drives it; a driven node keeps its level.
+void TestSimulator::probeInjects()
+{
+    Circuit c;
+    const ItemId inv = place(c, QStringLiteral("inv"), {0, 0}, QStringLiteral("U1"));
+    const ItemId sw = place(c, QStringLiteral("logicswitch"), {-300, 0}, QStringLiteral("S1"));
+    const ItemId inv2 = place(c, QStringLiteral("inv"), {0, 300}, QStringLiteral("U2"));
+    link(c, sw, QStringLiteral("Y"), inv2, QStringLiteral("A"));
+    Bench b(c);
+    const SymbolDef* s = library().find(QStringLiteral("inv"));
+    const int in = b.netlist.netOf(inv, s->pinIndex(QStringLiteral("A")));
+    QVERIFY(b.sim.inject(in, Logic::L1));
+    b.sim.step(2);
+    QCOMPARE(b.value(c, inv, QStringLiteral("Y")), Logic::L0);
+    QVERIFY(b.sim.inject(in, Logic::L0));
+    b.sim.step(2);
+    QCOMPARE(b.value(c, inv, QStringLiteral("Y")), Logic::L1);
+    QVERIFY(b.sim.inject(in, Logic::Z));
+    QCOMPARE(b.value(c, inv, QStringLiteral("A")), Logic::Z);
+    const int driven = b.netlist.netOf(inv2, s->pinIndex(QStringLiteral("A")));
+    QVERIFY(!b.sim.inject(driven, Logic::L1));          // the switch drives it low
+    QCOMPARE(b.value(c, inv2, QStringLiteral("A")), Logic::L0);
+}
+
 void TestSimulator::triStateBus()
 {
     Circuit c;
@@ -113,10 +139,20 @@ void TestSimulator::triStateBus()
     QCOMPARE(bench.value(c, b1, QStringLiteral("Y")), Logic::L1);
     bench.sim.interact(en2, QStringLiteral("toggle"));
     bench.sim.step(2);
-    QCOMPARE(bench.value(c, b1, QStringLiteral("Y")), Logic::X);    // bus contention
+    // bus contention: as in CircuitMaker, the device that comes last (U2) wins
+    QCOMPARE(bench.value(c, b1, QStringLiteral("Y")), Logic::L0);
+    QVERIFY(bench.sim.contention());
     bench.sim.interact(en1, QStringLiteral("toggle"));
     bench.sim.step(2);
     QCOMPARE(bench.value(c, b1, QStringLiteral("Y")), Logic::L0);
+
+    // optionally, contention is unknown
+    Bench strict(c);
+    strict.sim.setConflictsUnknown(true);
+    strict.sim.interact(en1, QStringLiteral("toggle"));
+    strict.sim.interact(en2, QStringLiteral("toggle"));
+    strict.sim.step(2);
+    QCOMPARE(strict.value(c, b1, QStringLiteral("Y")), Logic::X);
 }
 
 void TestSimulator::dataSequencerInternalClock()

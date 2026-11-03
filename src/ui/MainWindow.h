@@ -112,7 +112,7 @@ private:
     QAction *m_toolSelect, *m_toolWire, *m_toolBus, *m_toolNetLabel, *m_toolText, *m_toolDelete = nullptr,
             *m_toolZoom = nullptr;
     QAction *m_duplicate, *m_scale, *m_normalSize, *m_collapseTree, *m_refresh, *m_trace, *m_topicHelp;
-    QAction *m_autoRoute, *m_groupItems, *m_labelPositions, *m_border, *m_straighten, *m_designations, *m_propDelays, *m_showNodeNames, *m_showPinDots, *m_exportSpice, *m_exportSubckt, *m_exportPcb, *m_exportCkt,
+    QAction *m_autoRoute, *m_groupItems, *m_labelPositions, *m_border, *m_straighten, *m_designations, *m_propDelays, *m_showNodeNames, *m_showPinDots, *m_showPropDelays, *m_exportSpice, *m_exportSubckt, *m_exportPcb, *m_exportCkt,
         *m_home;
     QPointF m_lastCursor;
     QAction *m_find, *m_titleBlock, *m_showTitleBlock, *m_bom;

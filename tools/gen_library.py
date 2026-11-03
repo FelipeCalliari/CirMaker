@@ -1466,10 +1466,11 @@ def general():
 
 def quad3state():
     return box('quad3state', 'Quad 3-State', [f'A{i}' for i in range(4)], [f'Y{i}' for i in range(4)],
-               bottom=['EN'], width=80, pitch=40, title='3-ST', aliases=['Quad 3-State'],
-               cmPins=[f'A{i}' for i in range(4)] + [f'Y{i}' for i in range(4)] + ['EN'],
-               model={'kind': 'tribus', 'groups': [{'enable': 'EN', 'bits': [0, 1, 2, 3]}]},
-               description='Four tri-state buffers with a shared active-high enable')
+               bottom=['~OE'], width=80, pitch=40, title='3-ST', aliases=['Quad 3-State'],
+               cmPins=[f'A{i}' for i in range(4)] + [f'Y{i}' for i in range(4)] + ['~OE'],
+               model={'kind': 'tribus', 'groups': [{'enable': 'OE', 'bits': [0, 1, 2, 3]}]},
+               description='Four tri-state buffers with a shared active-low output enable (OE has a bubble in '
+                           'CircuitMaker: high floats the outputs)')
 
 
 if __name__ == '__main__':

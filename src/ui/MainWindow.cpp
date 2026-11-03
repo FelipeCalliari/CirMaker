@@ -443,6 +443,15 @@ void MainWindow::createActions()
                                                tr("Delay of the selected digital devices (ticks):"), 1, 1, 14, 1, &ok);
         if (ok) m_scene->setPropDelays(ticks);
     });
+    m_showPropDelays = new QAction(tr("Show Prop &Delays"), this);
+    m_showPropDelays->setCheckable(true);
+    m_showPropDelays->setToolTip(tr("The propagation delay of each device, in ticks, at its centre"));
+    m_showPropDelays->setChecked(QSettings().value(QStringLiteral("prefs/showPropDelays"), false).toBool());
+    m_scene->setShowPropDelays(m_showPropDelays->isChecked());
+    connect(m_showPropDelays, &QAction::toggled, this, [this](bool on) {
+        m_scene->setShowPropDelays(on);
+        QSettings().setValue(QStringLiteral("prefs/showPropDelays"), on);
+    });
     m_showNodeNames = new QAction(tr("Show &Node Names"), this);
     m_showNodeNames->setCheckable(true);
     m_showNodeNames->setChecked(QSettings().value(QStringLiteral("prefs/showNodeNames"), false).toBool());
@@ -650,7 +659,7 @@ void MainWindow::createMenus()
     QMenu* cursorTools = tools->addMenu(tr("Cursor &Tools"));
     cursorTools->addActions(m_tools->actions());
     tools->addSeparator();
-    tools->addActions({m_showNodeNames, m_showPinDots});
+    tools->addActions({m_showNodeNames, m_showPinDots, m_showPropDelays});
     tools->addSeparator();
     tools->addAction(m_autoRoute);
     tools->addAction(m_circuitFaults);
@@ -1668,6 +1677,7 @@ void MainWindow::applyPreferences()
     m_view->setDefaultZoom(p.zoomPercent / 100.0);
     m_speed->setValue(p.ticksPerFrame);
     m_scene->setStepTicks(p.stepTicks);
+    m_scene->setConflictsUnknown(p.conflictsUnknown);
     m_scene->applyTheme();
 }
 

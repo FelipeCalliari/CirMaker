@@ -901,7 +901,7 @@
     ],
     "top": [],
     "bottom": [
-     "EN"
+     "~OE"
     ],
     "title": "3-ST"
    },
@@ -917,13 +917,13 @@
     "Y1",
     "Y2",
     "Y3",
-    "EN"
+    "~OE"
    ],
    "model": {
     "kind": "tribus",
     "groups": [
      {
-      "enable": "EN",
+      "enable": "OE",
       "bits": [
        0,
        1,
@@ -933,7 +933,7 @@
      }
     ]
    },
-   "description": "Four tri-state buffers with a shared active-high enable"
+   "description": "Four tri-state buffers with a shared active-low output enable (OE has a bubble in CircuitMaker: high floats the outputs)"
   }
  ]
 }

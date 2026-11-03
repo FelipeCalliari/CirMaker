@@ -14,6 +14,7 @@ namespace cm::ckt {
 struct Device {
     QString name;
     int type = 0, x = 0, y = 0, angle = 0, flags = 0;
+    int delay = 1;              // propagation delay, 1..14 ticks
     std::optional<QRectF> valueRect, designatorRect;
     QVector<int> nets;
     QString value, designator, prefix;

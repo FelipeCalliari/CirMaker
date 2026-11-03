@@ -16,6 +16,7 @@ private slots:
     void piso74165();
     void transceiver74245();
     void ramWriteRead();
+    void chipPropagationDelay();
     void ramReleasesDataBus();
     void promRead();
     void ramContentsAndLiveEdit();
@@ -263,6 +264,30 @@ void TestChips::transceiver74245()
     b.sim.interact(a0, QStringLiteral("toggle"));
     b.sim.step(3);
     QCOMPARE(b.value(c, u, QStringLiteral("B0")), Logic::L1);   // DIR high: A -> B
+}
+
+// An MSI chip honours its propagation delay (Edit > Set Prop Delays).
+void TestChips::chipPropagationDelay()
+{
+    for (const int delay : {1, 6}) {
+        Circuit c;
+        Component t;
+        t.symbolId = QStringLiteral("74245");
+        t.designator = QStringLiteral("U1");
+        t.props = {{QStringLiteral("delay"), delay}};
+        const ItemId u = c.addComponent(t);
+        tieHigh(c, u, QStringLiteral("DIR"));             // A -> B
+        tieLow(c, u, QStringLiteral("~G"));
+        const ItemId a0 = source(c, u, QStringLiteral("A0"), -600, 0);
+        Bench b(c);
+        b.sim.step(20);
+        QCOMPARE(b.value(c, u, QStringLiteral("B0")), Logic::L0);
+        b.sim.interact(a0, QStringLiteral("toggle"));
+        b.sim.step(std::uint64_t(delay - 1));
+        QCOMPARE(b.value(c, u, QStringLiteral("B0")), Logic::L0);
+        b.sim.step(1);
+        QCOMPARE(b.value(c, u, QStringLiteral("B0")), Logic::L1);
+    }
 }
 
 void TestChips::ramWriteRead()

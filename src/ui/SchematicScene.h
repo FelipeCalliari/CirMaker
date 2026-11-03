@@ -71,6 +71,7 @@ public:
     int highlightedNet() const { return m_highlightNet; }
     // Node under the probe tool while simulating (-1: none).
     int probedNet() const { return m_probeNet; }
+    void setShowPropDelays(bool on) { m_showPropDelays = on; update(); }
     void setShowNodeNames(bool on) { m_showNodeNames = on && !restricted(QStringLiteral("nodeNames")); update(); }
     void setShowPinDots(bool on) { m_showPinDots = on; update(); }
     // Wires from a pin or wire to another one route around devices.
@@ -129,6 +130,7 @@ public:
     void stopSimulation();
     void setTicksPerFrame(int ticks) { m_ticksPerFrame = std::max(1, ticks); }
     int ticksPerFrame() const { return m_ticksPerFrame; }
+    void setConflictsUnknown(bool on) { m_conflictsUnknown = on; }
     // Step size in ticks; 0 steps to the next event.
     void setStepTicks(int ticks) { m_stepTicks = std::max(0, ticks); }
     quint64 simTime() const;
@@ -309,6 +311,8 @@ private:
     std::unique_ptr<sim::EventSimulator> m_sim;
     QTimer m_timer;
     int m_ticksPerFrame = 2;
+    bool m_conflictsUnknown = false;
+    bool m_contentionShown = false, m_oscillationShown = false;
     int m_stepTicks = 0;
     ItemId m_heldButton = 0;
     ItemId m_keyFocus = 0;
@@ -318,6 +322,7 @@ private:
     bool m_gridLines = true;
     bool m_trace = true;
     bool m_showNodeNames = false;
+    bool m_showPropDelays = false;
     bool m_showPinDots = true;
     bool m_autoRoute = true;
     int m_highlightNet = -1;

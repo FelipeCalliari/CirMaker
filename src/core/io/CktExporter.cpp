@@ -506,7 +506,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
 
         QStringList rec;
         rec << str(name);
-        rec << join({l.type, d.origin.x(), d.origin.y(), 0, pinMax, std::max(int(pkg.size()) - 1, pinMax + 1)});
+        // the fourth number is the propagation delay less one (Edit > Set Prop Delays)
+        const int delay = std::clamp(c.props.value(QStringLiteral("delay"), 1).toInt(), 1, 14);
+        rec << join({l.type, d.origin.x(), d.origin.y(), delay - 1, pinMax, std::max(int(pkg.size()) - 1, pinMax + 1)});
         rec << join(nets);
         if (l.type == 0xc3) rec << QString::number(sine.size()) << join(sine);
         rec << QStringLiteral("0");

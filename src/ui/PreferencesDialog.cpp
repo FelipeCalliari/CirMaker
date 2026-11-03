@@ -29,6 +29,7 @@ Preferences Preferences::load()
     p.zoomPercent = std::clamp(s.value(QStringLiteral("prefs/zoomPercent"), p.zoomPercent).toInt(), 20, 400);
     p.ticksPerFrame = std::clamp(s.value(QStringLiteral("prefs/ticksPerFrame"), p.ticksPerFrame).toInt(), 1, 1000);
     p.stepTicks = std::clamp(s.value(QStringLiteral("prefs/stepTicks"), p.stepTicks).toInt(), 0, 100000);
+    p.conflictsUnknown = s.value(QStringLiteral("prefs/conflictsUnknown"), p.conflictsUnknown).toBool();
     p.theme = Theme::current();
     return p;
 }
@@ -42,6 +43,7 @@ void Preferences::save() const
     s.setValue(QStringLiteral("prefs/zoomPercent"), zoomPercent);
     s.setValue(QStringLiteral("prefs/ticksPerFrame"), ticksPerFrame);
     s.setValue(QStringLiteral("prefs/stepTicks"), stepTicks);
+    s.setValue(QStringLiteral("prefs/conflictsUnknown"), conflictsUnknown);
     Theme::setCurrent(theme);
 }
 
@@ -97,6 +99,11 @@ PreferencesDialog::PreferencesDialog(const Preferences& prefs, QWidget* parent)
     m_step->setValue(prefs.stepTicks);
     m_step->setToolTip(tr("How far Step advances; a cycle is 10 ticks"));
     sf->addRow(tr("S&tep size:"), m_step);
+    m_conflicts = new QCheckBox(tr("Outputs in &conflict make the node unknown (X)"));
+    m_conflicts->setChecked(prefs.conflictsUnknown);
+    m_conflicts->setToolTip(tr("Off, as in CircuitMaker: when outputs drive a node to different levels, the device that "
+                               "comes last in the circuit wins"));
+    sf->addRow(m_conflicts);
     layout->addWidget(sim);
 
     // CircuitMaker's Colors, Device Font and Text Font
@@ -163,6 +170,7 @@ Preferences PreferencesDialog::result() const
     p.zoomPercent = m_zoom->value();
     p.ticksPerFrame = m_ticks->value();
     p.stepTicks = m_step->value();
+    p.conflictsUnknown = m_conflicts->isChecked();
     p.theme = m_theme;
     p.theme.deviceFont = m_deviceFont->currentFont().family();
     const QString text = m_textFont->currentFont().family();

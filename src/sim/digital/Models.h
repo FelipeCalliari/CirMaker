@@ -58,7 +58,15 @@ public:
     // Memory contents (RAM/ROM); empty for models without memory.
     virtual QVector<int> memory() const { return {}; }
     virtual void setMemory(ModelContext&, const QVector<int>& /*words*/) {}
+
+    // Ticks added to every delayed output: an MSI chip's propagation delay
+    // (Edit > Set Prop Delays) less the one tick its model already takes.
+    std::uint32_t extraDelay = 0;
 };
+
+// Parts with a CircuitMaker propagation delay (1..14 ticks): gates,
+// flip-flops and chips; not inputs, displays or instruments.
+bool hasPropagationDelay(const QString& kind);
 
 // Stepper motor rotor, in half steps since the start, after the coils
 // (1, 2, 3, 4) given are energized; shared with the analog display.

@@ -41,6 +41,10 @@ public:
     int componentState(ItemId id) const;
     bool hasModel(ItemId id) const { return m_byId.contains(id); }
     void interact(ItemId id, const QString& action, int value = 0);
+    // Probe Tool injection (CircuitMaker): puts a level, or Z, on a node no
+    // output drives; it lasts until something drives the node. False when
+    // an output drives it.
+    bool inject(int net, Logic value);
     // Properties that interactive models want saved (switch positions...).
     QVariantMap persistentProps(ItemId id) const;
     // Live memory contents of a RAM/ROM; setMemory updates the outputs.
@@ -52,6 +56,11 @@ public:
     const QHash<int, History>& history() const { return m_history; }
     // Set when zero-delay feedback did not settle at some instant.
     bool oscillated() const { return m_oscillated; }
+    // Outputs driving one node to different levels: CircuitMaker gives the
+    // node the level of the device that comes last; with this set, unknown.
+    void setConflictsUnknown(bool unknown) { m_conflictsUnknown = unknown; }
+    // Set once outputs have disagreed on some node.
+    bool contention() const { return m_contention; }
 
 private:
     struct Instance;
@@ -88,6 +97,8 @@ private:
     bool m_settling = false;
     bool m_initializing = false;
     bool m_oscillated = false;
+    bool m_conflictsUnknown = false;
+    bool m_contention = false;
     QStringList m_warnings;
     QSet<int> m_watched;
     QHash<int, History> m_history;
