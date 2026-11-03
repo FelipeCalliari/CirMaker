@@ -318,9 +318,10 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         });
         for (int b = 0; wireEnds && b < buses.size(); ++b) {
             if (!WireGeometry::onPolyline(at, buses[b]->points)) continue;
-            // numbered entries belong to their bus: "DATA.3" on bus DATA is 3
+            // an entry's name, on its bus; older files numbered them "DATA.3"
             const QString prefix = buses[b]->name + u'.';
-            const QString number = c.label.startsWith(prefix) ? c.label.mid(prefix.size()) : QString();
+            const bool scoped = !c.props.value(QStringLiteral("bus")).toString().isEmpty();
+            const QString number = scoped ? c.label : c.label.startsWith(prefix) ? c.label.mid(prefix.size()) : QString();
             bool numeric = false;
             const int n = number.toInt(&numeric);
             const std::optional<int> code = numeric && n >= 0 ? std::optional<int>(n) : encodeName(c.label);

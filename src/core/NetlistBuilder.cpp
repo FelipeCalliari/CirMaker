@@ -99,14 +99,17 @@ Netlist NetlistBuilder::build(const Circuit& circuit, const LibraryRegistry& lib
         }
     }
 
-    // net labels: equal label text joins
+    // net labels: equal label text joins. A bus entry's label belongs to its
+    // bus: it joins only entries of the same name on buses of that name
+    // (CircuitMaker), and its net is named "BUS.NAME".
     QHash<QString, int> labelNode;
     for (const PinNode& p : pins) {
         const Component* c = circuit.component(p.ref.component);
         const SymbolDef* s = library.find(c->symbolId);
         if (!s->netLabel || c->label.trimmed().isEmpty())
             continue;
-        const QString label = c->label.trimmed();
+        const QString bus = c->props.value(QStringLiteral("bus")).toString().trimmed();
+        const QString label = bus.isEmpty() ? c->label.trimmed() : bus + u'.' + c->label.trimmed();
         auto it = labelNode.constFind(label);
         if (it == labelNode.cend())
             labelNode.insert(label, p.node);

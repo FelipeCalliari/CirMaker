@@ -16,6 +16,7 @@ private slots:
     void unconnectedPinsGetOwnNet();
     void busLinesDoNotConnect();
     void busEntriesJoinByName();
+    void busEntriesBelongToTheirBus();
 };
 
 void TestNetlist::wireJoinsPins()
@@ -121,6 +122,32 @@ void TestNetlist::routesAroundDevices()
     }
     // nothing in the way: one straight segment
     QCOMPARE(routeWire({0, 0}, {0, 300}, {}, 10), (QVector<QPointF>{{0, 0}, {0, 300}}));
+}
+
+// CircuitMaker: entries of one name join only on buses of the same name,
+// and not net labels or terminals of that name.
+void TestNetlist::busEntriesBelongToTheirBus()
+{
+    Circuit c;
+    auto entry = [&](QPointF at, const QString& name, const QString& bus) {
+        Component l;
+        l.symbolId = QStringLiteral("netlabel");
+        l.pos = at;
+        l.label = name;
+        if (!bus.isEmpty()) l.props.insert(QStringLiteral("bus"), bus);
+        return c.addComponent(l);
+    };
+    const ItemId a1 = entry({0, 0}, QStringLiteral("d0"), QStringLiteral("A"));
+    const ItemId a2 = entry({0, 100}, QStringLiteral("d0"), QStringLiteral("A"));
+    const ItemId b1 = entry({0, 200}, QStringLiteral("d0"), QStringLiteral("B"));
+    const ItemId plain = entry({0, 300}, QStringLiteral("d0"), {});
+    const ItemId old = entry({0, 400}, QStringLiteral("A.d0"), {});    // older files named them so
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QCOMPARE(nl.netOf(a1, 0), nl.netOf(a2, 0));
+    QVERIFY(nl.netOf(a1, 0) != nl.netOf(b1, 0));
+    QVERIFY(nl.netOf(a1, 0) != nl.netOf(plain, 0));
+    QCOMPARE(nl.netOf(old, 0), nl.netOf(a1, 0));
+    QCOMPARE(nl.nets[nl.netOf(b1, 0)].name, QStringLiteral("B.d0"));
 }
 
 QTEST_GUILESS_MAIN(TestNetlist)

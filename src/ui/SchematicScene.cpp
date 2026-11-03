@@ -464,6 +464,12 @@ void SchematicScene::finishWire()
         c.symbolId = QStringLiteral("netlabel");
         c.pos = at;
         c.label = name;
+        // on a named bus the entry joins only that bus's entries of its name
+        for (const WireItem* w : std::as_const(m_wireItems))
+            if (w->wire().bus && !w->wire().name.isEmpty() && WireGeometry::onPolyline(at, w->wire().points)) {
+                c.props.insert(QStringLiteral("bus"), w->wire().name);
+                break;
+            }
         label.components << c;
         m_undo->push(new AddItemsCommand(m_circuit, label, {}));
     }

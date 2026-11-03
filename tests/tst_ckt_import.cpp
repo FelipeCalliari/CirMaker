@@ -32,7 +32,9 @@ private slots:
     void closedContacts();
     void memoryCircuitWritesAndReads();
     void digitalSweep();
+    void symbolPinGeometry();
     void propagationDelaysRoundTrip();
+    void busEntriesAtOnePoint();
 
 private:
     static QStringList circuitFiles();
@@ -440,6 +442,30 @@ void TestCktImport::memoryCircuitWritesAndReads()
     QCOMPARE(shown(), 0x00);
 }
 
+// Buswire.ckt has entries "1" and "2" ending at one point of bus Seq: in
+// CircuitMaker only names connect on a bus, so they stay apart.
+void TestCktImport::busEntriesAtOnePoint()
+{
+    QString path;
+    for (const QString& f : circuitFiles())
+        if (f.endsWith(QStringLiteral("/Buswire.ckt"))) path = f;
+    if (path.isEmpty())
+        QSKIP("Buswire.ckt not available");
+    Circuit c;
+    CktImportReport report;
+    QVERIFY(CktImporter::import(path, c, library(), &report, nullptr));
+    QCOMPARE(report.shorts, 0);
+    const Netlist nl = NetlistBuilder::build(c, library());
+    auto net = [&](const QString& ref, const QString& pin) {
+        for (const Component& comp : c.components())
+            if (comp.designator == ref) return nl.netOf(comp.id, library().find(comp.symbolId)->pinIndex(pin));
+        return -2;
+    };
+    QVERIFY(net(QStringLiteral("A13"), QStringLiteral("Q0")) != net(QStringLiteral("A13"), QStringLiteral("Q1")));
+    QCOMPARE(net(QStringLiteral("A13"), QStringLiteral("Q0")), net(QStringLiteral("R12"), QStringLiteral("D0")));
+    QCOMPARE(net(QStringLiteral("A13"), QStringLiteral("Q1")), net(QStringLiteral("R12"), QStringLiteral("D1")));
+}
+
 // The propagation delay is the device record's fourth number, less one
 // (seen by setting a delay in CircuitMaker and saving).
 void TestCktImport::propagationDelaysRoundTrip()
@@ -463,6 +489,40 @@ void TestCktImport::propagationDelaysRoundTrip()
         delays.insert(comp.designator.left(2), comp.props.value(QStringLiteral("delay"), 1).toInt());
     QCOMPARE(delays.value(QStringLiteral("U1")), 7);
     QCOMPARE(delays.value(QStringLiteral("U2")), 1);
+}
+
+// Diagnostic (CM_PIN_GEOMETRY=1): symbols whose pins are not where
+// CircuitMaker's Device.lib puts them (relative to the first pin, at our scale).
+void TestCktImport::symbolPinGeometry()
+{
+    if (qEnvironmentVariableIsEmpty("CM_PIN_GEOMETRY"))
+        QSKIP("set CM_PIN_GEOMETRY=1");
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    for (const SymbolDef* s : library().all()) {
+        if (s->cmPins.isEmpty()) continue;
+        const CmLibDevice* d = CktExporter::deviceFor(*s, cmLib);
+        if (!d || d->pins.size() < 2) continue;
+        QVector<QPointF> ours, theirs;
+        QStringList names;
+        for (int k = 0; k < s->cmPins.size() && k < d->pins.size(); ++k) {
+            const int i = s->pinIndex(s->cmPins[k]);
+            if (i < 0) continue;
+            ours << s->pins[i].pos;
+            theirs << QPointF(d->pins[k]) * (10.0 / 3.0);
+            names << s->cmPins[k];
+        }
+        if (ours.size() < 2) continue;
+        QStringList bad;
+        for (int k = 1; k < ours.size(); ++k) {
+            const QPointF a = ours[k] - ours[0], b = theirs[k] - theirs[0];
+            if (QLineF(a, b).length() > 2)
+                bad << QStringLiteral("%1 ours(%2,%3) cm(%4,%5)").arg(names[k]).arg(a.x()).arg(a.y()).arg(b.x()).arg(b.y());
+        }
+        if (!bad.isEmpty())
+            qInfo("%s [%s]: %lld of %lld pins off: %s", qPrintable(s->id), qPrintable(d->name), qsizetype(bad.size()),
+                  qsizetype(ours.size() - 1), qPrintable(bad.mid(0, 3).join(u"; ")));
+    }
 }
 
 // Diagnostic (CM_DIGITAL_SWEEP=1): runs every circuit digitally and lists

@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <stdexcept>
 
 namespace cm::CktImporter {
@@ -655,7 +656,17 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
 
     // ---- wires: scale, then pin attached ends to our pins
     QMap<ItemId, int> wireNetOf;                // our wire -> CM net (ordered: same result every run)
-    struct Entry { QPointF at; QPointF from; QString name; int cmNet; };
+    // name: as CircuitMaker shows it; key: with the bus, since an entry joins
+    // only entries of the same name on buses of the same name (help: "Bus
+    // Connection Wires")
+    struct Entry {
+        QPointF at, from;
+        QString name, bus;
+        int cmNet;
+        ItemId wire = 0;
+        bool first = true;
+        QString key() const { return bus + u'\x1f' + name; }
+    };
     QVector<Entry> entries;                     // wire ends on a bus, named as in CircuitMaker
     for (const CktWire& w : file.wires) {
         // a zero-length leftover touching no device connects nothing in
@@ -692,30 +703,65 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!out.bus) {
             // an end on a bus line (h[9]/h[10]: the wire it ends on); entry
             // names are encoded (negative) or plain numbers
-            // names may be plain numbers, which only mean something on their
-            // own bus: they are qualified with the bus name ("1.16")
             auto onBus = [&](int wire) { return wire > 0 && wire <= file.wires.size() && file.wires[wire - 1].isBus(); };
-            auto entryName = [&](int v, int bus) {
-                if (v < 0) return decodeName(v);
-                const int b = file.wires[bus - 1].h[0];
-                return (b < 0 ? decodeName(b) : QString::number(b)) + u'.' + QString::number(v);
+            auto entryName = [&](int v) { return v < 0 ? decodeName(v) : QString::number(v); };
+            auto busName = [&](int wire) {
+                if (!onBus(wire)) return QString();
+                const int b = file.wires[wire - 1].h[0];
+                return b < 0 ? decodeName(b) : QString::number(b);
             };
             if (w.h[7] == 0 && (w.h[0] < 0 || (w.h[0] > 0 && onBus(w.h[9]))))
-                entries << Entry{out.points.first(), out.points.value(1), entryName(w.h[0], w.h[9]), w.h[2]};
+                entries << Entry{out.points.first(), out.points.value(1), entryName(w.h[0]), busName(w.h[9]), w.h[2], id, true};
             if (w.h[8] == 0 && (w.h[1] < 0 || (w.h[1] > 0 && onBus(w.h[10]))))
-                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), entryName(w.h[1], w.h[10]), w.h[2]};
+                entries << Entry{out.points.last(), out.points.value(out.points.size() - 2), entryName(w.h[1]), busName(w.h[10]),
+                                 w.h[2], id, false};
         }
     }
-    QSet<std::pair<qint64, qint64>> entryAt;
+    QHash<std::pair<qint64, qint64>, QString> entryAt;    // entry labels placed: point -> key
+    auto keyOf = [](QPointF p) { return std::pair<qint64, qint64>{qRound64(p.x()), qRound64(p.y())}; };
     for (const Entry& e : std::as_const(entries)) {
         if (!netLabel || e.name.isEmpty()) continue;
-        const std::pair<qint64, qint64> key{qRound64(e.at.x()), qRound64(e.at.y())};
-        if (entryAt.contains(key)) continue;
-        entryAt.insert(key);
+        QPointF at = e.at;
+        if (const auto taken = entryAt.constFind(keyOf(at)); taken != entryAt.cend()) {
+            if (*taken == e.key()) continue;
+            // entries of two names may end at one point of a bus in
+            // CircuitMaker; here wire ends that meet connect, so this one
+            // slides along the bus to a free point
+            const Wire* bus = nullptr;
+            for (const Wire& w : circuit.wires())
+                if (w.bus && WireGeometry::onPolyline(at, w.points)) { bus = &w; break; }
+            const Wire* wire = circuit.wire(e.wire);
+            if (!bus || !wire) continue;
+            QPointF dir;
+            for (int i = 0; i + 1 < bus->points.size() && dir.isNull(); ++i)
+                if (WireGeometry::onSegment(at, bus->points[i], bus->points[i + 1])) {
+                    const QPointF d = bus->points[i + 1] - bus->points[i];
+                    if (const double len = std::hypot(d.x(), d.y()); len > 0) dir = d / len;
+                }
+            std::optional<QPointF> free;
+            for (int step = 1; step <= 6 && !free && !dir.isNull(); ++step)
+                for (const int sign : {1, -1}) {
+                    const QPointF p = at + dir * (10.0 * step * sign);
+                    if (!WireGeometry::onPolyline(p, bus->points) || entryAt.contains(keyOf(p))) continue;
+                    const bool touches = std::any_of(circuit.wires().cbegin(), circuit.wires().cend(), [&](const Wire& w) {
+                        return !w.bus && w.id != e.wire && WireGeometry::onPolyline(p, w.points);
+                    });
+                    if (!touches) { free = p; break; }
+                }
+            if (!free) continue;
+            Wire moved = *wire;
+            WireGeometry::moveEnd(moved.points, e.first ? 0 : int(moved.points.size()) - 1, *free - at);
+            moved.points = WireGeometry::simplify(moved.points);
+            circuit.updateWire(moved);
+            at = *free;
+        }
+        entryAt.insert(keyOf(at), e.key());
         Component label;
         label.symbolId = netLabel->id;
-        label.pos = e.at;
+        label.pos = at;
         label.label = e.name;
+        if (!e.bus.isEmpty())
+            label.props.insert(QStringLiteral("bus"), e.bus);
         label.props.insert(QStringLiteral("side"), entrySide(e.at, e.from));
         circuit.addComponent(label);
     }
@@ -889,10 +935,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     QHash<QString, int> entryNet;
     for (const Entry& e : std::as_const(entries)) {
         if (e.cmNet <= 0) continue;
-        if (auto it = entryNet.constFind(e.name); it != entryNet.cend())
+        if (auto it = entryNet.constFind(e.key()); it != entryNet.cend())
             cmNode[nodeOf(e.cmNet)] = nodeOf(*it);
         else
-            entryNet.insert(e.name, e.cmNet);
+            entryNet.insert(e.key(), e.cmNet);
     }
     QHash<int, QSet<int>> cmNetsOfOurNet;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it)
