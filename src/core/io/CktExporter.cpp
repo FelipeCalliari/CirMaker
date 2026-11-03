@@ -3,7 +3,11 @@
 #include "core/NetlistBuilder.h"
 #include "core/WireGeometry.h"
 #include "core/io/CmDeviceLib.h"
+#include "core/io/CmUserLib.h"
 #include "library/LibraryRegistry.h"
+#include "library/Macros.h"
+
+#include <QSettings>
 
 #include <QDate>
 #include <QFile>
@@ -286,8 +290,60 @@ const CmLibDevice* deviceFor(const SymbolDef& s, const CmDeviceLib& lib)
     return nullptr;
 }
 
+// The macro headers of CircuitMaker's User.lib (records like Device.lib's),
+// read once; a macro instance in a .ckt is a device record with its name.
+const CmDeviceLib& userMacros()
+{
+    static const CmDeviceLib lib = [] {
+        CmDeviceLib l;
+        const QString path = CmUserLib::locate(QSettings().value(QStringLiteral("cm/folder")).toString());
+        if (!path.isEmpty()) l.load(path);
+        return l;
+    }();
+    return lib;
+}
+
+// A macro of User.lib as its instances are written: only the pins in use
+// (the header has room for 64), the package map that many zeros.
+const CmLibDevice* macroFor(const SymbolDef& s)
+{
+    if (!macros::isMacro(s)) return nullptr;
+    static QHash<QString, CmLibDevice> instances;
+    for (const QString& name : {s.name, s.name + u'~'}) {
+        if (const auto it = instances.constFind(name); it != instances.cend()) return &*it;
+        const CmLibDevice* d = userMacros().find(name);
+        if (!d) continue;
+        CmLibDevice m = *d;
+        m.pinCount = std::min(int(s.cmPins.size()), int(m.pins.size()));
+        m.pins.resize(m.pinCount);
+        m.packageMap = QVector<int>(1 + 2 * m.pinCount, 0);
+        m.parts = 0;
+        return &*instances.insert(name, m);
+    }
+    return nullptr;
+}
+
 QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const CmDeviceLib& lib, CktExportReport* report)
 {
+    // macros CircuitMaker has (User.lib) are written by name; if any other
+    // is used, the circuit goes out with every macro laid out as its contents
+    for (const Component& c : circuit.components())
+        if (const SymbolDef* s = library.find(c.symbolId); s && macros::isMacro(*s) && !macroFor(*s)) {
+            if (std::unique_ptr<Circuit> flat = macros::flatten(circuit, library)) {
+                // the instances go; the net labels on their pins stay and join
+                // the contents (CircuitMaker terminals connect by name)
+                QList<ItemId> instances;
+                for (const Component& m : flat->components())
+                    if (const SymbolDef* ms = library.find(m.symbolId); ms && macros::isMacro(*ms)) instances << m.id;
+                for (ItemId id : instances) flat->removeComponent(id);
+                CktExportReport inner;
+                const QByteArray data = write(*flat, library, lib, &inner);
+                inner.macrosExpanded = true;
+                if (report) *report = inner;
+                return data;
+            }
+            break;
+        }
     CktExportReport rep;
     const Netlist netlist = NetlistBuilder::build(circuit, library);
     auto netNumber = [&netlist](int net) -> int {
@@ -342,6 +398,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         d.c = &c;
         d.s = s;
         d.lib = deviceFor(*s, lib);
+        if (!d.lib) d.lib = macroFor(*s);
         if (!d.lib) {
             rep.skipped << shownDesignator(*s, c) + QStringLiteral(" (") + s->name + u')';
             continue;
@@ -520,8 +577,10 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         rec << join({l.type, d.origin.x(), d.origin.y(), delay - 1, pinMax, std::max(int(pkg.size()) - 1, pinMax + 1)});
         rec << join(nets);
         if (l.type == 0xc3) rec << QString::number(sine.size()) << join(sine);
-        rec << QStringLiteral("0");
-        rec << join({0, 0, flags, cmAngle(c)});
+        // a macro instance names its User.lib macro here, and has a 1 first
+        const bool macro = l.type == 0x5e;
+        rec << (macro ? str(name) : QStringLiteral("0"));
+        rec << join({macro ? 1 : 0, 0, flags, cmAngle(c)});
         rec << str(value);
         if (!value.isEmpty()) rec << rect(textRect(value, c.labelAt, labelAnchor));
         rec << str(designator);

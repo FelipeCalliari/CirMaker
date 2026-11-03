@@ -16,6 +16,7 @@ struct CktExportReport {
     int devices = 0;
     int wires = 0;
     QStringList skipped;        // parts CircuitMaker's library has no device for, bus wires
+    bool macrosExpanded = false;  // macros missing from User.lib were written as their contents
 };
 
 // Writes a circuit as a "CircuitMaker Text" 5.6 schematic. CircuitMaker draws
@@ -26,6 +27,8 @@ namespace CktExporter {
 // The Device.lib device a part becomes: an alias naming a device, else a
 // device whose default value is one of the aliases ("7400" -> "2-In NAND~").
 const CmLibDevice* deviceFor(const SymbolDef& s, const CmDeviceLib& lib);
+// A macro of CircuitMaker's User.lib, written by name (nullptr: not there).
+const CmLibDevice* macroFor(const SymbolDef& s);
 QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const CmDeviceLib& lib,
                  CktExportReport* report = nullptr);
 bool save(const QString& path, const Circuit& circuit, const LibraryRegistry& library, const CmDeviceLib& lib,

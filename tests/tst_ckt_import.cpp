@@ -307,7 +307,8 @@ void TestCktImport::exportRoundTrip()
         QVERIFY2(CktImporter::importData(data, b, library(), &back, &error), qPrintable(path + u": " + error));
         QSet<ItemId> skipped;
         for (const Component& comp : a.components())
-            if (!CktExporter::deviceFor(*library().find(comp.symbolId), cmLib)) skipped << comp.id;
+            if (!CktExporter::deviceFor(*library().find(comp.symbolId), cmLib) && !CktExporter::macroFor(*library().find(comp.symbolId)))
+                skipped << comp.id;
         QVERIFY2(back.components >= rep.devices,
                  qPrintable(QStringLiteral("%1: %2 read back, %3 written").arg(path).arg(back.components).arg(rep.devices)));
         ++files;
