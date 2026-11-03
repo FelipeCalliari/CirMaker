@@ -835,13 +835,14 @@ void SchematicScene::beginDrag()
         else if (it == m_titleItem)
             m_drag.titleStart = it->pos();
     }
-    // the entry labels of a dragged bus come along with it
+    // net labels on a dragged wire, and the entry labels of a dragged bus,
+    // come along with it
     QSet<ItemId> selectedLabels;
     for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it)
         selectedLabels.insert(it.key());
     for (ItemId id : std::as_const(m_drag.wires)) {
         const Wire* bus = m_circuit->wire(id);
-        if (!bus || !bus->bus)
+        if (!bus)
             continue;
         const EntryMoves on = busEntryMoves(bus->points, [](QPointF) { return QPointF(1, 0); }, {}, selectedLabels);
         for (auto l = on.labels.cbegin(); l != on.labels.cend(); ++l) {
@@ -870,12 +871,12 @@ QHash<ItemId, QVector<QPointF>> SchematicScene::rubberBand() const
         for (int i = 0; i < item->symbol()->pins.size(); ++i)
             anchors << Anchor{m_library.pinScenePos(*c, i), delta};
     }
-    // ends of ordinary wires on a dragged bus line follow it too
+    // ends of ordinary wires on a dragged wire or bus line follow it too
     struct BusAnchor { const QVector<QPointF>* line; QPointF delta; };
     QVector<BusAnchor> buses;
     for (ItemId id : m_drag.wires) {
         const WireItem* item = m_wireItems.value(id);
-        if (item && item->wire().bus && !item->pos().isNull())
+        if (item && !item->pos().isNull())
             buses << BusAnchor{&item->wire().points, item->pos()};
     }
     QHash<ItemId, QVector<QPointF>> out;
@@ -1732,9 +1733,23 @@ bool SchematicScene::beginWireEdit(QGraphicsSceneMouseEvent* e)
     edit.wire = hit->id();
     edit.original = pts;
     edit.start = snap(at);
-    if (near(at, pts.first(), 5) && !pinAt(pts.first(), nullptr)) {
+    // an end on a pin, a bus or partway along another wire stays put (the
+    // end segment slides instead); ends of other wires meeting it follow it
+    auto freeEnd = [&](QPointF p) {
+        if (pinAt(p, nullptr))
+            return false;
+        for (const WireItem* w : std::as_const(m_wireItems)) {
+            const QVector<QPointF>& o = w->wire().points;
+            if (w == hit || o.size() < 2 || near(p, o.first()) || near(p, o.last()))
+                continue;
+            if (WireGeometry::onPolyline(p, o))
+                return false;
+        }
+        return true;
+    };
+    if (near(at, pts.first(), 5) && freeEnd(pts.first())) {
         edit.endpoint = 0;
-    } else if (near(at, pts.last(), 5) && !pinAt(pts.last(), nullptr)) {
+    } else if (near(at, pts.last(), 5) && freeEnd(pts.last())) {
         edit.endpoint = int(pts.size()) - 1;
     } else {
         edit.segment = segmentAt(pts, at);
@@ -1825,15 +1840,17 @@ SchematicScene::EntryMoves SchematicScene::busEntryMoves(const QVector<QPointF>&
     return out;
 }
 
-// How the entries of the bus being reshaped move: those on a slid segment
-// slide with it; a dragged end carries its entry, and with it the end
-// segment of a bent bus slides sideways (as editedWire does).
+// How what hangs on the wire or bus being reshaped moves (wire ends and net
+// labels on it; for a bus, its entries): those on a slid segment slide with
+// it; a dragged end carries what meets it, and with it the end segment of a
+// bent wire slides sideways (as editedWire does). Ends kept in place by an
+// elbow keep what is there.
 SchematicScene::EntryMoves SchematicScene::wireEditEntryMoves(QPointF cursor) const
 {
     if (!m_wireEdit)
         return {};
     const Wire* wire = m_circuit->wire(m_wireEdit->wire);
-    if (!wire || !wire->bus)
+    if (!wire)
         return {};
     const QVector<QPointF>& pts = m_wireEdit->original;
     const QPointF delta = cursor - m_wireEdit->start;
@@ -1854,9 +1871,15 @@ SchematicScene::EntryMoves SchematicScene::wireEditEntryMoves(QPointF cursor) co
         const bool vertical = std::abs(pts[i].x() - pts[i + 1].x()) < 0.5;
         const QPointF d = horizontal ? QPointF(0, delta.y()) : vertical ? QPointF(delta.x(), 0) : delta;
         const QVector<QPointF> segment{pts[i], pts[i + 1]};
-        moved = [=](QPointF p) { return WireGeometry::onPolyline(p, segment) ? d : QPointF(); };
+        const bool firstStays = i == 0, lastStays = i + 2 == int(pts.size());
+        const QPointF first = pts.first(), last = pts.last();
+        moved = [=](QPointF p) {
+            if ((firstStays && near(p, first)) || (lastStays && near(p, last)))
+                return QPointF();
+            return WireGeometry::onPolyline(p, segment) ? d : QPointF();
+        };
     }
-    return busEntryMoves(pts, moved, {}, {});
+    return busEntryMoves(pts, moved, {wire->id}, {});
 }
 
 void SchematicScene::previewEntries(const EntryMoves& moves, const EntryMoves& previous)

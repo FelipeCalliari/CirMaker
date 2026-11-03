@@ -43,6 +43,7 @@ private slots:
     void windowClosesCleanly();
     void dragWireSegment();
     void dragWireEnd();
+    void wiresFollowReshapedWire();
     void simulationStress();
     void buttonsAnimate_data();
     void buttonsAnimate();
@@ -166,6 +167,53 @@ void TestGui::dragWireEnd()
     QCOMPARE(f.circuit.wire(id)->points.first(), QPointF(-100, 0));
     QCOMPARE(f.circuit.wire(id)->points.last(), QPointF(150, 80));
     QCOMPARE(f.circuit.wire(id)->points.size(), 3);  // orthogonal elbow added
+}
+
+void TestGui::wiresFollowReshapedWire()
+{
+    ViewFixture f;
+    const ItemId wire = f.circuit.addWire({0, {{-100, 0}, {0, 0}, {0, 100}, {100, 100}}});
+    const ItemId tee = f.circuit.addWire({0, {{-100, 50}, {0, 50}}});
+    const ItemId corner = f.circuit.addWire({0, {{0, -100}, {0, 0}}});
+    const ItemId label = place(f.circuit, QStringLiteral("netlabel"), {0, 80}, {}, QStringLiteral("N"));
+    const QPointF labelAt = f.circuit.component(label)->pos;
+    f.drag({0, 30}, {60, 30});                       // slide the middle segment
+    QCOMPARE(f.circuit.wire(wire)->points, QVector<QPointF>({{-100, 0}, {60, 0}, {60, 100}, {100, 100}}));
+    QCOMPARE(f.circuit.wire(tee)->points.last(), QPointF(60, 50));
+    QCOMPARE(f.circuit.wire(tee)->points.first(), QPointF(-100, 50));
+    QCOMPARE(f.circuit.wire(corner)->points.last(), QPointF(60, 0));
+    QCOMPARE(f.circuit.component(label)->pos, labelAt + QPointF(60, 0));
+    f.undo.undo();                                   // one step
+    QCOMPARE(f.circuit.wire(tee)->points.last(), QPointF(0, 50));
+    QCOMPARE(f.circuit.component(label)->pos, labelAt);
+
+    // an end kept by the elbow keeps its wire; one along the segment slides
+    const ItemId straight = f.circuit.addWire({0, {{-100, -200}, {100, -200}}});
+    const ItemId atEnd = f.circuit.addWire({0, {{-100, -250}, {-100, -200}}});
+    const ItemId along = f.circuit.addWire({0, {{0, -250}, {0, -200}}});
+    f.drag({50, -200}, {50, -150});
+    QCOMPARE(f.circuit.wire(straight)->points.first(), QPointF(-100, -200));
+    QCOMPARE(f.circuit.wire(atEnd)->points.last(), QPointF(-100, -200));
+    QCOMPARE(f.circuit.wire(along)->points.last(), QPointF(0, -150));
+
+    // a dragged end carries the wire ends that meet it
+    const ItemId a = f.circuit.addWire({0, {{200, 0}, {300, 0}}});
+    const ItemId b = f.circuit.addWire({0, {{300, -100}, {300, 0}}});
+    f.drag({300, 0}, {340, 60});
+    const QPointF end = f.circuit.wire(a)->points.last();
+    QCOMPARE(f.circuit.wire(b)->points.last(), end);
+    QCOMPARE(end, QPointF(340, 60));
+
+    // moved as a selection, wires ending on the moved wire follow it
+    const ItemId moved = f.circuit.addWire({0, {{-300, 200}, {-100, 200}}});
+    const ItemId hanging = f.circuit.addWire({0, {{-200, 250}, {-200, 200}}});
+    const ItemId other = f.circuit.addWire({0, {{-300, 150}, {-250, 150}}});
+    for (QGraphicsItem* it : f.scene.items())
+        if (auto* w = qgraphicsitem_cast<WireItem*>(it); w && (w->id() == moved || w->id() == other)) w->setSelected(true);
+    f.drag({-150, 200}, {-150, 180});
+    QCOMPARE(f.circuit.wire(moved)->points.first(), QPointF(-300, 180));
+    QCOMPARE(f.circuit.wire(hanging)->points.last(), QPointF(-200, 180));
+    QCOMPARE(f.circuit.wire(hanging)->points.first(), QPointF(-200, 250));
 }
 
 void TestGui::simulationStress()
