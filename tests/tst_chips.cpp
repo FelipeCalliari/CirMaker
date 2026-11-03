@@ -16,6 +16,7 @@ private slots:
     void piso74165();
     void transceiver74245();
     void ramWriteRead();
+    void ramReleasesDataBus();
     void promRead();
     void ramContentsAndLiveEdit();
     void relaySwitchesDigitally();
@@ -290,6 +291,44 @@ void TestChips::ramWriteRead()
     b.sim.interact(a0, QStringLiteral("toggle"));     // other address still 0
     b.sim.step(5);
     QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0x00);
+}
+
+// The data pins float (high impedance) while the RAM is deselected and while
+// it is writing; it drives them only when selected and reading.
+void TestChips::ramReleasesDataBus()
+{
+    Circuit c;
+    Component ram;
+    ram.symbolId = QStringLiteral("RAM1K");
+    ram.designator = QStringLiteral("U1");
+    const ItemId u = c.addComponent(ram);
+    tieBus(c, u, names(QStringLiteral("A"), 10), 0);
+    const ItemId cs = source(c, u, QStringLiteral("~CS"), -600, 0);     // low: selected
+    const ItemId we = source(c, u, QStringLiteral("~WE"), -600, 100);   // low: write
+    Bench b(c);
+    auto floating = [&]() {
+        for (const QString& d : names(QStringLiteral("D"), 8))
+            if (b.value(c, u, d) != Logic::Z) return false;
+        return true;
+    };
+    QVERIFY(floating());                                   // selected, writing (the open bus reads low)
+    b.sim.interact(we, QStringLiteral("toggle"));          // read
+    QVector<int> words = b.sim.memory(u);
+    words[0] = 0xab;
+    b.sim.setMemory(u, words);
+    b.sim.step(3);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0xab);
+    b.sim.interact(cs, QStringLiteral("toggle"));          // deselect
+    b.sim.step(3);
+    QVERIFY(floating());
+    b.sim.interact(we, QStringLiteral("toggle"));          // write, still deselected
+    b.sim.step(3);
+    QVERIFY(floating());
+    b.sim.interact(we, QStringLiteral("toggle"));
+    b.sim.interact(cs, QStringLiteral("toggle"));          // selected and reading again
+    b.sim.step(3);
+    QCOMPARE(bus(b, c, u, names(QStringLiteral("D"), 8)), 0xab);   // deselected, it wrote nothing
+    QCOMPARE(b.sim.memory(u).value(0), 0xab);
 }
 
 void TestChips::promRead()

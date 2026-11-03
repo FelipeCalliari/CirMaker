@@ -8,8 +8,10 @@
 #include <QGraphicsScene>
 #include <QHash>
 #include <QPointer>
+#include <QSet>
 #include <QTimer>
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -204,7 +206,8 @@ private:
     void finishWire();
     bool onBus(QPointF p) const;
     bool onConductor(QPointF p) const;      // pin or ordinary wire
-    QString askNetName(const QString& title, const QString& suggestion);
+    // `next`: suggest the name after `suggestion` ("D3" -> "D4")
+    QString askNetName(const QString& title, const QString& suggestion, bool next = true);
     void placeNetLabel(QPointF p);
     void deleteAt(QPointF p, bool snipWire);
     void toggleProbe(QPointF p);
@@ -227,9 +230,22 @@ private:
     QVector<QPointF> editedWire(QPointF cursor) const;
     void updateHoverCursor(QPointF p);
 
+    // Bus entries (ordinary wire ends and net labels on a bus line) follow
+    // the bus when it is moved or reshaped, as in CircuitMaker. `delta`
+    // says how far the bus point under an entry moved.
+    struct EntryMoves {
+        QHash<ItemId, QVector<QPointF>> wires;
+        QHash<ItemId, QPointF> labels;      // new positions
+    };
+    EntryMoves busEntryMoves(const QVector<QPointF>& bus, const std::function<QPointF(QPointF)>& delta,
+                             const QSet<ItemId>& skipWires, const QSet<ItemId>& skipLabels) const;
+    EntryMoves wireEditEntryMoves(QPointF cursor) const;
+    void previewEntries(const EntryMoves& moves, const EntryMoves& previous);
+
     // dragging
     void beginDrag();
     QHash<ItemId, QVector<QPointF>> rubberBand() const;
+    void placeFollowers();
     void updateDragPreview();
     void commitDrag();
 
@@ -274,7 +290,9 @@ private:
         QHash<ItemId, QPointF> textStart;
         QVector<ItemId> wires;
         std::optional<QPointF> titleStart;
+        QHash<ItemId, ItemId> followers;    // entry labels of dragged buses -> their bus
     } m_drag;
+    EntryMoves m_entryPreview;              // entries shown following a reshaped bus
 
     TitleBlockItem* m_titleItem = nullptr;
     std::optional<WireEdit> m_wireEdit;

@@ -2,6 +2,8 @@
 // crashed or need the real event flow.
 
 #include "TestUtil.h"
+#include "core/io/CktImporter.h"
+#include "core/WireGeometry.h"
 
 #include "ui/ComponentItem.h"
 #include "ui/MainWindow.h"
@@ -73,6 +75,8 @@ private slots:
     void dragDesignator();
     void clickSelectsWire();
     void screenshot();
+    void busEntriesFollowBus();
+    void draggedBusKeepsConnections();
 };
 
 namespace {
@@ -831,6 +835,105 @@ void TestGui::clickSelectsWire()
     f.scene.deleteSelection();
     QVERIFY(!f.circuit.wire(other));
     QVERIFY(f.circuit.wire(id));
+}
+
+namespace {
+
+// Each device pin with the device pins it connects to: the same before and
+// after an edit when connectivity is unchanged.
+QStringList connections(const Circuit& c)
+{
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QStringList out;
+    for (const Component& comp : c.components()) {
+        const SymbolDef* s = library().find(comp.symbolId);
+        if (s->netLabel) continue;
+        for (int i = 0; i < s->pins.size(); ++i) {
+            QStringList peers;
+            for (const PinRef& r : nl.nets[nl.netOf(comp.id, i)].pins) {
+                const Component* o = c.component(r.component);
+                const SymbolDef* os = library().find(o->symbolId);
+                if (!os->netLabel && !(r.component == comp.id && r.pin == i))
+                    peers << o->designator + u'.' + os->pins[r.pin].name;
+            }
+            peers.sort();
+            out << comp.designator + u'.' + s->pins[i].name + u':' + peers.join(u',');
+        }
+    }
+    out.sort();
+    return out;
+}
+
+} // namespace
+
+void TestGui::busEntriesFollowBus()
+{
+    ViewFixture f;
+    const ItemId bus = f.circuit.addWire({0, {{0, -100}, {0, 100}}, true, QStringLiteral("D")});
+    const ItemId e0 = f.circuit.addWire({0, {{-100, 0}, {0, 0}}});
+    const ItemId e1 = f.circuit.addWire({0, {{-100, 50}, {0, 50}}});
+    const ItemId l0 = place(f.circuit, QStringLiteral("netlabel"), {0, 0}, {}, QStringLiteral("D0"));
+    const ItemId l1 = place(f.circuit, QStringLiteral("netlabel"), {0, 50}, {}, QStringLiteral("D1"));
+    const QPointF label0 = f.circuit.component(l0)->pos;
+
+    f.drag({0, -50}, {60, -50});                     // slide the bus sideways
+    QCOMPARE(f.circuit.wire(bus)->points.at(1).x(), 60.0);
+    QCOMPARE(f.circuit.wire(e0)->points.last(), QPointF(60, 0));
+    QCOMPARE(f.circuit.wire(e1)->points.last(), QPointF(60, 50));
+    QCOMPARE(f.circuit.wire(e0)->points.first(), QPointF(-100, 0));
+    QCOMPARE(f.circuit.component(l0)->pos, label0 + QPointF(60, 0));
+    QCOMPARE(f.circuit.component(l1)->pos.x(), label0.x() + 60);
+    f.undo.undo();                                   // one step brings everything back
+    QCOMPARE(f.circuit.wire(e0)->points.last(), QPointF(0, 0));
+    QCOMPARE(f.circuit.component(l0)->pos, label0);
+
+    // moved as part of a selection: the bus and a part, dragged by the part
+    const ItemId part = place(f.circuit, QStringLiteral("and2"), {-250, -200}, QStringLiteral("U1"));
+    for (QGraphicsItem* it : f.scene.items()) {
+        if (auto* w = qgraphicsitem_cast<WireItem*>(it); w && w->id() == bus) w->setSelected(true);
+        if (auto* c = qgraphicsitem_cast<ComponentItem*>(it); c && c->id() == part) {
+            c->setSelected(true);
+        }
+    }
+    const QPointF grab((pinPos(f.circuit, part, QStringLiteral("A")).x() + pinPos(f.circuit, part, QStringLiteral("Y")).x()) / 2,
+                       pinPos(f.circuit, part, QStringLiteral("Y")).y());
+    f.drag(grab, grab + QPointF(40, 20));
+    QCOMPARE(f.circuit.wire(bus)->points.first(), QPointF(40, -80));
+    QCOMPARE(f.circuit.wire(e0)->points.last(), QPointF(40, 20));
+    QCOMPARE(f.circuit.wire(e0)->points.first(), QPointF(-100, 0));
+    QCOMPARE(f.circuit.component(l0)->pos, label0 + QPointF(40, 20));
+}
+
+void TestGui::draggedBusKeepsConnections()
+{
+    const QString file = QDir::homePath() + QStringLiteral("/Documents/github/_calliari_/tecdigi/CircuitMaker/Memoria_4k8_v3.CKT");
+    if (!QFile::exists(file))
+        QSKIP("course circuit not available");
+    ViewFixture f;
+    QVERIFY(CktImporter::import(file, f.circuit, library(), nullptr, nullptr));
+    f.view.setSceneRect(f.scene.itemsBoundingRect());
+    const QStringList before = connections(f.circuit);
+    ItemId dados = 0;
+    for (const Wire& w : f.circuit.wires())
+        if (w.bus && w.name == u"DADOS") dados = w.id;
+    QVERIFY(dados);
+    const QVector<QPointF> line = f.circuit.wire(dados)->points;
+    QVector<ItemId> entries;
+    for (const Wire& w : f.circuit.wires())
+        if (!w.bus && (WireGeometry::onPolyline(w.points.first(), line) || WireGeometry::onPolyline(w.points.last(), line)))
+            entries << w.id;
+    QVERIFY(entries.size() >= 16);
+    const QPointF mid = (line[0] + line[1]) / 2;
+    f.view.centerOn(mid);
+    f.drag(mid, mid + QPointF(-60, 0));
+    const QVector<QPointF> moved = f.circuit.wire(dados)->points;
+    QVERIFY(moved != line);
+    for (ItemId id : std::as_const(entries)) {
+        const Wire* w = f.circuit.wire(id);
+        QVERIFY2(WireGeometry::onPolyline(w->points.first(), moved) || WireGeometry::onPolyline(w->points.last(), moved),
+                 "an entry was left off the bus");
+    }
+    QCOMPARE(connections(f.circuit), before);
 }
 
 QTEST_MAIN(TestGui)

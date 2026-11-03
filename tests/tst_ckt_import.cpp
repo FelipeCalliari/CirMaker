@@ -26,6 +26,7 @@ private slots:
     void exportRoundTrip();
     void userLibMacros();
     void closedContacts();
+    void memoryCircuitWritesAndReads();
 
 private:
     static QStringList circuitFiles();
@@ -372,6 +373,65 @@ void TestCktImport::closedContacts()
         QVERIFY(nl.netOf(comp.id, w->pinIndex(QStringLiteral("C"))) != nl.netOf(comp.id, w->pinIndex(QStringLiteral("NC"))));
     }
     QCOMPARE(windows, 6);
+}
+
+
+
+// The course's 4K x 8 memory: four 1K RAMs on one data bus, a 74139
+// selecting one by A10-A11, 74245s between the bus, the data keys and the
+// displays. Values written to two chips read back intact: a deselected
+// chip (or one being written) drives the bus with an X otherwise.
+void TestCktImport::memoryCircuitWritesAndReads()
+{
+    const QString file = QDir::homePath() + QStringLiteral("/Documents/github/_calliari_/tecdigi/CircuitMaker/Memoria_4k8_v3.CKT");
+    if (!QFile::exists(file))
+        QSKIP("course circuit not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(file, c, library(), nullptr, nullptr));
+    QHash<QString, ItemId> id;
+    for (const Component& comp : c.components()) id.insert(comp.designator, comp.id);
+    Bench b(c);
+    auto key = [&](const char* k, int v) {
+        b.sim.interact(id.value(QString::fromLatin1(k)), QStringLiteral("key"), v);
+        b.sim.step(5);
+    };
+    auto address = [&](int a) { key("KPD1", a >> 8 & 15); key("KPD2", a >> 4 & 15); key("KPD3", a & 15); };
+    auto toggleRead = [&]() {
+        b.sim.interact(id.value(QStringLiteral("READ")), QStringLiteral("toggle"));
+        b.sim.step(10);
+    };
+    // the displays' side of U4; -1 when any bit is X or Z
+    auto shown = [&]() {
+        int v = 0;
+        for (int i = 0; i < 8; ++i) {
+            const sim::Logic l = b.value(c, id.value(QStringLiteral("U4")), QStringLiteral("B%1").arg(i));
+            if (l != sim::Logic::L0 && l != sim::Logic::L1) return -1;
+            v |= int(l == sim::Logic::L1) << i;
+        }
+        return v;
+    };
+    QCOMPARE(int(b.value(c, id.value(QStringLiteral("READ")), QStringLiteral("Y"))), int(sim::Logic::L1));   // starts reading
+    auto write = [&](int a, int v) {
+        address(a);
+        key("KPD4", v >> 4);
+        key("KPD5", v & 15);
+        toggleRead();                   // write
+        QCOMPARE(shown(), v);
+        toggleRead();                   // back to reading
+    };
+    write(0x123, 0x5a);                 // U0
+    write(0x523, 0xc3);                 // U1: same low address, other chip
+    write(0xfff, 0x81);                 // U3
+    address(0x123);
+    QCOMPARE(shown(), 0x5a);
+    address(0x523);
+    QCOMPARE(shown(), 0xc3);
+    address(0xfff);
+    QCOMPARE(shown(), 0x81);
+    address(0x923);                     // U2, never written
+    QCOMPARE(shown(), 0x00);
+    address(0x124);
+    QCOMPARE(shown(), 0x00);
 }
 
 QTEST_GUILESS_MAIN(TestCktImport)

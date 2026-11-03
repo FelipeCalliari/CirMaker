@@ -433,10 +433,21 @@ void SchematicScene::finishWire()
     // name connects it to every other entry and net label with that name
     QVector<std::pair<QPointF, QString>> entries;
     if (!bus) {
+        // a wire drawn from a named net to the bus suggests that net's name:
+        // the next name would join the two nets
+        auto labelAt = [&](QPointF p) -> QString {
+            for (const ComponentItem* item : std::as_const(m_componentItems))
+                if (item->symbol()->netLabel && !item->symbol()->pins.isEmpty()
+                    && near(m_library.pinScenePos(item->component(), 0), p) && !item->component().label.trimmed().isEmpty())
+                    return item->component().label.trimmed();
+            return {};
+        };
         for (QPointF end : {pts.first(), pts.last()}) {
             if (!onBus(end) || onConductor(end))
                 continue;
-            const QString name = askNetName(tr("Bus entry"), m_lastNetName);
+            const QString existing = labelAt(end == pts.first() ? pts.last() : pts.first());
+            const QString name = existing.isEmpty() ? askNetName(tr("Bus entry"), m_lastNetName)
+                                                    : askNetName(tr("Bus entry"), existing, false);
             if (name.isEmpty())
                 continue;
             entries << std::pair{end, name};
@@ -477,12 +488,13 @@ bool SchematicScene::onConductor(QPointF p) const
     return false;
 }
 
-// Suggests the next name after `suggestion` ("D3" -> "D4", "7" -> "8").
-QString SchematicScene::askNetName(const QString& title, const QString& suggestion)
+// Suggests the next name after `suggestion` ("D3" -> "D4", "7" -> "8"),
+// or `suggestion` itself when not `following`.
+QString SchematicScene::askNetName(const QString& title, const QString& suggestion, bool following)
 {
     QString next = suggestion;
     static const QRegularExpression trailing(QStringLiteral("^(.*?)(\\d+)$"));
-    if (const auto m = trailing.match(suggestion); m.hasMatch())
+    if (const auto m = trailing.match(suggestion); following && m.hasMatch())
         next = m.captured(1) + QString::number(m.captured(2).toInt() + 1);
     bool ok = false;
     const QString name = QInputDialog::getText(dialogParent(), title, tr("Net name:"), QLineEdit::Normal, next, &ok).trimmed();
@@ -816,6 +828,22 @@ void SchematicScene::beginDrag()
         else if (it == m_titleItem)
             m_drag.titleStart = it->pos();
     }
+    // the entry labels of a dragged bus come along with it
+    QSet<ItemId> selectedLabels;
+    for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it)
+        selectedLabels.insert(it.key());
+    for (ItemId id : std::as_const(m_drag.wires)) {
+        const Wire* bus = m_circuit->wire(id);
+        if (!bus || !bus->bus)
+            continue;
+        const EntryMoves on = busEntryMoves(bus->points, [](QPointF) { return QPointF(1, 0); }, {}, selectedLabels);
+        for (auto l = on.labels.cbegin(); l != on.labels.cend(); ++l) {
+            if (m_drag.followers.contains(l.key()))
+                continue;
+            m_drag.followers.insert(l.key(), id);
+            m_drag.componentStart.insert(l.key(), m_circuit->component(l.key())->pos);
+        }
+    }
     m_drag.active = !m_drag.componentStart.isEmpty() || !m_drag.textStart.isEmpty() || !m_drag.wires.isEmpty()
                  || m_drag.titleStart;
 }
@@ -835,29 +863,52 @@ QHash<ItemId, QVector<QPointF>> SchematicScene::rubberBand() const
         for (int i = 0; i < item->symbol()->pins.size(); ++i)
             anchors << Anchor{m_library.pinScenePos(*c, i), delta};
     }
+    // ends of ordinary wires on a dragged bus line follow it too
+    struct BusAnchor { const QVector<QPointF>* line; QPointF delta; };
+    QVector<BusAnchor> buses;
+    for (ItemId id : m_drag.wires) {
+        const WireItem* item = m_wireItems.value(id);
+        if (item && item->wire().bus && !item->pos().isNull())
+            buses << BusAnchor{&item->wire().points, item->pos()};
+    }
     QHash<ItemId, QVector<QPointF>> out;
-    if (anchors.isEmpty())
+    if (anchors.isEmpty() && buses.isEmpty())
         return out;
+    auto deltaAt = [&](QPointF p, bool entry) -> std::optional<QPointF> {
+        for (const Anchor& a : anchors)
+            if (near(p, a.at)) return a.delta;
+        for (const BusAnchor& b : buses)
+            if (entry && WireGeometry::onPolyline(p, *b.line)) return b.delta;
+        return std::nullopt;
+    };
     for (const WireItem* w : m_wireItems) {
         if (m_drag.wires.contains(w->id()))
             continue;
+        const bool entry = !w->wire().bus;
         QVector<QPointF> pts = w->wire().points;
         const QPointF first = pts.first(), last = pts.last();
         bool changed = false;
-        for (const Anchor& a : anchors) {
-            if (near(first, a.at)) { moveEnd(pts, 0, a.delta); changed = true; break; }
-        }
-        for (const Anchor& a : anchors) {
-            if (near(last, a.at)) { moveEnd(pts, int(pts.size()) - 1, a.delta); changed = true; break; }
-        }
+        if (const auto d = deltaAt(first, entry)) { moveEnd(pts, 0, *d); changed = true; }
+        if (const auto d = deltaAt(last, entry)) { moveEnd(pts, int(pts.size()) - 1, *d); changed = true; }
         if (changed)
             out.insert(w->id(), simplify(pts));
     }
     return out;
 }
 
+void SchematicScene::placeFollowers()
+{
+    for (auto it = m_drag.followers.cbegin(); it != m_drag.followers.cend(); ++it) {
+        ComponentItem* label = m_componentItems.value(it.key());
+        const WireItem* bus = m_wireItems.value(it.value());
+        if (label && bus)
+            label->setPos(m_drag.componentStart.value(it.key()) + bus->pos());
+    }
+}
+
 void SchematicScene::updateDragPreview()
 {
+    placeFollowers();
     const auto rb = rubberBand();
     for (WireItem* w : std::as_const(m_wireItems)) {
         if (m_drag.wires.contains(w->id()))
@@ -872,6 +923,7 @@ void SchematicScene::updateDragPreview()
 void SchematicScene::commitDrag()
 {
     m_drag.active = false;
+    placeFollowers();
     Selection before, after;
     for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it) {
         const ComponentItem* item = m_componentItems.value(it.key());
@@ -1708,6 +1760,90 @@ QVector<QPointF> SchematicScene::editedWire(QPointF cursor) const
     return pts;
 }
 
+SchematicScene::EntryMoves SchematicScene::busEntryMoves(const QVector<QPointF>& bus,
+                                                         const std::function<QPointF(QPointF)>& delta,
+                                                         const QSet<ItemId>& skipWires, const QSet<ItemId>& skipLabels) const
+{
+    EntryMoves out;
+    for (const WireItem* w : m_wireItems) {
+        const Wire& wire = w->wire();
+        if (wire.bus || skipWires.contains(wire.id) || wire.points.size() < 2)
+            continue;
+        QVector<QPointF> pts = wire.points;
+        bool changed = false;
+        for (const bool first : {true, false}) {
+            const QPointF p = first ? wire.points.first() : wire.points.last();
+            if (!WireGeometry::onPolyline(p, bus))
+                continue;
+            if (const QPointF d = delta(p); !d.isNull()) {
+                moveEnd(pts, first ? 0 : int(pts.size()) - 1, d);
+                changed = true;
+            }
+        }
+        if (changed)
+            out.wires.insert(wire.id, simplify(pts));
+    }
+    for (const ComponentItem* item : m_componentItems) {
+        const Component& c = item->component();
+        if (!item->symbol()->netLabel || item->symbol()->pins.isEmpty() || skipLabels.contains(c.id))
+            continue;
+        const QPointF p = m_library.pinScenePos(c, 0);
+        if (!WireGeometry::onPolyline(p, bus))
+            continue;
+        if (const QPointF d = delta(p); !d.isNull())
+            out.labels.insert(c.id, c.pos + d);
+    }
+    return out;
+}
+
+// How the entries of the bus being reshaped move: those on a slid segment
+// slide with it; a dragged end carries its entry, and with it the end
+// segment of a bent bus slides sideways (as editedWire does).
+SchematicScene::EntryMoves SchematicScene::wireEditEntryMoves(QPointF cursor) const
+{
+    if (!m_wireEdit)
+        return {};
+    const Wire* wire = m_circuit->wire(m_wireEdit->wire);
+    if (!wire || !wire->bus)
+        return {};
+    const QVector<QPointF>& pts = m_wireEdit->original;
+    const QPointF delta = cursor - m_wireEdit->start;
+    std::function<QPointF(QPointF)> moved;
+    if (m_wireEdit->endpoint >= 0) {
+        const int end = m_wireEdit->endpoint;
+        const QPointF tip = pts[end];
+        const QPointF next = pts[end == 0 ? 1 : int(pts.size()) - 2];
+        const QPointF side = pts.size() == 2 ? QPointF()
+                           : std::abs(tip.y() - next.y()) < 0.5 ? QPointF(0, delta.y()) : QPointF(delta.x(), 0);
+        moved = [=](QPointF p) {
+            if (near(p, tip)) return delta;
+            return WireGeometry::onPolyline(p, {tip, next}) ? side : QPointF();
+        };
+    } else {
+        const int i = m_wireEdit->segment;
+        const bool horizontal = std::abs(pts[i].y() - pts[i + 1].y()) < 0.5;
+        const bool vertical = std::abs(pts[i].x() - pts[i + 1].x()) < 0.5;
+        const QPointF d = horizontal ? QPointF(0, delta.y()) : vertical ? QPointF(delta.x(), 0) : delta;
+        const QVector<QPointF> segment{pts[i], pts[i + 1]};
+        moved = [=](QPointF p) { return WireGeometry::onPolyline(p, segment) ? d : QPointF(); };
+    }
+    return busEntryMoves(pts, moved, {}, {});
+}
+
+void SchematicScene::previewEntries(const EntryMoves& moves, const EntryMoves& previous)
+{
+    for (auto it = previous.wires.cbegin(); it != previous.wires.cend(); ++it)
+        if (!moves.wires.contains(it.key()))
+            if (WireItem* w = m_wireItems.value(it.key())) w->clearPreview();
+    for (auto it = moves.wires.cbegin(); it != moves.wires.cend(); ++it)
+        if (WireItem* w = m_wireItems.value(it.key())) w->setPreview(it.value());
+    for (auto it = previous.labels.cbegin(); it != previous.labels.cend(); ++it)
+        if (!moves.labels.contains(it.key()))
+            if (ComponentItem* c = m_componentItems.value(it.key())) c->setPos(c->component().pos);
+    for (auto it = moves.labels.cbegin(); it != moves.labels.cend(); ++it)
+        if (ComponentItem* c = m_componentItems.value(it.key())) c->setPos(it.value());
+}
+
 void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
 {
     m_cursor = snap(e->scenePos());
@@ -1734,6 +1870,9 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
     if (m_wireEdit) {
         if (WireItem* w = m_wireItems.value(m_wireEdit->wire))
             w->setPreview(editedWire(m_cursor));
+        const EntryMoves entries = wireEditEntryMoves(m_cursor);
+        previewEntries(entries, m_entryPreview);
+        m_entryPreview = entries;
         return;
     }
     if (m_textDrag) {
@@ -1819,7 +1958,10 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
     if (m_wireEdit) {
         const WireEdit edit = *m_wireEdit;
         const QVector<QPointF> pts = simplify(editedWire(snap(e->scenePos())));
+        const EntryMoves entries = wireEditEntryMoves(snap(e->scenePos()));
         m_wireEdit.reset();
+        previewEntries({}, m_entryPreview);
+        m_entryPreview = {};
         WireItem* item = m_wireItems.value(edit.wire);
         if (!item)
             return;
@@ -1833,7 +1975,19 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
             Wire w = before.wires.first();
             w.points = pts;
             after.wires << w;
-            m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Reshape wire")));
+            for (auto it = entries.wires.cbegin(); it != entries.wires.cend(); ++it) {
+                Wire entry = *m_circuit->wire(it.key());
+                before.wires << entry;
+                entry.points = it.value();
+                after.wires << entry;
+            }
+            for (auto it = entries.labels.cbegin(); it != entries.labels.cend(); ++it) {
+                Component label = *m_circuit->component(it.key());
+                before.components << label;
+                label.pos = it.value();
+                after.components << label;
+            }
+            m_undo->push(new ModifyItemsCommand(m_circuit, before, after, w.bus ? tr("Reshape bus") : tr("Reshape wire")));
             if (WireItem* again = m_wireItems.value(edit.wire)) again->setSelected(true);
         }
         return;
