@@ -1769,16 +1769,19 @@
     "type": "spdt"
    },
    "props": {
-    "coil": "100"
+    "pullin": "4",
+    "dropoff": "0.1",
+    "resistance": "500",
+    "inductance": "10m"
    },
    "spice": {
-    "line": "R{name} {C1} {C2} {prop:coil}\nS{name}a {COM} {NO} {C1} {C2} RELAY_NO\nS{name}b {COM} {NC} {C1} {C2} RELAY_NC",
+    "line": "L{name} {C1} {name}_a {prop:inductance}\nR{name} {name}_a {C2} {prop:resistance}\nB{name}o {name}_o 0 V=abs(v({name}_a,{C2}))/(0.98*{prop:pullin})\nB{name}c {name}_c 0 V={prop:pullin}-{prop:dropoff}-abs(v({name}_a,{C2}))\nS{name}a {COM} {NO} {name}_o 0 RELAY_ON1\nS{name}b {COM} {NC} {name}_c 0 RELAY_ON0",
     "models": [
-     ".model RELAY_NO sw vt=2.5 vh=0.5 ron=50m roff=1G",
-     ".model RELAY_NC sw vt=2.5 vh=0.5 ron=1G roff=50m"
+     ".model RELAY_ON1 sw vt=1 ron=1m roff=1G",
+     ".model RELAY_ON0 sw vt=0 ron=1m roff=1G"
     ]
    },
-   "description": "Relay: the coil (C1 positive) pulls COM from NC to NO above 3 V; digitally, when C1 and C2 differ",
+   "description": "Relay: the coil (C1 positive, resistance and inductance in the properties) pulls COM from NC to NO above the pull-in voltage; digitally, when C1 and C2 differ",
    "graphics": [
     {
      "circle": [

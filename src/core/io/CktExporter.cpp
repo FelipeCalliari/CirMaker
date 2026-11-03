@@ -423,7 +423,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         }
         // signal generator (0xC3): sine parameters in the nets and in a block of
         // its own; CircuitMaker writes the SPICE line from them
-        QString spice = l.spice;
+        // an empty template leaves the part out of CircuitMaker's simulation
+        QString spice = c.props.value(QStringLiteral("noSpice")).toBool() ? QString() : l.spice;
         QVector<int> sine;
         if (l.type == 0xc3) {
             const double amplitude = number(c.props.value(QStringLiteral("amplitude"), QStringLiteral("1")).toString());

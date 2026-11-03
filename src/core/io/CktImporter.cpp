@@ -22,6 +22,7 @@
 
 #include "core/NetlistBuilder.h"
 #include "core/io/CktFile.h"
+#include "core/io/CmDeviceLib.h"
 #include "core/io/CmUserLib.h"
 #include "core/WireGeometry.h"
 #include "core/io/NativeFormat.h"
@@ -162,7 +163,7 @@ Device readDevice(Reader& r, double version)
     d.tag = r.string();
     if (!d.tag.isEmpty()) r.ints(4);
     r.string();                                 // power pins, e.g. "DVCC=14;DGND=7;"
-    r.string();                                 // SPICE template
+    d.spice = r.string();                       // SPICE template ("%D %1 0 DC %V"); empty: not simulated
     r.string();
     if (version > 4.0) {
         d.kind = r.string();                    // "type:digital", or a model alias with parameters
@@ -350,6 +351,18 @@ namespace {
 
 bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report, int depth);
 
+// CircuitMaker's Device.lib, read once (empty when it is not installed).
+const CmDeviceLib& deviceLib()
+{
+    static const CmDeviceLib lib = [] {
+        CmDeviceLib l;
+        const QString path = CmDeviceLib::locate(QSettings().value(QStringLiteral("cm/folder")).toString());
+        if (!path.isEmpty()) l.load(path);
+        return l;
+    }();
+    return lib;
+}
+
 // The macros of CircuitMaker's User.lib, read once.
 const CmUserLib& userLib()
 {
@@ -498,6 +511,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         c.rotation = valid ? rotationFromAngle(angle) : 0;
         if (d.delay > 1)
             c.props.insert(QStringLiteral("delay"), d.delay);
+        // CircuitMaker leaves a part out of SPICE when its instance has an
+        // empty template although the library device has one (5.x files)
+        if (file.version >= 5.0 && d.spice.trimmed().isEmpty())
+            if (const CmLibDevice* dev = deviceLib().find(d.name); dev && !dev->spice.trimmed().isEmpty())
+                c.props.insert(QStringLiteral("noSpice"), true);
         // CircuitMaker mirrors after turning: a mirrored quarter turn is
         // our mirror with the opposite turn
         if (c.mirrored && (angle == 90 || angle == 270)) c.rotation = (c.rotation + 2) % 4;
@@ -514,6 +532,16 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             c.label = s->defaultLabel;
         }
         c.symbolId = s->id;
+        // relays named by their coil (SPDTRELA.SUB): pull-in voltage and coil resistance
+        if (s->id == u"relay_spdt") {
+            static const QHash<QString, std::pair<const char*, const char*>> relays{
+                {QStringLiteral("5VSPDT"), {"4", "500"}}, {QStringLiteral("12VSPDT"), {"9.6", "1000"}},
+                {QStringLiteral("24VSPDT"), {"19.2", "1500"}}, {QStringLiteral("120VSPDT"), {"96", "2000"}}};
+            if (const auto r = relays.constFind(d.value.trimmed().toUpper()); r != relays.cend()) {
+                c.props.insert(QStringLiteral("pullin"), QString::fromLatin1(r->first));
+                c.props.insert(QStringLiteral("resistance"), QString::fromLatin1(r->second));
+            }
+        }
         // model parameters given with the alias, "{Fc=100k Fr=50k}": those the part has
         static const QRegularExpression params(QStringLiteral("\\{([^}]*)\\}"));
         if (const auto m = params.match(d.kind); m.hasMatch()) {

@@ -1191,10 +1191,16 @@ def power_parts():
          'description': 'Timer: OUT goes high when TRG < VCC/3 and low when THR > 2/3 VCC; DIS shorts to GND while OUT is low'},
         {'id': 'relay_spdt', 'name': 'SPDT Relay', 'prefix': 'K', 'label': '100', 'aliases': ['SPDT Relay', 'Relay'],
          'cmPins': ['COM', 'NC', 'NO', 'C1', 'C2'], 'display': 'button', 'model': {'kind': 'relay', 'type': 'spdt'},
-         'props': {'coil': '100'},
-         'spice': sp('R{name} {C1} {C2} {prop:coil}\nS{name}a {COM} {NO} {C1} {C2} RELAY_NO\n'
-                     'S{name}b {COM} {NC} {C1} {C2} RELAY_NC', 'RELAY_NO', 'RELAY_NC'),
-         'description': 'Relay: the coil (C1 positive) pulls COM from NC to NO above 3 V; digitally, when C1 and C2 differ',
+         # CircuitMaker's XSPDTRELAY: NO closes above 98 % of the pull-in voltage,
+         # NC opens until the coil falls below pull-in less drop-off
+         'props': {'pullin': '4', 'dropoff': '0.1', 'resistance': '500', 'inductance': '10m'},
+         'spice': {'line': N.join(['L{name} {C1} {name}_a {prop:inductance}', 'R{name} {name}_a {C2} {prop:resistance}',
+                                   'B{name}o {name}_o 0 V=abs(v({name}_a,{C2}))/(0.98*{prop:pullin})',
+                                   'B{name}c {name}_c 0 V={prop:pullin}-{prop:dropoff}-abs(v({name}_a,{C2}))',
+                                   'S{name}a {COM} {NO} {name}_o 0 RELAY_ON1', 'S{name}b {COM} {NC} {name}_c 0 RELAY_ON0']),
+                   'models': ['.model RELAY_ON1 sw vt=1 ron=1m roff=1G', '.model RELAY_ON0 sw vt=0 ron=1m roff=1G']},
+         'description': 'Relay: the coil (C1 positive, resistance and inductance in the properties) pulls COM from NC '
+                        'to NO above the pull-in voltage; digitally, when C1 and C2 differ',
          'graphics': [C(30, -60, 3), C(20, -80, 3), C(20, -40, 3),
                       L(33, -60, 50, -60), L(23, -80, 50, -80), L(23, -40, 50, -40),
                       R(-40, 0, 30, 40), L(-35, 5, -15, 35), L(-50, -20, -25, -20), L(-25, -20, -25, 0),

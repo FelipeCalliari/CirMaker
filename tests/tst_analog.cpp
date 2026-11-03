@@ -1439,6 +1439,12 @@ void TestAnalog::importedExamplesSimulate()
             ++skipped;
             continue;
         }
+        // the author's own note in the title block (Audioamp.ckt; CircuitMaker
+        // itself misses its relay model)
+        if (QFile f(path); f.open(QIODevice::ReadOnly) && f.read(4096).contains("Not for Simulation")) {
+            ++skipped;
+            continue;
+        }
         AnalysisSettings a = c.analysis();
         a.type = AnalysisSettings::Type::Transient;
         a.tranStop = QStringLiteral("2m");
@@ -1463,7 +1469,7 @@ void TestAnalog::importedExamplesSimulate()
         if (QFileInfo(path).fileName() == qEnvironmentVariable("CM_EXAMPLE_DECK"))
             qInfo("%s", qPrintable(deck.text));
     }
-    qInfo("analog examples: %d simulated, %d ok, %d skipped (parts without equivalent)", ran, okCount, skipped);
+    qInfo("analog examples: %d simulated, %d ok, %d skipped (parts without equivalent, not for simulation)", ran, okCount, skipped);
     for (const QString& f : std::as_const(failures))
         qInfo("  %s", qPrintable(f));
     // a few demos depend on CircuitMaker's own convergence settings, or on

@@ -187,6 +187,11 @@ private:
 
     void emitComponent(const Component& c, const SymbolDef& s)
     {
+        // a part whose SPICE template was cleared in CircuitMaker: drawing only
+        if (c.props.value(QStringLiteral("noSpice")).toBool()) {
+            m_deck.warnings << QStringLiteral("%1 (%2) is left out of the simulation (no SPICE template)").arg(c.designator, s.name);
+            return;
+        }
         const QString kind = s.model.value(u"kind").toString();
         const QString name = uniqueName(c);
         // the part's own SPICE line and models (Edit/Select Spice Model) win
