@@ -42,8 +42,16 @@ struct CktText {
     int fontHeight = 13;
 };
 
+// The title block, just before the device list: display mode (0 hidden) and
+// five strings.
+struct CktTitle {
+    int mode = 0;
+    QString title, name, date, revision, id;
+};
+
 struct CktFile {
     double version = 0;
+    std::optional<CktTitle> title;
     QVector<Device> devices;
     QVector<CktWire> wires;
     QVector<CktText> texts;

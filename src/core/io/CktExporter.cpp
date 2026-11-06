@@ -724,7 +724,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         << QStringLiteral("0") << QStringLiteral("0 7") << QStringLiteral("0 4 0.500000 0.500000") << rect(extent)
         << QStringLiteral("42991634 0");
     const TitleBlock& tb = circuit.titleBlock();
-    out << QStringLiteral("0") << str(tb.title) << str(tb.author) << QStringLiteral("0") << QStringLiteral("0") << QStringLiteral("0");
+    // title block: display mode (2: on all pages), title, name, date, revision, ID
+    out << QString::number(tb.visible ? 2 : 0) << str(tb.title) << str(tb.author) << str(tb.date) << str(tb.revision)
+        << QStringLiteral("0");
     out << QString::number(records.size());
     out << records;
     out << QString::number(wireRecords.size());

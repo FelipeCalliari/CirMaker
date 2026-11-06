@@ -96,6 +96,7 @@ public:
         s.remove(u'\r');
         return s;
     }
+    int position() const { return m_p; }
 
 private:
     const QString& m_d;
@@ -234,6 +235,28 @@ CktFile parseAt(const QString& d, int pos, double version)
     return f;
 }
 
+// The title block ends where the device list starts: the first line start
+// from which a number and five strings lead exactly there.
+std::optional<CktTitle> titleBefore(const QString& d, int listStart)
+{
+    static const QRegularExpression lineStart(QStringLiteral("(?m)^\\d+\\s*$"));
+    for (auto it = lineStart.globalMatch(d.left(listStart)); it.hasNext();) {
+        const auto m = it.next();
+        try {
+            Reader r(d, int(m.capturedStart()));
+            CktTitle t;
+            t.mode = r.integer();
+            for (QString* s : {&t.title, &t.name, &t.date, &t.revision, &t.id})
+                *s = r.string().trimmed();
+            int end = r.position();
+            while (end < listStart && d[end].isSpace()) ++end;
+            if (end == listStart && t.mode >= 0 && t.mode <= 4) return t;
+        } catch (const ParseError&) {
+        }
+    }
+    return std::nullopt;
+}
+
 // The header differs between versions; the device list is the first place
 // where "<count>\n<len> <name>" parses all the way through the text list.
 CktFile parse(const QByteArray& raw)
@@ -254,7 +277,9 @@ CktFile parse(const QByteArray& raw)
         const auto m = it.next();
         if (m.captured(1).toInt() <= 0) continue;
         try {
-            return parseAt(d, int(m.capturedStart()), version);
+            CktFile f = parseAt(d, int(m.capturedStart()), version);
+            f.title = titleBefore(d, int(m.capturedStart()));
+            return f;
         } catch (const ParseError& e) {
             lastError = QString::fromUtf8(e.what());
         }
@@ -792,6 +817,21 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             label.props.insert(QStringLiteral("bus"), e.bus);
         label.props.insert(QStringLiteral("side"), entrySide(e.at, e.from));
         circuit.addComponent(label);
+    }
+
+    if (file.title && (file.title->mode || !file.title->title.isEmpty() || !file.title->name.isEmpty())) {
+        // CircuitMaker keeps it in a page corner; here it goes below the drawing
+        TitleBlock tb;
+        tb.title = file.title->title;
+        tb.author = file.title->name;
+        tb.date = file.title->date;
+        tb.revision = file.title->revision;
+        tb.visible = file.title->mode != 0;
+        double right = 0, bottom = 0;
+        for (const Component& c : circuit.components())
+            right = std::max(right, c.pos.x()), bottom = std::max(bottom, c.pos.y());
+        tb.pos = QPointF(right, bottom + 100);
+        circuit.setTitleBlock(tb);
     }
 
     for (const CktText& t : file.texts) {

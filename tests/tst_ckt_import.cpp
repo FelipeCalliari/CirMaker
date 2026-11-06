@@ -35,6 +35,7 @@ private slots:
     void symbolPinGeometry();
     void propagationDelaysRoundTrip();
     void keysAndTextsRoundTrip();
+    void importsTitleBlock();
     void busEntriesAtOnePoint();
 
 private:
@@ -513,6 +514,13 @@ void TestCktImport::keysAndTextsRoundTrip()
     k.props.insert(QStringLiteral("value"), int('Q'));
     a.updateComponent(k);
     a.addText({0, {0, 300}, QStringLiteral("Start\nDelay"), 12});
+    TitleBlock tb;
+    tb.title = QStringLiteral("Two keys");
+    tb.author = QStringLiteral("Someone");
+    tb.date = QStringLiteral("2026-11-05");
+    tb.revision = QStringLiteral("B");
+    tb.visible = true;
+    a.setTitleBlock(tb);
     const QByteArray data = CktExporter::write(a, library(), cmLib);
     QVERIFY2(data.contains("0 0 0 12\r\n"), "text length not recorded");
     Circuit b;
@@ -524,6 +532,36 @@ void TestCktImport::keysAndTextsRoundTrip()
     QCOMPARE(values.value(QStringLiteral("asciikey")), int('Q'));
     QCOMPARE(b.texts().size(), 1);
     QCOMPARE(b.texts().first().text, QStringLiteral("Start\nDelay"));
+    QCOMPARE(b.titleBlock().title, tb.title);
+    QCOMPARE(b.titleBlock().author, tb.author);
+    QCOMPARE(b.titleBlock().date, tb.date);
+    QCOMPARE(b.titleBlock().revision, tb.revision);
+    QVERIFY(b.titleBlock().visible);
+}
+
+// The title block CircuitMaker 2000 wrote (Options > Schematic > Title Block)
+void TestCktImport::importsTitleBlock()
+{
+    const QByteArray head = "CircuitMaker Text\r\n5.6\r\nProbes: 0\r\n0 0 5 100 10\r\n42991616 0\r\n"
+                            "2\r\n9 \r\r\nTITLEbb\r\n8 \r\r\nNAMEaa\r\n6 DATEee\r\n5 REVdd\r\n4 IDcc\r\n";
+    Circuit a;
+    place(a, QStringLiteral("inv"), {0, 0}, QStringLiteral("U1"));
+    CmDeviceLib cmLib;
+    if (!cmLib.load(CmDeviceLib::locate()))
+        QSKIP("CircuitMaker 2000 is not installed");
+    QByteArray data = CktExporter::write(a, library(), cmLib);
+    // keep the device list and what follows; put CircuitMaker's header before it
+    const int list = data.indexOf("\r\n1\r\n") + 2;
+    QVERIFY(list > 2);
+    data = head + data.mid(list);
+    Circuit b;
+    QVERIFY(CktImporter::importData(data, b, library(), nullptr, nullptr));
+    QCOMPARE(b.components().size(), 1);
+    QCOMPARE(b.titleBlock().title, QStringLiteral("TITLEbb"));
+    QCOMPARE(b.titleBlock().author, QStringLiteral("NAMEaa"));
+    QCOMPARE(b.titleBlock().date, QStringLiteral("DATEee"));
+    QCOMPARE(b.titleBlock().revision, QStringLiteral("REVdd"));
+    QVERIFY(b.titleBlock().visible);
 }
 
 // Diagnostic (CM_PIN_GEOMETRY=1): symbols whose pins are not where
