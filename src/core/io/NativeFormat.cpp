@@ -37,7 +37,9 @@ QJsonObject analysisToJson(const AnalysisSettings& a)
             {u"tempStart"_s, a.tempStart}, {u"tempStop"_s, a.tempStop}, {u"tempStep"_s, a.tempStep},
             {u"paramDevice"_s, a.paramDevice}, {u"paramStart"_s, a.paramStart}, {u"paramStop"_s, a.paramStop},
             {u"paramStep"_s, a.paramStep}, {u"mcRuns"_s, a.mcRuns}, {u"mcTolerance"_s, a.mcTolerance},
-            {u"spiceOptions"_s, a.spiceOptions}};
+            {u"spiceOptions"_s, a.spiceOptions}, {u"cmAnalyses"_s, a.cmAnalyses},
+            {u"cmOptions"_s, a.cmOptions}, {u"cmSimLine"_s, a.cmSimLine},
+            {u"dcSource2"_s, a.dcSource2}, {u"dcStart2"_s, a.dcStart2}, {u"dcStop2"_s, a.dcStop2}, {u"dcStep2"_s, a.dcStep2}};
 }
 
 QJsonObject faultsToJson(const FaultSettings& f)
@@ -97,6 +99,13 @@ AnalysisSettings analysisFromJson(const QJsonObject& o)
     a.dcStart = o.value(u"dcStart").toString(a.dcStart);
     a.dcStop = o.value(u"dcStop").toString(a.dcStop);
     a.dcStep = o.value(u"dcStep").toString(a.dcStep);
+    a.cmAnalyses = o.value(u"cmAnalyses").toInt(a.cmAnalyses);
+    a.cmOptions = o.value(u"cmOptions").toInt(a.cmOptions);
+    a.cmSimLine = o.value(u"cmSimLine").toString();
+    a.dcSource2 = o.value(u"dcSource2").toString();
+    a.dcStart2 = o.value(u"dcStart2").toString(a.dcStart2);
+    a.dcStop2 = o.value(u"dcStop2").toString(a.dcStop2);
+    a.dcStep2 = o.value(u"dcStep2").toString(a.dcStep2);
     return a;
 }
 

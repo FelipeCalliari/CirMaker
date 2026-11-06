@@ -188,6 +188,19 @@ qint32 floatBits(double v)
 // Days since 30 Dec 1899, as CircuitMaker stamps its devices.
 int oleDate() { return int(QDate(1899, 12, 30).daysTo(QDate::currentDate())); }
 
+// A device's two stamps, the date it was placed and its place in the order
+// of placing, are 32-bit floats that CircuitMaker writes and reads as the low
+// half of a double ("5.89008e-315 5.26354e-315" is 36608.3 and 1.0). The
+// order decides which part names a SPICE node (the earliest: "Vcc_1"), and
+// expressions such as the 741's V(vcc_1) depend on it.
+QString floatStamp(double v)
+{
+    const quint64 bits = quint32(floatBits(v));
+    double d;
+    std::memcpy(&d, &bits, 8);
+    return v == 0 ? QStringLiteral("0") : QString::number(d, 'g', 17);
+}
+
 const char* const kHeaderStart =
     "CircuitMaker Text\n5.6\nProbes: 0\n"
     "41 35 62 4 97 108 86 46 82 16 73 113 113 59 105 107 \n"
@@ -204,11 +217,15 @@ QString trailer(const AnalysisSettings& a)
     auto num = [](const QString& v) { return QString::number(number(v), 'g', 6); };
     const int bit = a.type == T::OperatingPoint ? 1 : a.type == T::DCSweep ? 4 : a.type == T::AC ? 8
                   : a.type == T::Transient || a.type == T::Fourier ? 16 : 0;
+    // the analyses the file had while ours is among them (17: operating
+    // point and transient), else ours with its other settings
+    const int had = a.cmAnalyses;
+    const int enabled = had >= 0 && (had & bit) ? had : (had >= 0 ? had & ~0x1d : 2048) | bit;
     // CircuitMaker ends the .OPTIONS line with its own CR LF, inside the string
     QStringList l{a.spiceOptions.trimmed().isEmpty() ? QStringLiteral("0") : str(QStringLiteral(".OPTIONS ") + a.spiceOptions.trimmed() + u'\n'),
-                  QStringLiteral("%1 0 0").arg(2048 | bit), QStringLiteral("0"), QStringLiteral("0"),
+                  QStringLiteral("%1 0 0").arg(enabled), QStringLiteral("0"), QStringLiteral("0"),
                   str(a.dcSource), QStringList{num(a.dcStart), num(a.dcStop), num(a.dcStep)}.join(u' '),
-                  QStringLiteral("0"), QStringLiteral("0 0 0"),
+                  str(a.dcSource2), QStringList{num(a.dcStart2), num(a.dcStop2), num(a.dcStep2)}.join(u' '),
                   QStringLiteral("%1 0 %2 %3").arg(a.acPointsPerDecade).arg(num(a.acStart), num(a.acStop)),
                   QStringLiteral("0 %1 %2 %2").arg(num(a.tranStop), num(a.tranStep))};
     const char* const general[] = {"0", "0", "0 0 0", "0 0 0", "0", "0", "0 0 0 0", "0", "0 0 0 0 0", "0 0 0 0", "0",
@@ -630,6 +647,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         } else {
             QVector<int> own = l.packageMap.mid(1, n);
             own.resize(n);
+            const QStringList kept = c.props.value(QStringLiteral("cmPins")).toString().split(u' ', Qt::SkipEmptyParts);
+            if (kept.size() == n)
+                for (int k = 0; k < n; ++k) own[k] = kept[k].toInt();
             pkg << own << own << 0;
         }
         const int pinMax = int(nets.size()) - 1;
@@ -655,7 +675,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         const QPointF designatorAnchor(r.right() + 3, r.top() + 6);
         const QPointF labelAnchor = s.netLabel ? QPointF(r.right() + 2, r.center().y())
                                                : QPointF(r.right() + 3, r.top() + (showDesignator ? 26 : 6));
-        const int flags = (l.flags & ~0x300) | 0x10 | (showDesignator ? 0x200 : 0) | (showLabel ? 0x100 : 0);
+        const int ownFlags = c.props.value(QStringLiteral("cmFlags"), l.flags).toInt();
+        const int flags = (ownFlags & ~0x300) | 0x10 | (showDesignator ? 0x200 : 0) | (showLabel ? 0x100 : 0);
 
         int group = 0;
         if (l.parts > 1) {
@@ -697,7 +718,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         rec << join({l.code & 0xffff, 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);
         rec << join({i + 1, 0, 0});
-        rec << QStringLiteral("2") << QStringLiteral("%1 0").arg(oleDate()) << QStringLiteral("0");
+        rec << QStringLiteral("2") << floatStamp(oleDate()) + u' ' + floatStamp(i) << QStringLiteral("0");
         if (!data.isEmpty()) rec << hexBytes(data);
         records << rec.join(u'\n');
     }
@@ -830,11 +851,12 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         head.replace(QStringLiteral("Probes: 0"), p.join(u'\n'));
     }
     QStringList out{head};
-    out << QStringLiteral("0 0 1 100 10") << rect(extent);
+    const AnalysisSettings& as = circuit.analysis();
+    out << (as.cmSimLine.isEmpty() ? QStringLiteral("0 0 1 100 10") : as.cmSimLine) << rect(extent);
     out << str(QStringLiteral("5.000 V")) << str(QStringLiteral("5.000 V")) << str(QStringLiteral("GND"));
     out << QStringLiteral("0 0") << QStringLiteral("24 100 0 0 0") << str(QStringLiteral("Package,Description,"))
         << QStringLiteral("0") << QStringLiteral("0 7") << QStringLiteral("0 4 0.500000 0.500000") << rect(extent)
-        << QStringLiteral("%1 0").arg(42991634 | (circuit.analysis().analogMode ? 0x80000 : 0));
+        << QStringLiteral("%1 0").arg(((as.cmOptions >= 0 ? as.cmOptions : 42991634) & ~0x80000) | (as.analogMode ? 0x80000 : 0));
     const TitleBlock& tb = circuit.titleBlock();
     // title block: display mode (2: on all pages), title, name, date, revision, ID
     const bool titled = tb.visible || !tb.title.isEmpty() || !tb.author.isEmpty() || !tb.date.isEmpty() || !tb.revision.isEmpty();

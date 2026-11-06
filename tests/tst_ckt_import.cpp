@@ -37,6 +37,7 @@ private slots:
     void signalGenerators();
     void simExample();
     void importsProbes();
+    void exportKeepsNodeNaming();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -590,6 +591,46 @@ void TestCktImport::importsProbes()
     QCOMPARE(parts[QStringLiteral("U1A")].second, parts[QStringLiteral("U1B")].second);
     QCOMPARE(parts[QStringLiteral("U3A")].second, parts[QStringLiteral("U3B")].second);
     QVERIFY(parts[QStringLiteral("U1A")].second != parts[QStringLiteral("U3A")].second);
+}
+
+// 741.ckt written back so that CircuitMaker names its SPICE nodes as in the
+// original: its BGND reads V(vcc_1), the node of Vcc's pin 1. CircuitMaker
+// names a node after the earliest placed part on it, by the order stamp
+// each part carries (a float written as the low half of a double); its
+// suffix is the package pin (Q1_3: TO-18 "3,2,1").
+void TestCktImport::exportKeepsNodeNaming()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/741.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    const QString text = QString::fromLatin1(CktExporter::write(c, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    // the stamps: "2", then the date and the order, one part after another
+    static const QRegularExpression stamp(QStringLiteral("\\n2\\n(\\S+) (\\S+)\\n"));
+    QVector<float> order;
+    for (auto it = stamp.globalMatch(text); it.hasNext();) {
+        const double d = it.next().captured(2).toDouble();
+        quint64 bits;
+        std::memcpy(&bits, &d, 8);
+        const quint32 low = quint32(bits);
+        float f;
+        std::memcpy(&f, &low, 4);
+        order << f;
+    }
+    QVERIFY(order.size() > 40);
+    for (int k = 0; k < order.size(); ++k) QCOMPARE(order[k], float(k));
+    // Q1's package pins as its model gives them
+    QVERIFY(text.contains(QStringLiteral("\n2 Q1\n")));
+    QVERIFY(text.contains(QStringLiteral("5 TO-18\n7\n0 3 2 1 3 2 1 0\n")));
+    // the analyses as they were: operating point and transient, without
+    // "Always set defaults", and the DC sweep's second source
+    QVERIFY(text.contains(QStringLiteral("\n17 0 0\n0\n0\n3 Vin\n-1.5 -0.7 0.01\n3 Vcc\n10 14 1\n")));
+    // the header's option bits and its Speed line
+    QVERIFY(text.contains(QStringLiteral("\n9961472 0\n")));
+    QVERIFY(text.contains(QStringLiteral("\n0 0 30 100 10\n")));
 }
 
 void TestCktImport::importedCounterCounts()

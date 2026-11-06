@@ -59,6 +59,8 @@ struct CktFile {
     // the header's option bits ("42991616 0" before the title block);
     // 0x80000 is CircuitMaker's Analog Mode
     std::optional<int> options;
+    // the header's "0 0 30 100 10" (the third is the digital Speed)
+    QString simLine;
     // what follows the text list: the analysis setup (see CktImporter.cpp)
     QString trailer;
     // waveform probes of the header ("Probes: 2", then name, analysis and

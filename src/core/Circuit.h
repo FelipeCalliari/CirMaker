@@ -74,6 +74,14 @@ struct AnalysisSettings {
     QString mcTolerance = QStringLiteral("10");      // percent, on R, C and L values
     // SPICE options for the run (".OPTIONS METHOD=GEAR ITL4=100" without the keyword)
     QString spiceOptions;
+    // CircuitMaker's Analyses Setup as read from a .ckt, written back: the
+    // analyses enabled (1 operating point, 4 DC, 8 AC, 16 transient; 2048
+    // "Always set defaults"; -1: none read) and the DC sweep's second source
+    int cmAnalyses = -1;
+    // and the header's option bits (-1: none read) and "0 0 30 100 10" line
+    int cmOptions = -1;
+    QString cmSimLine;
+    QString dcSource2, dcStart2 = QStringLiteral("0"), dcStop2 = QStringLiteral("0"), dcStep2 = QStringLiteral("0");
     // Digital breakpoints (CircuitMaker Digital Options): level or edge
     // conditions, all of them or any one.
     bool breakEdge = true, breakAll = false;

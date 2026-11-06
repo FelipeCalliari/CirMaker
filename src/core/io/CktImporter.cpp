@@ -315,6 +315,8 @@ CktFile parse(const QByteArray& raw)
             static const QRegularExpression options(QStringLiteral("(?m)^(\\d{6,}) -?\\d+\\s*$"));
             for (auto o = options.globalMatch(d.left(int(m.capturedStart()))); o.hasNext();)
                 f.options = int(o.next().captured(1).toLongLong());
+            static const QRegularExpression simLine(QStringLiteral("(?m)^0 0 -?\\d+ -?\\d+ -?\\d+(?=\\s*$)"));
+            if (const auto s = simLine.match(d.left(int(m.capturedStart()))); s.hasMatch()) f.simLine = s.captured(0);
             return f;
         } catch (const ParseError& e) {
             lastError = QString::fromUtf8(e.what());
@@ -658,6 +660,18 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
                 c.props.insert(QStringLiteral("cmModelAt"), QStringLiteral("%1 %2").arg(d.misc[2]).arg(d.misc[3]));
             if (!d.package.isEmpty()) c.props.insert(QStringLiteral("cmPackage"), d.package);
         }
+        // the instance's own flags where they are not the library's (which of
+        // its quantities SPICE saves, 0x80 and 0x1000), apart from the shown texts
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && ((d.flags ^ dev->flags) & ~0x310))
+            c.props.insert(QStringLiteral("cmFlags"), d.flags & ~0x300);
+        // a single part's package pins when its model gives others than the
+        // library ("pkg:TO-18 3,2,1"): CircuitMaker names SPICE nodes by them (Q1_3)
+        if (const CmLibDevice* dev = deviceLib().find(d.name);
+            dev && dev->parts <= 1 && !d.packagePins.isEmpty() && d.packagePins != dev->packageMap.mid(1, d.packagePins.size())) {
+            QStringList pins;
+            for (int p : d.packagePins) pins << QString::number(p);
+            c.props.insert(QStringLiteral("cmPins"), pins.join(u' '));
+        }
         // an instance's own SPICE template (741.ckt's BB: "I=I(VB)*10.61E6-..."), kept for export
         if (!d.spice.trimmed().isEmpty() && d.type != 0xc3)
             if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->spice.trimmed() != d.spice.trimmed())
@@ -868,14 +882,17 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         };
         const QString dcSource = r.string().trimmed();
         const QString dcStart = num(), dcStop = num(), dcStep = num();
-        r.string();
-        r.ints(0), num(), num(), num();
+        const QString dcSource2 = r.string().trimmed();
+        const QString dcStart2 = num(), dcStop2 = num(), dcStep2 = num();
         const int acPoints = r.integer();
         r.integer();
         const QString acStart = num(), acStop = num();
         num();
         const QString tranStop = num(), tranStep = num();
         analysis.spiceOptions = opts;
+        analysis.cmAnalyses = enabled;
+        analysis.dcSource2 = dcSource2;
+        analysis.dcStart2 = dcStart2, analysis.dcStop2 = dcStop2, analysis.dcStep2 = dcStep2;
         analysis.dcSource = dcSource;
         if (dcStep.toDouble() != 0) analysis.dcStart = dcStart, analysis.dcStop = dcStop, analysis.dcStep = dcStep;
         if (acStop.toDouble() > 0) {
@@ -901,9 +918,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             ++analogOnly;
     // the file's own mode where it records one
     if (file.options) analogOnly = (*file.options & 0x80000) ? 1 : 0;
-    if (analogOnly > 0 || analysisRead) {
+    if (analogOnly > 0 || analysisRead || file.options) {
         AnalysisSettings a = analysisRead ? analysis : AnalysisSettings{};
         a.analogMode = analogOnly > 0;
+        if (file.options) a.cmOptions = *file.options;
+        a.cmSimLine = file.simLine;
         circuit.setAnalysis(a);
     }
 
