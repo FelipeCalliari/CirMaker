@@ -323,9 +323,11 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         const QColor on[3] = {QColor(0xe0, 0x10, 0x10), QColor(0xf0, 0xc0, 0x00), QColor(0x10, 0xb0, 0x30)};
         const auto cs = circles();
         for (int i = 0; i < std::min<qsizetype>(3, cs.size()); ++i) {
+            // as in CircuitMaker: a coloured ring when off, filled when lit
             const bool lit = live && state > 0 && (state >> i & 1);
-            p->setBrush(lit ? on[i] : on[i].lighter(190));
-            p->drawEllipse(QPointF(cs[i]->v[0], cs[i]->v[1]), cs[i]->v[2], cs[i]->v[2]);
+            p->setPen(QPen(on[i], 3));
+            p->setBrush(lit ? on[i] : QColor(Qt::white));
+            p->drawEllipse(QPointF(cs[i]->v[0], cs[i]->v[1]), cs[i]->v[2] - 1.5, cs[i]->v[2] - 1.5);
         }
     } else if (d == u"hex") {
         // red seven-segment digit; segments a..g = bits 0..6
@@ -349,6 +351,35 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setPen(QPen(on ? QColor(0xff, 0x10, 0x10) : QColor(0xf0, 0xb0, 0xb0), on ? 6 : 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(QLineF(seg[i].p1() * 1, seg[i].p2()));
         }
+    } else if (d == u"ascii" && m_symbol->model.value(u"kind").toString() == u"asciiterm") {
+        // the terminal: 4 lines of 16, as saved or as the simulation wrote them
+        const QRectF screen = body.adjusted(14, 14, -14, -14);
+        p->setPen(QPen(ink, 1));
+        p->setBrush(QColor(0x30, 0xe0, 0xf0));
+        p->drawRoundedRect(screen, 4, 4);
+        QString text;
+        int cursor = -1;
+        const SchematicScene* sc = schematic();
+        if (const QVector<int> mem = live && sc ? sc->simMemory(m_c.id) : QVector<int>{}; mem.size() == 65) {
+            for (int i = 0; i < 64; ++i) text += QChar(mem[i]);
+            cursor = mem[64];
+        } else {
+            text = m_c.props.value(QStringLiteral("text")).toString();
+        }
+        text = text.leftJustified(64, u' ', true);
+        QFont f(QStringLiteral("Courier New"));
+        f.setStyleHint(QFont::Monospace);
+        f.setPixelSize(int(screen.height() / 4 * 0.75));
+        p->setFont(f);
+        p->setPen(QColor(0x10, 0x10, 0x10));
+        const double lh = screen.height() / 4, cw = (screen.width() - 12) / 16;
+        for (int row = 0; row < 4; ++row)
+            for (int col = 0; col < 16; ++col) {
+                const QRectF cell(screen.left() + 6 + col * cw, screen.top() + row * lh, cw, lh);
+                p->drawText(cell, Qt::AlignCenter, text.mid(row * 16 + col, 1));
+                if (row * 16 + col == cursor)
+                    p->drawLine(cell.bottomLeft() - QPointF(-1, 4), cell.bottomRight() - QPointF(1, 4));
+            }
     } else if (d == u"ascii") {
         const QRectF screen = body.adjusted(8, 8, -8, -8);
         p->setBrush(QColor(0x20, 0x20, 0x20));

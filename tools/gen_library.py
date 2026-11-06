@@ -1448,11 +1448,15 @@ def outputs():
                      + [T(n, x, 40, 8) for n, x in (('8', -30), ('4', -10), ('2', 10), ('1', 30))],
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'in') for i in range(4)]},
         {'id': 'asciidisplay', 'name': 'Ascii Display', 'prefix': 'D', 'display': 'ascii', 'aliases': ['Ascii Display'],
-         'cmPins': [f'D{i}' for i in range(8)], 'model': {'kind': 'display', 'bits': 7},
-         'description': 'Shows the character whose 7-bit code is on D6..D0',
-         'graphics': [R(-80, -120, 160, 250)] + [L(-110, -100 + 30 * i, -80, -100 + 30 * i) for i in range(8)]
-                     + [T(f'D{i}', -96, -106 + 30 * i, 6) for i in range(8)],
-         'pins': [pin(f'D{i}', -110, -100 + 30 * i, 'in') for i in range(8)]},
+         'cmPins': [f'D{6 - i}' for i in range(7)] + ['CP'], 'model': {'kind': 'asciiterm'},   # CM pin 1 (top) is bit 6
+         'props': {'text': '', 'cursor': 0},
+         'description': 'Terminal of 4 lines of 16 characters, as CircuitMaker\'s: when CP falls it writes the '
+                        'character on D6..D0 at the cursor; CR starts a new line, BS erases the last character, '
+                        'and the text scrolls up past the last line',
+         'graphics': [R(-80, -120, 300, 250)] + [L(-110, -100 + 30 * i, -80, -100 + 30 * i) for i in range(7)]
+                     + [L(-110, 110, -90, 110), C(-85, 110, 5)]
+                     + [T(f'D{6 - i}', -96, -106 + 30 * i, 6) for i in range(7)] + [T('CP', -66, 110, 6)],
+         'pins': [pin(f'D{6 - i}', -110, -100 + 30 * i, 'in') for i in range(7)] + [pin('CP', -110, 110, 'in')]},
         {'id': 'led', 'name': 'LED', 'prefix': 'D', 'display': 'led', 'aliases': ['LED'], 'cmPins': ['A', 'K'],
          'model': {'kind': 'led'}, 'spice': sp('D{name} {A} {K} DLED', 'DLED'),
          'props': {'color': 'red'}, 'choices': {'color': ['red', 'green', 'yellow', 'blue', 'orange', 'white']},

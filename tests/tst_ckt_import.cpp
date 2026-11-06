@@ -28,6 +28,7 @@ private slots:
     void rocketExample();
     void stepperExample();
     void ladderExample();
+    void displayExample();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -104,6 +105,13 @@ void TestCktImport::importsAllCircuits()
         shorts += report.shorts;
         if (report.shorts && qEnvironmentVariableIsSet("CM_CKT_SHORTS"))
             qInfo("%s: %d shorts (%s)", qPrintable(QFileInfo(path).fileName()), report.shorts, qPrintable(report.warnings.join(u"; ")));
+        if (qEnvironmentVariableIsSet("CM_LIST_MODES") && path.contains(u"Examples")) {
+            QSet<QString> ids;
+            for (const Component& comp : c.components()) ids << comp.symbolId;
+            QStringList l(ids.cbegin(), ids.cend());
+            l.sort();
+            qInfo("%s %s: %s", c.analysis().analogMode ? "A" : "D", qPrintable(QFileInfo(path).fileName()), qPrintable(l.join(u' ')));
+        }
         if (qEnvironmentVariableIsSet("CM_NO_DIGITAL_MODEL") && !c.analysis().analogMode) {
             QSet<QString> none;
             for (const Component& comp : c.components()) {
@@ -277,6 +285,62 @@ void TestCktImport::ladderExample()
     b.sim.interact(by.value(QStringLiteral("S1")), QStringLiteral("press"));
     settle();
     QCOMPARE(on("BZ1"), 1);
+}
+
+// CircuitMaker's Display.ckt: its "5V" switches open off; the Ascii Display
+// keeps its text and cursor, and the Ascii Key types into it.
+void TestCktImport::displayExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Display.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    ItemId term = 0, key = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"logicswitch") QCOMPARE(comp.props.value(QStringLiteral("state")).toInt(), 0);
+        if (comp.symbolId == u"asciidisplay") term = comp.id;
+        if (comp.symbolId == u"asciikey") key = comp.id;
+    }
+    QVERIFY(term && key);
+    QCOMPARE(c.component(term)->props.value(QStringLiteral("text")).toString(),
+             QStringLiteral("This is a test  of the LCD      display device..                "));
+    QCOMPARE(c.component(term)->props.value(QStringLiteral("cursor")).toInt(), 48);
+    Bench b(c);
+    QVERIFY2(b.sim.warnings().isEmpty(), qPrintable(b.sim.warnings().join(u'\n')));
+    auto type = [&](int ch) {
+        b.sim.interact(key, QStringLiteral("key"), ch);
+        b.sim.step(5);
+        b.sim.interact(key, QStringLiteral("release"));
+        b.sim.step(5);
+    };
+    auto line = [&](int row) {
+        QString t;
+        const QVector<int> mem = b.sim.memory(term);
+        for (int i = row * 16; i < row * 16 + 16; ++i) t += QChar(mem.value(i));
+        return t.trimmed();
+    };
+    b.sim.step(10);
+    type('a');
+    type('b');
+    QCOMPARE(line(3), QStringLiteral("ab"));
+    type(13);                           // a new line scrolls the text up
+    type('c');
+    QCOMPARE(line(0), QStringLiteral("of the LCD"));
+    QCOMPARE(line(2), QStringLiteral("ab"));
+    QCOMPARE(line(3), QStringLiteral("c"));
+    type(8);                            // backspace erases it
+    QCOMPARE(line(3), QString());
+    // written back as CircuitMaker keeps it
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    Circuit back;
+    QVERIFY(CktImporter::importData(CktExporter::write(c, library(), cmLib), back, library(), nullptr, nullptr));
+    for (const Component& comp : back.components())
+        if (comp.symbolId == u"asciidisplay") {
+            QCOMPARE(comp.props.value(QStringLiteral("text")).toString(), c.component(term)->props.value(QStringLiteral("text")).toString());
+            QCOMPARE(comp.props.value(QStringLiteral("cursor")).toInt(), 48);
+        }
 }
 
 void TestCktImport::importedCounterCounts()

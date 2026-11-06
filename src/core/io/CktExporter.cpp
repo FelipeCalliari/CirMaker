@@ -467,9 +467,14 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             nets << 0 << 0 << std::clamp(c.props.value(QStringLiteral("value"), 65).toInt(), 32, 126);
             value.clear();
         } else if (name == u"Ascii Display~") {
-            nets.resize(9);
-            nets << 0 << 0;
-            for (int k = 0; k < 32; ++k) nets << 0x2020;
+            // the cursor, then the 64 characters two to a word
+            nets.resize(10);
+            nets << std::clamp(c.props.value(QStringLiteral("cursor")).toInt(), 0, 63);
+            const QString text = c.props.value(QStringLiteral("text")).toString().leftJustified(64, u' ', true);
+            for (int k = 0; k < 32; ++k) {
+                auto code = [&](int i) { const int u = text.at(i).unicode(); return u >= 32 && u < 127 ? u : ' '; };
+                nets << (code(2 * k) << 8 | code(2 * k + 1));
+            }
             value = l.value;
         } else if (name == u"Hex Display~") {
             nets[0] = 10;

@@ -555,6 +555,74 @@ private:
     const Model* m_coil = nullptr;
 };
 
+// CircuitMaker's Ascii Display: a terminal of 4 lines of 16 characters.
+// When CP falls it writes the character on D6..D0 at the cursor: CR (or
+// LF) starts the next line, BS steps back and erases, other control codes
+// are ignored; past the last line the text scrolls up.
+class AsciiTermModel : public Model {
+public:
+    static constexpr int kCols = 16, kRows = 4;
+    AsciiTermModel(QVector<int> bits, int cp, const QString& text, int cursor)
+        : m_bits(std::move(bits)), m_cp(cp), m_cursor(std::clamp(cursor, 0, kCols * kRows - 1))
+    {
+        m_screen.fill(' ', kCols * kRows);
+        for (int i = 0; i < std::min<qsizetype>(text.size(), kCols * kRows); ++i)
+            m_screen[i] = text.at(i).unicode() >= 32 && text.at(i).unicode() < 127 ? text.at(i).unicode() : ' ';
+    }
+    void evaluate(ModelContext& ctx) override
+    {
+        const Logic cp = ctx.input(m_cp);
+        if (!ctx.settling() && m_last == Logic::L1 && cp == Logic::L0) {
+            int code = 0;
+            for (int i = 0; i < m_bits.size(); ++i) {
+                const Logic b = ctx.input(m_bits[i]);
+                if (!isKnown(b)) return void(m_last = cp);
+                code |= int(b == Logic::L1) << i;
+            }
+            write(code);
+        }
+        m_last = cp;
+    }
+    int state() const override { return m_cursor; }
+    QVector<int> memory() const override { return m_screen + QVector<int>{m_cursor}; }
+    QVariantMap persistentProps() const override
+    {
+        QString text;
+        for (int c : m_screen) text += QChar(c);
+        return {{QStringLiteral("text"), text}, {QStringLiteral("cursor"), m_cursor}};
+    }
+
+private:
+    void newLine()
+    {
+        const int row = m_cursor / kCols;
+        if (row + 1 < kRows) {
+            m_cursor = (row + 1) * kCols;
+            return;
+        }
+        m_screen.remove(0, kCols);
+        m_screen.append(QVector<int>(kCols, ' '));
+        m_cursor = (kRows - 1) * kCols;
+    }
+    void write(int code)
+    {
+        if (code == 13 || code == 10) {
+            newLine();
+        } else if (code == 8) {
+            if (m_cursor % kCols > 0) m_screen[--m_cursor] = ' ';
+        } else if (code >= 32 && code < 127) {
+            m_screen[m_cursor] = code;
+            if ((m_cursor + 1) % kCols == 0) newLine();
+            else ++m_cursor;
+        }
+    }
+    QVector<int> m_bits;
+    int m_cp;
+    QVector<int> m_screen;
+    int m_cursor;
+    Logic m_last = Logic::X;
+};
+
 // Opto isolator: its transistor (COL-E) conducts while the LED is lit,
 // A high against C.
 class OptoModel : public Model {
@@ -677,6 +745,13 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         const int bits = s.model.value(u"bits").toInt(4);
         return std::make_unique<KeyModel>(bitPins(s, bits), s.pinIndex(QStringLiteral("STB")),
                                           props.value(QStringLiteral("value")).toInt());
+    }
+    if (kind == u"asciiterm") {
+        const QVector<int> bits = bitPins(s, 7);
+        const int cp = s.pinIndex(QStringLiteral("CP"));
+        if (bits.contains(-1) || cp < 0) return fail(QStringLiteral("ascii display needs D0..D6 and CP"));
+        return std::make_unique<AsciiTermModel>(bits, cp, props.value(QStringLiteral("text")).toString(),
+                                                props.value(QStringLiteral("cursor")).toInt());
     }
     if (kind == u"display") {
         const int bits = s.model.value(u"bits").toInt(1);

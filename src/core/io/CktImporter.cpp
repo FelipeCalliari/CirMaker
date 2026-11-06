@@ -584,8 +584,20 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!d.tag.isEmpty() && s->defaultProps.contains(QStringLiteral("relay")))
             c.props.insert(QStringLiteral("relay"), d.tag.trimmed());
         const QString kind = s->model.value(u"kind").toString();
+        // Ascii Display: the cursor in nets[10], then the 64 characters two
+        // to a word (high byte first)
+        if (kind == u"asciiterm" && d.nets.size() > 42) {
+            QString text;
+            for (int k = 11; k < 43; ++k)
+                for (int ch : {(d.nets[k] >> 8) & 0xff, d.nets[k] & 0xff})
+                    text += QChar(ch >= 32 && ch < 127 ? ch : ' ');
+            c.props.insert(QStringLiteral("text"), text);
+            c.props.insert(QStringLiteral("cursor"), std::clamp(d.nets[10], 0, 63));
+        }
+        // the position is nets[10]; "5V" alone only labels the switch
+        // (Digfault and Display open with their "5V" switches off)
         if (kind == u"logicswitch")
-            c.props.insert(QStringLiteral("state"), int(d.value.trimmed() == u"5V"));
+            c.props.insert(QStringLiteral("state"), int(d.nets.size() > 10 && d.nets[10] == 1));
         else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0)
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
         else if (kind == u"car" && d.nets.size() > 14 && d.nets[14] > 0)

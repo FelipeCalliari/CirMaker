@@ -288,26 +288,29 @@
     "Ascii Display"
    ],
    "cmPins": [
-    "D0",
-    "D1",
-    "D2",
-    "D3",
-    "D4",
-    "D5",
     "D6",
-    "D7"
+    "D5",
+    "D4",
+    "D3",
+    "D2",
+    "D1",
+    "D0",
+    "CP"
    ],
    "model": {
-    "kind": "display",
-    "bits": 7
+    "kind": "asciiterm"
    },
-   "description": "Shows the character whose 7-bit code is on D6..D0",
+   "props": {
+    "text": "",
+    "cursor": 0
+   },
+   "description": "Terminal of 4 lines of 16 characters, as CircuitMaker's: when CP falls it writes the character on D6..D0 at the cursor; CR starts a new line, BS erases the last character, and the text scrolls up past the last line",
    "graphics": [
     {
      "rect": [
       -80,
       -120,
-      160,
+      300,
       250
      ]
     },
@@ -371,12 +374,19 @@
      "line": [
       -110,
       110,
-      -80,
+      -90,
       110
      ]
     },
     {
-     "text": "D0",
+     "circle": [
+      -85,
+      110,
+      5
+     ]
+    },
+    {
+     "text": "D6",
      "at": [
       -96,
       -106
@@ -384,7 +394,7 @@
      "size": 6
     },
     {
-     "text": "D1",
+     "text": "D5",
      "at": [
       -96,
       -76
@@ -392,7 +402,7 @@
      "size": 6
     },
     {
-     "text": "D2",
+     "text": "D4",
      "at": [
       -96,
       -46
@@ -408,7 +418,7 @@
      "size": 6
     },
     {
-     "text": "D4",
+     "text": "D2",
      "at": [
       -96,
       14
@@ -416,7 +426,7 @@
      "size": 6
     },
     {
-     "text": "D5",
+     "text": "D1",
      "at": [
       -96,
       44
@@ -424,7 +434,7 @@
      "size": 6
     },
     {
-     "text": "D6",
+     "text": "D0",
      "at": [
       -96,
       74
@@ -432,17 +442,17 @@
      "size": 6
     },
     {
-     "text": "D7",
+     "text": "CP",
      "at": [
-      -96,
-      104
+      -66,
+      110
      ],
      "size": 6
     }
    ],
    "pins": [
     {
-     "name": "D0",
+     "name": "D6",
      "at": [
       -110,
       -100
@@ -450,7 +460,7 @@
      "dir": "in"
     },
     {
-     "name": "D1",
+     "name": "D5",
      "at": [
       -110,
       -70
@@ -458,7 +468,7 @@
      "dir": "in"
     },
     {
-     "name": "D2",
+     "name": "D4",
      "at": [
       -110,
       -40
@@ -474,7 +484,7 @@
      "dir": "in"
     },
     {
-     "name": "D4",
+     "name": "D2",
      "at": [
       -110,
       20
@@ -482,7 +492,7 @@
      "dir": "in"
     },
     {
-     "name": "D5",
+     "name": "D1",
      "at": [
       -110,
       50
@@ -490,7 +500,7 @@
      "dir": "in"
     },
     {
-     "name": "D6",
+     "name": "D0",
      "at": [
       -110,
       80
@@ -498,7 +508,7 @@
      "dir": "in"
     },
     {
-     "name": "D7",
+     "name": "CP",
      "at": [
       -110,
       110

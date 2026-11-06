@@ -134,6 +134,8 @@ public:
     // Step size in ticks; 0 steps to the next event.
     void setStepTicks(int ticks) { m_stepTicks = std::max(0, ticks); }
     quint64 simTime() const;
+    // A component's memory while simulating (RAM/ROM words, a terminal's screen); empty otherwise.
+    QVector<int> simMemory(ItemId id) const;
     sim::EventSimulator* simulator() const { return m_sim.get(); }
     // Nets shown in the digital waveform window: SCOPE devices and probes.
     struct Lane { QString name; int net; ItemId component = 0; };   // component: the SCOPE

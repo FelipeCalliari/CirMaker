@@ -1526,6 +1526,8 @@ bool SchematicScene::breakpointHit()
 
 quint64 SchematicScene::simTime() const { return m_sim ? m_sim->time() : 0; }
 
+QVector<int> SchematicScene::simMemory(ItemId id) const { return m_sim ? m_sim->memory(id) : QVector<int>{}; }
+
 int SchematicScene::simState(ItemId id) const { return m_sim ? m_sim->componentState(id) : 0; }
 
 QColor SchematicScene::wireColor(ItemId id) const
