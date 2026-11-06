@@ -226,8 +226,10 @@ QString trailer(const AnalysisSettings& a)
                   QStringLiteral("%1 0 0").arg(enabled), QStringLiteral("0"), QStringLiteral("0"),
                   str(a.dcSource), QStringList{num(a.dcStart), num(a.dcStop), num(a.dcStep)}.join(u' '),
                   str(a.dcSource2), QStringList{num(a.dcStart2), num(a.dcStop2), num(a.dcStep2)}.join(u' '),
-                  QStringLiteral("%1 0 %2 %3").arg(a.acPointsPerDecade).arg(num(a.acStart), num(a.acStop)),
-                  QStringLiteral("0 %1 %2 %2").arg(num(a.tranStop), num(a.tranStep))};
+                  QStringLiteral("%1 %2 %3 %4").arg(a.acPointsPerDecade).arg(a.acSweep == u"lin" ? 0 : a.acSweep == u"oct" ? 2 : 1)
+                      .arg(num(a.acStart), num(a.acStop)),
+                  QStringLiteral("%1 %2 %3 %4").arg(num(a.tranStart.isEmpty() ? QStringLiteral("0") : a.tranStart), num(a.tranStop), num(a.tranStep),
+                                                    num(a.tranMax.isEmpty() ? a.tranStep : a.tranMax))};
     const char* const general[] = {"0", "0", "0 0 0", "0 0 0", "0", "0", "0 0 0 0", "0", "0 0 0 0 0", "0 0 0 0", "0",
                                    "0 0 0", "0", "0 0 0", "0 0 0 0 0 0 0 0 0"};
     for (const char* s : general) l << QString::fromLatin1(s);

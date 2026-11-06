@@ -27,6 +27,8 @@ private:
     AnalysisSettings m_settings;
     QComboBox* m_type;
     QStackedWidget* m_pages;
+    QLineEdit *m_tranStart, *m_tranMax;
+    QComboBox* m_acSweep;
     QLineEdit *m_tranStop, *m_tranStep, *m_acStart, *m_acStop, *m_dcStart, *m_dcStop, *m_dcStep;
     QSpinBox* m_acPoints;
     QComboBox* m_dcSource;

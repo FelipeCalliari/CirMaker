@@ -825,9 +825,17 @@ QString analysisLine(const AnalysisSettings& a, const Deck& deck, const Netlist&
         return QStringLiteral(".op");
     case AnalysisSettings::Type::Transient:
     case AnalysisSettings::Type::Fourier:
-        return QStringLiteral(".tran %1 %2").arg(a.tranStep, a.tranStop);
-    case AnalysisSettings::Type::AC:
-        return QStringLiteral(".ac dec %1 %2 %3").arg(a.acPointsPerDecade).arg(a.acStart, a.acStop);
+    {
+        const bool start = parseNumber(a.tranStart).value_or(0) > 0, max = parseNumber(a.tranMax).value_or(0) > 0;
+        QString line = QStringLiteral(".tran %1 %2").arg(a.tranStep, a.tranStop);
+        if (start || max) line += u' ' + (start ? a.tranStart : QStringLiteral("0"));
+        if (max) line += u' ' + a.tranMax;
+        return line;
+    }
+    case AnalysisSettings::Type::AC: {
+        const QString sweep = a.acSweep == u"lin" || a.acSweep == u"oct" ? a.acSweep : QStringLiteral("dec");
+        return QStringLiteral(".ac %1 %2 %3 %4").arg(sweep).arg(a.acPointsPerDecade).arg(a.acStart, a.acStop);
+    }
     case AnalysisSettings::Type::DCSweep: {
         const QString src = deck.sourceOfDesignator.value(a.dcSource);
         if (src.isEmpty()) {

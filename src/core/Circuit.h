@@ -62,7 +62,10 @@ struct AnalysisSettings {
     bool analogMode = false;
     Type type = Type::Transient;
     QString tranStop = QStringLiteral("10m"), tranStep = QStringLiteral("10u");
+    // transient start (data before it is not kept) and maximum internal step (empty: SPICE's own)
+    QString tranStart = QStringLiteral("0"), tranMax;
     QString acStart = QStringLiteral("10"), acStop = QStringLiteral("1Meg");
+    QString acSweep = QStringLiteral("dec");        // "dec", "oct" or "lin" (points per decade, octave, or in all)
     int acPointsPerDecade = 20;
     QString dcSource, dcStart = QStringLiteral("0"), dcStop = QStringLiteral("5"), dcStep = QStringLiteral("0.05");
     // Fourier: of the transient; empty frequency = the first signal generator's

@@ -59,18 +59,29 @@ AnalysisDialog::AnalysisDialog(const AnalysisSettings& settings, const QStringLi
     f->addRow(new QLabel(tr("Node voltages and meter readings are shown on the schematic.")));
 
     page(f);
+    m_tranStart = new QLineEdit(settings.tranStart);
     m_tranStop = new QLineEdit(settings.tranStop);
     m_tranStep = new QLineEdit(settings.tranStep);
+    m_tranMax = new QLineEdit(settings.tranMax);
+    m_tranMax->setPlaceholderText(tr("automatic"));
+    f->addRow(tr("St&art time:"), m_tranStart);
     f->addRow(tr("Stop &time:"), m_tranStop);
-    f->addRow(tr("Maximum &step:"), m_tranStep);
+    f->addRow(tr("Time &step:"), m_tranStep);
+    f->addRow(tr("Ma&ximum step:"), m_tranMax);
 
     page(f);
     m_acStart = new QLineEdit(settings.acStart);
     m_acStop = new QLineEdit(settings.acStop);
-    m_acPoints = spin(1, 1000, settings.acPointsPerDecade);
+    m_acPoints = spin(1, 10000, settings.acPointsPerDecade);
+    m_acSweep = new QComboBox;
+    m_acSweep->addItem(tr("Decade"), QStringLiteral("dec"));
+    m_acSweep->addItem(tr("Octave"), QStringLiteral("oct"));
+    m_acSweep->addItem(tr("Linear"), QStringLiteral("lin"));
+    m_acSweep->setCurrentIndex(std::max(0, m_acSweep->findData(settings.acSweep)));
     f->addRow(tr("&Start frequency (Hz):"), m_acStart);
     f->addRow(tr("St&op frequency (Hz):"), m_acStop);
-    f->addRow(tr("&Points per decade:"), m_acPoints);
+    f->addRow(tr("S&weep:"), m_acSweep);
+    f->addRow(tr("&Points (per decade, per octave or in all):"), m_acPoints);
     f->addRow(new QLabel(tr("Signal generators are the AC sources (magnitude and phase in their properties).")));
 
     page(f);
@@ -189,6 +200,11 @@ AnalysisSettings AnalysisDialog::result() const
     a.acStart = (noise ? m_noiseStart : m_acStart)->text().trimmed();
     a.acStop = (noise ? m_noiseStop : m_acStop)->text().trimmed();
     a.acPointsPerDecade = (noise ? m_noisePoints : m_acPoints)->value();
+    if (a.type == Type::Transient) {
+        a.tranStart = m_tranStart->text().trimmed().isEmpty() ? QStringLiteral("0") : m_tranStart->text().trimmed();
+        a.tranMax = m_tranMax->text().trimmed();
+    }
+    if (a.type == Type::AC) a.acSweep = m_acSweep->currentData().toString();
     a.dcSource = m_dcSource->currentText();
     a.dcStart = m_dcStart->text().trimmed();
     a.dcStop = m_dcStop->text().trimmed();

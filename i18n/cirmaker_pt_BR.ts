@@ -120,37 +120,80 @@
         <translation>As tensões dos nós e as leituras dos multímetros aparecem no esquemático.</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="64"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="94"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="66"/>
+        <source>automatic</source>
+        <translation>automático</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="67"/>
+        <source>St&amp;art time:</source>
+        <translation>&amp;Início:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="68"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="105"/>
         <source>Stop &amp;time:</source>
         <translation>&amp;Tempo final:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="65"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="95"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="69"/>
+        <source>Time &amp;step:</source>
+        <translation>&amp;Passo:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="70"/>
+        <source>Ma&amp;ximum step:</source>
+        <translation>Passo má&amp;ximo:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="77"/>
+        <source>Decade</source>
+        <translation>Década</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="78"/>
+        <source>Octave</source>
+        <translation>Oitava</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="79"/>
+        <source>Linear</source>
+        <translation>Linear</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="83"/>
+        <source>S&amp;weep:</source>
+        <translation>&amp;Varredura:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="84"/>
+        <source>&amp;Points (per decade, per octave or in all):</source>
+        <translation>&amp;Pontos (por década, por oitava ou no total):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="106"/>
         <source>Maximum &amp;step:</source>
         <translation>&amp;Passo máximo:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="71"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="114"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="81"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="125"/>
         <source>&amp;Start frequency (Hz):</source>
         <translation>Frequência &amp;inicial (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="72"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="115"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="82"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="126"/>
         <source>St&amp;op frequency (Hz):</source>
         <translation>Frequência &amp;final (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="73"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="116"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="127"/>
         <source>&amp;Points per decade:</source>
         <translation>&amp;Pontos por década:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="74"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="85"/>
         <source>Signal generators are the AC sources (magnitude and phase in their properties).</source>
         <translation>Os geradores de sinais são as fontes AC (magnitude e fase nas propriedades deles).</translation>
     </message>
@@ -159,134 +202,134 @@
         <translation type="vanished">Os geradores de sinal são as fontes AC (1 V).</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="83"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="94"/>
         <source>S&amp;weep source:</source>
         <translation>&amp;Fonte varrida:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="84"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="95"/>
         <source>Sta&amp;rt:</source>
         <translation>&amp;Início:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="85"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="96"/>
         <source>Sto&amp;p:</source>
         <translation>&amp;Fim:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="86"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="97"/>
         <source>Ste&amp;p:</source>
         <translation>Pa&amp;sso:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="92"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="103"/>
         <source>first signal generator&apos;s</source>
         <translation>a do primeiro gerador de sinais</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="96"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="107"/>
         <source>&amp;Fundamental (Hz):</source>
         <translation>&amp;Fundamental (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="97"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="108"/>
         <source>&amp;Harmonics:</source>
         <translation>&amp;Harmônicas:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="98"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="109"/>
         <source>The last period of the transient is analysed; the THD is shown in the status bar.</source>
         <translation>Analisa o último período do transiente; a THD aparece na barra de status.</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="103"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="112"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="114"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
         <source>&amp;Output net:</source>
         <translation>Rede de &amp;saída:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="104"/>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="113"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="115"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="124"/>
         <source>&amp;Input source:</source>
         <translation>Fonte de &amp;entrada:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="120"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="131"/>
         <source>Repeat the analysis</source>
         <translation>Repetir a análise</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="134"/>
         <source>Once</source>
         <translation>Uma vez</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="134"/>
         <source>Temperature sweep</source>
         <translation>Varredura de temperatura</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="134"/>
         <source>Parameter sweep</source>
         <translation>Varredura de parâmetro</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="123"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="134"/>
         <source>Monte Carlo</source>
         <translation>Monte Carlo</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="137"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="148"/>
         <source>From (°C):</source>
         <translation>De (°C):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="138"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="149"/>
         <source>To (°C):</source>
         <translation>Até (°C):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="139"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="150"/>
         <source>Step (°C):</source>
         <translation>Passo (°C):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="145"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="156"/>
         <source>De&amp;vice (its value):</source>
         <translation>&amp;Dispositivo (o valor dele):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="146"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="157"/>
         <source>From:</source>
         <translation>De:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="147"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="158"/>
         <source>To:</source>
         <translation>Até:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="148"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="159"/>
         <source>Step:</source>
         <translation>Passo:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="152"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="163"/>
         <source>&amp;Runs:</source>
         <translation>&amp;Execuções:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="153"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="164"/>
         <source>&amp;Tolerance of R, C, L (%):</source>
         <translation>&amp;Tolerância de R, C, L (%):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="163"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="174"/>
         <source>SPICE &amp;options:</source>
         <translation>&amp;Opções do SPICE:</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="166"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="177"/>
         <source>Values accept SPICE suffixes: 10m, 4.7k, 1Meg, 100u, 1n.</source>
         <translation>Os valores aceitam sufixos SPICE: 10m, 4.7k, 1Meg, 100u, 1n.</translation>
     </message>

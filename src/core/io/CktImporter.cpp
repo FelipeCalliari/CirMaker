@@ -914,10 +914,13 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         const QString dcSource2 = r.string().trimmed();
         const QString dcStart2 = num(), dcStop2 = num(), dcStep2 = num();
         const int acPoints = r.integer();
-        r.integer();
+        const int acType = r.integer();             // 0 linear, 1 decade, 2 octave
         const QString acStart = num(), acStop = num();
-        num();
-        const QString tranStop = num(), tranStep = num();
+        const QString tranStart = num();
+        const QString tranStop = num(), tranStep = num(), tranMax = num();
+        analysis.acSweep = acType == 0 ? QStringLiteral("lin") : acType == 2 ? QStringLiteral("oct") : QStringLiteral("dec");
+        analysis.tranStart = tranStart;
+        if (tranMax.toDouble() > 0 && tranMax != tranStep) analysis.tranMax = tranMax;
         analysis.spiceOptions = opts;
         analysis.cmAnalyses = enabled;
         analysis.dcSource2 = dcSource2;

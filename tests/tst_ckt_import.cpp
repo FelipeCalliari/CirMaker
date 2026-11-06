@@ -684,6 +684,17 @@ void TestCktImport::exportKeepsNodeNaming()
         const QString out = QString::fromLatin1(CktExporter::write(old, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         QVERIFY(out.contains(QStringLiteral("\n0 0 30 100 10\n")));
     }
+    // Analyses Setup: the AC sweep's kind (Lpfilter: decade) and the
+    // transient's maximum step (State: 500n with a 100n step)
+    {
+        Circuit lp, st;
+        QVERIFY(CktImporter::import(QFileInfo(path).dir().filePath(QStringLiteral("Lpfilter.ckt")), lp, library(), nullptr, nullptr));
+        QVERIFY(CktImporter::import(QFileInfo(path).dir().filePath(QStringLiteral("State.ckt")), st, library(), nullptr, nullptr));
+        QCOMPARE(lp.analysis().acSweep, QStringLiteral("dec"));
+        QCOMPARE(st.analysis().tranMax.toDouble(), 5e-7);
+        QVERIFY(QString::fromLatin1(CktExporter::write(lp, library(), cmLib)).contains(QStringLiteral("\r\n60 1 1 1e+07\r\n")));
+        QVERIFY(QString::fromLatin1(CktExporter::write(st, library(), cmLib)).contains(QStringLiteral("\r\n0 1.5e-05 1e-07 5e-07\r\n")));
+    }
     // the header's option bits and its Speed line
     QVERIFY(text.contains(QStringLiteral("\n9961472 0\n")));
     QVERIFY(text.contains(QStringLiteral("\n0 0 30 100 10\n")));
