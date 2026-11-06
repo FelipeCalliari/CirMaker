@@ -146,8 +146,11 @@ def package_gates(table, ttl):
         if number == '7422':
             # CircuitMaker's 7422 has its pin 3 above pin 2
             extra['cmPins'] = ['A', 'C', 'B', 'D', 'Y']
-        out.append(gate(number, name, op, n, inv, aliases,
-                        f'{COUNT[count]} {gname} ({"TTL" if ttl else "CMOS"}); one gate per symbol, grouped by package', **extra))
+        g = gate(number, name, op, n, inv, aliases,
+                 f'{COUNT[count]} {gname} ({"TTL" if ttl else "CMOS"}); one gate per symbol, grouped by package', **extra)
+        if number == '7422':
+            g['shape']['pitch'] = 40            # and its inputs 12 units apart
+        out.append(g)
     return out
 
 

@@ -453,7 +453,8 @@
     "type": "gate",
     "op": "and",
     "inputs": 4,
-    "invert": true
+    "invert": true,
+    "pitch": 40
    },
    "aliases": [
     "7422",

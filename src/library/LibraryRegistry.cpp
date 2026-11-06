@@ -157,9 +157,15 @@ namespace symbolgen {
 // Input pin y positions on a 10-unit grid; even counts skip the centre line.
 // Input pin rows on the 10-unit grid: pitch 30 up to three inputs (as in
 // CircuitMaker), 20 beyond that.
-static QVector<double> inputRows(int count)
+static QVector<double> inputRows(int count, double pitchOverride = 0)
 {
     if (count <= 1) return {0};
+    if (pitchOverride > 0) {                    // a part drawn wider (7422: 40)
+        QVector<double> rows;
+        for (int i = 0; i < count; ++i)
+            rows << (i - (count - 1) / 2.0) * pitchOverride;
+        return rows;
+    }
     if (count == 2) return {-30, 30};
     // CircuitMaker's spacing, also for 4 and 8 inputs; an even count sits
     // half a pitch low as in its symbols (-40, -10, 20, 50), keeping the grid
@@ -175,9 +181,9 @@ static QVector<double> inputRows(int count)
 // output at x = 70 (90 with an inversion bubble). The body is 80 high; when
 // the inputs span more than that, the back edge is extended with straight
 // lines (IEEE Std 91 style) so every input meets the body.
-void gate(SymbolDef& s, const QString& op, int inputs, bool invert)
+void gate(SymbolDef& s, const QString& op, int inputs, bool invert, double pitch)
 {
-    const QVector<double> rows = inputRows(inputs);
+    const QVector<double> rows = inputRows(inputs, pitch);
     const double top = -40, bot = 40;
     const double k = 0.5523;            // cubic circle approximation
     const double pinX = op == u"buf" ? -50 : -80;
@@ -453,7 +459,7 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
     if (shapeType == u"gate") {
         const QString op = shape.value(u"op").toString();
         const bool invert = shape.value(u"invert").toBool();
-        symbolgen::gate(s, op, shape.value(u"inputs").toInt(op == u"buf" ? 1 : 2), invert);
+        symbolgen::gate(s, op, shape.value(u"inputs").toInt(op == u"buf" ? 1 : 2), invert, shape.value(u"pitch").toDouble());
         if (s.model.isEmpty())
             s.model = QJsonObject{{u"kind"_s, u"gate"_s}, {u"op"_s, op}, {u"invert"_s, invert}};
     } else if (shapeType == u"box") {

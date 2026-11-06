@@ -58,7 +58,7 @@ private:
 };
 
 namespace symbolgen {
-void gate(SymbolDef& s, const QString& op, int inputs, bool invert);
+void gate(SymbolDef& s, const QString& op, int inputs, bool invert, double pitch = 0);
 void box(SymbolDef& s, const QJsonObject& spec);
 } // namespace symbolgen
 
