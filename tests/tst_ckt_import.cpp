@@ -569,12 +569,17 @@ void TestCktImport::importsProbes()
         for (const Wire& w : c.wires())
             if (!w.bus && WireGeometry::onPolyline(p, w.points)) { nets << nl.wireNet.value(w.id); break; }
     QCOMPARE(nets.size(), 5);                       // each on a wire, all different nets
+    // with their names
+    QStringList names;
+    for (QPointF p : c.probes()) names << c.probeName(p);
+    QCOMPARE(names, (QStringList{QStringLiteral("Clk"), QStringLiteral("Q0"), QStringLiteral("Q1"), QStringLiteral("Q2"), QStringLiteral("Q3")}));
     // written back
     CmDeviceLib cmLib;
     QVERIFY(cmLib.load(CmDeviceLib::locate()));
     Circuit b;
     QVERIFY(CktImporter::importData(CktExporter::write(c, library(), cmLib), b, library(), nullptr, nullptr));
     QCOMPARE(b.probes().size(), 5);
+    QCOMPARE(b.probeName(b.probes().first()), QStringLiteral("Clk"));
 
     // its 74112 halves drawn apart (U1A, U1B, U3A, U3B) are parts of two
     // packages: "65 0 0 <x> <parts> <part> <package> 0" after the package map
@@ -628,6 +633,25 @@ void TestCktImport::exportKeepsNodeNaming()
     // the analyses as they were: operating point and transient, without
     // "Always set defaults", and the DC sweep's second source
     QVERIFY(text.contains(QStringLiteral("\n17 0 0\n0\n0\n3 Vin\n-1.5 -0.7 0.01\n3 Vcc\n10 14 1\n")));
+    // its probe on GCM_2, as CircuitMaker names it
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QCOMPARE(c.probes().size(), 1);
+    QString probe;
+    for (const Wire& w : c.wires())
+        if (!w.bus && WireGeometry::onPolyline(c.probes().first(), w.points)) probe = NetlistBuilder::nodeName(nl, nl.wireNet.value(w.id), c, library());
+    QCOMPARE(probe, QStringLiteral("GCM_2"));
+    // Pcb.ckt names two nodes with texts on their wires (vin, vout)
+    {
+        Circuit pcb;
+        QVERIFY(CktImporter::import(QFileInfo(path).dir().filePath(QStringLiteral("Pcb.ckt")), pcb, library(), nullptr, nullptr));
+        QStringList named;
+        for (const Net& n : NetlistBuilder::build(pcb, library()).nets)
+            if (n.name == u"vin" || n.name == u"vout") named << n.name;
+        named.sort();
+        QCOMPARE(named, (QStringList{QStringLiteral("vin"), QStringLiteral("vout")}));
+        const QString out = QString::fromLatin1(CktExporter::write(pcb, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        QVERIFY(out.contains(QStringLiteral("\n0 32768 0 3\n")));
+    }
     // the header's option bits and its Speed line
     QVERIFY(text.contains(QStringLiteral("\n9961472 0\n")));
     QVERIFY(text.contains(QStringLiteral("\n0 0 30 100 10\n")));

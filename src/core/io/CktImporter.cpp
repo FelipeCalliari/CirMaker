@@ -177,7 +177,7 @@ Device readDevice(Reader& r, double version)
     const QVector<int> pkg = r.ints(r.integer() + 1);
     const int pins = std::abs(pinMax);
     if (pins > 0 && pkg.size() >= 1 + 2 * pins)
-        d.packagePins = pkg.mid(1 + pins, pins);
+        d.packagePins = pkg.mid(1 + pins, pins), d.partPins = pkg.mid(1, pins);
     d.misc = r.ints(8);
     d.prefix = r.string();
     if (modern) {
@@ -228,7 +228,7 @@ CktFile parseAt(const QString& d, int pos, double version)
         CktText t;
         t.fontHeight = std::abs(r.ints(13)[0]);
         r.string();
-        r.ints(4);
+        t.nodeName = r.ints(4)[1] & 0x8000;
         const QVector<int> rect = r.ints(4);
         r.ints(4);
         t.rect = QRectF(QPointF(rect[0], rect[1]), QPointF(rect[2], rect[3]));
@@ -664,12 +664,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // its quantities SPICE saves, 0x80 and 0x1000), apart from the shown texts
         if (const CmLibDevice* dev = deviceLib().find(d.name); dev && ((d.flags ^ dev->flags) & ~0x310))
             c.props.insert(QStringLiteral("cmFlags"), d.flags & ~0x300);
-        // a single part's package pins when its model gives others than the
-        // library ("pkg:TO-18 3,2,1"): CircuitMaker names SPICE nodes by them (Q1_3)
-        if (const CmLibDevice* dev = deviceLib().find(d.name);
-            dev && dev->parts <= 1 && !d.packagePins.isEmpty() && d.packagePins != dev->packageMap.mid(1, d.packagePins.size())) {
+        // the part's package pins, which its model may set ("pkg:TO-18 3,2,1"):
+        // CircuitMaker names SPICE nodes and probes by them (Q1_3, U1A_3)
+        if (!d.partPins.isEmpty() && d.type != 0x5e && std::any_of(d.partPins.cbegin(), d.partPins.cend(), [](int p) { return p > 0; })) {
             QStringList pins;
-            for (int p : d.packagePins) pins << QString::number(p);
+            for (int p : d.partPins) pins << QString::number(p);
             c.props.insert(QStringLiteral("cmPins"), pins.join(u' '));
         }
         // an instance's own SPICE template (741.ckt's BB: "I=I(VB)*10.61E6-..."), kept for export
@@ -1130,7 +1129,25 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
 
     for (const CktText& t : file.texts) {
         if (t.text.trimmed().isEmpty()) continue;
-        circuit.addText({0, scaled(t.rect.topLeft()), t.text, std::max(6.0, t.fontHeight * kScale * 0.6)});
+        TextNote note{0, scaled(t.rect.topLeft()), t.text, std::max(6.0, t.fontHeight * kScale * 0.6)};
+        if (t.nodeName) {
+            // the wire its bottom edge lies on (or nearest to it)
+            const QPointF a = scaled(t.rect.bottomLeft()), b = scaled(t.rect.bottomRight());
+            double best = 6 * kScale;
+            for (const Wire& w : circuit.wires()) {
+                if (w.bus) continue;
+                for (int k = 0; k + 1 < w.points.size(); ++k)
+                    for (int s = 0; s <= 8; ++s) {
+                        const QPointF p = a + (b - a) * (s / 8.0);
+                        const QPointF u = w.points[k], v = w.points[k + 1], uv = v - u;
+                        const double len2 = QPointF::dotProduct(uv, uv);
+                        const double tt = len2 > 0 ? std::clamp(QPointF::dotProduct(p - u, uv) / len2, 0.0, 1.0) : 0;
+                        const QPointF q = u + uv * tt;
+                        if (const double d = QLineF(p, q).length(); d < best) best = d, note.nameAt = q - note.pos;
+                    }
+            }
+        }
+        circuit.addText(note);
     }
 
     // ---- CircuitMaker connects only where wires end; a wire that merely
@@ -1441,6 +1458,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             points << best;
         }
         circuit.setProbes(points);
+        QVector<std::pair<QPointF, QString>> names;
+        for (int k = 0; k < points.size(); ++k)
+            if (!file.probes[k].name.isEmpty()) names.push_back({points[k], file.probes[k].name});
+        circuit.setProbeNames(names);
     }
     if (qEnvironmentVariableIsSet("CM_TRAILER"))
         qInfo("TRAILER %s", qPrintable(file.trailer.simplified().left(700)));

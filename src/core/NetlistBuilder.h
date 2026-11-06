@@ -39,6 +39,9 @@ struct Netlist {
 class NetlistBuilder {
 public:
     static Netlist build(const Circuit& circuit, const LibraryRegistry& library);
+    // A net's name as CircuitMaker shows it on a probe: its label, else
+    // "<designator>_<package pin>" of the earliest placed part on it (U1_6)
+    static QString nodeName(const Netlist& netlist, int net, const Circuit& circuit, const LibraryRegistry& library);
 };
 
 } // namespace cm

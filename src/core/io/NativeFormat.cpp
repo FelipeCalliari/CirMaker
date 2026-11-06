@@ -135,12 +135,18 @@ QByteArray serialize(const Circuit& circuit)
         if (!w.name.isEmpty()) o.insert(u"name", w.name);
         wires.append(o);
     }
-    for (const TextNote& t : circuit.texts())
-        texts.append(QJsonObject{{u"pos"_s, point(t.pos)}, {u"text"_s, t.text}, {u"size"_s, t.pointSize}});
+    for (const TextNote& t : circuit.texts()) {
+        QJsonObject o{{u"pos"_s, point(t.pos)}, {u"text"_s, t.text}, {u"size"_s, t.pointSize}};
+        if (t.nameAt) o.insert(u"nameAt"_s, point(*t.nameAt));
+        texts.append(o);
+    }
 
     QJsonArray probes;
     for (QPointF p : circuit.probes())
         probes.append(point(p));
+    QJsonArray probeNames;
+    for (const auto& [p, name] : circuit.probeNames())
+        probeNames.append(QJsonArray{p.x(), p.y(), name});
     const TitleBlock& tb = circuit.titleBlock();
     QJsonObject root{
         {u"format"_s, u"cirmaker-qt"_s},
@@ -149,6 +155,7 @@ QByteArray serialize(const Circuit& circuit)
                                  {u"revision"_s, tb.revision}, {u"visible"_s, tb.visible}, {u"pos"_s, point(tb.pos)}}},
         {u"analysis"_s, analysisToJson(circuit.analysis())},
         {u"probes"_s, probes},
+        {u"probeNames"_s, probeNames},
         {u"faults"_s, faultsToJson(circuit.faultSettings())},
         {u"components"_s, comps},
         {u"wires"_s, wires},
@@ -189,6 +196,12 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
     for (const QJsonValue& v : root.value(u"probes").toArray())
         probes << point(v);
     circuit.setProbes(probes);
+    QVector<std::pair<QPointF, QString>> probeNames;
+    for (const QJsonValue& v : root.value(u"probeNames").toArray()) {
+        const QJsonArray a = v.toArray();
+        probeNames.push_back({QPointF(a.at(0).toDouble(), a.at(1).toDouble()), a.at(2).toString()});
+    }
+    circuit.setProbeNames(probeNames);
     circuit.setFaultSettings(faultsFromJson(root.value(u"faults").toObject()));
     for (const QJsonValue& v : root.value(u"components").toArray()) {
         const QJsonObject o = v.toObject();
@@ -217,7 +230,9 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
     }
     for (const QJsonValue& v : root.value(u"texts").toArray()) {
         const QJsonObject o = v.toObject();
-        circuit.addText({0, point(o.value(u"pos")), o.value(u"text").toString(), o.value(u"size").toDouble(10)});
+        TextNote t{0, point(o.value(u"pos")), o.value(u"text").toString(), o.value(u"size").toDouble(10)};
+        if (o.contains(u"nameAt")) t.nameAt = point(o.value(u"nameAt"));
+        circuit.addText(t);
     }
     return true;
 }

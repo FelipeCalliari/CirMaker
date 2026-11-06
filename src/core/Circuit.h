@@ -41,6 +41,9 @@ struct TextNote {
     QPointF pos;
     QString text;
     double pointSize = 10;
+    // a node name (CircuitMaker's): names the net of the wire at pos + nameAt
+    // without joining anything; SPICE and probes use the name
+    std::optional<QPointF> nameAt;
 };
 
 struct TitleBlock {
@@ -144,6 +147,11 @@ public:
     // Waveform probe points; each one plots the net under it.
     const QVector<QPointF>& probes() const { return m_probes; }
     void setProbes(const QVector<QPointF>& probes);
+    // A probe's own name (CircuitMaker files name theirs: "Clk", "GCM_2"),
+    // by its point; empty: none
+    QString probeName(QPointF at) const;
+    const QVector<std::pair<QPointF, QString>>& probeNames() const { return m_probeNames; }
+    void setProbeNames(const QVector<std::pair<QPointF, QString>>& names) { m_probeNames = names; }
     const FaultSettings& faultSettings() const { return m_faults; }
     void setFaultSettings(const FaultSettings& f);
 
@@ -174,6 +182,7 @@ private:
     TitleBlock m_titleBlock;
     AnalysisSettings m_analysis;
     QVector<QPointF> m_probes;
+    QVector<std::pair<QPointF, QString>> m_probeNames;
     FaultSettings m_faults;
     ItemId m_nextId = 1;
 };

@@ -120,6 +120,7 @@ void Circuit::clear()
     m_titleBlock = {};
     m_analysis = {};
     m_probes.clear();
+    m_probeNames.clear();
     m_faults = {};
     emit cleared();
     emit modified();
@@ -150,6 +151,13 @@ void Circuit::setFaultSettings(const FaultSettings& f)
     m_faults = f;
     emit faultSettingsChanged();
     emit modified();
+}
+
+QString Circuit::probeName(QPointF at) const
+{
+    for (const auto& [p, name] : m_probeNames)
+        if (p == at) return name;
+    return {};
 }
 
 void Circuit::setProbes(const QVector<QPointF>& probes)

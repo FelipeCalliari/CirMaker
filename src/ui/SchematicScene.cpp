@@ -806,6 +806,13 @@ QVector<int> SchematicScene::probeNets() const
     return out;
 }
 
+QString SchematicScene::probeName(int i) const
+{
+    if (i < 0 || i >= m_circuit->probes().size()) return {};
+    const QString own = m_circuit->probeName(m_circuit->probes()[i]);
+    return own.isEmpty() ? NetlistBuilder::nodeName(m_netlist, netAt(m_circuit->probes()[i]), simCircuit(), m_library) : own;
+}
+
 void SchematicScene::setAnalogOverlay(AnalogOverlay overlay)
 {
     m_overlay = std::move(overlay);
@@ -1359,7 +1366,7 @@ void SchematicScene::run()
         const QVector<int> probes = probeNets();
         for (int i = 0; i < probes.size(); ++i)
             if (probes[i] >= 0)
-                m_lanes << Lane{QStringLiteral("%1: %2").arg(i + 1).arg(m_netlist.nets[probes[i]].name), probes[i]};
+                m_lanes << Lane{QStringLiteral("%1: %2").arg(i + 1).arg(probeName(i)), probes[i]};
         QVector<int> nets;
         for (const Lane& l : std::as_const(m_lanes)) nets << l.net;
         m_sim->watch(nets);

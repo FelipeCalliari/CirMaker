@@ -110,6 +110,9 @@ public:
     QString meterText(ItemId id) const { return m_overlay ? m_overlay->meterText.value(id) : QString(); }
     // Net under each probe point (-1 when the probe sits on nothing).
     QVector<int> probeNets() const;
+    // probe i's name: its own (from a CircuitMaker file), else its net's as
+    // CircuitMaker would name it
+    QString probeName(int i) const;
     void refreshNetlist() { rebuildNetlist(); }
     // Re-reads symbols after a library change (a macro was redefined).
     void refreshSymbols();

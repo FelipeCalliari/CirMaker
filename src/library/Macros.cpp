@@ -343,6 +343,7 @@ std::unique_ptr<Circuit> flatten(const Circuit& circuit, const LibraryRegistry& 
         out->addWire(w);
     out->setAnalysis(circuit.analysis());
     out->setProbes(circuit.probes());
+    out->setProbeNames(circuit.probeNames());
     Flattener f(*out, library, warnings);
     for (const auto& [c, s] : std::as_const(instances))
         f.expand(*c, *s, QString(), 0);

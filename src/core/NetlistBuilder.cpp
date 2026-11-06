@@ -141,6 +141,17 @@ Netlist NetlistBuilder::build(const Circuit& circuit, const LibraryRegistry& lib
     }
     for (auto it = labelNode.cbegin(); it != labelNode.cend(); ++it)
         out.nets[netFor(it.value())].name = it.key();
+    // node names (texts on a wire) name nets no label names
+    for (const TextNote& t : circuit.texts()) {
+        if (!t.nameAt || t.text.trimmed().isEmpty()) continue;
+        const QPointF at = t.pos + *t.nameAt;
+        for (const auto& [w, node] : wires)
+            if (WireGeometry::onPolyline(at, w->points)) {
+                Net& n = out.nets[netFor(node)];
+                if (n.name.isEmpty()) n.name = t.text.trimmed();
+                break;
+            }
+    }
     for (int i = 0; i < out.nets.size(); ++i)
         if (out.nets[i].name.isEmpty())
             out.nets[i].name = QStringLiteral("N%1").arg(i + 1);
@@ -149,6 +160,32 @@ Netlist NetlistBuilder::build(const Circuit& circuit, const LibraryRegistry& lib
         if (it.value() >= 3)
             out.junctions << where[it.key()];
     return out;
+}
+
+QString NetlistBuilder::nodeName(const Netlist& netlist, int net, const Circuit& circuit, const LibraryRegistry& library)
+{
+    if (net < 0 || net >= netlist.nets.size()) return {};
+    const Net& n = netlist.nets[net];
+    if (n.name != QStringLiteral("N%1").arg(net + 1)) return n.name;
+    const PinRef* first = nullptr;
+    const Component* firstComp = nullptr;
+    for (const PinRef& p : n.pins) {
+        const Component* c = circuit.component(p.component);
+        if (!c || c->designator.isEmpty()) continue;
+        if (!first || p.component < first->component || (p.component == first->component && p.pin < first->pin))
+            first = &p, firstComp = c;
+    }
+    if (!first) return n.name;
+    QString pin = QString::number(first->pin + 1);
+    if (const SymbolDef* s = library.find(firstComp->symbolId); s && first->pin < s->pins.size()) {
+        const QString name = s->pins[first->pin].name;
+        const int cmPin = int(s->cmPins.indexOf(name));
+        const QStringList kept = firstComp->props.value(QStringLiteral("cmPins")).toString().split(u' ', Qt::SkipEmptyParts);
+        if (cmPin >= 0 && cmPin < kept.size()) pin = kept[cmPin];
+        else if (!s->pins[first->pin].number.isEmpty()) pin = s->pins[first->pin].number;
+        else if (cmPin >= 0) pin = QString::number(cmPin + 1);
+    }
+    return firstComp->designator + u'_' + pin;
 }
 
 } // namespace cm

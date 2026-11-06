@@ -781,11 +781,17 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                     }
                 }
             }
-            for (int j = 0; j < wires.size() && !found; ++j) {
-                if (j == i || !WireGeometry::onPolyline(end, wires[j]->points)) continue;
-                found = true;
-                onWire[e] = nb + j + 1;
-            }
+            // CircuitMaker joins an end to the one wire it names: a wire the
+            // end lies along, else an earlier wire ending there (two ends
+            // naming each other would make an island of the pair)
+            for (int pass = 0; pass < 2 && !found; ++pass)
+                for (int j = 0; j < wires.size() && !found; ++j) {
+                    if (j == i || !WireGeometry::onPolyline(end, wires[j]->points)) continue;
+                    const bool atEnd = WireGeometry::near(wires[j]->points.first(), end) || WireGeometry::near(wires[j]->points.last(), end);
+                    if (pass == 0 ? atEnd : j > i) continue;
+                    found = true;
+                    onWire[e] = nb + j + 1;
+                }
         }
         pts.erase(std::unique(pts.begin(), pts.end()), pts.end());
         if (pts.size() == 1) pts << pts.first();
@@ -826,11 +832,17 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         const QStringList lines = t.text.split(u'\n');
         int longest = 0;
         for (const QString& l : lines) longest = std::max(longest, int(l.size()));
-        const QPoint at = toCm(t.pos);
-        const QRect box(at, QSize(std::max(1, longest * height / 2) + 6, int(lines.size()) * height + 6));
+        QPoint at = toCm(t.pos);
+        QSize size(std::max(1, longest * height / 2) + 6, int(lines.size()) * height + 6);
+        // a node name sits with its bottom edge on its wire
+        if (t.nameAt) {
+            const QPoint on = toCm(t.pos + *t.nameAt);
+            size.setHeight(std::max(4, on.y() - at.y() + 1));
+        }
+        const QRect box(at, size);
         // "<colour> 0 0 <length>": CircuitMaker draws only <length> characters
         textRecords << join({height, height / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54}) + u'\n' + str(QStringLiteral("Courier New"))
-                           + QStringLiteral("\n0 0 0 %1\n").arg(int(t.text.size() + lines.size() - 1)) + rect(box) + u'\n' + rect(box.adjusted(3, 2, -3, -2)) + u'\n'
+                           + QStringLiteral("\n0 %1 0 %2\n").arg(t.nameAt ? 0x8000 : 0).arg(int(t.text.size() + lines.size() - 1)) + rect(box) + u'\n' + rect(box.adjusted(3, 2, -3, -2)) + u'\n'
                            + str(t.text);
     }
 
@@ -845,7 +857,12 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         QStringList p{QStringLiteral("Probes: %1").arg(circuit.probes().size())};
         for (int k = 0; k < circuit.probes().size(); ++k) {
             const QPoint at = toCm(circuit.probes()[k]);
-            p << QStringLiteral("P%1").arg(k + 1) << QStringLiteral("Transient Analysis")
+            // its own name, else its net's as CircuitMaker names it (GCM_2)
+            QString name = circuit.probeName(circuit.probes()[k]);
+            for (const Wire& w : circuit.wires())
+                if (name.isEmpty() && !w.bus && WireGeometry::onPolyline(circuit.probes()[k], w.points))
+                    name = NetlistBuilder::nodeName(netlist, netlist.wireNet.value(w.id, -1), circuit, library);
+            p << (name.isEmpty() ? QStringLiteral("P%1").arg(k + 1) : name) << QStringLiteral("Transient Analysis")
               << QStringLiteral("%1 %2 %3 %4").arg(k).arg(at.x()).arg(at.y()).arg(colours[k % 8]);
         }
         head.replace(QStringLiteral("Probes: 0"), p.join(u'\n'));

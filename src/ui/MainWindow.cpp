@@ -1886,7 +1886,8 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
     const QVector<int> probeNets = m_scene->probeNets();
     for (int i = 0; i < probeNets.size(); ++i)
         if (probeNets[i] >= 0)
-            plotted << std::pair{QStringLiteral("%1: %2").arg(i + 1).arg(nl.nets[probeNets[i]].name), deck.nodeOfNet.value(probeNets[i])};
+            plotted << std::pair{QStringLiteral("%1: %2").arg(i + 1).arg(m_scene->probeName(i)),
+                                 deck.nodeOfNet.value(probeNets[i])};
     if (plotted.isEmpty()) {
         for (int n = 0; n < nl.nets.size() && plotted.size() < 8; ++n) {
             const QString node = deck.nodeOfNet.value(n);

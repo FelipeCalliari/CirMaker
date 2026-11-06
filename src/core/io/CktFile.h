@@ -23,6 +23,7 @@ struct Device {
     QString tag;                // third label: the relay a coil or contact belongs to ("K1")
     QVector<int> data;
     QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
+    QVector<int> partPins;      // the same for this part (U1B's)
     QString ref;
     QString package;
     QVector<int> misc;          // the 8 numbers after the package map (code, model location, parts, part, package)                // after the nets: a macro's name, or the device a part's model is looked up under
@@ -44,6 +45,7 @@ struct CktText {
     QRectF rect;
     QString text;
     int fontHeight = 13;
+    bool nodeName = false;      // 0x8000 in its second number: names the node of the wire under it
 };
 
 // The title block, just before the device list: display mode (0 hidden) and
