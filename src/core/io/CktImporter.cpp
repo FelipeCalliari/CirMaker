@@ -1008,10 +1008,16 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         else
             entryNet.insert(e.key(), e.cmNet);
     }
+    // a CircuitMaker net of wires alone (a stray wire drawn over another)
+    // connects nothing, so joining it to a net is no short
+    QSet<int> withPins;
+    for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it)
+        for (const Member& m : it.value())
+            if (m.pin) withPins.insert(nodeOf(it.key()));
     QHash<int, QSet<int>> cmNetsOfOurNet;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it)
         for (const Member& m : it.value())
-            if (m.ourNet >= 0) cmNetsOfOurNet[m.ourNet].insert(nodeOf(it.key()));
+            if (m.ourNet >= 0 && withPins.contains(nodeOf(it.key()))) cmNetsOfOurNet[m.ourNet].insert(nodeOf(it.key()));
     int shorts = 0;
     for (const QSet<int>& s : std::as_const(cmNetsOfOurNet))
         shorts += s.size() > 1;

@@ -108,9 +108,11 @@ void TestCktImport::importsAllCircuits()
     qInfo("%lld files, %d devices, %d wires, %d net labels, %d nets merged by redrawn symbols",
           qlonglong(files.size()), devices, wires, labels, shorts);
     // regression guard for symbol geometry (138 before the CircuitMaker
-    // layouts); what remains is stale net numbers in the files themselves and
-    // wires CircuitMaker draws 1 unit apart (Vtpwramp's transformer, Projeto G3)
-    QVERIFY2(shorts <= 8, qPrintable(QString::number(shorts)));
+    // layouts). What remains is in the files themselves: stale net numbers
+    // (Lab3-Tx: a STOPBIT terminal in two nets), a wire saved with net 0
+    // (CPU23: resetINS to a PROM output) and wires CircuitMaker draws 1 unit
+    // apart (Projeto G3).
+    QVERIFY2(shorts <= 4, qPrintable(QString::number(shorts)));
     QStringList missing;
     for (auto it = unmapped.cbegin(); it != unmapped.cend(); ++it)
         missing << QStringLiteral("%1 x%2").arg(it.key()).arg(it.value());
@@ -361,6 +363,16 @@ void TestCktImport::userLibMacros()
     int ports = 0;
     for (const Component& comp : inner.components()) ports += comp.symbolId == u"port_in" || comp.symbolId == u"port_out";
     QCOMPARE(ports, 11);
+    // the ports reach distinct nets (two are named A1 in CircuitMaker's own macro)
+    const Netlist nl = NetlistBuilder::build(inner, library());
+    QSet<int> nets;
+    QStringList names;
+    for (const Component& comp : inner.components())
+        if (comp.symbolId == u"port_in" || comp.symbolId == u"port_out") {
+            nets.insert(nl.netOf(comp.id, 0));
+            names << comp.label + u'=' + QString::number(nl.netOf(comp.id, 0));
+        }
+    QVERIFY2(nets.size() >= 10, qPrintable(names.join(u' ')));
 }
 
 // CircuitMaker saves both sides of a shut window's contact as one net; the
