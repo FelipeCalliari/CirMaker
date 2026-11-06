@@ -512,8 +512,9 @@ void TestCktImport::signalGenerators()
         {QStringLiteral("Bandpass.ckt"), {QStringLiteral("pulse -1 1 0 1e-07 1e-07 0.0005 0.001")}},
         {QStringLiteral("Ammod.ckt"), {QStringLiteral("sine -0.5 0.3 1000"), QStringLiteral("sine 0 0.5 100000")}},
         {QStringLiteral("Switches.ckt"), {QStringLiteral("sine 0 1 1e+06"), QStringLiteral("sine 0 1.1 1e+06")}},
-        // the 20 numbers, not the stale SPICE line ("SIN(0 1 1k ...)")
-        {QStringLiteral("Lpfilter.ckt"), {QStringLiteral("sine 0 0.1 1000")}},
+        // the SPICE line CircuitMaker simulates ("SIN(0 1 1k ...)", its own
+        // netlist), not the 20 numbers of the label (100 mV)
+        {QStringLiteral("Lpfilter.ckt"), {QStringLiteral("sine 0 1 1000")}},
         {QStringLiteral("Fcvs.ckt"), {QStringLiteral("fm 0 1 10000 5 1000")}},
         {QStringLiteral("Vco.ckt"), {QStringLiteral("pwl 0 0.1 0.002 0.3 0.004 1 0.006 1.5 0.008 0.5 0.01 2.5 0.012 4 0.014 0.1")}}};
     for (auto it = expected.cbegin(); it != expected.cend(); ++it) {

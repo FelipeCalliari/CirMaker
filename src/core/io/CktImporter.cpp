@@ -793,14 +793,17 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             // "%D %1 %2 DC 0 PULSE(0 5 100n 10n 10n 100n 1u) AC 1 0"
             static const QRegularExpression shape(QStringLiteral("\\b(SIN|PULSE|EXP|PWL|SFFM)\\s*\\(([^)]*)\\)"),
                                                   QRegularExpression::CaseInsensitiveOption);
-            // CircuitMaker writes the SPICE line from the 20 numbers (the
-            // line saved can be stale): nets[3] says the waveform, 1 pulse,
-            // 2 sine, 3 FM, 5 piecewise linear; the first number is the AC
-            // magnitude (0: none)
+            // CircuitMaker simulates the SPICE line saved with the part, which
+            // can disagree with its 20 numbers (Lpfilter: the line's 1 V sine,
+            // the numbers' and label's 100 mV): the line first. Without one
+            // (or one reading a file, "PWL %=RAND128.PWL"), the 20 numbers:
+            // nets[3] says the waveform, 1 pulse, 2 sine, 3 FM, 5 piecewise
+            // linear; the first number is the AC magnitude (0: none)
             const QVector<double>& g = d.generator;
             const int wave = d.nets.value(3);
             auto num = [&](int i) { return QString::number(g.value(i), 'g', 6); };
-            if (g.size() >= 10 && (wave == 1 || wave == 2 || wave == 3 || wave == 5)) {
+            const bool lineGiven = shape.match(d.spice).hasMatch();
+            if (!lineGiven && g.size() >= 10 && (wave == 1 || wave == 2 || wave == 3 || wave == 5)) {
                 if (wave == 2) {
                     c.props.insert(QStringLiteral("wave"), QStringLiteral("sine"));
                     c.props.insert(QStringLiteral("frequency"), num(1));
