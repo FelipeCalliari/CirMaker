@@ -753,7 +753,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                                 : QString();
         rec << str(tag);
         if (!tag.isEmpty()) rec << rect(textRect(tag, std::nullopt, QPointF(r.right() + 3, r.top() + 46)));
-        rec << str(l.power) << str(spice) << QStringLiteral("0") << str(modelKind)
+        rec << str(c.props.value(QStringLiteral("cmPower"), l.power).toString()) << str(spice) << QStringLiteral("0") << str(modelKind)
             << str(c.props.value(QStringLiteral("cmPackage"), l.package).toString());
         rec << QString::number(pkg.size() - 1) << join(pkg);
         const QStringList modelAt = c.props.value(QStringLiteral("cmModelAt")).toString().split(u' ', Qt::SkipEmptyParts);

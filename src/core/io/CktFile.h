@@ -30,6 +30,7 @@ struct Device {
     QVector<int> misc;          // the 8 numbers after the package map (code, model location, parts, part, package)                // after the nets: a macro's name, or the device a part's model is looked up under
     QVector<double> generator;
     QString raw;                // the record as read
+    QString power;              // its power pins, "DVDD=14;DGND=7;" (CMOS) or "DVCC=14;DGND=7;"
     QStringList stamps;         // placing date and order (floats in doubles' low halves); none in older files
     bool stampRead = false;  // a signal generator's 20 numbers (its waveform; see CktImporter.cpp)
 };

@@ -166,7 +166,7 @@ Device readDevice(Reader& r, double version)
     if (!d.designator.isEmpty()) d.designatorRect = rect();
     d.tag = r.string();
     if (!d.tag.isEmpty()) r.ints(4);
-    r.string();                                 // power pins, e.g. "DVCC=14;DGND=7;"
+    d.power = r.string();                       // power pins, e.g. "DVCC=14;DGND=7;"
     d.spice = r.string();                       // SPICE template ("%D %1 0 DC %V"); empty: not simulated
     r.string();
     if (version > 4.0) {
@@ -704,6 +704,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!d.spice.trimmed().isEmpty() && d.type != 0xc3)
             if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->spice.trimmed() != d.spice.trimmed())
                 c.props.insert(QStringLiteral("cmSpice"), d.spice);
+        // its power pins where its model has others than the library's
+        // (a CMOS 4025's DVDD): CircuitMaker powers the digital parts by them
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.power.trimmed() != dev->power.trimmed())
+            c.props.insert(QStringLiteral("cmPower"), d.power);
         // parameters the instance adds to the library's element line
         // ("%D %1 %2 %V IC=2.5", "%D %1 %2 %3 %3 %M W=40U L=10U")
         if (const CmLibDevice* dev = deviceLib().find(d.name); dev && !d.spice.trimmed().isEmpty()) {
