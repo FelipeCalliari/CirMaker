@@ -632,6 +632,9 @@ void TestCktImport::exportKeepsNodeNaming()
         order << f;
     }
     QVERIFY(order.size() > 40);
+    // the box a part turns about: an NPN's circle and wire ends, its middle
+    // (-2, 0), as its mirrored and turned instances in the examples show
+    QCOMPARE(cmLib.find(QStringLiteral("NPN Trans:C~"))->box, QRect(QPoint(-18, -18), QPoint(14, 18)));
     // kept as the file had them: rising, about one apart
     for (int k = 0; k < order.size(); ++k) QVERIFY(std::abs(order[k] - float(k)) < 0.01f);
     // parts where CircuitMaker had them: a Device.lib pin is drawn from its

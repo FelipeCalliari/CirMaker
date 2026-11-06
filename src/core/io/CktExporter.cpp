@@ -472,6 +472,24 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         if (const QStringList ts = c.props.value(QStringLiteral("cmTurnShift")).toString().split(u' ', Qt::SkipEmptyParts);
             ts.size() == 4 && ts[2].toInt() == c.rotation && bool(ts[3].toInt()) == c.mirrored)
             d.turnShift = QPoint(ts[0].toInt(), ts[1].toInt());
+        else if ((c.rotation != 0 || c.mirrored) && !d.lib->box.isNull()) {
+            // CircuitMaker turns about the middle of the box (rounded down),
+            // then mirrors about the middle of the turned box: where the
+            // origin ends up is how far every pin is from one turned about it
+            auto mid = [](const QRect& r) {
+                return QPoint(int(std::floor((r.left() + r.right()) / 2.0)), int(std::floor((r.top() + r.bottom()) / 2.0)));
+            };
+            const QTransform mirror = c.mirrored ? QTransform(-1, 0, 0, 1, 0, 0) : QTransform();
+            const QTransform rotate = d.turn * mirror;          // the turn without the mirror
+            const QPoint c1 = mid(d.lib->box);
+            const QPoint turnedOrigin = c1 - rotate.map(c1);
+            QPoint at = turnedOrigin;
+            if (c.mirrored) {
+                const QRect turned = rotate.mapRect(d.lib->box).translated(turnedOrigin);
+                at.setX(2 * mid(turned).x() - at.x());
+            }
+            d.turnShift = at;
+        }
         // the origin that puts CircuitMaker's pins where ours are; like the
         // importer, from the pins wires end on, one vote per wire end, so a
         // symbol of another width comes back where it was

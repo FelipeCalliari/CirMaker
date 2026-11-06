@@ -21,6 +21,7 @@ struct CmLibDevice {
     int code = 0;               // the letter stored in each instance ('A', 'R', 'V', ...)
     int flags = 0;
     QRect valueRect;
+    QRect box;                  // the drawing and the pins' wire ends (CircuitMaker turns a part about its middle)
     QString prefix;             // designator prefix
     QString power, spice, value, kind, package;
 };

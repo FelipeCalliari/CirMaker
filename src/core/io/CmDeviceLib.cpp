@@ -95,6 +95,23 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
         const int n = b.i32(p);
         if (n < 0 || n > 65536 || !b.has(p + 4, n)) return false;
         blob = b.mid(p + 4, n);
+        p += 4 + n;
+    }
+    // the drawing: a count, then 48 bytes each (kind, flags, four points,
+    // the points used, a pointer); kind 0 line, 4 ellipse, 5 rectangle (two
+    // corners), others polygons; flag 0x4000 marks the other drawing style,
+    // counted too, as CircuitMaker's box takes it in
+    QVector<QPoint> drawn;
+    if (b.has(p, 4)) {
+        const int n = b.i32(p);
+        if (n > 0 && n <= 200 && b.has(p + 4, 48 * qsizetype(n))) {
+            for (int e = 0; e < n; ++e) {
+                const qsizetype q = p + 4 + 48 * qsizetype(e);
+                const int kind = b.i32(q);
+                const int used = kind == 0 || kind == 4 || kind == 5 ? 2 : std::clamp(std::abs(b.i32(q + 40)), 2, 4);
+                for (int k = 0; k < used; ++k) drawn << QPoint(b.i32(q + 8 + 8 * k), b.i32(q + 12 + 8 * k));
+            }
+        }
     }
     auto at = [&blob](int offset) -> QString {
         if (offset <= 0 || offset >= blob.size()) return {};
@@ -109,6 +126,9 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     out.pinCount = std::max(0, pinTotal - 2);
     out.pins = pins.mid(1, out.pinCount);
     out.pinNames = names.mid(1, out.pinCount);
+    // the box CircuitMaker turns a part about: the drawing and the wire ends
+    for (const QPoint& pt : std::as_const(drawn)) out.box |= QRect(pt, QSize(1, 1));
+    for (const QPoint& pt : std::as_const(out.pins)) out.box |= QRect(pt, QSize(1, 1));
     out.packageMap = map;
     out.parts = b.i16(L + 0xb6);
     out.code = b.i16(L + 0xa4);
