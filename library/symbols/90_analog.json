@@ -882,13 +882,180 @@
    ]
   },
   {
+   "id": "opamp7",
+   "name": "Op-Amp (7 pins)",
+   "prefix": "U",
+   "label": "OPAMP7",
+   "aliases": [
+    "Op-Amp7"
+   ],
+   "cmPins": [
+    "+",
+    "-",
+    "V+",
+    "V-",
+    "OUT",
+    "X1",
+    "X2"
+   ],
+   "spice": {
+    "line": "X{name} {+} {-} {V+} {V-} {OUT} OPAMP_GEN\nR{name}x1 {X1} {V-} 1G\nR{name}x2 {X2} {V-} 1G",
+    "subckt": [
+     ".subckt OPAMP_GEN inp inn vp vn out",
+     "Rin inp inn 2Meg",
+     "Gm 0 mid inp inn 1m",
+     "Rm mid 0 100Meg",
+     "Cm mid 0 159p",
+     "Bo outi 0 V = min(max(v(mid), v(vn)+1), v(vp)-1)",
+     "Ro outi out 50",
+     "Rs vp vn 100k",
+     ".ends OPAMP_GEN"
+    ]
+   },
+   "description": "Op-amp with offset null / compensation pins X1 and X2 (CircuitMaker's Op-Amp7); behavioural unless labelled with a model that uses them",
+   "graphics": [
+    {
+     "path": "M -40 -50 L 40 0 L -40 50 Z"
+    },
+    {
+     "line": [
+      -60,
+      20,
+      -40,
+      20
+     ]
+    },
+    {
+     "line": [
+      -60,
+      -20,
+      -40,
+      -20
+     ]
+    },
+    {
+     "line": [
+      0,
+      -40,
+      0,
+      -25
+     ]
+    },
+    {
+     "line": [
+      0,
+      25,
+      0,
+      40
+     ]
+    },
+    {
+     "line": [
+      40,
+      0,
+      60,
+      0
+     ]
+    },
+    {
+     "text": "+",
+     "at": [
+      -32,
+      20
+     ],
+     "size": 10
+    },
+    {
+     "text": "-",
+     "at": [
+      -32,
+      -20
+     ],
+     "size": 10
+    },
+    {
+     "line": [
+      30,
+      -30,
+      30,
+      -6
+     ]
+    },
+    {
+     "line": [
+      30,
+      6,
+      30,
+      30
+     ]
+    }
+   ],
+   "pins": [
+    {
+     "name": "+",
+     "at": [
+      -60,
+      20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "-",
+     "at": [
+      -60,
+      -20
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "V+",
+     "at": [
+      0,
+      -40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "V-",
+     "at": [
+      0,
+      40
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "OUT",
+     "at": [
+      60,
+      0
+     ],
+     "dir": "out"
+    },
+    {
+     "name": "X1",
+     "at": [
+      30,
+      -30
+     ],
+     "dir": "passive"
+    },
+    {
+     "name": "X2",
+     "at": [
+      30,
+      30
+     ],
+     "dir": "passive"
+    }
+   ]
+  },
+  {
    "id": "opamp",
    "name": "Op-Amp",
    "prefix": "U",
    "label": "OPAMP",
    "aliases": [
     "Op-Amp5",
-    "Op-Amp7",
     "Op-Amp"
    ],
    "cmPins": [

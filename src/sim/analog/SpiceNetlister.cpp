@@ -295,10 +295,11 @@ private:
     bool labelledSubckt(const Component& c, const SymbolDef& s, QString& line, QJsonObject& spice)
     {
         const QJsonArray sub = spice.value(u"subckt").toArray();
-        if (sub.isEmpty() || !line.startsWith(QStringLiteral("X{name} ")) || line.contains(u'\n')) return false;
+        const QString first = line.section(u'\n', 0, 0);    // extra lines (pins the default model leaves) go
+        if (sub.isEmpty() || !first.startsWith(QStringLiteral("X{name} "))) return false;
         static const QRegularExpression head(QStringLiteral("^\\.subckt\\s+(\\S+)"), QRegularExpression::CaseInsensitiveOption);
         const auto h = head.match(sub.first().toString());
-        if (!h.hasMatch() || !line.endsWith(u' ' + h.captured(1))) return false;
+        if (!h.hasMatch() || !first.endsWith(u' ' + h.captured(1))) return false;
         const QString label = c.label.trimmed();
         if (label.isEmpty() || label.compare(h.captured(1), Qt::CaseInsensitive) == 0) return false;
         if (!c.props.value(QStringLiteral("spiceModels")).toString().trimmed().isEmpty()) return false;
@@ -307,6 +308,10 @@ private:
             if (!p.isEmpty()) pins << u'{' + p + u'}';
         const cmmodels::Subckt sc = cmmodels::findSubckt(label);
         if (sc.lines.isEmpty() || sc.nodes != pins.size()) return false;
+        // models with parameters (our VCO, PLL) are ours to keep
+        if (sub.first().toString().contains(QStringLiteral("params"), Qt::CaseInsensitive)
+            || sc.lines.first().contains(QStringLiteral("params"), Qt::CaseInsensitive) || first.contains(u'='))
+            return false;
         QString own = QStringLiteral("CM_") + sc.name;
         own.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9_]")), QStringLiteral("_"));
         line = QStringLiteral("X{name} ") + pins.join(u' ') + u' ' + own;
@@ -345,6 +350,7 @@ private:
         cmmodels::Model m = cmmodels::find(label);
         if (m.text.isEmpty()) m = cmmodels::find(line.left(1) + label);
         if (m.text.isEmpty() || m.type.compare(d.captured(2), Qt::CaseInsensitive) != 0) return;
+        if (m.text.contains(u'{')) return;     // written with CircuitMaker's own parameters (VCOs)
         // a name of our own: CircuitMaker's may be a SPICE keyword ("NMOS")
         QString own = QStringLiteral("CM_") + m.name;
         own.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9_]")), QStringLiteral("_"));

@@ -417,6 +417,13 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         d.c = &c;
         d.s = s;
         d.lib = deviceFor(*s, lib);
+        // the device an imported part was, if it is still one of this symbol's
+        if (const QString was = c.props.value(QStringLiteral("cmDevice")).toString(); !was.isEmpty()) {
+            QString bare = was;
+            if (bare.endsWith(u'~')) bare.chop(1);
+            if (s->aliases.contains(bare, Qt::CaseInsensitive))
+                if (const CmLibDevice* dev = lib.find(was)) d.lib = dev;
+        }
         if (!d.lib) d.lib = macroFor(*s);
         if (!d.lib) {
             rep.skipped << shownDesignator(*s, c) + QStringLiteral(" (") + s->name + u')';
@@ -526,27 +533,59 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             };
             auto g = [](double v) { return QString::number(v, 'g', 6); };
             const QString wave = c.props.value(QStringLiteral("wave"), QStringLiteral("sine")).toString();
+            // the AC magnitude first (0: no AC stimulus)
+            const double ac = c.props.value(QStringLiteral("ac"), true).toBool() ? prop("acMag", "1") : 0;
             nets.resize(3);
             QVector<double> params;
+            int pairs = 0;
             if (wave == u"pulse") {
                 // PULSE(v1 v2 delay rise fall width period): nets[3] = 1
                 const double v1 = prop("v1", "0"), v2 = prop("v2", "5"), period = std::max(prop("period", "1m"), 1e-12);
-                params = {1, 1 / period, v1, v2, prop("delay", "0"), prop("rise", "1n"), prop("fall", "1n"), prop("width", "0.5m"), period};
-                nets << 1 << 'V' << -10 << 10 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
+                params = {ac, 1 / period, v1, v2, prop("delay", "0"), prop("rise", "1n"), prop("fall", "1n"), prop("width", "0.5m"), period};
+                nets << 1;
                 value = QStringLiteral("%1/%2V").arg(g(v1), g(v2));
                 // (the template's own %D %1 %2 stay as they are)
                 spice = QStringLiteral("%D %1 %2 DC 0 PULSE(")
                       + QStringList{g(v1), g(v2), g(params[4]), g(params[5]), g(params[6]), g(params[7]), g(period)}.join(u' ') + u')';
+            } else if (wave == u"fm") {
+                // SFFM(offset amplitude carrier mdi signal): nets[3] = 3
+                const double off = prop("offset", "0"), amp = prop("amplitude", "1");
+                params = {ac, prop("carrier", "10k"), off, amp, prop("mdi", "1"), prop("signal", "1k")};
+                nets << 3;
+                value = QStringLiteral("%1/%2V").arg(g(off - amp), g(off + amp));
+                spice = QStringLiteral("%D %1 %2 DC 0 SFFM(") + QStringList{g(off), g(amp), g(params[1]), g(params[4]), g(params[5])}.join(u' ') + u')';
+            } else if (wave == u"pwl") {
+                // PWL(t v ...): nets[3] = 5; the end time, then the pairs (nine at most)
+                QVector<double> pts;
+                for (const QString& t : c.props.value(QStringLiteral("pwl")).toString().split(QRegularExpression(QStringLiteral("[\\s,;]+")), Qt::SkipEmptyParts))
+                    pts << number(t);
+                if (pts.size() % 2) pts.removeLast();
+                if (pts.size() > 18) pts.resize(18);
+                if (pts.isEmpty()) pts = {0, 0};
+                pairs = int(pts.size()) / 2;
+                params = {ac, pts[pts.size() - 2]};
+                params << pts;
+                nets << 5;
+                double lo = pts[1], hi = pts[1];
+                for (int k = 1; k < pts.size(); k += 2) lo = std::min(lo, pts[k]), hi = std::max(hi, pts[k]);
+                value = QStringLiteral("%1/%2V").arg(g(lo), g(hi));
+                QStringList txt;
+                for (double v : std::as_const(pts)) txt << g(v);
+                spice = QStringLiteral("%D %1 %2 DC 0 PWL( ") + txt.join(u' ') + u')';
             } else {
                 // SIN(offset amplitude frequency): nets[3] = 2
                 const double amplitude = prop("amplitude", "1"), offset = prop("offset", "0"), frequency = prop("frequency", "1k");
-                params = {1, frequency, offset, amplitude};
-                nets << 2 << 'V' << -8 << 8 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
+                params = {ac, frequency, offset, amplitude};
+                nets << 2;
                 value = QStringLiteral("%1/%2V").arg(g(offset - amplitude), g(offset + amplitude));
                 spice = QStringLiteral("%D %1 %2 DC 0 SIN(") + QStringList{g(offset), g(amplitude), g(frequency)}.join(u' ')
-                      + QStringLiteral(" 0 0) AC 1 0");
+                      + QStringLiteral(" 0 0)") + (ac != 0 ? QStringLiteral(" AC %1 0").arg(g(ac)) : QString());
             }
+            // nets[4..6]: 'V' and the display range; nets[7]: pairs + 1 of a PWL
+            nets << 'V' << (wave == u"pulse" || wave == u"pwl" ? -10 : -8) << (wave == u"pulse" || wave == u"pwl" ? 10 : 8)
+                 << (pairs ? pairs + 1 : 0) << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
             for (double v : std::as_const(params)) nets << floatBits(v);
+            if (wave == u"fm" || wave == u"pwl") nets.resize(65);       // as CircuitMaker keeps them
             for (double v : std::as_const(params)) genBlock << g(v);
             while (genBlock.size() < 20) genBlock << QStringLiteral("0");
         }

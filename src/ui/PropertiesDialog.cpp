@@ -91,7 +91,7 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
         if (it.key() == u"travel" || faults::isFaultProperty(it.key()) || it.key() == u"break"
             || it.key() == u"probe"
             || it.key() == u"package" || it.key() == u"excludePcb" || it.key() == u"excludeBom"
-            || it.key() == u"pins" || it.key() == u"spice" || it.key() == u"spiceModels")
+            || it.key() == u"pins" || it.key() == u"spice" || it.key() == u"spiceModels" || it.key() == u"cmDevice")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM

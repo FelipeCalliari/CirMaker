@@ -27,7 +27,8 @@ QHash<QString, Model> index()
     if (lib.isEmpty()) return out;
     const QDir dir(QFileInfo(lib).absolutePath() + QStringLiteral("/Models"));
     static const QRegularExpression head(QStringLiteral("^\\.MODEL\\s+(\\S+)\\s+([A-Za-z]+)"), QRegularExpression::CaseInsensitiveOption);
-    for (const QFileInfo& fi : dir.entryInfoList({QStringLiteral("*.mod"), QStringLiteral("*.MOD"), QStringLiteral("*.lib"), QStringLiteral("*.LIB")},
+    for (const QFileInfo& fi : dir.entryInfoList({QStringLiteral("*.mod"), QStringLiteral("*.MOD"), QStringLiteral("*.lib"), QStringLiteral("*.LIB"),
+                                                  QStringLiteral("*.sub"), QStringLiteral("*.SUB")},
                                                  QDir::Files, QDir::Name)) {
         QFile f(fi.absoluteFilePath());
         if (!f.open(QIODevice::ReadOnly)) continue;

@@ -23,6 +23,7 @@ struct Device {
     QString tag;                // third label: the relay a coil or contact belongs to ("K1")
     QVector<int> data;
     QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
+    QVector<double> generator;  // a signal generator's 20 numbers (its waveform; see CktImporter.cpp)
 };
 
 struct CktWire {

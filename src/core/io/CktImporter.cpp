@@ -143,8 +143,10 @@ Device readDevice(Reader& r, double version)
     if (modern) {
         r.integer();
         d.nets = r.ints(pinMax + 1);
-        if (d.type == 0xc3)
-            r.ints(r.integer());
+        if (d.type == 0xc3) {
+            const int n = r.integer();
+            for (int k = 0; k < n; ++k) d.generator << r.token().toDouble();
+        }
     } else {
         d.nets = r.ints(std::abs(pinMax) + 1);
         if (pinMax < 0)
@@ -647,6 +649,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             c.label = s->defaultLabel;
         }
         c.symbolId = s->id;
+        // the CircuitMaker device it was, when not the symbol's first one
+        // (Op-Amp7 for an LM301A): written back as such
+        if (!s->aliases.isEmpty() && cmName.compare(s->aliases.first(), Qt::CaseInsensitive) != 0)
+            c.props.insert(QStringLiteral("cmDevice"), d.name);
         // relays named by their coil (SPDTRELA.SUB): pull-in voltage and coil resistance
         if (s->id == u"relay_spdt") {
             static const QHash<QString, std::pair<const char*, const char*>> relays{
@@ -731,7 +737,45 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             // "%D %1 %2 DC 0 PULSE(0 5 100n 10n 10n 100n 1u) AC 1 0"
             static const QRegularExpression shape(QStringLiteral("\\b(SIN|PULSE|EXP|PWL|SFFM)\\s*\\(([^)]*)\\)"),
                                                   QRegularExpression::CaseInsensitiveOption);
-            if (const auto m = shape.match(d.spice); m.hasMatch()) {
+            // CircuitMaker writes the SPICE line from the 20 numbers (the
+            // line saved can be stale): nets[3] says the waveform, 1 pulse,
+            // 2 sine, 3 FM, 5 piecewise linear; the first number is the AC
+            // magnitude (0: none)
+            const QVector<double>& g = d.generator;
+            const int wave = d.nets.value(3);
+            auto num = [&](int i) { return QString::number(g.value(i), 'g', 6); };
+            if (g.size() >= 10 && (wave == 1 || wave == 2 || wave == 3 || wave == 5)) {
+                if (wave == 2) {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("sine"));
+                    c.props.insert(QStringLiteral("frequency"), num(1));
+                    c.props.insert(QStringLiteral("offset"), num(2));
+                    c.props.insert(QStringLiteral("amplitude"), num(3));
+                } else if (wave == 1) {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("pulse"));
+                    const char* keys[] = {"v1", "v2", "delay", "rise", "fall", "width", "period"};
+                    for (int k = 0; k < 7; ++k) c.props.insert(QString::fromLatin1(keys[k]), num(2 + k));
+                    c.props.insert(QStringLiteral("offset"), QStringLiteral("0"));
+                } else if (wave == 3) {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("fm"));
+                    c.props.insert(QStringLiteral("carrier"), num(1));
+                    c.props.insert(QStringLiteral("offset"), num(2));
+                    c.props.insert(QStringLiteral("amplitude"), num(3));
+                    c.props.insert(QStringLiteral("mdi"), num(4));
+                    c.props.insert(QStringLiteral("signal"), num(5));
+                } else {
+                    // pairs from the third number up to the end time in the second
+                    QStringList pts;
+                    for (int k = 2; k + 1 < g.size(); k += 2) {
+                        pts << num(k) << num(k + 1);
+                        if (g[k] >= g[1]) break;
+                    }
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("pwl"));
+                    c.props.insert(QStringLiteral("pwl"), pts.join(u' '));
+                    c.props.insert(QStringLiteral("offset"), QStringLiteral("0"));
+                }
+                c.props.insert(QStringLiteral("ac"), g[0] != 0);
+                if (g[0] != 0) c.props.insert(QStringLiteral("acMag"), num(0));
+            } else if (const auto m = shape.match(d.spice); m.hasMatch()) {
                 const QString fn = m.captured(1).toUpper();
                 const QStringList a = m.captured(2).split(QRegularExpression(QStringLiteral("[\\s,]+")), Qt::SkipEmptyParts);
                 auto put = [&](const char* key, int i) {

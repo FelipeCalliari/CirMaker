@@ -485,9 +485,18 @@ void TestCktImport::signalGenerators()
             if (comp.symbolId != u"siggen") continue;
             const QVariantMap& p = comp.props;
             auto v = [&](const char* k) { return QString::number(spice::parseNumber(p.value(QString::fromLatin1(k)).toString()).value_or(0), 'g', 6); };
-            out << (p.value(QStringLiteral("wave")).toString() == u"pulse"
-                        ? QStringLiteral("pulse %1 %2 %3 %4 %5 %6 %7").arg(v("v1"), v("v2"), v("delay"), v("rise"), v("fall"), v("width"), v("period"))
-                        : QStringLiteral("%1 %2 %3 %4").arg(p.value(QStringLiteral("wave")).toString(), v("offset"), v("amplitude"), v("frequency")));
+            const QString w = p.value(QStringLiteral("wave")).toString();
+            if (w == u"pulse")
+                out << QStringLiteral("pulse %1 %2 %3 %4 %5 %6 %7").arg(v("v1"), v("v2"), v("delay"), v("rise"), v("fall"), v("width"), v("period"));
+            else if (w == u"fm")
+                out << QStringLiteral("fm %1 %2 %3 %4 %5").arg(v("offset"), v("amplitude"), v("carrier"), v("mdi"), v("signal"));
+            else if (w == u"pwl") {
+                QStringList pts;
+                for (const QString& t : p.value(QStringLiteral("pwl")).toString().split(u' ', Qt::SkipEmptyParts))
+                    pts << QString::number(spice::parseNumber(t).value_or(0), 'g', 6);
+                out << QStringLiteral("pwl ") + pts.join(u' ');
+            } else
+                out << QStringLiteral("%1 %2 %3 %4").arg(w, v("offset"), v("amplitude"), v("frequency"));
         }
         out.sort();
         return out;
@@ -496,7 +505,11 @@ void TestCktImport::signalGenerators()
         {QStringLiteral("State.ckt"), {QStringLiteral("pulse 0 5 1e-07 1e-08 1e-08 1e-07 1e-06")}},
         {QStringLiteral("Bandpass.ckt"), {QStringLiteral("pulse -1 1 0 1e-07 1e-07 0.0005 0.001")}},
         {QStringLiteral("Ammod.ckt"), {QStringLiteral("sine -0.5 0.3 1000"), QStringLiteral("sine 0 0.5 100000")}},
-        {QStringLiteral("Switches.ckt"), {QStringLiteral("sine 0 1 1e+06"), QStringLiteral("sine 0 1.1 1e+06")}}};
+        {QStringLiteral("Switches.ckt"), {QStringLiteral("sine 0 1 1e+06"), QStringLiteral("sine 0 1.1 1e+06")}},
+        // the 20 numbers, not the stale SPICE line ("SIN(0 1 1k ...)")
+        {QStringLiteral("Lpfilter.ckt"), {QStringLiteral("sine 0 0.1 1000")}},
+        {QStringLiteral("Fcvs.ckt"), {QStringLiteral("fm 0 1 10000 5 1000")}},
+        {QStringLiteral("Vco.ckt"), {QStringLiteral("pwl 0 0.1 0.002 0.3 0.004 1 0.006 1.5 0.008 0.5 0.01 2.5 0.012 4 0.014 0.1")}}};
     for (auto it = expected.cbegin(); it != expected.cend(); ++it) {
         Circuit a, b;
         QVERIFY(CktImporter::import(dir + it.key(), a, library(), nullptr, nullptr));
