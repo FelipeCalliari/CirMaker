@@ -745,7 +745,10 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         if (const QStringList st = c.props.value(QStringLiteral("cmStamp")).toString().split(u' ', Qt::SkipEmptyParts); st.size() == 2) {
             rec << QStringLiteral("2") << st.join(u' ') << QStringLiteral("0");
         } else {
-            rec << QStringLiteral("2") << floatStamp(oleDate()) + u' ' + floatStamp(i) << QStringLiteral("0");
+            // parts without a designator (grounds) last: CircuitMaker fails
+            // when one of them is the earliest on a net (Math1.ckt)
+            const int order = designator.isEmpty() ? int(devices.size()) + i : i;
+            rec << QStringLiteral("2") << floatStamp(oleDate()) + u' ' + floatStamp(order) << QStringLiteral("0");
         }
         if (!data.isEmpty()) rec << hexBytes(data);
         records << rec.join(u'\n');
