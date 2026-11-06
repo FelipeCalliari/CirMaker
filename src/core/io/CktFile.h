@@ -70,7 +70,12 @@ struct CktFile {
     QString trailer;
     // waveform probes of the header ("Probes: 2", then name, analysis and
     // "index x y colour" each)
-    struct Probe { QString name; QPointF at; QString record = {}; };
+    struct Probe {
+        QString name;
+        QPointF at;
+        QString record = {};        // a SAVE- part's record
+        QStringList header = {};    // "name|analysis|index|colour" entries of the header (one per analysis)
+    };
     QVector<Probe> probes;
     QVector<Device> devices;
     QVector<CktWire> wires;

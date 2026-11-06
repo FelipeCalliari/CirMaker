@@ -153,6 +153,8 @@ public:
     struct ProbeTag {
         QPointF at;
         QString name, cmRecord;
+        QStringList cmHeader;       // the .ckt header's entries for it: "name|analysis|index|colour"
+        std::optional<QPoint> cmAt; // its point in the .ckt, kept while the probe stays put
     };
     QString probeName(QPointF at) const;
     const ProbeTag* probeTag(QPointF at) const;

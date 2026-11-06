@@ -304,7 +304,10 @@ CktFile parse(const QByteArray& raw)
                 const int n = m.captured(1).toInt();
                 for (int k = 0; k < n && i + 3 + 3 * k < lines.size(); ++k) {
                     const QStringList v = lines[i + 3 + 3 * k].split(u' ', Qt::SkipEmptyParts);
-                    if (v.size() >= 3) probes << CktFile::Probe{lines[i + 1 + 3 * k].trimmed(), QPointF(v[1].toDouble(), v[2].toDouble())};
+                    if (v.size() >= 3)
+                        probes << CktFile::Probe{lines[i + 1 + 3 * k].trimmed(), QPointF(v[1].toDouble(), v[2].toDouble()), QString(),
+                                                 {lines[i + 1 + 3 * k].trimmed() + u'|' + lines[i + 2 + 3 * k].trimmed() + u'|' + v[0]
+                                                  + u'|' + v.value(3, QStringLiteral("65280"))}};
                 }
                 break;
             }
@@ -1465,7 +1468,15 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     rep.wires = int(file.wires.size());
     rep.texts = int(file.texts.size());
     // waveform probes, on the nearest wire of the redrawn circuit
-    const QVector<CktFile::Probe> allProbes = file.probes + savePoints;
+    // one probe per point: the header has one entry per analysis, and a
+    // SAVE- part on the point is the same probe (its letter names it)
+    QVector<CktFile::Probe> allProbes;
+    for (const CktFile::Probe& p : file.probes + savePoints) {
+        auto same = std::find_if(allProbes.begin(), allProbes.end(), [&](const CktFile::Probe& q) { return q.at == p.at; });
+        if (same == allProbes.end()) { allProbes << p; continue; }
+        same->header += p.header;
+        if (!p.record.isEmpty()) same->record = p.record, same->name = p.name.isEmpty() ? same->name : p.name;
+    }
     if (!allProbes.isEmpty()) {
         QVector<QPointF> points;
         for (const CktFile::Probe& p : allProbes) {
@@ -1488,8 +1499,8 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         circuit.setProbes(points);
         QVector<Circuit::ProbeTag> names;
         for (int k = 0; k < points.size(); ++k)
-            if (!allProbes[k].name.isEmpty() || !allProbes[k].record.isEmpty())
-                names.push_back({points[k], allProbes[k].name, allProbes[k].record});
+            if (!allProbes[k].name.isEmpty() || !allProbes[k].record.isEmpty() || !allProbes[k].header.isEmpty())
+                names.push_back({points[k], allProbes[k].name, allProbes[k].record, allProbes[k].header, allProbes[k].at.toPoint()});
         circuit.setProbeNames(names);
     }
     if (qEnvironmentVariableIsSet("CM_TRAILER"))

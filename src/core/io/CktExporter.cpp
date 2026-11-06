@@ -882,34 +882,47 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     for (const Device& d : devices) extent |= QRect(d.origin - QPoint(40, 40), QSize(80, 80));
     if (extent.isEmpty()) extent = QRect(0, 0, 600, 300);
     QString head = QString::fromLatin1(kHeaderStart);
-    // probes that were SAVE- parts go back as such, at their point
-    QVector<QPointF> headerProbes;
-    for (QPointF pt : circuit.probes()) {
+    // probes that were SAVE- parts go back as such, at their point; the
+    // header lists each probe once per analysis it had (else for the transient)
+    static const int colours[] = {65280, 65535, 16776960, 16711935, 11184640, 255, 16711680, 32768};
+    QStringList probeEntries;
+    int count = 0;
+    for (int k = 0; k < circuit.probes().size(); ++k) {
+        const QPointF pt = circuit.probes()[k];
         const Circuit::ProbeTag* tag = circuit.probeTag(pt);
-        if (!tag || tag->cmRecord.isEmpty()) { headerProbes << pt; continue; }
-        QStringList lines = tag->cmRecord.split(u'\n');
-        QStringList h = lines.value(1).split(u' ', Qt::SkipEmptyParts);
-        if (h.size() == 6) {
-            const QPoint at = toCm(pt);
-            h[1] = QString::number(at.x()), h[2] = QString::number(at.y());
-            lines[1] = h.join(u' ');
+        const QPoint at = tag && tag->cmAt ? *tag->cmAt : toCm(pt);
+        if (tag && !tag->cmRecord.isEmpty()) {
+            QStringList lines = tag->cmRecord.split(u'\n');
+            QStringList h = lines.value(1).split(u' ', Qt::SkipEmptyParts);
+            if (h.size() == 6) {
+                h[1] = QString::number(at.x()), h[2] = QString::number(at.y());
+                lines[1] = h.join(u' ');
+            }
+            records << lines.join(u'\n');
         }
-        records << lines.join(u'\n');
+        if (tag && !tag->cmHeader.isEmpty()) {
+            for (const QString& e : tag->cmHeader) {
+                const QStringList f = e.split(u'|');
+                if (f.size() < 4) continue;
+                probeEntries << f[0] << f[1] << QStringLiteral("%1 %2 %3 %4").arg(f[2]).arg(at.x()).arg(at.y()).arg(f[3]);
+                ++count;
+            }
+            continue;
+        }
+        if (tag && !tag->cmRecord.isEmpty()) continue;
+        // its own name, else its net's as CircuitMaker names it (GCM_2)
+        QString name = circuit.probeName(pt);
+        for (const Wire& w : circuit.wires())
+            if (name.isEmpty() && !w.bus && WireGeometry::onPolyline(pt, w.points))
+                name = NetlistBuilder::nodeName(netlist, netlist.wireNet.value(w.id, -1), circuit, library);
+        probeEntries << (name.isEmpty() ? QStringLiteral("P%1").arg(k + 1) : name) << QStringLiteral("Transient Analysis")
+                << QStringLiteral("%1 %2 %3 %4").arg(k).arg(at.x()).arg(at.y()).arg(colours[k % 8]);
+        ++count;
     }
-    if (!headerProbes.isEmpty()) {
+    if (count) {
         // "Probes: n", then name, analysis and "index x y colour" each
-        static const int colours[] = {65280, 65535, 16776960, 16711935, 11184640, 255, 16711680, 32768};
-        QStringList p{QStringLiteral("Probes: %1").arg(headerProbes.size())};
-        for (int k = 0; k < headerProbes.size(); ++k) {
-            const QPoint at = toCm(headerProbes[k]);
-            // its own name, else its net's as CircuitMaker names it (GCM_2)
-            QString name = circuit.probeName(headerProbes[k]);
-            for (const Wire& w : circuit.wires())
-                if (name.isEmpty() && !w.bus && WireGeometry::onPolyline(headerProbes[k], w.points))
-                    name = NetlistBuilder::nodeName(netlist, netlist.wireNet.value(w.id, -1), circuit, library);
-            p << (name.isEmpty() ? QStringLiteral("P%1").arg(k + 1) : name) << QStringLiteral("Transient Analysis")
-              << QStringLiteral("%1 %2 %3 %4").arg(k).arg(at.x()).arg(at.y()).arg(colours[k % 8]);
-        }
+        QStringList p{QStringLiteral("Probes: %1").arg(count)};
+        p << probeEntries;
         head.replace(QStringLiteral("Probes: 0"), p.join(u'\n'));
     }
     QStringList out{head};
