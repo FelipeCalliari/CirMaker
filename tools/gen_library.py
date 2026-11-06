@@ -418,12 +418,12 @@ def cm_chips():
                 ['~CP1', 'CP0', 'MR'] + [f'Q{i}' for i in range(10)] + ['~Q5-9'], 60, -120,
                 aliases=['4017', 'CD4017'], floatInputs=0),
         cm_chip('74169', 'Synchronous up/down 4-bit binary counter',
-                ['~CEP', '~CET', clk('CP'), '', ''] + rev(D(4)),
+                ['~CEP', '~CET', clk('CP'), '', ''] + [{'name': d, 'float': 0} for d in rev(D(4))],   # CircuitMaker loads open D inputs as 0 (Sim.ckt)
                 [{'name': '~PE', 'dir': 'in'}, {'name': 'U/~D', 'label': 'U/D', 'dir': 'in'}, '', '', '~TC'] + rev(D(4, 'Q')),
                 {'kind': 'updown169', 'modulus': 16},
                 ['~CEP', '~CET', 'CP'] + rev(D(4)) + ['~PE', 'U/~D', '~TC'] + rev(D(4, 'Q')), -120, -120),
         cm_chip('74168', 'Synchronous up/down decade counter',
-                ['~CEP', '~CET', clk('CP'), '', ''] + rev(D(4)),
+                ['~CEP', '~CET', clk('CP'), '', ''] + [{'name': d, 'float': 0} for d in rev(D(4))],   # CircuitMaker loads open D inputs as 0 (Sim.ckt)
                 [{'name': '~PE', 'dir': 'in'}, {'name': 'U/~D', 'label': 'U/D', 'dir': 'in'}, '', '', '~TC'] + rev(D(4, 'Q')),
                 {'kind': 'updown169', 'modulus': 10},
                 ['~CEP', '~CET', 'CP'] + rev(D(4)) + ['~PE', 'U/~D', '~TC'] + rev(D(4, 'Q')), -120, -120),

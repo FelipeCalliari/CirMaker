@@ -34,6 +34,7 @@ private slots:
     void delayExample();
     void logicDisplayColours();
     void signalGenerators();
+    void simExample();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -501,6 +502,40 @@ void TestCktImport::signalGenerators()
         QVERIFY(CktImporter::importData(CktExporter::write(a, library(), cmLib), b, library(), nullptr, nullptr));
         QCOMPARE(gens(b), it.value());
     }
+}
+
+// CircuitMaker's Sim.ckt: its 74168 loads the open D inputs as 0 while PE's
+// switch is off, and counts once it is on.
+void TestCktImport::simExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Sim.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit imported;
+    QVERIFY(CktImporter::import(path, imported, library(), nullptr, nullptr));
+    QStringList warnings;
+    const std::unique_ptr<Circuit> flat = macros::flatten(imported, library(), &warnings);
+    const Circuit& c = *flat;
+    Bench b(c);
+    ItemId counter = 0, pe = 0;
+    for (const Component& comp : c.components())
+        if (comp.symbolId == u"74168") counter = comp.id;
+    QVERIFY(counter);
+    const int peNet = b.netlist.netOf(counter, library().find(QStringLiteral("74168"))->pinIndex(QStringLiteral("~PE")));
+    for (const Component& comp : c.components())
+        if (comp.symbolId == u"logicswitch" && b.netlist.netOf(comp.id, 0) == peNet) pe = comp.id;
+    QVERIFY(pe);
+    auto count = [&] {
+        int v = 0;
+        for (int k = 0; k < 4; ++k) v |= (b.value(c, counter, QStringLiteral("Q%1").arg(k)) == sim::Logic::L1) << k;
+        return v;
+    };
+    b.sim.step(300);
+    QCOMPARE(count(), 0);
+    b.sim.interact(pe, QStringLiteral("toggle"));
+    QSet<int> seen;
+    for (int t = 0; t < 400; ++t) { b.sim.step(1); seen << count(); }
+    QVERIFY2(seen.size() >= 5, "counts once PE is off");
 }
 
 void TestCktImport::importedCounterCounts()

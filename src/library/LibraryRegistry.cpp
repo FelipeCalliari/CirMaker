@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFile>
 #include <QJsonArray>
+#include <QSet>
 #include <QJsonDocument>
 #include <QRegularExpression>
 
@@ -520,11 +521,19 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
         s.pins << p;
     }
 
-    // TTL inputs float high
+    // TTL inputs float high; a pin that says otherwise keeps its own value
     if (o.contains(u"floatInputs")) {
+        QSet<QString> own;
+        auto collect = [&](const QJsonArray& list) {
+            for (const QJsonValue& v : list)
+                if (v.isObject() && v.toObject().contains(u"float")) own << v.toObject().value(u"name").toString();
+        };
+        collect(o.value(u"pins").toArray());
+        const QJsonObject shape = o.value(u"shape").toObject();
+        for (const char* side : {"left", "right", "top", "bottom"}) collect(shape.value(QLatin1String(side)).toArray());
         const int fv = o.value(u"floatInputs").toInt();
         for (SymbolPin& p : s.pins)
-            if (p.dir == SymbolPin::Dir::In)
+            if (p.dir == SymbolPin::Dir::In && !own.contains(p.name))
                 p.floatValue = fv;
     }
 
