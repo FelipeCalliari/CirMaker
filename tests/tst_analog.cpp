@@ -1,4 +1,5 @@
 #include "TestUtil.h"
+#include "core/io/CmModels.h"
 
 #include "sim/analog/NgspiceEngine.h"
 #include "sim/analog/SpiceNetlister.h"
@@ -43,6 +44,7 @@ private slots:
     void miscPartsSimulate_data();
     void miscPartsSimulate();
     void importsSpiceNetlist();
+    void labelledModels();
     void controlledSources_data();
     void controlledSources();
     void converters();
@@ -903,6 +905,27 @@ void TestAnalog::miscPartsSimulate()
     QVERIFY2(r.ok, qPrintable(r.error + u'\n' + deck.text));
 }
 
+// A transistor labelled 2N2222A simulates with CircuitMaker's 2N2222A model
+// (read from the installation); an unknown label keeps the default model.
+void TestAnalog::labelledModels()
+{
+    if (cmmodels::find(QStringLiteral("2N2222A")).text.isEmpty())
+        QSKIP("CircuitMaker models not installed");
+    Circuit c;
+    const ItemId q = place(c, QStringLiteral("npn"), {0, 0}, QStringLiteral("Q1"));
+    Component t = *c.component(q);
+    t.label = QStringLiteral("2N2222A");
+    c.updateComponent(t);
+    const ItemId q2 = place(c, QStringLiteral("npn"), {400, 0}, QStringLiteral("Q2"));
+    Component u = *c.component(q2);
+    u.label = QStringLiteral("NOSUCHPART");
+    c.updateComponent(u);
+    const spice::Deck deck = spice::build(c, library(), NetlistBuilder::build(c, library()));
+    QVERIFY2(deck.text.contains(QStringLiteral(" CM_2N2222A\n")), qPrintable(deck.text));
+    QVERIFY2(deck.text.contains(QStringLiteral(".MODEL CM_2N2222A NPN(")), qPrintable(deck.text));
+    QVERIFY2(deck.text.contains(QStringLiteral(" Q2N3904\n")), qPrintable(deck.text));
+}
+
 void TestAnalog::importsSpiceNetlist()
 {
     const QString netlist = QStringLiteral(
@@ -912,7 +935,7 @@ void TestAnalog::importsSpiceNetlist()
         "R1 in out 1k ; inline comment\n"
         "R2 out 0\n+ 1k\n"
         "Q1 col out 0 QP\n"
-        "Rc in col 4.7k\n"
+        "Rc col 0 4.7k\n"                   // the transistor stays off
         "V2 sig 0 SIN(0 1 1k)\n"
         "Rs sig 0 1k\n"
         "X1 a b SOMESUB\n"

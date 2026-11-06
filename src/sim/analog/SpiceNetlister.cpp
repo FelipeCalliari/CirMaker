@@ -1,5 +1,7 @@
 #include "sim/analog/SpiceNetlister.h"
 
+#include "core/io/CmModels.h"
+
 #include "library/LibraryRegistry.h"
 
 #include <QJsonArray>
@@ -224,8 +226,9 @@ private:
         if (const QString models = c.props.value(QStringLiteral("spiceModels")).toString().trimmed(); !models.isEmpty())
             addModel(models);           // one block: identical parts share it
         if (!own.isEmpty() || !s.spice.isEmpty()) {
-            const QJsonObject spice = variant(c, s);
-            const QString line = own.isEmpty() ? spice.value(u"line").toString() : own;
+            QJsonObject spice = variant(c, s);
+            QString line = own.isEmpty() ? spice.value(u"line").toString() : own;
+            if (own.isEmpty()) labelledModel(c, line, spice);
             emitTemplate(c, s, name, line, spice);
             noteCurrent(c, line.left(1), name);
             if (line.startsWith(u'V'))
@@ -281,6 +284,44 @@ private:
         const QJsonObject v = variants.value(chosen).toObject();
         for (auto it = v.begin(); it != v.end(); ++it) spice.insert(it.key(), it.value());
         return spice;
+    }
+
+    // A semiconductor labelled with a model CircuitMaker has (2N2222, 1N4001,
+    // IRF540): that model, from the installation's Models folder, in place
+    // of the part's default one when it is of the same kind.
+    void labelledModel(const Component& c, QString& line, QJsonObject& spice)
+    {
+        const QJsonArray models = spice.value(u"models").toArray();
+        if (models.size() != 1 || !spice.value(u"subckt").toArray().isEmpty() || line.contains(u'\n')) return;
+        static const QRegularExpression def(QStringLiteral("^\\.model\\s+(\\S+)\\s+([A-Za-z]+)"), QRegularExpression::CaseInsensitiveOption);
+        const auto d = def.match(models.first().toString());
+        if (!d.hasMatch() || !line.endsWith(u' ' + d.captured(1))) return;
+        // its own models (Edit/Select Spice Model, an imported netlist) may name the label
+        if (const QString ownModels = c.props.value(QStringLiteral("spiceModels")).toString(); !ownModels.trimmed().isEmpty()) {
+            const QRegularExpression named(QStringLiteral("^\\s*\\.model\\s+%1\\s").arg(QRegularExpression::escape(c.label.trimmed())),
+                                           QRegularExpression::CaseInsensitiveOption | QRegularExpression::MultilineOption);
+            if (!c.label.trimmed().isEmpty() && named.match(ownModels).hasMatch()) {
+                line.chop(d.captured(1).size());
+                line += c.label.trimmed();
+            }
+            return;
+        }
+        const QString label = c.label.trimmed();
+        if (label.isEmpty() || label.compare(d.captured(1), Qt::CaseInsensitive) == 0) return;
+        // CircuitMaker names the model after the label, sometimes with the
+        // device letter first (Q2N2222, D1N4001)
+        cmmodels::Model m = cmmodels::find(label);
+        if (m.text.isEmpty()) m = cmmodels::find(line.left(1) + label);
+        if (m.text.isEmpty() || m.type.compare(d.captured(2), Qt::CaseInsensitive) != 0) return;
+        // a name of our own: CircuitMaker's may be a SPICE keyword ("NMOS")
+        QString own = QStringLiteral("CM_") + m.name;
+        own.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9_]")), QStringLiteral("_"));
+        line.chop(d.captured(1).size());
+        line += own;
+        QString text = m.text;
+        text.replace(QRegularExpression(QStringLiteral("^(\\.model\\s+)\\S+"), QRegularExpression::CaseInsensitiveOption),
+                     QStringLiteral("\\1") + own);
+        spice.insert(QStringLiteral("models"), QJsonArray{text});
     }
 
     void emitTemplate(const Component& c, const SymbolDef& s, const QString& name, const QString& tpl, const QJsonObject& spice)

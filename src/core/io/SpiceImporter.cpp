@@ -64,10 +64,13 @@ bool importText(const QString& text, Circuit& circuit, const LibraryRegistry& li
     SpiceImportReport rep;
     const QStringList lines = logicalLines(text);
     // model types: .model Q1 PNP(...) decides npn/pnp, nmos/pmos
-    QHash<QString, QString> modelType;
+    QHash<QString, QString> modelType, modelText;
     static const QRegularExpression model(QStringLiteral("^\\.model\\s+(\\S+)\\s+([a-zA-Z]+)"), QRegularExpression::CaseInsensitiveOption);
     for (const QString& l : lines)
-        if (const auto m = model.match(l); m.hasMatch()) modelType.insert(m.captured(1).toLower(), m.captured(2).toLower());
+        if (const auto m = model.match(l); m.hasMatch()) {
+            modelType.insert(m.captured(1).toLower(), m.captured(2).toLower());
+            modelText.insert(m.captured(1).toLower(), l.simplified());
+        }
 
     AnalysisSettings analysis = circuit.analysis();
     analysis.analogMode = true;
@@ -172,6 +175,8 @@ bool importText(const QString& text, Circuit& circuit, const LibraryRegistry& li
         c.designator = t[0].toUpper();
         c.label = label;
         c.props = props;
+        // the netlist's own model for this part
+        if (const QString m = modelText.value(label.toLower()); !m.isEmpty()) c.props.insert(QStringLiteral("spiceModels"), m);
         // six parts a row, 300 apart
         c.pos = QPointF((count % 6) * 300, (count / 6) * 300);
         const ItemId id = circuit.addComponent(c);
