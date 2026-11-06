@@ -7,6 +7,7 @@
 #include <QLineF>
 
 #include <algorithm>
+#include <cstring>
 
 namespace cm {
 
@@ -167,13 +168,33 @@ QString NetlistBuilder::nodeName(const Netlist& netlist, int net, const Circuit&
     if (net < 0 || net >= netlist.nets.size()) return {};
     const Net& n = netlist.nets[net];
     if (n.name != QStringLiteral("N%1").arg(net + 1)) return n.name;
+    // the placing order: the second stamp a CircuitMaker file gave the part
+    // (a float in a double's low half; none: 0), else after every such part
+    auto order = [](const Component& c) -> double {
+        const QVariant v = c.props.value(QStringLiteral("cmStamp"));
+        if (!v.isValid()) return 1e30 + double(c.id);
+        const QStringList st = v.toString().split(u' ', Qt::SkipEmptyParts);
+        if (st.size() < 2) return 0;
+        const double d = st[1].toDouble();
+        quint64 bits;
+        std::memcpy(&bits, &d, 8);
+        const quint32 low = quint32(bits);
+        float f;
+        std::memcpy(&f, &low, 4);
+        return f;
+    };
     const PinRef* first = nullptr;
     const Component* firstComp = nullptr;
+    double firstOrder = 0;
     for (const PinRef& p : n.pins) {
         const Component* c = circuit.component(p.component);
         if (!c || c->designator.isEmpty()) continue;
-        if (!first || p.component < first->component || (p.component == first->component && p.pin < first->pin))
-            first = &p, firstComp = c;
+        const double o = order(*c);
+        // the earliest; between equals (files without stamps) the first in
+        // the file, which is mostly what CircuitMaker picks
+        if (!first || o < firstOrder || (o == firstOrder && (p.component < first->component
+                                                              || (p.component == first->component && p.pin < first->pin))))
+            first = &p, firstComp = c, firstOrder = o;
     }
     if (!first) return n.name;
     QString pin = QString::number(first->pin + 1);

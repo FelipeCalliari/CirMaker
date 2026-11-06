@@ -153,11 +153,17 @@ void Circuit::setFaultSettings(const FaultSettings& f)
     emit modified();
 }
 
+const Circuit::ProbeTag* Circuit::probeTag(QPointF at) const
+{
+    for (const ProbeTag& t : m_probeNames)
+        if (t.at == at) return &t;
+    return nullptr;
+}
+
 QString Circuit::probeName(QPointF at) const
 {
-    for (const auto& [p, name] : m_probeNames)
-        if (p == at) return name;
-    return {};
+    const ProbeTag* t = probeTag(at);
+    return t ? t->name : QString();
 }
 
 void Circuit::setProbes(const QVector<QPointF>& probes)

@@ -145,8 +145,8 @@ QByteArray serialize(const Circuit& circuit)
     for (QPointF p : circuit.probes())
         probes.append(point(p));
     QJsonArray probeNames;
-    for (const auto& [p, name] : circuit.probeNames())
-        probeNames.append(QJsonArray{p.x(), p.y(), name});
+    for (const Circuit::ProbeTag& t : circuit.probeNames())
+        probeNames.append(t.cmRecord.isEmpty() ? QJsonArray{t.at.x(), t.at.y(), t.name} : QJsonArray{t.at.x(), t.at.y(), t.name, t.cmRecord});
     const TitleBlock& tb = circuit.titleBlock();
     QJsonObject root{
         {u"format"_s, u"cirmaker-qt"_s},
@@ -196,10 +196,10 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
     for (const QJsonValue& v : root.value(u"probes").toArray())
         probes << point(v);
     circuit.setProbes(probes);
-    QVector<std::pair<QPointF, QString>> probeNames;
+    QVector<Circuit::ProbeTag> probeNames;
     for (const QJsonValue& v : root.value(u"probeNames").toArray()) {
         const QJsonArray a = v.toArray();
-        probeNames.push_back({QPointF(a.at(0).toDouble(), a.at(1).toDouble()), a.at(2).toString()});
+        probeNames.push_back({QPointF(a.at(0).toDouble(), a.at(1).toDouble()), a.at(2).toString(), a.at(3).toString()});
     }
     circuit.setProbeNames(probeNames);
     circuit.setFaultSettings(faultsFromJson(root.value(u"faults").toObject()));

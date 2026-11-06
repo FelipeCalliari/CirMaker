@@ -27,7 +27,10 @@ struct Device {
     QString ref;
     QString package;
     QVector<int> misc;          // the 8 numbers after the package map (code, model location, parts, part, package)                // after the nets: a macro's name, or the device a part's model is looked up under
-    QVector<double> generator;  // a signal generator's 20 numbers (its waveform; see CktImporter.cpp)
+    QVector<double> generator;
+    QString raw;                // the record as read
+    QStringList stamps;         // placing date and order (floats in doubles' low halves); none in older files
+    bool stampRead = false;  // a signal generator's 20 numbers (its waveform; see CktImporter.cpp)
 };
 
 struct CktWire {
@@ -67,7 +70,7 @@ struct CktFile {
     QString trailer;
     // waveform probes of the header ("Probes: 2", then name, analysis and
     // "index x y colour" each)
-    struct Probe { QString name; QPointF at; };
+    struct Probe { QString name; QPointF at; QString record = {}; };
     QVector<Probe> probes;
     QVector<Device> devices;
     QVector<CktWire> wires;

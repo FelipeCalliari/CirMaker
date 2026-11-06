@@ -624,6 +624,21 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                                  p.value(QStringLiteral("vih"), QStringLiteral("2")).toString(),
                                  p.value(QStringLiteral("cycles"), QStringLiteral("1k")).toString());
         }
+        // the parameters the file gave the alias ("alias:XTRANS {RATIO=0.1}"),
+        // with the part's present values
+        if (const QString kept = c.props.value(QStringLiteral("cmKind")).toString(); kept.contains(u'{')) {
+            const qsizetype open = kept.indexOf(u'{'), close = kept.indexOf(u'}', open);
+            QStringList pairs;
+            for (const QString& pair : kept.mid(open + 1, close - open - 1).split(u' ', Qt::SkipEmptyParts)) {
+                const qsizetype eq = pair.indexOf(u'=');
+                QString value = eq > 0 ? pair.mid(eq + 1) : QString();
+                for (auto it = c.props.cbegin(); eq > 0 && it != c.props.cend(); ++it)
+                    if (s.defaultProps.contains(it.key()) && it.key().compare(pair.left(eq), Qt::CaseInsensitive) == 0)
+                        value = it.value().toString();
+                pairs << (eq > 0 ? pair.left(eq) + u'=' + value : pair);
+            }
+            modelKind = kept.left(open) + u'{' + pairs.join(u' ') + u'}' + (close >= 0 ? kept.mid(close + 1) : QString());
+        }
         QVector<int> data;
         if (l.type == 0x50) {                           // PROM: 32 bytes after the record
             data = dataBytes(c);
@@ -718,7 +733,14 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         rec << join({l.code & 0xffff, 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);
         rec << join({i + 1, 0, 0});
-        rec << QStringLiteral("2") << floatStamp(oleDate()) + u' ' + floatStamp(i) << QStringLiteral("0");
+        if (const QVariant kept = c.props.value(QStringLiteral("cmStamp")); kept.isValid()) {
+            const QStringList st = kept.toString().split(u' ', Qt::SkipEmptyParts);
+            rec << QString::number(st.size());
+            if (!st.isEmpty()) rec << st.join(u' ');
+            rec << QStringLiteral("0");
+        } else {
+            rec << QStringLiteral("2") << floatStamp(oleDate()) + u' ' + floatStamp(i) << QStringLiteral("0");
+        }
         if (!data.isEmpty()) rec << hexBytes(data);
         records << rec.join(u'\n');
     }
@@ -851,16 +873,30 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     for (const Device& d : devices) extent |= QRect(d.origin - QPoint(40, 40), QSize(80, 80));
     if (extent.isEmpty()) extent = QRect(0, 0, 600, 300);
     QString head = QString::fromLatin1(kHeaderStart);
-    if (!circuit.probes().isEmpty()) {
+    // probes that were SAVE- parts go back as such, at their point
+    QVector<QPointF> headerProbes;
+    for (QPointF pt : circuit.probes()) {
+        const Circuit::ProbeTag* tag = circuit.probeTag(pt);
+        if (!tag || tag->cmRecord.isEmpty()) { headerProbes << pt; continue; }
+        QStringList lines = tag->cmRecord.split(u'\n');
+        QStringList h = lines.value(1).split(u' ', Qt::SkipEmptyParts);
+        if (h.size() == 6) {
+            const QPoint at = toCm(pt);
+            h[1] = QString::number(at.x()), h[2] = QString::number(at.y());
+            lines[1] = h.join(u' ');
+        }
+        records << lines.join(u'\n');
+    }
+    if (!headerProbes.isEmpty()) {
         // "Probes: n", then name, analysis and "index x y colour" each
         static const int colours[] = {65280, 65535, 16776960, 16711935, 11184640, 255, 16711680, 32768};
-        QStringList p{QStringLiteral("Probes: %1").arg(circuit.probes().size())};
-        for (int k = 0; k < circuit.probes().size(); ++k) {
-            const QPoint at = toCm(circuit.probes()[k]);
+        QStringList p{QStringLiteral("Probes: %1").arg(headerProbes.size())};
+        for (int k = 0; k < headerProbes.size(); ++k) {
+            const QPoint at = toCm(headerProbes[k]);
             // its own name, else its net's as CircuitMaker names it (GCM_2)
-            QString name = circuit.probeName(circuit.probes()[k]);
+            QString name = circuit.probeName(headerProbes[k]);
             for (const Wire& w : circuit.wires())
-                if (name.isEmpty() && !w.bus && WireGeometry::onPolyline(circuit.probes()[k], w.points))
+                if (name.isEmpty() && !w.bus && WireGeometry::onPolyline(headerProbes[k], w.points))
                     name = NetlistBuilder::nodeName(netlist, netlist.wireNet.value(w.id, -1), circuit, library);
             p << (name.isEmpty() ? QStringLiteral("P%1").arg(k + 1) : name) << QStringLiteral("Transient Analysis")
               << QStringLiteral("%1 %2 %3 %4").arg(k).arg(at.x()).arg(at.y()).arg(colours[k % 8]);

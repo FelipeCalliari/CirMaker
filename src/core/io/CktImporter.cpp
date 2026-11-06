@@ -183,7 +183,8 @@ Device readDevice(Reader& r, double version)
     if (modern) {
         const QVector<int> t = r.ints(3);
         r.ints(t[2]);
-        r.ints(r.integer());
+        d.stampRead = true;
+        for (int k = 0, n = r.integer(); k < n; ++k) d.stamps << r.token();
         if (r.integer() != 0)
             throw ParseError("unsupported device extension block");
     } else {
@@ -210,8 +211,12 @@ CktFile parseAt(const QString& d, int pos, double version)
     CktFile f;
     f.version = version;
     const int devices = r.integer();
-    for (int i = 0; i < devices; ++i)
-        f.devices << readDevice(r, version);
+    for (int i = 0; i < devices; ++i) {
+        const int start = r.position();
+        Device dv = readDevice(r, version);
+        dv.raw = d.mid(start, r.position() - start).trimmed();
+        f.devices << dv;
+    }
     const int wires = r.integer();
     for (int i = 0; i < wires; ++i) {
         CktWire w;
@@ -601,13 +606,16 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     // ---- components: symbol, orientation, properties
     struct Placed { ItemId id = 0; const SymbolDef* symbol = nullptr; Component comp; };
     QVector<Placed> placed(file.devices.size());
+    QVector<CktFile::Probe> savePoints;     // SAVE- parts: probes placed on the schematic ("A", at its point)
     for (int i = 0; i < file.devices.size(); ++i) {
         const Device& d = file.devices[i];
         QString cmName = d.name;
         if (cmName.endsWith(u'~')) cmName.chop(1);
         // analysis directives and instruments have no schematic meaning here
-        if (cmName.startsWith(u"SAVE"))
+        if (cmName.startsWith(u"SAVE")) {
+            if (cmName == u"SAVE-") savePoints << CktFile::Probe{d.value.trimmed(), QPointF(d.x, d.y), file.version >= 5.0 ? d.raw : QString()};   // older records differ
             continue;
+        }
         const SymbolDef* s = library.findByAlias(cmName);
         Component c;
         c.designator = d.designator;
@@ -664,6 +672,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // its quantities SPICE saves, 0x80 and 0x1000), apart from the shown texts
         if (const CmLibDevice* dev = deviceLib().find(d.name); dev && ((d.flags ^ dev->flags) & ~0x310))
             c.props.insert(QStringLiteral("cmFlags"), d.flags & ~0x300);
+        // when it was placed, as written: CircuitMaker names a node after
+        // the earliest placed part on it ("" for none: older files)
+        if (d.stampRead) c.props.insert(QStringLiteral("cmStamp"), d.stamps.join(u' '));
         // the part's package pins, which its model may set ("pkg:TO-18 3,2,1"):
         // CircuitMaker names SPICE nodes and probes by them (Q1_3, U1A_3)
         if (!d.partPins.isEmpty() && d.type != 0x5e && std::any_of(d.partPins.cbegin(), d.partPins.cend(), [](int p) { return p > 0; })) {
@@ -692,6 +703,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // model parameters given with the alias, "{Fc=100k Fr=50k}": those the part has
         static const QRegularExpression params(QStringLiteral("\\{([^}]*)\\}"));
         if (const auto m = params.match(d.kind); m.hasMatch()) {
+            c.props.insert(QStringLiteral("cmKind"), d.kind);     // written back with the values of the day
             for (const QString& pair : m.captured(1).split(u' ', Qt::SkipEmptyParts)) {
                 const int eq = pair.indexOf(u'=');
                 if (eq <= 0) continue;
@@ -1438,9 +1450,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     rep.wires = int(file.wires.size());
     rep.texts = int(file.texts.size());
     // waveform probes, on the nearest wire of the redrawn circuit
-    if (!file.probes.isEmpty()) {
+    const QVector<CktFile::Probe> allProbes = file.probes + savePoints;
+    if (!allProbes.isEmpty()) {
         QVector<QPointF> points;
-        for (const CktFile::Probe& p : file.probes) {
+        for (const CktFile::Probe& p : allProbes) {
             const QPointF want = scaled(p.at);
             QPointF best = want;
             double bestDist = 40;
@@ -1458,9 +1471,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             points << best;
         }
         circuit.setProbes(points);
-        QVector<std::pair<QPointF, QString>> names;
+        QVector<Circuit::ProbeTag> names;
         for (int k = 0; k < points.size(); ++k)
-            if (!file.probes[k].name.isEmpty()) names.push_back({points[k], file.probes[k].name});
+            if (!allProbes[k].name.isEmpty() || !allProbes[k].record.isEmpty())
+                names.push_back({points[k], allProbes[k].name, allProbes[k].record});
         circuit.setProbeNames(names);
     }
     if (qEnvironmentVariableIsSet("CM_TRAILER"))

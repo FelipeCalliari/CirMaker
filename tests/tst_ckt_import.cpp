@@ -626,7 +626,8 @@ void TestCktImport::exportKeepsNodeNaming()
         order << f;
     }
     QVERIFY(order.size() > 40);
-    for (int k = 0; k < order.size(); ++k) QCOMPARE(order[k], float(k));
+    // kept as the file had them: rising, about one apart
+    for (int k = 0; k < order.size(); ++k) QVERIFY(std::abs(order[k] - float(k)) < 0.01f);
     // Q1's package pins as its model gives them
     QVERIFY(text.contains(QStringLiteral("\n2 Q1\n")));
     QVERIFY(text.contains(QStringLiteral("5 TO-18\n7\n0 3 2 1 3 2 1 0\n")));
@@ -651,6 +652,24 @@ void TestCktImport::exportKeepsNodeNaming()
         QCOMPARE(named, (QStringList{QStringLiteral("vin"), QStringLiteral("vout")}));
         const QString out = QString::fromLatin1(CktExporter::write(pcb, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
         QVERIFY(out.contains(QStringLiteral("\n0 32768 0 3\n")));
+    }
+    // Ps1.ckt's SAVE- parts are probes A, B, C. CircuitMaker plots A=Q1_1,
+    // B=D1_3, C=V1_1; this file has no placing stamps, and between equals
+    // CircuitMaker's pick (V1 over the earlier T1 on C) has no rule we know
+    {
+        Circuit ps;
+        QVERIFY(CktImporter::import(QFileInfo(path).dir().filePath(QStringLiteral("Ps1.ckt")), ps, library(), nullptr, nullptr));
+        const Netlist pnl = NetlistBuilder::build(ps, library());
+        QStringList got;
+        for (QPointF p : ps.probes()) {
+            QString net;
+            for (const Wire& w : ps.wires())
+                if (!w.bus && WireGeometry::onPolyline(p, w.points)) { net = NetlistBuilder::nodeName(pnl, pnl.wireNet.value(w.id), ps, library()); break; }
+            got << ps.probeName(p) + u'=' + net;
+        }
+        QCOMPARE(got.size(), 3);
+        QCOMPARE(got.mid(0, 2), (QStringList{QStringLiteral("A=Q1_1"), QStringLiteral("B=D1_3")}));
+        QVERIFY(got[2].startsWith(u"C="));
     }
     // the header's option bits and its Speed line
     QVERIFY(text.contains(QStringLiteral("\n9961472 0\n")));

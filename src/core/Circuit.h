@@ -149,9 +149,15 @@ public:
     void setProbes(const QVector<QPointF>& probes);
     // A probe's own name (CircuitMaker files name theirs: "Clk", "GCM_2"),
     // by its point; empty: none
+    // A CircuitMaker probe placed as a part (SAVE-) keeps its record.
+    struct ProbeTag {
+        QPointF at;
+        QString name, cmRecord;
+    };
     QString probeName(QPointF at) const;
-    const QVector<std::pair<QPointF, QString>>& probeNames() const { return m_probeNames; }
-    void setProbeNames(const QVector<std::pair<QPointF, QString>>& names) { m_probeNames = names; }
+    const ProbeTag* probeTag(QPointF at) const;
+    const QVector<ProbeTag>& probeNames() const { return m_probeNames; }
+    void setProbeNames(const QVector<ProbeTag>& names) { m_probeNames = names; }
     const FaultSettings& faultSettings() const { return m_faults; }
     void setFaultSettings(const FaultSettings& f);
 
@@ -182,7 +188,7 @@ private:
     TitleBlock m_titleBlock;
     AnalysisSettings m_analysis;
     QVector<QPointF> m_probes;
-    QVector<std::pair<QPointF, QString>> m_probeNames;
+    QVector<ProbeTag> m_probeNames;
     FaultSettings m_faults;
     ItemId m_nextId = 1;
 };
