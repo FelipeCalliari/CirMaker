@@ -53,7 +53,7 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     const QString name = b.name(L + 0xc);
     if (name.isEmpty()) return false;
     qsizetype p = L + kHeader;
-    QVector<QPoint> pins;
+    QVector<QPoint> pins, from;
     QStringList names;
     for (int k = 0; k < pinTotal; ++k) {
         if (!b.has(p, 0x18)) return false;
@@ -61,6 +61,7 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
         // wire end is that far out ('+' at 8: a long pin, 12; else 6; the
         // direction letter at 0x0e: l, r, u, d)
         QPoint at(b.i32(p), b.i32(p + 4));
+        from << at;
         if (k > 0 && k < pinTotal - 1) {
             const int reach = b.at(p + 8) == '+' ? 12 : 6;
             switch (b.at(p + 0x0e)) {
@@ -102,14 +103,20 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     // corners), others polygons; flag 0x4000 marks the other drawing style,
     // counted too, as CircuitMaker's box takes it in
     QVector<QPoint> drawn;
+    QVector<CmShape> shapes;
     if (b.has(p, 4)) {
         const int n = b.i32(p);
         if (n > 0 && n <= 200 && b.has(p + 4, 48 * qsizetype(n))) {
             for (int e = 0; e < n; ++e) {
                 const qsizetype q = p + 4 + 48 * qsizetype(e);
-                const int kind = b.i32(q);
-                const int used = kind == 0 || kind == 4 || kind == 5 ? 2 : std::clamp(std::abs(b.i32(q + 40)), 2, 4);
-                for (int k = 0; k < used; ++k) drawn << QPoint(b.i32(q + 8 + 8 * k), b.i32(q + 12 + 8 * k));
+                CmShape sh;
+                sh.kind = b.i32(q);
+                sh.flags = b.i32(q + 4);
+                const int used = sh.kind == 0 || sh.kind == 4 || sh.kind == 5 ? 2 : sh.kind == 6 ? 3
+                               : std::clamp(std::abs(b.i32(q + 40)), 2, 4);
+                for (int k = 0; k < used; ++k) sh.points << QPoint(b.i32(q + 8 + 8 * k), b.i32(q + 12 + 8 * k));
+                drawn << (sh.kind == 6 ? sh.points.mid(0, 2) : sh.points);
+                shapes << sh;
             }
         }
     }
@@ -126,6 +133,8 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     out.pinCount = std::max(0, pinTotal - 2);
     out.pins = pins.mid(1, out.pinCount);
     out.pinNames = names.mid(1, out.pinCount);
+    out.pinFrom = from.mid(1, out.pinCount);
+    out.drawing = shapes;
     // the box CircuitMaker turns a part about: the drawing and the wire ends
     for (const QPoint& pt : std::as_const(drawn)) out.box |= QRect(pt, QSize(1, 1));
     for (const QPoint& pt : std::as_const(out.pins)) out.box |= QRect(pt, QSize(1, 1));

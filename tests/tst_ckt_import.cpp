@@ -764,6 +764,22 @@ void TestCktImport::exportKeepsNodeNaming()
         QVERIFY(exported(QStringLiteral("Digfault.ckt"), d).contains(QStringLiteral("\n2 5V\n-7 -16 7 -8\n")));
         QVERIFY(exported(QStringLiteral("Cbamp.ckt"), cb).contains(QStringLiteral("\n5 -1/1V\n-15 -48 20 -40\n")));
     }
+    // a User.lib macro drawn as CircuitMaker draws it (DB-9: its connector,
+    // pin holes as circles), in place, and so again from a saved document
+    {
+        Circuit db;
+        QVERIFY(exported(QStringLiteral("Db9.ckt"), db).contains(QStringLiteral("\n94 80 134 0 9 19\n")));
+        const QJsonArray embedded = macros::embeddedFor(db);
+        QJsonObject circuitJson;
+        for (const QJsonValue& v : embedded)
+            if (v.toObject().value(u"name").toString().startsWith(u"DB-9")) circuitJson = v.toObject().value(u"circuit").toObject();
+        QVERIFY(!circuitJson.isEmpty());
+        const QJsonObject sym = macros::symbolJson(QStringLiteral("DB-9 Macro"), circuitJson);
+        QVERIFY(!sym.contains(u"shape"));
+        QVERIFY(sym.value(u"graphics").toArray().size() >= 16);
+        QCOMPARE(sym.value(u"pins").toArray().size(), 9);
+        QCOMPARE(sym.value(u"cmPins").toArray().size(), 9);
+    }
 }
 
 void TestCktImport::importedCounterCounts()

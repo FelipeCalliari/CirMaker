@@ -184,7 +184,10 @@ bool CmUserLib::load(const QString& path, QString* error)
             m.pins << n;
             m.outputs << (h.pins[k].x() > 0);
             m.at << h.pins[k];
+            m.from << h.pinFrom.value(k, h.pins[k]);
+            m.shownNames << h.pinNames.value(k).trimmed();
         }
+        m.drawing = h.drawing;
         // the circuit: the macro's own record under its library name
         const QByteArray key = h.name.toLatin1() + '\0';
         for (qsizetype at = data.indexOf(key); at >= 0; at = data.indexOf(key, at + 1)) {

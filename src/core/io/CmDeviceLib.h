@@ -9,18 +9,28 @@
 
 namespace cm {
 
+// One element of a device's drawing: kind 0 line, 4 ellipse, 5 rectangle,
+// 6 rounded rectangle (third point: the corner radii), 10 polygon, 20 open
+// polyline; flag 0x4000 marks the other drawing style, 0x1000 a filled one.
+struct CmShape {
+    int kind = 0, flags = 0;
+    QVector<QPoint> points;
+};
+
 // One device of CircuitMaker 2000's Device.lib, as far as a .ckt record needs it.
 struct CmLibDevice {
     QString name;               // "2-In NAND~", "74LS161"
     int type = 0;
     int pinCount = 0;           // the schematic pins, CircuitMaker pin 1..pinCount
     QVector<QPoint> pins;       // pin positions relative to the origin, index 0 = pin 1
+    QVector<QPoint> pinFrom;    // where each pin is drawn from (its lead runs to pins[k])
     QStringList pinNames;       // as drawn, often empty
     QVector<int> packageMap;    // 0, the pins of part A, then every part's pins (gates), ...
     int parts = 0;              // gates in one package (0 or 1: not a multi-part package)
     int code = 0;               // the letter stored in each instance ('A', 'R', 'V', ...)
     int flags = 0;
     QRect valueRect;
+    QVector<CmShape> drawing;
     QRect box;                  // the drawing and the pins' wire ends (CircuitMaker turns a part about its middle)
     QString prefix;             // designator prefix
     QString power, spice, value, kind, package;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/io/CmDeviceLib.h"
+
 #include "core/io/CktFile.h"
 
 #include <QPoint>
@@ -15,6 +17,9 @@ struct CmMacro {
     QStringList pins;           // port name of CircuitMaker pin 1, 2, ... (unique)
     QVector<bool> outputs;      // pins drawn on the right
     QVector<QPoint> at;         // pin positions on CircuitMaker's symbol
+    QVector<QPoint> from;       // where each pin's lead starts
+    QStringList shownNames;     // pin names as drawn (empty: none shown)
+    QVector<CmShape> drawing;   // CircuitMaker's drawing of the symbol
     QVector<int> pinNets;       // the inner net each pin joins
     ckt::CktFile body;          // inner devices and wires, as a .ckt file holds them
 };

@@ -97,11 +97,20 @@ QJsonObject symbolJson(const QString& name, const QJsonObject& circuitJson, QStr
     QJsonObject shape{{u"type"_s, u"box"_s}, {u"width"_s, width}, {u"pitch"_s, pitch}, {u"lead"_s, 20},
                       {u"left"_s, sides[0]}, {u"right"_s, sides[1]}, {u"top"_s, sides[2]}, {u"bottom"_s, sides[3]},
                       {u"title"_s, title}, {u"titleY"_s, sides[2].isEmpty() ? -height / 2 - 8 : 0.0}};
-    return {{u"id"_s, idFor(name)}, {u"name"_s, name.trimmed()}, {u"category"_s, u"Macros"_s},
-            {u"prefix"_s, u"U"_s}, {u"aliases"_s, QJsonArray{name.trimmed()}},
-            {u"description"_s, QStringLiteral("Macro: %1 inputs, %2 outputs").arg(ins.size()).arg(outs.size())},
-            {u"shape"_s, shape},
-            {u"model"_s, QJsonObject{{u"kind"_s, u"macro"_s}, {u"circuit"_s, circuitJson}}}};
+    QJsonObject sym{{u"id"_s, idFor(name)}, {u"name"_s, name.trimmed()}, {u"category"_s, u"Macros"_s},
+                    {u"prefix"_s, u"U"_s}, {u"aliases"_s, QJsonArray{name.trimmed()}},
+                    {u"description"_s, QStringLiteral("Macro: %1 inputs, %2 outputs").arg(ins.size()).arg(outs.size())},
+                    {u"shape"_s, shape},
+                    {u"model"_s, QJsonObject{{u"kind"_s, u"macro"_s}, {u"circuit"_s, circuitJson}}}};
+    // a CircuitMaker macro's own drawing and pins (from its User.lib), while
+    // no layout of ours replaces them
+    if (const QJsonObject drawn = layout.value(u"cmDrawing").toObject(); !drawn.isEmpty() && !layout.contains(u"left") && !layout.contains(u"right")) {
+        sym.remove(u"shape"_s);
+        sym.insert(u"graphics"_s, drawn.value(u"graphics"));
+        sym.insert(u"pins"_s, drawn.value(u"pins"));
+    }
+    if (layout.contains(u"cmPins")) sym.insert(u"cmPins"_s, layout.value(u"cmPins"));
+    return sym;
 }
 
 QString registerMacro(const QString& name, const QJsonObject& circuitJson, QString* error)
@@ -157,8 +166,14 @@ bool setSymbolLayout(const QString& id, const QJsonObject& layout, QString* erro
         return false;
     }
     QJsonObject doc = s->model.value(u"circuit").toObject();
-    if (layout.isEmpty()) doc.remove(u"symbol");
-    else doc.insert(u"symbol", layout);
+    // a CircuitMaker macro keeps its pins' order and its own drawing (back
+    // when the layout is reset)
+    QJsonObject merged = layout;
+    const QJsonObject before = doc.value(u"symbol").toObject();
+    for (const char* key : {"cmPins", "cmDrawing"})
+        if (before.contains(QLatin1String(key)) && !merged.contains(QLatin1String(key))) merged.insert(QLatin1String(key), before.value(QLatin1String(key)));
+    if (merged.isEmpty()) doc.remove(u"symbol");
+    else doc.insert(u"symbol", merged);
     if (registerMacro(s->name, doc, error).isEmpty())
         return false;
     return !userIds().contains(id) || saveUserLibrary(error);

@@ -559,11 +559,83 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
     CktImportReport rep;
     if (!importFile(inner, c, library, &rep, depth + 1)) return false;
     QString error;
-    QJsonObject sym = macros::symbolJson(m.name.endsWith(u'~') ? m.name.chopped(1) : m.name,
-                                         QJsonDocument::fromJson(NativeFormat::serialize(c)).object(), &error);
+    const QString macroName = m.name.endsWith(u'~') ? m.name.chopped(1) : m.name;
+    QJsonObject circuitJson = QJsonDocument::fromJson(NativeFormat::serialize(c)).object();
+    QJsonObject sym = macros::symbolJson(macroName, circuitJson, &error);
     if (sym.isEmpty()) return false;
     sym.insert(QStringLiteral("cmPins"), QJsonArray::fromStringList(m.pins));
-    // pins where CircuitMaker's symbol has them, so its wiring meets them:
+    sym.insert(QStringLiteral("description"), QStringLiteral("CircuitMaker macro %1 (from its User.lib)").arg(m.name));
+    // CircuitMaker's own drawing of the symbol, where User.lib has one: its
+    // shapes, and each pin's lead out to its wire end (on our grid)
+    QJsonArray graphics;
+    auto pt = [](QPoint p) { return QPointF(p) * kScale; };
+    auto num = [](double v) { return QString::number(std::round(v * 100) / 100, 'g', 8); };
+    for (const CmShape& sh : m.drawing) {
+        if ((sh.flags & 0x4000) || sh.points.size() < 2) continue;
+        const QPointF a = pt(sh.points[0]), b = pt(sh.points[1]);
+        const QRectF r = QRectF(a, b).normalized();
+        QJsonObject g;
+        if (sh.kind == 0) {
+            g.insert(QStringLiteral("line"), QJsonArray{a.x(), a.y(), b.x(), b.y()});
+        } else if (sh.kind == 5) {
+            g.insert(QStringLiteral("rect"), QJsonArray{r.x(), r.y(), r.width(), r.height()});
+        } else if (sh.kind == 4) {
+            // an ellipse in four quarter curves
+            const double k = 0.5523, cx = r.center().x(), cy = r.center().y(), rx = r.width() / 2, ry = r.height() / 2;
+            g.insert(QStringLiteral("path"), QStringLiteral("M %1 %2 C %3 %4 %5 %6 %7 %8 C %9 %10 %11 %12 %13 %14 ")
+                                  .arg(num(cx + rx), num(cy), num(cx + rx), num(cy + k * ry), num(cx + k * rx), num(cy + ry), num(cx), num(cy + ry))
+                                  .arg(num(cx - k * rx), num(cy + ry), num(cx - rx), num(cy + k * ry), num(cx - rx), num(cy))
+                              + QStringLiteral("C %1 %2 %3 %4 %5 %6 C %7 %8 %9 %10 %11 %12 Z")
+                                  .arg(num(cx - rx), num(cy - k * ry), num(cx - k * rx), num(cy - ry), num(cx), num(cy - ry))
+                                  .arg(num(cx + k * rx), num(cy - ry), num(cx + rx), num(cy - k * ry), num(cx + rx), num(cy)));
+        } else if (sh.kind == 6) {
+            // rounded corners: the third point holds the radii
+            const QPointF rad = sh.points.size() > 2 ? pt(sh.points[2]) / 2 : QPointF();
+            const double rx = std::min(rad.x(), r.width() / 2), ry = std::min(rad.y(), r.height() / 2);
+            const double l = r.left(), t = r.top(), rr = r.right(), bb = r.bottom();
+            g.insert(QStringLiteral("path"), QStringLiteral("M %1 %2 L %3 %2 Q %4 %2 %4 %5 L %4 %6 Q %4 %7 %3 %7 L %1 %7 Q %8 %7 %8 %6 L %8 %5 Q %8 %2 %1 %2 Z")
+                                  .arg(num(l + rx), num(t), num(rr - rx), num(rr), num(t + ry), num(bb - ry), num(bb), num(l)));
+        } else {
+            QString path;
+            for (int k = 0; k < sh.points.size(); ++k) {
+                const QPointF q = pt(sh.points[k]);
+                path += (k ? QStringLiteral(" L ") : QStringLiteral("M ")) + num(q.x()) + u' ' + num(q.y());
+            }
+            if (sh.kind == 10) path += QStringLiteral(" Z");
+            g.insert(QStringLiteral("path"), path);
+        }
+        if (sh.flags & 0x1000) g.insert(QStringLiteral("fill"), true);
+        graphics.append(g);
+    }
+    if (!graphics.isEmpty()) {
+        QJsonArray pins;
+        for (int k = 0; k < m.pins.size(); ++k) {
+            const QPointF end = pt(m.at.value(k)), from = pt(m.from.value(k, m.at.value(k)));
+            // on our grid along the lead (the lead stays straight)
+            const bool across = std::abs(end.x() - from.x()) >= std::abs(end.y() - from.y());
+            const QPointF snapped(across ? std::round(end.x() / 10) * 10 : std::round(end.x() * 100) / 100,
+                                  across ? std::round(end.y() * 100) / 100 : std::round(end.y() / 10) * 10);
+            if (from != snapped) graphics.append(QJsonObject{{QStringLiteral("line"), QJsonArray{from.x(), from.y(), snapped.x(), snapped.y()}}});
+            pins.append(QJsonObject{{QStringLiteral("name"), m.pins[k]}, {QStringLiteral("at"), QJsonArray{snapped.x(), snapped.y()}},
+                                    {QStringLiteral("dir"), m.outputs.value(k) ? QStringLiteral("out") : QStringLiteral("in")}});
+            // the name CircuitMaker writes by the pin, inside the drawing
+            if (const QString shown = m.shownNames.value(k); !shown.isEmpty()) {
+                const bool left = end.x() < from.x(), right = end.x() > from.x();
+                const QPointF at = from + QPointF(left ? 4 : right ? -4 : 0, end.y() < from.y() ? 9 : end.y() > from.y() ? -4 : 3);
+                graphics.append(QJsonObject{{QStringLiteral("text"), shown}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 6},
+                                            {QStringLiteral("align"), left ? QStringLiteral("left") : right ? QStringLiteral("right") : QStringLiteral("center")}});
+            }
+        }
+        // kept with the macro's circuit, so a saved document draws it again
+        circuitJson.insert(QStringLiteral("symbol"), QJsonObject{{QStringLiteral("cmDrawing"), QJsonObject{{QStringLiteral("graphics"), graphics},
+                                                                                                         {QStringLiteral("pins"), pins}}},
+                                                                 {QStringLiteral("cmPins"), QJsonArray::fromStringList(m.pins)}});
+        QJsonObject drawn = macros::symbolJson(macroName, circuitJson, &error);
+        if (drawn.isEmpty()) return false;
+        drawn.insert(QStringLiteral("description"), sym.value(u"description"));
+        return LibraryRegistry::instance().addSymbol(drawn, &error);
+    }
+    // otherwise pins where CircuitMaker's symbol has them, so its wiring meets them:
     // rows on a 10-unit pitch with gaps between
     QJsonObject shape = sym.value(u"shape").toObject();
     int topRow = 0;
@@ -584,7 +656,6 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
     shape.insert(QStringLiteral("width"), 160);       // pin ends 32 CM units out, past the drawn pins
     shape.insert(QStringLiteral("titleY"), topRow);         // the middle is often taken by the value
     sym.insert(QStringLiteral("shape"), shape);
-    sym.insert(QStringLiteral("description"), QStringLiteral("CircuitMaker macro %1 (from its User.lib)").arg(m.name));
     return LibraryRegistry::instance().addSymbol(sym, &error);
 }
 
