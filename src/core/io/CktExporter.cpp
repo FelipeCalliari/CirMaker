@@ -722,7 +722,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     out << str(QStringLiteral("5.000 V")) << str(QStringLiteral("5.000 V")) << str(QStringLiteral("GND"));
     out << QStringLiteral("0 0") << QStringLiteral("24 100 0 0 0") << str(QStringLiteral("Package,Description,"))
         << QStringLiteral("0") << QStringLiteral("0 7") << QStringLiteral("0 4 0.500000 0.500000") << rect(extent)
-        << QStringLiteral("42991634 0");
+        << QStringLiteral("%1 0").arg(42991634 | (circuit.analysis().analogMode ? 0x80000 : 0));
     const TitleBlock& tb = circuit.titleBlock();
     // title block: display mode (2: on all pages), title, name, date, revision, ID
     out << QString::number(tb.visible ? 2 : 0) << str(tb.title) << str(tb.author) << str(tb.date) << str(tb.revision)

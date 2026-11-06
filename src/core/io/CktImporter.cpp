@@ -279,6 +279,9 @@ CktFile parse(const QByteArray& raw)
         try {
             CktFile f = parseAt(d, int(m.capturedStart()), version);
             f.title = titleBefore(d, int(m.capturedStart()));
+            static const QRegularExpression options(QStringLiteral("(?m)^(\\d{6,}) -?\\d+\\s*$"));
+            for (auto o = options.globalMatch(d.left(int(m.capturedStart()))); o.hasNext();)
+                f.options = int(o.next().captured(1).toLongLong());
             return f;
         } catch (const ParseError& e) {
             lastError = QString::fromUtf8(e.what());
@@ -641,6 +644,8 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     for (const Placed& p : std::as_const(placed))
         if (p.symbol && (p.symbol->model.value(u"kind").toString() == u"siggen"))
             ++analogOnly;
+    // the file's own mode where it records one
+    if (file.options) analogOnly = (*file.options & 0x80000) ? 1 : 0;
     if (analogOnly > 0) {
         AnalysisSettings a;
         a.analogMode = true;

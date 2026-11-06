@@ -52,6 +52,9 @@ struct CktTitle {
 struct CktFile {
     double version = 0;
     std::optional<CktTitle> title;
+    // the header's option bits ("42991616 0" before the title block);
+    // 0x80000 is CircuitMaker's Analog Mode
+    std::optional<int> options;
     QVector<Device> devices;
     QVector<CktWire> wires;
     QVector<CktText> texts;
