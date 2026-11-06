@@ -204,7 +204,8 @@ QString trailer(const AnalysisSettings& a)
     auto num = [](const QString& v) { return QString::number(number(v), 'g', 6); };
     const int bit = a.type == T::OperatingPoint ? 1 : a.type == T::DCSweep ? 4 : a.type == T::AC ? 8
                   : a.type == T::Transient || a.type == T::Fourier ? 16 : 0;
-    QStringList l{a.spiceOptions.trimmed().isEmpty() ? QStringLiteral("0") : str(QStringLiteral(".OPTIONS ") + a.spiceOptions.trimmed()),
+    // CircuitMaker ends the .OPTIONS line with its own CR LF, inside the string
+    QStringList l{a.spiceOptions.trimmed().isEmpty() ? QStringLiteral("0") : str(QStringLiteral(".OPTIONS ") + a.spiceOptions.trimmed() + u'\n'),
                   QStringLiteral("%1 0 0").arg(2048 | bit), QStringLiteral("0"), QStringLiteral("0"),
                   str(a.dcSource), QStringList{num(a.dcStart), num(a.dcStop), num(a.dcStep)}.join(u' '),
                   QStringLiteral("0"), QStringLiteral("0 0 0"),
@@ -525,7 +526,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         // signal generator (0xC3): sine parameters in the nets and in a block of
         // its own; CircuitMaker writes the SPICE line from them
         // an empty template leaves the part out of CircuitMaker's simulation
-        QString spice = c.props.value(QStringLiteral("noSpice")).toBool() ? QString() : l.spice;
+        QString spice = c.props.value(QStringLiteral("noSpice")).toBool() ? QString()
+                      : c.props.value(QStringLiteral("cmSpice"), l.spice).toString();
         QStringList genBlock;                   // the generator's 20 numbers
         if (l.type == 0xc3) {
             auto prop = [&](const char* key, const char* fallback) {
@@ -675,7 +677,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         if (l.type == 0xc3) rec << QString::number(genBlock.size()) << genBlock.join(u' ');
         // a macro instance names its User.lib macro here, and has a 1 first
         const bool macro = l.type == 0x5e;
-        rec << (macro ? str(name) : QStringLiteral("0"));
+        const QString ref = c.props.value(QStringLiteral("cmRef")).toString();
+        rec << (macro ? str(name) : ref.isEmpty() ? QStringLiteral("0") : str(ref));
         rec << join({macro ? 1 : 0, 0, flags, cmAngle(c)});
         rec << str(value);
         if (!value.isEmpty()) rec << rect(textRect(value, c.labelAt, labelAnchor));
@@ -687,9 +690,11 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                                 : QString();
         rec << str(tag);
         if (!tag.isEmpty()) rec << rect(textRect(tag, std::nullopt, QPointF(r.right() + 3, r.top() + 46)));
-        rec << str(l.power) << str(spice) << QStringLiteral("0") << str(modelKind) << str(l.package);
+        rec << str(l.power) << str(spice) << QStringLiteral("0") << str(modelKind)
+            << str(c.props.value(QStringLiteral("cmPackage"), l.package).toString());
         rec << QString::number(pkg.size() - 1) << join(pkg);
-        rec << join({l.code & 0xffff, 0, 0, 0, l.parts, l.parts > 1 ? d.part : 0, group, 0});
+        const QStringList modelAt = c.props.value(QStringLiteral("cmModelAt")).toString().split(u' ', Qt::SkipEmptyParts);
+        rec << join({l.code & 0xffff, 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);
         rec << join({i + 1, 0, 0});
         rec << QStringLiteral("2") << QStringLiteral("%1 0").arg(oleDate()) << QStringLiteral("0");

@@ -152,7 +152,7 @@ Device readDevice(Reader& r, double version)
         if (pinMax < 0)
             r.ints(20);
     }
-    r.string();
+    d.ref = r.string();
     const QVector<int> flags = r.ints(4);
     d.flags = flags[2];
     d.angle = flags[3];
@@ -171,14 +171,14 @@ Device readDevice(Reader& r, double version)
     r.string();
     if (version > 4.0) {
         d.kind = r.string();                    // "type:digital", or a model alias with parameters
-        r.string();                             // package
+        d.package = r.string();
     }
     // package pin map: 0, the pins of this part, then the pins of every part
     const QVector<int> pkg = r.ints(r.integer() + 1);
     const int pins = std::abs(pinMax);
     if (pins > 0 && pkg.size() >= 1 + 2 * pins)
         d.packagePins = pkg.mid(1 + pins, pins);
-    r.ints(8);
+    d.misc = r.ints(8);
     d.prefix = r.string();
     if (modern) {
         const QVector<int> t = r.ints(3);
@@ -649,6 +649,19 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             c.label = s->defaultLabel;
         }
         c.symbolId = s->id;
+        // where CircuitMaker looks its model up ("N-EMOS 3T:A~", for a model
+        // its .mod file sends on to another library): written back as it was
+        if (!d.ref.isEmpty() && d.type != 0x5e) {
+            c.props.insert(QStringLiteral("cmRef"), d.ref);
+            // with the numbers that place its model ("546 256") and its package
+            if (d.misc.size() == 8 && (d.misc[2] || d.misc[3]))
+                c.props.insert(QStringLiteral("cmModelAt"), QStringLiteral("%1 %2").arg(d.misc[2]).arg(d.misc[3]));
+            if (!d.package.isEmpty()) c.props.insert(QStringLiteral("cmPackage"), d.package);
+        }
+        // an instance's own SPICE template (741.ckt's BB: "I=I(VB)*10.61E6-..."), kept for export
+        if (!d.spice.trimmed().isEmpty() && d.type != 0xc3)
+            if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->spice.trimmed() != d.spice.trimmed())
+                c.props.insert(QStringLiteral("cmSpice"), d.spice);
         // the CircuitMaker device it was, when not the symbol's first one
         // (Op-Amp7 for an LM301A): written back as such
         if (!s->aliases.isEmpty() && cmName.compare(s->aliases.first(), Qt::CaseInsensitive) != 0)
