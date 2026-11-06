@@ -644,6 +644,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         }
         // the parameters the file gave the alias ("alias:XTRANS {RATIO=0.1}"),
         // with the part's present values
+        if (const QVariant own = c.props.value(QStringLiteral("cmKind")); own.isValid() && !own.toString().contains(u'{'))
+            modelKind = own.toString();
         if (const QString kept = c.props.value(QStringLiteral("cmKind")).toString(); kept.contains(u'{')) {
             const qsizetype open = kept.indexOf(u'{'), close = kept.indexOf(u'}', open);
             QStringList pairs;

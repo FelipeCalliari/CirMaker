@@ -704,6 +704,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!d.spice.trimmed().isEmpty() && d.type != 0xc3)
             if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->spice.trimmed() != d.spice.trimmed())
                 c.props.insert(QStringLiteral("cmSpice"), d.spice);
+        // its model kind where not the library's (SPDT Relay: none, so
+        // CircuitMaker takes the model from the value, X12VSPDT)
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.kind.trimmed() != dev->kind.trimmed() && !c.props.contains(QStringLiteral("cmKind")))
+            c.props.insert(QStringLiteral("cmKind"), d.kind);
         // its power pins where its model has others than the library's
         // (a CMOS 4025's DVDD): CircuitMaker powers the digital parts by them
         if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.power.trimmed() != dev->power.trimmed())
