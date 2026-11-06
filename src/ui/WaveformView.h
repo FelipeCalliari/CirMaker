@@ -47,6 +47,10 @@ public:
     // "T1-T2", "T1*2", "abs(T3)", "db(T1)": T<n> is the n-th trace; false
     // with a message when the expression is not understood.
     bool addMathTrace(const QString& expression, QString* error = nullptr);
+    // Each trace in a band of its own, scaled to itself (CircuitMaker's
+    // "All Cells"), instead of all on one axis.
+    void setSeparate(bool on);
+    bool separate() const { return m_separate; }
     void store();                   // keeps the shown traces as the reference
     void clearStored();
     const QVector<Trace>& traces() const { return m_traces; }
@@ -92,6 +96,9 @@ private:
     QString m_storedTitle;
     double valueAt(const Trace& t, double x) const;
     quint64 m_now = 0;
+    bool m_separate = false;
+    // pixel y of value y of trace k (its own band when separate)
+    double traceY(int k, double y) const;
 };
 
 } // namespace cm

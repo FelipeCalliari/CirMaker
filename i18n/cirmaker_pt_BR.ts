@@ -3416,90 +3416,95 @@ Saída do SPICE:
         <translation>Escreva T1-T2, T1*2, abs(T1) ou db(T1)</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="371"/>
+        <location filename="../src/ui/WaveformView.cpp" line="391"/>
         <source>Run an analog analysis to see waveforms here.
 Use the Probe tool to choose which nets to plot.</source>
         <translation>Rode uma análise analógica para ver as formas de onda aqui.
 Use a ponta de prova para escolher as redes traçadas.</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="561"/>
+        <location filename="../src/ui/WaveformView.cpp" line="597"/>
         <source>Copy image</source>
         <translation>Copiar imagem</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="566"/>
+        <location filename="../src/ui/WaveformView.cpp" line="602"/>
         <source>&amp;Fit</source>
         <translation>&amp;Enquadrar</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="567"/>
+        <location filename="../src/ui/WaveformView.cpp" line="603"/>
+        <source>&amp;Separate traces</source>
+        <translation>Traços &amp;separados</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/WaveformView.cpp" line="607"/>
         <source>&amp;Logarithmic X</source>
         <translation>X &amp;logarítmico</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="572"/>
+        <location filename="../src/ui/WaveformView.cpp" line="612"/>
         <source>Clear cursors</source>
         <translation>Remover cursores</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="573"/>
+        <location filename="../src/ui/WaveformView.cpp" line="613"/>
         <source>Add &amp;math trace...</source>
         <translation>Adicionar curva &amp;calculada...</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="577"/>
-        <location filename="../src/ui/WaveformView.cpp" line="582"/>
+        <location filename="../src/ui/WaveformView.cpp" line="617"/>
+        <location filename="../src/ui/WaveformView.cpp" line="622"/>
         <source>Math trace</source>
         <translation>Curva calculada</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="578"/>
+        <location filename="../src/ui/WaveformView.cpp" line="618"/>
         <source>Expression (T1-T2, T1*2, abs(T1), db(T1)):</source>
         <translation>Expressão (T1-T2, T1*2, abs(T1), db(T1)):</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="585"/>
+        <location filename="../src/ui/WaveformView.cpp" line="625"/>
         <source>&amp;Store as reference</source>
         <translation>&amp;Guardar como referência</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="587"/>
+        <location filename="../src/ui/WaveformView.cpp" line="627"/>
         <source>Clear reference</source>
         <translation>Remover referência</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="589"/>
+        <location filename="../src/ui/WaveformView.cpp" line="629"/>
         <source>Copy data (CSV)</source>
         <translation>Copiar dados (CSV)</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="590"/>
+        <location filename="../src/ui/WaveformView.cpp" line="630"/>
         <source>Save data as CSV...</source>
         <translation>Salvar dados como CSV...</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="591"/>
+        <location filename="../src/ui/WaveformView.cpp" line="631"/>
         <source>Save waveforms</source>
         <translation>Salvar formas de onda</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="592"/>
+        <location filename="../src/ui/WaveformView.cpp" line="632"/>
         <source>CSV file (*.csv)</source>
         <translation>Arquivo CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="600"/>
+        <location filename="../src/ui/WaveformView.cpp" line="640"/>
         <source>Save image...</source>
         <translation>Salvar imagem...</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="601"/>
+        <location filename="../src/ui/WaveformView.cpp" line="641"/>
         <source>Save plot image</source>
         <translation>Salvar imagem do gráfico</translation>
     </message>
     <message>
-        <location filename="../src/ui/WaveformView.cpp" line="602"/>
+        <location filename="../src/ui/WaveformView.cpp" line="642"/>
         <source>PNG image (*.png)</source>
         <translation>Imagem PNG (*.png)</translation>
     </message>

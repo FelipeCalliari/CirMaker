@@ -353,6 +353,26 @@ int WaveformView::indexAt(double x) const
     return i;
 }
 
+void WaveformView::setSeparate(bool on)
+{
+    m_separate = on;
+    update();
+}
+
+double WaveformView::traceY(int k, double y) const
+{
+    if (!m_separate || m_traces.size() < 2) return yToPixel(y);
+    const QRectF r = plotRect();
+    const double band = r.height() / m_traces.size();
+    double lo = 0, hi = 0;
+    bool any = false;
+    for (double v : m_traces[k].y)
+        if (std::isfinite(v)) { lo = any ? std::min(lo, v) : v; hi = any ? std::max(hi, v) : v; any = true; }
+    if (hi - lo < 1e-12) { lo -= 1; hi += 1; }
+    const double top = r.top() + band * k + band * 0.12, h = band * 0.76;
+    return top + (hi - y) / (hi - lo) * h;
+}
+
 void WaveformView::paintEvent(QPaintEvent*)
 {
     QPainter p(this);
@@ -380,7 +400,8 @@ void WaveformView::paintEvent(QPaintEvent*)
     const QColor textColor = pal.color(QPalette::Text);
 
     const double yStep = niceStep(m_y1 - m_y0, 6);
-    for (double y = std::ceil(m_y0 / yStep) * yStep; y <= m_y1; y += yStep) {
+    // one shared axis, unless every trace has its band
+    for (double y = std::ceil(m_y0 / yStep) * yStep; y <= m_y1 && !(m_separate && m_traces.size() > 1); y += yStep) {
         const double py = yToPixel(y);
         p.setPen(QPen(gridColor, 0, std::abs(y) < yStep / 2 ? Qt::SolidLine : Qt::DotLine));
         p.drawLine(QPointF(r.left(), py), QPointF(r.right(), py));
@@ -424,12 +445,26 @@ void WaveformView::paintEvent(QPaintEvent*)
         p.setPen(QPen(t.color.lighter(140), 1.2, Qt::DashLine));
         p.drawPath(path);
     }
-    for (const Trace& t : std::as_const(m_traces)) {
+    const bool bands = m_separate && m_traces.size() > 1;
+    if (bands) {
+        // band separators and the trace names, as CircuitMaker's cells
+        const double band = r.height() / m_traces.size();
+        for (int k = 0; k < m_traces.size(); ++k) {
+            if (k > 0) {
+                p.setPen(QPen(gridColor, 0));
+                p.drawLine(QPointF(r.left(), r.top() + band * k), QPointF(r.right(), r.top() + band * k));
+            }
+            p.setPen(m_traces[k].color);
+            p.drawText(QRectF(r.left() + 4, r.top() + band * k, 200, 16), Qt::AlignLeft | Qt::AlignTop, m_traces[k].name);
+        }
+    }
+    for (int k = 0; k < m_traces.size(); ++k) {
+        const Trace& t = m_traces[k];
         QPainterPath path;
         bool started = false;
         for (int i = 0; i < m_x.size() && i < t.y.size(); ++i) {
             if (!std::isfinite(t.y[i])) { started = false; continue; }
-            const QPointF pt(xToPixel(m_x[i]), yToPixel(t.y[i]));
+            const QPointF pt(xToPixel(m_x[i]), traceY(k, t.y[i]));
             if (started) path.lineTo(pt); else path.moveTo(pt);
             started = true;
         }
@@ -462,11 +497,12 @@ void WaveformView::paintEvent(QPaintEvent*)
         const double px = xToPixel(m_x[idx]);
         p.setPen(QPen(textColor, 0, Qt::DashLine));
         p.drawLine(QPointF(px, r.top()), QPointF(px, r.bottom()));
-        for (const Trace& t : std::as_const(m_traces)) {
+        for (int k = 0; k < m_traces.size(); ++k) {
+            const Trace& t = m_traces[k];
             if (idx >= t.y.size() || !std::isfinite(t.y[idx])) continue;
             p.setPen(Qt::NoPen);
             p.setBrush(t.color);
-            p.drawEllipse(QPointF(px, yToPixel(t.y[idx])), 3.5, 3.5);
+            p.drawEllipse(QPointF(px, traceY(k, t.y[idx])), 3.5, 3.5);
         }
         p.setPen(textColor);
         p.drawText(QRectF(px + 4, r.top() + 2, 140, 16), Qt::AlignLeft, siFormat(m_x[idx], m_xUnit, 5));
@@ -564,6 +600,10 @@ void WaveformView::contextMenuEvent(QContextMenuEvent* e)
         return;
     }
     menu.addAction(tr("&Fit"), this, &WaveformView::fit);
+    QAction* separate = menu.addAction(tr("&Separate traces"), this, [this](bool on) { setSeparate(on); });
+    separate->setCheckable(true);
+    separate->setChecked(m_separate);
+    separate->setEnabled(m_traces.size() > 1);
     QAction* log = menu.addAction(tr("&Logarithmic X"), this, [this](bool on) { setLogX(on); });
     log->setCheckable(true);
     log->setChecked(m_logX);
