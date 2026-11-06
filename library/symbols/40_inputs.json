@@ -923,7 +923,10 @@
     "color": [
      "red",
      "green",
-     "blue"
+     "yellow",
+     "blue",
+     "cyan",
+     "magenta"
     ]
    },
    "description": "Animated race car: drives along its track once S goes high (faster with a higher speed), raises F at the finish and goes back to the start while RESET is high",

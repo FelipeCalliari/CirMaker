@@ -31,6 +31,7 @@ private slots:
     void displayExample();
     void carsExample();
     void delayExample();
+    void logicDisplayColours();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -439,6 +440,30 @@ void TestCktImport::delayExample()
     push(reset);
     b.sim.step(50);
     QCOMPARE(b.sim.componentState(lamp), 0);
+}
+
+// Led.ckt's logic displays, left to right: red, green, blue, cyan, magenta, yellow.
+void TestCktImport::logicDisplayColours()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Led.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit a;
+    QVERIFY(CktImporter::import(path, a, library(), nullptr, nullptr));
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    Circuit b;
+    QVERIFY(CktImporter::importData(CktExporter::write(a, library(), cmLib), b, library(), nullptr, nullptr));
+    for (const Circuit* c : {&a, &b}) {
+        QList<std::pair<double, QString>> lamps;
+        for (const Component& comp : c->components())
+            if (comp.symbolId == u"logicdisplay") lamps << std::pair{comp.pos.x(), comp.props.value(QStringLiteral("color")).toString()};
+        std::sort(lamps.begin(), lamps.end());
+        QStringList colours;
+        for (const auto& l : lamps) colours << l.second;
+        QCOMPARE(colours, QStringList({QStringLiteral("red"), QStringLiteral("green"), QStringLiteral("blue"), QStringLiteral("cyan"),
+                                       QStringLiteral("magenta"), QStringLiteral("yellow")}));
+    }
 }
 
 void TestCktImport::importedCounterCounts()

@@ -32,6 +32,15 @@ constexpr int kCharWidth = 7;           // CircuitMaker's label rectangles: 7 un
 
 QPoint toCm(QPointF p) { return {int(std::lround(p.x() * kToCm)), int(std::lround(p.y() * kToCm))}; }
 
+// CircuitMaker's colour codes for logic displays and cars (nets[0]); red
+// for the colours it has none of
+int cmColourCode(const QString& name)
+{
+    static const QHash<QString, int> codes{{QStringLiteral("yellow"), 11}, {QStringLiteral("green"), 12}, {QStringLiteral("blue"), 13},
+                                           {QStringLiteral("cyan"), 14}, {QStringLiteral("magenta"), 15}};
+    return codes.value(name, 10);
+}
+
 // "<length> <text>"; a newline is CR LF and counts two
 QString str(QString s)
 {
@@ -462,10 +471,11 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             nets.resize(10);                            // the value in nets[10], its character in nets[11]
             nets << v << (v < 10 ? '0' + v : 'A' + v - 10);
             value.clear();
+        } else if (s.id == u"logicdisplay") {
+            nets[0] = cmColourCode(c.props.value(QStringLiteral("color")).toString());
         } else if (kind == u"car") {
             // colour in nets[0], speed in nets[14], as CircuitMaker keeps them
-            static const QHash<QString, int> colours{{QStringLiteral("red"), 10}, {QStringLiteral("green"), 12}, {QStringLiteral("blue"), 13}};
-            nets[0] = colours.value(c.props.value(QStringLiteral("color"), QStringLiteral("red")).toString(), 10);
+            nets[0] = cmColourCode(c.props.value(QStringLiteral("color")).toString());
             nets.resize(21);
             nets[14] = std::max(1, c.props.value(QStringLiteral("speed"), 3).toInt());
         } else if (name == u"Ascii Key~") {

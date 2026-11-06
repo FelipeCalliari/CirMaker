@@ -235,6 +235,20 @@ CktFile parseAt(const QString& d, int pos, double version)
     return f;
 }
 
+// Colours of logic displays and cars, kept in nets[0] (Led.ckt, Cars.ckt).
+QString cmColourName(int code)
+{
+    switch (code) {
+    case 10: return QStringLiteral("red");
+    case 11: return QStringLiteral("yellow");
+    case 12: return QStringLiteral("green");
+    case 13: return QStringLiteral("blue");
+    case 14: return QStringLiteral("cyan");
+    case 15: return QStringLiteral("magenta");
+    default: return {};
+    }
+}
+
 // The title block ends where the device list starts: the first line start
 // from which a number and five strings lead exactly there.
 std::optional<CktTitle> titleBefore(const QString& d, int listStart)
@@ -637,9 +651,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         else if (kind == u"car") {
             if (d.nets.size() > 14 && d.nets[14] > 0)
                 c.props.insert(QStringLiteral("speed"), d.nets[14]);  // as CircuitMaker keeps it
-            // the colour in nets[0]: Cars.ckt has 10 red, 12 green, 13 blue
-            static const QHash<int, QString> colours{{10, QStringLiteral("red")}, {12, QStringLiteral("green")}, {13, QStringLiteral("blue")}};
-            if (const QString col = colours.value(d.nets.value(0)); !col.isEmpty()) c.props.insert(QStringLiteral("color"), col);
+            if (const QString col = cmColourName(d.nets.value(0)); !col.isEmpty()) c.props.insert(QStringLiteral("color"), col);
+        } else if (s->id == u"logicdisplay") {
+            if (const QString col = cmColourName(d.nets.value(0)); !col.isEmpty()) c.props.insert(QStringLiteral("color"), col);
         }
         else if (kind == u"pot") {
             // "100k 40%": total resistance and wiper position

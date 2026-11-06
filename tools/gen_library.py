@@ -1366,7 +1366,7 @@ def inputs():
          'pins': [pin('C', 30, 0), pin('NC', -30, -10), pin('NO', -30, 10)]},
         {'id': 'car', 'name': 'Car', 'prefix': 'CAR', 'display': 'car', 'aliases': ['Car'],
          'cmPins': ['S', 'F', 'RESET'], 'model': {'kind': 'car'}, 'props': {'speed': 3, 'color': 'red'},
-         'choices': {'color': ['red', 'green', 'blue']},
+         'choices': {'color': ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta']},
          'description': 'Animated race car: drives along its track once S goes high (faster with a higher speed), '
                         'raises F at the finish and goes back to the start while RESET is high',
          'graphics': [R(-90, -45, 330, 70), L(-90, -10, 240, -10), L(220, -45, 220, 25), L(-110, -20, -90, -20),
@@ -1432,7 +1432,8 @@ def outputs():
     return [
         {'id': 'logicdisplay', 'name': 'Logic Display', 'prefix': 'L', 'display': 'lamp', 'aliases': ['Logic Display'],
          'cmPins': ['D0'], 'model': {'kind': 'display', 'bits': 1},
-         'props': {'color': 'red'}, 'choices': {'color': ['red', 'green', 'yellow', 'blue', 'orange', 'white']},
+         'props': {'color': 'red'},
+         'choices': {'color': ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'orange', 'white']},
          'description': 'Lamp showing the logic level of its input; colour in the properties',
          'graphics': [C(0, 0, 20), C(0, 0, 15), L(0, 20, 0, 60)], 'pins': [pin('D0', 0, 60, 'in')]},
         {'id': 'scope', 'name': 'SCOPE', 'prefix': 'T', 'label': '', 'aliases': ['SCOPE'], 'cmPins': ['1'],
