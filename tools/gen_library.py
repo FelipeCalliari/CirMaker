@@ -632,8 +632,8 @@ def analog():
         {'id': 'lamp', 'name': 'Lamp', 'prefix': 'L', 'label': '100', 'aliases': ['Lamp'], 'display': 'bulb',
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {2} {value}'),
          'description': 'Resistive lamp; glows with the voltage across it',
-         'graphics': [C(0, 0, 25), L(-18, -18, 18, 18), L(-18, 18, 18, -18), L(-40, 40, -18, 18), L(18, 18, 40, 40)],
-         'pins': [pin('1', -40, 40, float=-1), pin('2', 40, 40, float=-1)]},
+         'graphics': [C(0, 0, 25), L(-18, -18, 18, 18), L(-18, 18, 18, -18), L(-20, 40, -20, 15), L(20, 15, 20, 40)],
+         'pins': [pin('1', -20, 40, float=-1), pin('2', 20, 40, float=-1)]},     # 12 units apart, as in CircuitMaker
         {'id': 'ic', 'name': '.IC Initial Condition', 'prefix': 'IC', 'label': '0V', 'aliases': ['.IC'], 'cmPins': ['1'],
          'spice': sp('.ic v({1})={value}'),
          'description': 'Starts a transient analysis with this node at the given voltage',
@@ -707,28 +707,28 @@ def misc_parts():
          'graphics': [R(-60, -60, 120, 80), T('REG', 0, -30, 10), T('IN', -40, -30, 7), T('OUT', 40, -30, 7),
                       L(-90, -30, -60, -30), L(60, -30, 90, -30), L(0, 20, 0, 80)],
          'pins': [pin('IN', -90, -30), pin('GND', 0, 80), pin('OUT', 90, -30)]},
-        {'id': 'buzzer', 'name': 'Piezo Buzzer', 'prefix': 'LS', 'label': '1k', 'aliases': ['Piezo Buzzer'],
+        {'id': 'buzzer', 'name': 'Piezo Buzzer', 'prefix': 'LS', 'label': '1k', 'aliases': ['Piezo Buzzer'], 'display': 'buzzer',
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {2} {value}'),
          'description': 'Piezo buzzer, simulated as a resistive load',
-         'graphics': [C(0, 0, 30), C(0, 0, 18), L(-100, 0, -30, 0), L(30, 0, 100, 0)],
-         'pins': [pin('1', -100, 0, float=-1), pin('2', 100, 0, float=-1)]},
+         'graphics': [C(0, 0, 30), C(0, 0, 18), L(-80, 0, -30, 0), L(30, 0, 80, 0)],
+         'pins': [pin('1', -80, 0, float=-1), pin('2', 80, 0, float=-1)]},
         {'id': 'speaker', 'name': 'Speaker', 'prefix': 'LS', 'label': '8', 'aliases': ['Speaker'],
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {2} {value}'),
          'description': 'Loudspeaker, simulated as its resistance',
          'graphics': [R(-10, -20, 20, 40), P('M 10 -20 L 40 -45 L 40 45 L 10 20'), L(-30, -50, 0, -50), L(0, -50, 0, -20),
                       L(-30, 50, 0, 50), L(0, 50, 0, 20)],
          'pins': [pin('1', -30, -50, float=-1), pin('2', -30, 50, float=-1)]},
-        {'id': 'dc_motor', 'name': 'DC Motor', 'prefix': 'M', 'label': '10', 'aliases': ['DC Motor'],
+        {'id': 'dc_motor', 'name': 'DC Motor', 'prefix': 'M', 'label': '10', 'aliases': ['DC Motor'], 'display': 'motor',
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {name}_m {value}' + N + 'L{name} {name}_m {2} 1m'),
          'description': 'DC motor, simulated as its winding (resistance from the label, 1 mH)',
-         'graphics': [C(0, 0, 30), T('M', 0, 0, 14), L(-80, 0, -30, 0), L(30, 0, 80, 0)],
-         'pins': [pin('1', -80, 0, float=-1), pin('2', 80, 0, float=-1)]},
+         'graphics': [C(0, 0, 30), T('M', 0, 0, 14), L(-60, 0, -30, 0), L(30, 0, 60, 0)],
+         'pins': [pin('1', -60, 0, float=-1), pin('2', 60, 0, float=-1)]},
         {'id': 'solenoid', 'name': 'Solenoid', 'prefix': 'L', 'label': '5VCOIL', 'aliases': ['Solenoid'],
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'props': dict(COIL_PROPS), 'spice': COIL_SPICE,
          'description': COIL_DESCRIPTION,
-         'graphics': [L(-70, 0, -40, 0), P('M -40 0 Q -30 -16 -20 0 Q -10 -16 0 0 Q 10 -16 20 0 Q 30 -16 40 0'),
-                      L(40, 0, 70, 0), R(-40, 8, 80, 8)],
-         'pins': [pin('1', -70, 0, float=-1), pin('2', 70, 0, float=-1)]},
+         'graphics': [L(-50, 0, -40, 0), P('M -40 0 Q -30 -16 -20 0 Q -10 -16 0 0 Q 10 -16 20 0 Q 30 -16 40 0'),
+                      L(40, 0, 50, 0), R(-40, 8, 80, 8)],
+         'pins': [pin('1', -50, 0, float=-1), pin('2', 50, 0, float=-1)]},     # 28 units apart in CircuitMaker
         {'id': 'triode', 'name': 'Triode', 'prefix': 'V', 'label': '12AX7', 'aliases': ['Triode'],
          'cmPins': ['P', 'G', 'K'],
          'spice': sp('B{name} {P} {K} I=1.15e-6*pow(max(100*v({G},{K})+v({P},{K}), 0), 1.5)' + N
@@ -1096,7 +1096,7 @@ COIL_DESCRIPTION = ('Relay coil (resistance and inductance in the properties): a
 def contacts(id, name, alias, closed_at_rest):
     on, off = ('1G', '{prop:resistance}') if closed_at_rest else ('{prop:resistance}', '1G')
     other = 'NC' if closed_at_rest else 'NO'
-    return {'id': id, 'name': name, 'prefix': 'K', 'label': 'NORMAL', 'aliases': [alias],
+    return {'id': id, 'name': name, 'prefix': 'K', 'label': 'NORMAL', 'aliases': [alias], 'display': 'contact',
             'cmPins': ['C', 'NC', ''] if closed_at_rest else ['C', '', 'NO'],
             'props': {'relay': 'K1', 'resistance': '0.1'},
             'model': {'kind': 'contact', 'closed': closed_at_rest},
@@ -1105,8 +1105,9 @@ def contacts(id, name, alias, closed_at_rest):
                       'models': [f'.model {{name}}_SW sw vt=0.5 ron={on} roff={off}']},
             'description': ('Relay contact, closed until' if closed_at_rest else 'Relay contact, open until')
                            + ' the coil with the same relay name pulls in',
-            'graphics': [L(-40, 0, -8, 0), L(-8, -12, -8, 12), L(8, -12, 8, 12), L(8, 0, 40, 0)]
-                        + ([L(-14, 14, 14, -14)] if closed_at_rest else []),
+            # the slash of a closed contact is drawn with its state (closed at
+            # rest, or operated by its coil while simulating)
+            'graphics': [L(-40, 0, -8, 0), L(-8, -12, -8, 12), L(8, -12, 8, 12), L(8, 0, 40, 0)],
             'pins': [pin('C', 40, 0), pin(other, -40, 0)]}
 
 

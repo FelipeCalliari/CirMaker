@@ -1072,6 +1072,13 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         return true;
     };
 
+    // every ground symbol is one node, in CircuitMaker as in SPICE: groups
+    // that each reach a ground are joined already
+    QSet<int> groundNets;
+    for (const Component& c : circuit.components())
+        if (c.symbolId == u"ground")
+            groundNets << nl2.netOf(c.id, 0);
+
     int drawn = 0, labelled = 0;
     for (auto it = byCmNet.cbegin(); it != byCmNet.cend(); ++it) {
         if (throughContacts.contains(it.key())) continue;      // the wires decide
@@ -1095,6 +1102,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             if (main < 0 || g.value().size() > groups.value(main).size()) main = g.key();
         for (auto g = groups.cbegin(); g != groups.cend(); ++g) {
             if (g.key() == main) continue;
+            if (groundNets.contains(g.key()) && groundNets.contains(main)) continue;
             QPointF a, b;
             double best = 1e18;
             for (QPointF pa : g.value())

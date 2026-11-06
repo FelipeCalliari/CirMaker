@@ -466,6 +466,31 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
                 p->drawPolygon(QPolygonF({QPointF(-7, y), QPointF(0, y + 22), QPointF(7, y)}));
             }
         }
+    } else if (d == u"contact") {
+        // a relay contact: the slash shows it closed
+        const bool operated = live && state == 1;
+        if (m_symbol->model.value(u"closed").toBool() != operated) {
+            p->setPen(QPen(operated ? theme().high : ink, 1.5));
+            p->drawLine(QPointF(-14, 14), QPointF(14, -14));
+        }
+    } else if (d == u"motor") {
+        // a DC motor turns while energized, as CircuitMaker animates it
+        if (live && state > 0) {
+            const SchematicScene* sc = schematic();
+            const double a = double((sc ? sc->simTime() : 0) % 24) * 15 * M_PI / 180;
+            const QPointF tip(24 * std::cos(a), 24 * std::sin(a));
+            p->setPen(QPen(theme().high, 3, Qt::SolidLine, Qt::RoundCap));
+            p->drawLine(-tip, tip);
+        }
+    } else if (d == u"buzzer") {
+        // sound waves while it sounds
+        if (live && state > 0) {
+            p->setPen(QPen(theme().high, 2));
+            p->setBrush(Qt::NoBrush);
+            for (int r : {38, 48})
+                for (double start : {-40.0, 140.0})
+                    p->drawArc(QRectF(-r, -r, 2 * r, 2 * r), int(start * 16), 80 * 16);
+        }
     } else if (d == u"stepper") {
         // the rotor points at the energized coils (half steps of 45 degrees)
         const double a = (state * 45.0 - 90) * M_PI / 180;

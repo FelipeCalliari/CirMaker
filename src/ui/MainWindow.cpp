@@ -1848,7 +1848,7 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
         if (d == u"led") {
             overlay.displayState.insert(c.id, netVoltage(c.id, s->pinIndex(QStringLiteral("A")))
                                                       - netVoltage(c.id, s->pinIndex(QStringLiteral("K"))) > 1.5);
-        } else if (d == u"bulb") {
+        } else if (d == u"bulb" || d == u"motor" || d == u"buzzer") {
             overlay.displayState.insert(c.id, std::abs(netVoltage(c.id, 0) - netVoltage(c.id, 1)) > 0.5);
         } else if (d == u"stepper") {
             // the rotor follows the energized coils through the whole run
