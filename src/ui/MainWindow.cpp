@@ -1078,6 +1078,10 @@ bool MainWindow::openFile(const QString& path, bool interactive)
     m_faultsUnlocked = false;
     applyRestrictions();
     m_view->zoomToFit();
+    // CircuitMaker's Speed, the third number of "0 0 30 100 10": the ticks
+    // between screen updates, as ours
+    if (const QStringList line = m_circuit->analysis().cmSimLine.split(u' ', Qt::SkipEmptyParts); line.size() == 5 && line[2].toInt() > 0)
+        m_speed->setValue(std::clamp(line[2].toInt(), 1, m_speed->maximum()));
     return true;
 }
 
@@ -1466,6 +1470,16 @@ void MainWindow::exportCkt()
                                                       tr("CircuitMaker 2000 schematic (*.ckt)"));
     if (path.isEmpty()) return;
     CktExportReport report;
+    // the speed it runs at goes out as CircuitMaker's Speed
+    {
+        AnalysisSettings a = m_circuit->analysis();
+        QStringList line = (a.cmSimLine.isEmpty() ? QStringLiteral("0 0 1 100 10") : a.cmSimLine).split(u' ', Qt::SkipEmptyParts);
+        if (line.size() == 5 && line[2].toInt() != m_speed->value()) {
+            line[2] = QString::number(m_speed->value());
+            a.cmSimLine = line.join(u' ');
+            m_circuit->setAnalysis(a);
+        }
+    }
     if (!CktExporter::save(path, *m_circuit, LibraryRegistry::instance(), lib, &report, &error)) {
         QMessageBox::critical(this, title, tr("Cannot write %1:\n%2").arg(path, error));
         return;

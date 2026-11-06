@@ -61,7 +61,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Atrasos de propagação por dispositivo | ✅ | 1–14 ticks em portas, flip-flops e CIs MSI; lidos e gravados no `.ckt` (4º número do registro, menos um); Show Prop Delays mostra o atraso no centro de cada dispositivo |
 | Saídas em conflito num nó | ✅ | como no CM, vence o dispositivo que vem por último no circuito (verificado no CM via Wine); opção nas Preferências para deixar o nó em X; aviso na barra de status |
 | Breakpoints | ✅ | caixinhas dos SCOPEs nas formas de onda (0/1); Nível/Borda × E/Ou |
-| Digital Options (tick em tempo real etc.) | ✅ | velocidade em ticks/quadro; tamanho do passo em ticks (10 = um ciclo) ou até o próximo evento |
+| Digital Options (tick em tempo real etc.) | ✅ | velocidade em ticks/quadro (a Speed do `.ckt` — ticks entre atualizações da tela — vira a velocidade ao abrir e volta na exportação); tamanho do passo em ticks (10 = um ciclo) ou até o próximo evento |
 
 ## Simulação analógica / mista
 
