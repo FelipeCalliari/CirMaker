@@ -143,6 +143,9 @@ def package_gates(table, ttl):
         extra = {'label': number, 'parts': parts(number)}
         if ttl:
             extra['floatInputs'] = 1
+        if number == '7422':
+            # CircuitMaker's 7422 has its pin 3 above pin 2
+            extra['cmPins'] = ['A', 'C', 'B', 'D', 'Y']
         out.append(gate(number, name, op, n, inv, aliases,
                         f'{COUNT[count]} {gname} ({"TTL" if ttl else "CMOS"}); one gate per symbol, grouped by package', **extra))
     return out

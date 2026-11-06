@@ -329,6 +329,7 @@ void TestCktImport::exportRoundTrip()
         }
     }
     qInfo("%d files written, %d with the same connections; differing: %s", files, same, qPrintable(different.join(u", ")));
+    QVERIFY2(same == files, qPrintable(different.join(u", ")));
 }
 
 // Macros of CircuitMaker's own User.lib: Delay's circuit and pins, and a

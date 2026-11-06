@@ -666,6 +666,20 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     }
     for (int i = 0; i < placed.size(); ++i) {
         if (!placed[i].symbol) continue;
+        // no wire ends on it: our pins where Device.lib puts CircuitMaker's
+        // (as the exporter places a device with no wires)
+        if (const CmLibDevice* dev = anchorDeltas[i].isEmpty() ? deviceLib().find(file.devices[i].name) : nullptr) {
+            Component probe = placed[i].comp;
+            probe.pos = {};
+            const QTransform turn = LibraryRegistry::placement(probe);
+            const QPointF origin(file.devices[i].x, file.devices[i].y);
+            for (int k = 1; k <= std::min(dev->pinCount, int(dev->pins.size())); ++k) {
+                const int pin = ourPin(*placed[i].symbol, file.devices[i], k);
+                if (pin < 0) continue;
+                const QPointF cmPin = (origin + turn.map(QPointF(dev->pins[k - 1]))) * kScale;
+                anchorDeltas[i] << cmPin - turn.map(placed[i].symbol->pins[pin].pos);
+            }
+        }
         if (!anchorDeltas[i].isEmpty()) {
             QVector<double> xs, ys;
             for (QPointF p : anchorDeltas[i]) { xs << p.x(); ys << p.y(); }
