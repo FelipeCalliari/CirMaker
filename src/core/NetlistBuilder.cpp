@@ -7,6 +7,7 @@
 #include <QLineF>
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 namespace cm {
@@ -176,6 +177,7 @@ QString NetlistBuilder::nodeName(const Netlist& netlist, int net, const Circuit&
         const QStringList st = v.toString().split(u' ', Qt::SkipEmptyParts);
         if (st.size() < 2) return 0;
         const double d = st[1].toDouble();
+        if (std::abs(d) > 1e-300) return d;     // some files write the float itself ("36626.6 1")
         quint64 bits;
         std::memcpy(&bits, &d, 8);
         const quint32 low = quint32(bits);

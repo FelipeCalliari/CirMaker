@@ -600,6 +600,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 spice = QStringLiteral("%D %1 %2 DC 0 SIN(") + QStringList{g(offset), g(amplitude), g(frequency)}.join(u' ')
                       + QStringLiteral(" 0 0)") + (ac != 0 ? QStringLiteral(" AC %1 0").arg(g(ac)) : QString());
             }
+            // the AC stimulus on every waveform (Bandpass: "PULSE(...) AC 1 0")
+            if (wave != u"sine" && wave != u"sin" && ac != 0 && !spice.contains(QStringLiteral(" AC ")))
+                spice += QStringLiteral(" AC %1 0").arg(g(ac));
             // nets[4..6]: 'V' and the display range; nets[7]: pairs + 1 of a PWL
             nets << 'V' << (wave == u"pulse" || wave == u"pwl" ? -10 : -8) << (wave == u"pulse" || wave == u"pwl" ? 10 : 8)
                  << (pairs ? pairs + 1 : 0) << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
@@ -663,8 +666,12 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             QVector<int> own = l.packageMap.mid(1, n);
             own.resize(n);
             const QStringList kept = c.props.value(QStringLiteral("cmPins")).toString().split(u' ', Qt::SkipEmptyParts);
-            if (kept.size() == n)
-                for (int k = 0; k < n; ++k) own[k] = kept[k].toInt();
+            // as the file had them, however many (Scr's generator: 2 of 4;
+            // CircuitMaker fails on a longer map for its SIP2 package)
+            if (!kept.isEmpty()) {
+                own.clear();
+                for (const QString& k : kept) own << k.toInt();
+            }
             pkg << own << own << 0;
         }
         const int pinMax = int(nets.size()) - 1;
@@ -733,11 +740,10 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         rec << join({l.code & 0xffff, 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);
         rec << join({i + 1, 0, 0});
-        if (const QVariant kept = c.props.value(QStringLiteral("cmStamp")); kept.isValid()) {
-            const QStringList st = kept.toString().split(u' ', Qt::SkipEmptyParts);
-            rec << QString::number(st.size());
-            if (!st.isEmpty()) rec << st.join(u' ');
-            rec << QStringLiteral("0");
+        // the stamps as read; a file of 5.5 or older has none, and 5.6 needs
+        // them (CircuitMaker fails opening Scr.ckt written without), so it gets ours
+        if (const QStringList st = c.props.value(QStringLiteral("cmStamp")).toString().split(u' ', Qt::SkipEmptyParts); st.size() == 2) {
+            rec << QStringLiteral("2") << st.join(u' ') << QStringLiteral("0");
         } else {
             rec << QStringLiteral("2") << floatStamp(oleDate()) + u' ' + floatStamp(i) << QStringLiteral("0");
         }
@@ -864,7 +870,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         const QRect box(at, size);
         // "<colour> 0 0 <length>": CircuitMaker draws only <length> characters
         textRecords << join({height, height / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54}) + u'\n' + str(QStringLiteral("Courier New"))
-                           + QStringLiteral("\n0 %1 0 %2\n").arg(t.nameAt ? 0x8000 : 0).arg(int(t.text.size() + lines.size() - 1)) + rect(box) + u'\n' + rect(box.adjusted(3, 2, -3, -2)) + u'\n'
+                           + QStringLiteral("\n0 %1 0 %2\n").arg(t.nameAt ? 0x8000 : 0).arg(int(t.text.size() + lines.size() - 1)) + rect(box) + u'\n' + rect(t.nameAt ? box : box.adjusted(3, 2, -3, -2)) + u'\n'
                            + str(t.text);
     }
 

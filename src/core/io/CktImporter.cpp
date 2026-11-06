@@ -178,6 +178,8 @@ Device readDevice(Reader& r, double version)
     const int pins = std::abs(pinMax);
     if (pins > 0 && pkg.size() >= 1 + 2 * pins)
         d.packagePins = pkg.mid(1 + pins, pins), d.partPins = pkg.mid(1, pins);
+    else if (pins > 0 && pkg.size() >= 4)
+        d.partPins = pkg.mid(1, (pkg.size() - 2) / 2);  // a shorter map (Scr's generator: 2 of its pins)
     d.misc = r.ints(8);
     d.prefix = r.string();
     if (modern) {
