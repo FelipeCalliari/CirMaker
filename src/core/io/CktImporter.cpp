@@ -232,6 +232,7 @@ CktFile parseAt(const QString& d, int pos, double version)
         t.text = r.string();
         f.texts << t;
     }
+    f.trailer = d.mid(r.position());
     return f;
 }
 
@@ -674,6 +675,44 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
                 c.props.insert(QStringLiteral("offset"), QString::number((hi + lo) / 2));
             }
             c.label = s->defaultLabel;
+            // the waveform as the instance's SPICE line gives it:
+            // "%D %1 %2 DC 0 PULSE(0 5 100n 10n 10n 100n 1u) AC 1 0"
+            static const QRegularExpression shape(QStringLiteral("\\b(SIN|PULSE|EXP|PWL|SFFM)\\s*\\(([^)]*)\\)"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+            if (const auto m = shape.match(d.spice); m.hasMatch()) {
+                const QString fn = m.captured(1).toUpper();
+                const QStringList a = m.captured(2).split(QRegularExpression(QStringLiteral("[\\s,]+")), Qt::SkipEmptyParts);
+                auto put = [&](const char* key, int i) {
+                    if (i < a.size()) c.props.insert(QString::fromLatin1(key), a[i]);
+                };
+                static const QRegularExpression dc(QStringLiteral("\\bDC\\s+(\\S+)"), QRegularExpression::CaseInsensitiveOption);
+                if (const auto v = dc.match(d.spice); v.hasMatch() && fn != u"SIN" && fn != u"SFFM")
+                    c.props.insert(QStringLiteral("offset"), v.captured(1));
+                if (fn == u"SIN") {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("sine"));
+                    put("offset", 0), put("amplitude", 1), put("frequency", 2), put("delay", 3), put("damping", 4);
+                } else if (fn == u"PULSE") {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("pulse"));
+                    put("v1", 0), put("v2", 1), put("delay", 2), put("rise", 3), put("fall", 4), put("width", 5), put("period", 6);
+                } else if (fn == u"EXP") {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("exp"));
+                    put("v1", 0), put("v2", 1), put("rd", 2), put("rt", 3), put("fd", 4), put("ft", 5);
+                } else if (fn == u"PWL") {
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("pwl"));
+                    c.props.insert(QStringLiteral("pwl"), a.join(u' '));
+                } else {                                        // SFFM
+                    c.props.insert(QStringLiteral("wave"), QStringLiteral("fm"));
+                    put("offset", 0), put("amplitude", 1), put("carrier", 2), put("mdi", 3), put("signal", 4);
+                }
+                static const QRegularExpression acPart(QStringLiteral("\\bAC\\s+(\\S+)(?:\\s+(\\S+))?"), QRegularExpression::CaseInsensitiveOption);
+                if (const auto ac = acPart.match(d.spice.mid(m.capturedEnd())); ac.hasMatch()) {
+                    c.props.insert(QStringLiteral("ac"), true);
+                    c.props.insert(QStringLiteral("acMag"), ac.captured(1));
+                    if (!ac.captured(2).isEmpty()) c.props.insert(QStringLiteral("acPhase"), ac.captured(2));
+                } else {
+                    c.props.insert(QStringLiteral("ac"), false);
+                }
+            }
         } else if ((kind == u"rom" || kind == u"ram") && !d.data.isEmpty()) {
             QStringList bytes;
             for (int b : d.data)
@@ -701,6 +740,48 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         placed[i] = {0, s, c};
     }
 
+    // the analysis setup after the texts (Simulation > Analyses Setup):
+    // ".OPTIONS" line; enabled analyses (1 operating point, 4 DC sweep, 8 AC,
+    // 16 transient) and four numbers; the DC sweep's source, start, stop,
+    // step and a second source with its range; AC points, sweep type, start
+    // and stop; transient start, stop, step and maximum step
+    AnalysisSettings analysis;
+    bool analysisRead = false;
+    try {
+        Reader r(file.trailer, 0);
+        QString opts = r.string().simplified();
+        if (opts.startsWith(QStringLiteral(".OPTIONS"), Qt::CaseInsensitive)) opts = opts.mid(8).trimmed();
+        const int enabled = r.integer();
+        r.ints(4);
+        auto num = [&] {
+            const double v = r.token().toDouble();
+            return QString::number(v, 'g', 6);
+        };
+        const QString dcSource = r.string().trimmed();
+        const QString dcStart = num(), dcStop = num(), dcStep = num();
+        r.string();
+        r.ints(0), num(), num(), num();
+        const int acPoints = r.integer();
+        r.integer();
+        const QString acStart = num(), acStop = num();
+        num();
+        const QString tranStop = num(), tranStep = num();
+        analysis.spiceOptions = opts;
+        analysis.dcSource = dcSource;
+        if (dcStep.toDouble() != 0) analysis.dcStart = dcStart, analysis.dcStop = dcStop, analysis.dcStep = dcStep;
+        if (acStop.toDouble() > 0) {
+            analysis.acStart = acStart;
+            analysis.acStop = acStop;
+            analysis.acPointsPerDecade = std::max(1, acPoints);
+        }
+        if (tranStop.toDouble() > 0) analysis.tranStop = tranStop, analysis.tranStep = tranStep;
+        using T = AnalysisSettings::Type;
+        analysis.type = enabled & 16 ? T::Transient : enabled & 8 ? T::AC : enabled & 4 ? T::DCSweep
+                      : enabled & 1 ? T::OperatingPoint : T::Transient;
+        analysisRead = true;
+    } catch (const ParseError&) {
+    }
+
     // circuits with parts that only make sense in SPICE open in analog mode
     int analogOnly = 0;
     for (const Placed& p : std::as_const(placed))
@@ -711,9 +792,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             ++analogOnly;
     // the file's own mode where it records one
     if (file.options) analogOnly = (*file.options & 0x80000) ? 1 : 0;
-    if (analogOnly > 0) {
-        AnalysisSettings a;
-        a.analogMode = true;
+    if (analogOnly > 0 || analysisRead) {
+        AnalysisSettings a = analysisRead ? analysis : AnalysisSettings{};
+        a.analogMode = analogOnly > 0;
         circuit.setAnalysis(a);
     }
 
@@ -1211,6 +1292,8 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     rep.components = int(file.devices.size());
     rep.wires = int(file.wires.size());
     rep.texts = int(file.texts.size());
+    if (qEnvironmentVariableIsSet("CM_TRAILER"))
+        qInfo("TRAILER %s", qPrintable(file.trailer.simplified().left(700)));
     if (drawn)
         rep.warnings << QStringLiteral("%1 wires added where the redrawn symbols no longer met the original wiring").arg(drawn);
     if (labelled)

@@ -157,6 +157,12 @@ AnalysisDialog::AnalysisDialog(const AnalysisSettings& settings, const QStringLi
     m_sweep->setCurrentIndex(int(settings.sweep));
     m_sweepPages->setCurrentIndex(int(settings.sweep));
 
+    auto* options = new QFormLayout;
+    m_spiceOptions = new QLineEdit(settings.spiceOptions);
+    m_spiceOptions->setPlaceholderText(QStringLiteral("METHOD=GEAR ITL4=100"));
+    options->addRow(tr("SPICE &options:"), m_spiceOptions);
+    layout->addLayout(options);
+
     auto* hint = new QLabel(tr("Values accept SPICE suffixes: 10m, 4.7k, 1Meg, 100u, 1n."));
     hint->setEnabled(false);
     layout->addWidget(hint);
@@ -201,6 +207,7 @@ AnalysisSettings AnalysisDialog::result() const
     a.paramStep = m_paramStep->text().trimmed();
     a.mcRuns = m_mcRuns->value();
     a.mcTolerance = m_mcTolerance->text().trimmed();
+    a.spiceOptions = m_spiceOptions->text().trimmed();
     return a;
 }
 

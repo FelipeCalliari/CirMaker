@@ -783,6 +783,8 @@ Deck build(const Circuit& circuit, const LibraryRegistry& library, const Netlist
         deck.text += QStringLiteral(".save all %1\n").arg(saved.join(u' '));
     if (!extra.isEmpty())
         deck.text += extra + u'\n';
+    if (!a.spiceOptions.trimmed().isEmpty())
+        deck.text += QStringLiteral(".options %1\n").arg(a.spiceOptions.trimmed());
     deck.text += line + QStringLiteral("\n.end\n");
     return deck;
 }

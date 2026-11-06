@@ -40,7 +40,7 @@ private:
     QStackedWidget* m_sweepPages;
     QLineEdit *m_tempStart, *m_tempStop, *m_tempStep;
     QComboBox* m_paramDevice;
-    QLineEdit *m_paramStart, *m_paramStop, *m_paramStep, *m_mcTolerance;
+    QLineEdit *m_paramStart, *m_paramStop, *m_paramStep, *m_mcTolerance, *m_spiceOptions;
     QSpinBox* m_mcRuns;
 };
 

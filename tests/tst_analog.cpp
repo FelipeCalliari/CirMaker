@@ -1553,11 +1553,14 @@ void TestAnalog::importedExamplesSimulate()
             ++skipped;
             continue;
         }
-        AnalysisSettings a = c.analysis();
-        a.type = AnalysisSettings::Type::Transient;
-        a.tranStop = QStringLiteral("2m");
-        a.tranStep = QStringLiteral("2u");
-        c.setAnalysis(a);
+        // CM_EXAMPLE_OWN=1: the analysis the file sets up (Analyses Setup)
+        if (!qEnvironmentVariableIsSet("CM_EXAMPLE_OWN")) {
+            AnalysisSettings a = c.analysis();
+            a.type = AnalysisSettings::Type::Transient;
+            a.tranStop = QStringLiteral("2m");
+            a.tranStep = QStringLiteral("2u");
+            c.setAnalysis(a);
+        }
         ++ran;
         spice::Deck deck;
         QElapsedTimer clock;

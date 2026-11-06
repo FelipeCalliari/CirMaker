@@ -196,12 +196,22 @@ const char* const kHeaderStart =
     "18 17 14 16 20 20 20 20 10 13 \n20 18 11 ";
 
 // After the text list: the analysis settings, all left at CircuitMaker's defaults.
-QString trailer()
+// After the text list: the analysis setup (see CktImporter.cpp), then
+// settings left at CircuitMaker's defaults.
+QString trailer(const AnalysisSettings& a)
 {
-    QStringList l{QStringLiteral("0"), QStringLiteral("2048 0 0")};
-    const char* const general[] = {"0", "0", "0", "0 0 0", "0", "0 0 0", "0 0 0 0", "0 0 0 0", "0", "0", "0 0 0",
-                                   "0 0 0", "0", "0", "0 0 0 0", "0", "0 0 0 0 0", "0 0 0 0", "0", "0 0 0", "0",
-                                   "0 0 0", "0 0 0 0 0 0 0 0 0"};
+    using T = AnalysisSettings::Type;
+    auto num = [](const QString& v) { return QString::number(number(v), 'g', 6); };
+    const int bit = a.type == T::OperatingPoint ? 1 : a.type == T::DCSweep ? 4 : a.type == T::AC ? 8
+                  : a.type == T::Transient || a.type == T::Fourier ? 16 : 0;
+    QStringList l{a.spiceOptions.trimmed().isEmpty() ? QStringLiteral("0") : str(QStringLiteral(".OPTIONS ") + a.spiceOptions.trimmed()),
+                  QStringLiteral("%1 0 0").arg(2048 | bit), QStringLiteral("0"), QStringLiteral("0"),
+                  str(a.dcSource), QStringList{num(a.dcStart), num(a.dcStop), num(a.dcStep)}.join(u' '),
+                  QStringLiteral("0"), QStringLiteral("0 0 0"),
+                  QStringLiteral("%1 0 %2 %3").arg(a.acPointsPerDecade).arg(num(a.acStart), num(a.acStop)),
+                  QStringLiteral("0 %1 %2 %2").arg(num(a.tranStop), num(a.tranStep))};
+    const char* const general[] = {"0", "0", "0 0 0", "0 0 0", "0", "0", "0 0 0 0", "0", "0 0 0 0 0", "0 0 0 0", "0",
+                                   "0 0 0", "0", "0 0 0", "0 0 0 0 0 0 0 0 0"};
     for (const char* s : general) l << QString::fromLatin1(s);
     const char* const block[] = {"0 0 0 0 0 0", "0 0 0 0", "0 0 0 0", "0 0", "0 0", "0 0", "0 0", "0 0",
                                  "0 0 0 0 0 0", "0 0", "0 0 0", "0"};
@@ -504,20 +514,36 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         // its own; CircuitMaker writes the SPICE line from them
         // an empty template leaves the part out of CircuitMaker's simulation
         QString spice = c.props.value(QStringLiteral("noSpice")).toBool() ? QString() : l.spice;
-        QVector<int> sine;
+        QStringList genBlock;                   // the generator's 20 numbers
         if (l.type == 0xc3) {
-            const double amplitude = number(c.props.value(QStringLiteral("amplitude"), QStringLiteral("1")).toString());
-            const double offset = number(c.props.value(QStringLiteral("offset"), QStringLiteral("0")).toString());
-            const double frequency = number(c.props.value(QStringLiteral("frequency"), QStringLiteral("1k")).toString());
+            auto prop = [&](const char* key, const char* fallback) {
+                return number(c.props.value(QString::fromLatin1(key), QString::fromLatin1(fallback)).toString());
+            };
+            auto g = [](double v) { return QString::number(v, 'g', 6); };
+            const QString wave = c.props.value(QStringLiteral("wave"), QStringLiteral("sine")).toString();
             nets.resize(3);
-            nets << 2 << 'V' << -8 << 8 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << floatBits(1) << floatBits(frequency)
-                 << floatBits(offset) << floatBits(amplitude);
-            sine = {1, int(std::lround(frequency)), int(std::lround(offset)), int(std::lround(amplitude))};
-            sine.resize(20);
-            const QString g = QStringLiteral("%1").arg(amplitude, 0, 'g', 6);
-            value = QStringLiteral("%1/%2V").arg(QString::number(offset - amplitude, 'g', 6), QString::number(offset + amplitude, 'g', 6));
-            spice = QStringLiteral("%D %1 %2 DC 0 SIN(") + QString::number(offset, 'g', 6) + u' ' + g + u' '
-                  + QString::number(frequency, 'g', 6) + QStringLiteral(" 0 0) AC 1 0");
+            QVector<double> params;
+            if (wave == u"pulse") {
+                // PULSE(v1 v2 delay rise fall width period): nets[3] = 1
+                const double v1 = prop("v1", "0"), v2 = prop("v2", "5"), period = std::max(prop("period", "1m"), 1e-12);
+                params = {1, 1 / period, v1, v2, prop("delay", "0"), prop("rise", "1n"), prop("fall", "1n"), prop("width", "0.5m"), period};
+                nets << 1 << 'V' << -10 << 10 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
+                value = QStringLiteral("%1/%2V").arg(g(v1), g(v2));
+                // (the template's own %D %1 %2 stay as they are)
+                spice = QStringLiteral("%D %1 %2 DC 0 PULSE(")
+                      + QStringList{g(v1), g(v2), g(params[4]), g(params[5]), g(params[6]), g(params[7]), g(period)}.join(u' ') + u')';
+            } else {
+                // SIN(offset amplitude frequency): nets[3] = 2
+                const double amplitude = prop("amplitude", "1"), offset = prop("offset", "0"), frequency = prop("frequency", "1k");
+                params = {1, frequency, offset, amplitude};
+                nets << 2 << 'V' << -8 << 8 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
+                value = QStringLiteral("%1/%2V").arg(g(offset - amplitude), g(offset + amplitude));
+                spice = QStringLiteral("%D %1 %2 DC 0 SIN(") + QStringList{g(offset), g(amplitude), g(frequency)}.join(u' ')
+                      + QStringLiteral(" 0 0) AC 1 0");
+            }
+            for (double v : std::as_const(params)) nets << floatBits(v);
+            for (double v : std::as_const(params)) genBlock << g(v);
+            while (genBlock.size() < 20) genBlock << QStringLiteral("0");
         }
         // model parameters after the alias, as CircuitMaker keeps them
         QString modelKind = l.kind;
@@ -598,7 +624,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         const int delay = std::clamp(c.props.value(QStringLiteral("delay"), 1).toInt(), 1, 14);
         rec << join({l.type, d.origin.x(), d.origin.y(), delay - 1, pinMax, std::max(int(pkg.size()) - 1, pinMax + 1)});
         rec << join(nets);
-        if (l.type == 0xc3) rec << QString::number(sine.size()) << join(sine);
+        if (l.type == 0xc3) rec << QString::number(genBlock.size()) << genBlock.join(u' ');
         // a macro instance names its User.lib macro here, and has a 1 first
         const bool macro = l.type == 0x5e;
         rec << (macro ? str(name) : QStringLiteral("0"));
@@ -755,7 +781,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     out << wireRecords;
     out << QString::number(textRecords.size());
     out << textRecords;
-    out << trailer();
+    out << trailer(circuit.analysis());
     QString text = out.join(u'\n') + u'\n';
     // lines end in CR LF; a newline inside a string (CR LF) becomes CR CR LF
     text.replace(u'\n', QStringLiteral("\r\n"));

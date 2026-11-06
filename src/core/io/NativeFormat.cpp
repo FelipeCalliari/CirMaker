@@ -36,7 +36,8 @@ QJsonObject analysisToJson(const AnalysisSettings& a)
             {u"sweep"_s, QString::fromLatin1(kSweeps[int(a.sweep)])},
             {u"tempStart"_s, a.tempStart}, {u"tempStop"_s, a.tempStop}, {u"tempStep"_s, a.tempStep},
             {u"paramDevice"_s, a.paramDevice}, {u"paramStart"_s, a.paramStart}, {u"paramStop"_s, a.paramStop},
-            {u"paramStep"_s, a.paramStep}, {u"mcRuns"_s, a.mcRuns}, {u"mcTolerance"_s, a.mcTolerance}};
+            {u"paramStep"_s, a.paramStep}, {u"mcRuns"_s, a.mcRuns}, {u"mcTolerance"_s, a.mcTolerance},
+            {u"spiceOptions"_s, a.spiceOptions}};
 }
 
 QJsonObject faultsToJson(const FaultSettings& f)
@@ -91,6 +92,7 @@ AnalysisSettings analysisFromJson(const QJsonObject& o)
     a.paramStep = o.value(u"paramStep").toString(a.paramStep);
     a.mcRuns = o.value(u"mcRuns").toInt(a.mcRuns);
     a.mcTolerance = o.value(u"mcTolerance").toString(a.mcTolerance);
+    a.spiceOptions = o.value(u"spiceOptions").toString();
     a.breakAll = o.value(u"breakAll").toBool(a.breakAll);
     a.dcStart = o.value(u"dcStart").toString(a.dcStart);
     a.dcStop = o.value(u"dcStop").toString(a.dcStop);

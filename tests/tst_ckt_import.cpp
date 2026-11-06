@@ -10,6 +10,7 @@
 #include <functional>
 #include <QElapsedTimer>
 #include <QRegularExpression>
+#include "sim/analog/SpiceNetlister.h"
 #include "sim/digital/EventSimulator.h"
 
 using namespace cm;
@@ -32,6 +33,7 @@ private slots:
     void carsExample();
     void delayExample();
     void logicDisplayColours();
+    void signalGenerators();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -466,6 +468,41 @@ void TestCktImport::logicDisplayColours()
     }
 }
 
+// Signal generators keep the waveform of their SPICE line, also written back.
+void TestCktImport::signalGenerators()
+{
+    const QString dir = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/");
+    if (!QFileInfo::exists(dir + QStringLiteral("State.ckt")))
+        QSKIP("CircuitMaker examples not available");
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    auto gens = [&](const Circuit& c) {
+        QStringList out;
+        for (const Component& comp : c.components()) {
+            if (comp.symbolId != u"siggen") continue;
+            const QVariantMap& p = comp.props;
+            auto v = [&](const char* k) { return QString::number(spice::parseNumber(p.value(QString::fromLatin1(k)).toString()).value_or(0), 'g', 6); };
+            out << (p.value(QStringLiteral("wave")).toString() == u"pulse"
+                        ? QStringLiteral("pulse %1 %2 %3 %4 %5 %6 %7").arg(v("v1"), v("v2"), v("delay"), v("rise"), v("fall"), v("width"), v("period"))
+                        : QStringLiteral("%1 %2 %3 %4").arg(p.value(QStringLiteral("wave")).toString(), v("offset"), v("amplitude"), v("frequency")));
+        }
+        out.sort();
+        return out;
+    };
+    const QHash<QString, QStringList> expected{
+        {QStringLiteral("State.ckt"), {QStringLiteral("pulse 0 5 1e-07 1e-08 1e-08 1e-07 1e-06")}},
+        {QStringLiteral("Bandpass.ckt"), {QStringLiteral("pulse -1 1 0 1e-07 1e-07 0.0005 0.001")}},
+        {QStringLiteral("Ammod.ckt"), {QStringLiteral("sine -0.5 0.3 1000"), QStringLiteral("sine 0 0.5 100000")}},
+        {QStringLiteral("Switches.ckt"), {QStringLiteral("sine 0 1 1e+06"), QStringLiteral("sine 0 1.1 1e+06")}}};
+    for (auto it = expected.cbegin(); it != expected.cend(); ++it) {
+        Circuit a, b;
+        QVERIFY(CktImporter::import(dir + it.key(), a, library(), nullptr, nullptr));
+        QCOMPARE(gens(a), it.value());
+        QVERIFY(CktImporter::importData(CktExporter::write(a, library(), cmLib), b, library(), nullptr, nullptr));
+        QCOMPARE(gens(b), it.value());
+    }
+}
+
 void TestCktImport::importedCounterCounts()
 {
     QString path;
@@ -881,6 +918,16 @@ void TestCktImport::keysAndTextsRoundTrip()
     tb.revision = QStringLiteral("B");
     tb.visible = true;
     a.setTitleBlock(tb);
+    AnalysisSettings as;
+    as.analogMode = true;
+    as.type = AnalysisSettings::Type::AC;
+    as.acStart = QStringLiteral("10");
+    as.acStop = QStringLiteral("1Meg");
+    as.acPointsPerDecade = 50;
+    as.tranStop = QStringLiteral("5u");
+    as.tranStep = QStringLiteral("25n");
+    as.spiceOptions = QStringLiteral("METHOD=GEAR ITL4=100");
+    a.setAnalysis(as);
     const QByteArray data = CktExporter::write(a, library(), cmLib);
     QVERIFY2(data.contains("0 0 0 12\r\n"), "text length not recorded");
     Circuit b;
@@ -896,6 +943,12 @@ void TestCktImport::keysAndTextsRoundTrip()
     QCOMPARE(b.titleBlock().author, tb.author);
     QCOMPARE(b.titleBlock().date, tb.date);
     QCOMPARE(b.titleBlock().revision, tb.revision);
+    QCOMPARE(int(b.analysis().type), int(AnalysisSettings::Type::AC));
+    QCOMPARE(b.analysis().acStop.toDouble(), 1e6);
+    QCOMPARE(b.analysis().acPointsPerDecade, 50);
+    QCOMPARE(b.analysis().tranStop.toDouble(), 5e-6);
+    QCOMPARE(b.analysis().tranStep.toDouble(), 25e-9);
+    QCOMPARE(b.analysis().spiceOptions, QStringLiteral("METHOD=GEAR ITL4=100"));
     QVERIFY(!b.titleBlock().visible);           // CircuitMaker prints it, it is not on the screen
     QVERIFY(data.contains("\r\n2\r\n8 Two keys"));
 }

@@ -281,7 +281,12 @@
         <translation>&amp;Tolerância de R, C, L (%):</translation>
     </message>
     <message>
-        <location filename="../src/ui/AnalysisDialog.cpp" line="160"/>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="163"/>
+        <source>SPICE &amp;options:</source>
+        <translation>&amp;Opções do SPICE:</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/AnalysisDialog.cpp" line="166"/>
         <source>Values accept SPICE suffixes: 10m, 4.7k, 1Meg, 100u, 1n.</source>
         <translation>Os valores aceitam sufixos SPICE: 10m, 4.7k, 1Meg, 100u, 1n.</translation>
     </message>

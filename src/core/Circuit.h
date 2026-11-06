@@ -72,6 +72,8 @@ struct AnalysisSettings {
     QString paramDevice, paramStart = QStringLiteral("1k"), paramStop = QStringLiteral("10k"), paramStep = QStringLiteral("3k");
     int mcRuns = 10;
     QString mcTolerance = QStringLiteral("10");      // percent, on R, C and L values
+    // SPICE options for the run (".OPTIONS METHOD=GEAR ITL4=100" without the keyword)
+    QString spiceOptions;
     // Digital breakpoints (CircuitMaker Digital Options): level or edge
     // conditions, all of them or any one.
     bool breakEdge = true, breakAll = false;

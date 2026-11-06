@@ -55,6 +55,8 @@ struct CktFile {
     // the header's option bits ("42991616 0" before the title block);
     // 0x80000 is CircuitMaker's Analog Mode
     std::optional<int> options;
+    // what follows the text list: the analysis setup (see CktImporter.cpp)
+    QString trailer;
     QVector<Device> devices;
     QVector<CktWire> wires;
     QVector<CktText> texts;
