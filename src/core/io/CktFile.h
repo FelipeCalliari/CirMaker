@@ -15,6 +15,7 @@ struct Device {
     QString name;
     int type = 0, x = 0, y = 0, angle = 0, flags = 0;
     int delay = 1;              // propagation delay, 1..14 ticks
+    int span = 0;               // the number after the pin count (an Input / Output from 19 up names its node)
     QString spice;              // the instance's SPICE template
     std::optional<QRectF> valueRect, designatorRect;
     QVector<int> nets;

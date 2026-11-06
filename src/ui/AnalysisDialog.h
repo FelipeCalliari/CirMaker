@@ -4,6 +4,7 @@
 
 #include <QDialog>
 
+class QCheckBox;
 class QComboBox;
 class QLineEdit;
 class QSpinBox;
@@ -28,6 +29,7 @@ private:
     QComboBox* m_type;
     QStackedWidget* m_pages;
     QLineEdit *m_tranStart, *m_tranMax;
+    QCheckBox* m_tranUic;
     QComboBox* m_acSweep;
     QLineEdit *m_tranStop, *m_tranStep, *m_acStart, *m_acStop, *m_dcStart, *m_dcStop, *m_dcStep;
     QSpinBox* m_acPoints;

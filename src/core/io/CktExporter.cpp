@@ -229,7 +229,7 @@ QString trailer(const AnalysisSettings& a)
     const int enabled = had >= 0 && (had & bit) ? had : (had >= 0 ? had & ~0x1d : 2048) | bit;
     // CircuitMaker ends the .OPTIONS line with its own CR LF, inside the string
     QStringList l{a.spiceOptions.trimmed().isEmpty() ? QStringLiteral("0") : str(QStringLiteral(".OPTIONS ") + a.spiceOptions.trimmed() + u'\n'),
-                  QStringLiteral("%1 0 0").arg(enabled), QStringLiteral("0"), QStringLiteral("0"),
+                  QStringLiteral("%1 %2 0").arg(enabled).arg(a.tranUic ? 2 : 0), QStringLiteral("0"), QStringLiteral("0"),
                   str(a.dcSource), QStringList{num(a.dcStart), num(a.dcStop), num(a.dcStep)}.join(u' '),
                   str(a.dcSource2), QStringList{num(a.dcStart2), num(a.dcStop2), num(a.dcStep2)}.join(u' '),
                   QStringLiteral("%1 %2 %3 %4").arg(a.acPointsPerDecade).arg(a.acSweep == u"lin" ? 0 : a.acSweep == u"oct" ? 2 : 1)
@@ -484,6 +484,11 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         }
         if (xs.isEmpty()) { xs = allX; ys = allY; }
         d.origin = xs.isEmpty() ? toCm(c.pos) : QPoint(median(xs), median(ys));
+        // where CircuitMaker had it, while it has not moved
+        if (const QStringList at = c.props.value(QStringLiteral("cmAt")).toString().split(u' ', Qt::SkipEmptyParts); at.size() == 6
+            && QPointF(at[2].toDouble(), at[3].toDouble()) == c.pos && at[4].toInt() == c.rotation && bool(at[5].toInt()) == c.mirrored
+            && (d.origin - QPoint(at[0].toInt(), at[1].toInt())).manhattanLength() <= 4)   // farther: our pins would not meet the wires
+            d.origin = QPoint(at[0].toInt(), at[1].toInt());
         devices << d;
     }
 
@@ -751,7 +756,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         rec << str(name);
         // the fourth number is the propagation delay less one (Edit > Set Prop Delays)
         const int delay = std::clamp(c.props.value(QStringLiteral("delay"), 1).toInt(), 1, 14);
-        rec << join({l.type, d.origin.x(), d.origin.y(), delay - 1, pinMax, std::max(int(pkg.size()) - 1, pinMax + 1)});
+        const int span = c.props.contains(QStringLiteral("cmSpan")) ? c.props.value(QStringLiteral("cmSpan")).toInt()
+                                                                    : std::max(int(pkg.size()) - 1, pinMax + 1);
+        rec << join({l.type, d.origin.x(), d.origin.y(), delay - 1, pinMax, span});
         rec << join(nets);
         if (l.type == 0xc3) rec << QString::number(genBlock.size()) << genBlock.join(u' ');
         // a macro instance names its User.lib macro here, and has a 1 first

@@ -169,6 +169,11 @@ QString NetlistBuilder::nodeName(const Netlist& netlist, int net, const Circuit&
     if (net < 0 || net >= netlist.nets.size()) return {};
     const Net& n = netlist.nets[net];
     if (n.name != QStringLiteral("N%1").arg(net + 1)) return n.name;
+    // an Input / Output that names its node (see CktImporter.cpp: cmSpan)
+    for (const PinRef& p : n.pins)
+        if (const Component* c = circuit.component(p.component); c && !c->label.trimmed().isEmpty()
+            && c->props.value(QStringLiteral("cmSpan")).toInt() >= 19 && (c->symbolId == u"port_in" || c->symbolId == u"port_out"))
+            return c->label.trimmed();
     // the placing order: the second stamp a CircuitMaker file gave the part
     // (a float in a double's low half; none: 0), else after every such part
     auto order = [](const Component& c) -> double {

@@ -38,7 +38,7 @@ QJsonObject analysisToJson(const AnalysisSettings& a)
             {u"paramDevice"_s, a.paramDevice}, {u"paramStart"_s, a.paramStart}, {u"paramStop"_s, a.paramStop},
             {u"paramStep"_s, a.paramStep}, {u"mcRuns"_s, a.mcRuns}, {u"mcTolerance"_s, a.mcTolerance},
             {u"spiceOptions"_s, a.spiceOptions}, {u"cmAnalyses"_s, a.cmAnalyses},
-            {u"tranStart"_s, a.tranStart}, {u"tranMax"_s, a.tranMax}, {u"acSweep"_s, a.acSweep},
+            {u"tranStart"_s, a.tranStart}, {u"tranMax"_s, a.tranMax}, {u"tranUic"_s, a.tranUic}, {u"acSweep"_s, a.acSweep},
             {u"cmOptions"_s, a.cmOptions}, {u"cmSimLine"_s, a.cmSimLine},
             {u"dcSource2"_s, a.dcSource2}, {u"dcStart2"_s, a.dcStart2}, {u"dcStop2"_s, a.dcStop2}, {u"dcStep2"_s, a.dcStep2}};
 }
@@ -103,6 +103,7 @@ AnalysisSettings analysisFromJson(const QJsonObject& o)
     a.cmAnalyses = o.value(u"cmAnalyses").toInt(a.cmAnalyses);
     a.tranStart = o.value(u"tranStart").toString(a.tranStart);
     a.tranMax = o.value(u"tranMax").toString();
+    a.tranUic = o.value(u"tranUic").toBool();
     a.acSweep = o.value(u"acSweep").toString(a.acSweep);
     a.cmOptions = o.value(u"cmOptions").toInt(a.cmOptions);
     a.cmSimLine = o.value(u"cmSimLine").toString();

@@ -830,6 +830,7 @@ QString analysisLine(const AnalysisSettings& a, const Deck& deck, const Netlist&
         QString line = QStringLiteral(".tran %1 %2").arg(a.tranStep, a.tranStop);
         if (start || max) line += u' ' + (start ? a.tranStart : QStringLiteral("0"));
         if (max) line += u' ' + a.tranMax;
+        if (a.tranUic) line += QStringLiteral(" uic");
         return line;
     }
     case AnalysisSettings::Type::AC: {

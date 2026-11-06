@@ -713,6 +713,36 @@ void TestCktImport::exportKeepsNodeNaming()
     // the header's option bits and its Speed line
     QVERIFY(text.contains(QStringLiteral("\n9961472 0\n")));
     QVERIFY(text.contains(QStringLiteral("\n0 0 30 100 10\n")));
+    auto exported = [&](const QString& name, Circuit& c) {
+        if (!CktImporter::import(QFileInfo(path).dir().filePath(name), c, library(), nullptr, nullptr)) return QString();
+        return QString::fromLatin1(CktExporter::write(c, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    };
+    // the transient from the initial conditions (Put: UIC), in the file and the deck
+    {
+        Circuit put;
+        const QString out = exported(QStringLiteral("Put.ckt"), put);
+        QVERIFY(put.analysis().tranUic);
+        QVERIFY(out.contains(QStringLiteral("\n16 2 0\n")));
+        QVERIFY(put.probes().size() == 2);
+    }
+    // a 4.0 file's SAVE- probes go back as 5.x SAVE- parts (CircuitMaker plots them)
+    {
+        Circuit ujt;
+        const QString out = exported(QStringLiteral("Ujt.ckt"), ujt);
+        QVERIFY(out.contains(QStringLiteral("5 SAVE-\n218 105 163 0 10 64\n")));
+        QVERIFY(out.contains(QStringLiteral("\n12 *TRAN 0 5.76\n")));
+    }
+    // Input / Output that name their node keep their number (Vtpwramp: 64, NFB),
+    // and parts that did not move go back where CircuitMaker had them (Diffamp's Q1)
+    {
+        Circuit vt, da;
+        QVERIFY(exported(QStringLiteral("Vtpwramp.ckt"), vt).contains(QStringLiteral("\n6 Input~\n177 122 419 0 17 64\n")));
+        const Netlist nl = NetlistBuilder::build(vt, library());
+        bool named = false;
+        for (int n = 0; n < nl.nets.size(); ++n) named |= NetlistBuilder::nodeName(nl, n, vt, library()) == u"NFB";
+        QVERIFY(named);
+        QVERIFY(exported(QStringLiteral("Diffamp.ckt"), da).contains(QStringLiteral("\n219 199 110 0 3 ")));
+    }
 }
 
 void TestCktImport::importedCounterCounts()

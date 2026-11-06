@@ -2,6 +2,7 @@
 
 #include <QLibrary>
 #include <QMutexLocker>
+#include <QRegularExpression>
 #include <QStringList>
 
 #include <cstring>
@@ -142,9 +143,23 @@ void NgspiceEngine::unload()
 Result NgspiceEngine::run(const QString& netlist)
 {
     Result r = runOnce(netlist);
+    QStringList lines = netlist.split(u'\n');
+    // a transient asked to start from the initial conditions that ngspice
+    // cannot carry through (Put: its time step collapses where CircuitMaker's
+    // SPICE goes on) runs again from the operating point
+    if (!r.ok) {
+        static const QRegularExpression uic(QStringLiteral("\\s+uic\\s*$"), QRegularExpression::CaseInsensitiveOption);
+        QStringList plain = lines;
+        bool had = false;
+        for (QString& l : plain)
+            if (l.startsWith(QStringLiteral(".tran "), Qt::CaseInsensitive) && l.contains(uic)) l.remove(uic), had = true;
+        if (had) {
+            Result again = runOnce(plain.join(u'\n'));
+            if (again.ok) return again;
+        }
+    }
     if (r.ok || !r.error.contains(QStringLiteral("operating point"), Qt::CaseInsensitive))
         return r;
-    QStringList lines = netlist.split(u'\n');
     bool changed = false;
     for (QString& l : lines)
         if (l.startsWith(QStringLiteral(".tran "), Qt::CaseInsensitive) && !l.contains(QStringLiteral("uic"), Qt::CaseInsensitive)) {

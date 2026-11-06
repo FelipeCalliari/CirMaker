@@ -1,5 +1,6 @@
 #include "ui/AnalysisDialog.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -68,6 +69,9 @@ AnalysisDialog::AnalysisDialog(const AnalysisSettings& settings, const QStringLi
     f->addRow(tr("Stop &time:"), m_tranStop);
     f->addRow(tr("Time &step:"), m_tranStep);
     f->addRow(tr("Ma&ximum step:"), m_tranMax);
+    m_tranUic = new QCheckBox(tr("&Use initial conditions (skip the operating point)"));
+    m_tranUic->setChecked(settings.tranUic);
+    f->addRow(m_tranUic);
 
     page(f);
     m_acStart = new QLineEdit(settings.acStart);
@@ -203,6 +207,7 @@ AnalysisSettings AnalysisDialog::result() const
     if (a.type == Type::Transient) {
         a.tranStart = m_tranStart->text().trimmed().isEmpty() ? QStringLiteral("0") : m_tranStart->text().trimmed();
         a.tranMax = m_tranMax->text().trimmed();
+        a.tranUic = m_tranUic->isChecked();
     }
     if (a.type == Type::AC) a.acSweep = m_acSweep->currentData().toString();
     a.dcSource = m_dcSource->currentText();

@@ -141,7 +141,7 @@ Device readDevice(Reader& r, double version)
     d.delay = std::clamp(head[3] + 1, 1, 14);   // stored less one
     const int pinMax = head[4];
     if (modern) {
-        r.integer();
+        d.span = r.integer();
         d.nets = r.ints(pinMax + 1);
         if (d.type == 0xc3) {
             const int n = r.integer();
@@ -178,6 +178,8 @@ Device readDevice(Reader& r, double version)
     const int pins = std::abs(pinMax);
     if (pins > 0 && pkg.size() >= 1 + 2 * pins)
         d.packagePins = pkg.mid(1 + pins, pins), d.partPins = pkg.mid(1, pins), d.packageTable = pkg.mid(1 + pins, pkg.size() - 2 - pins);
+    else if (pins > 0 && pkg.size() >= 2 + pins)
+        d.partPins = pkg.mid(1, pins);              // the part's pins and no table (Put's PUT: "0 1 2 3 0")
     else if (pins > 0 && pkg.size() >= 4)
         d.partPins = pkg.mid(1, (pkg.size() - 2) / 2);  // a shorter map (Scr's generator: 2 of its pins)
     d.misc = r.ints(8);
@@ -284,6 +286,21 @@ std::optional<CktTitle> titleBefore(const QString& d, int listStart)
 
 // The header differs between versions; the device list is the first place
 // where "<count>\n<len> <name>" parses all the way through the text list.
+// A SAVE- part of an older file (4.0) in the 5.x layout: its point, letter,
+// plot ("*TRAN 0 5.76") and ID; CircuitMaker plots it (*PLOT TRAN A=Q1_1)
+QString saveRecord(const Device& d)
+{
+    auto str = [](const QString& s) { return s.isEmpty() ? QStringLiteral("0") : QString::number(s.size()) + u' ' + s; };
+    const QStringList lines = d.raw.split(u'\n', Qt::SkipEmptyParts);
+    const QString id = lines.isEmpty() ? QStringLiteral("0") : lines.back().trimmed().section(u' ', 0, 0);
+    return QStringList{QStringLiteral("5 SAVE-"), QStringLiteral("218 %1 %2 0 10 64").arg(d.x).arg(d.y),
+                       QStringLiteral("0 0 0 0 0 0 0 0 0 0"), QStringLiteral("1"), QStringLiteral("0"), QStringLiteral("0 0 57536 0"),
+                       str(d.value.trimmed()), QStringLiteral("3 -26 10 -18"), QStringLiteral("0"), QStringLiteral("0"), QStringLiteral("0"),
+                       str(d.spice), QStringLiteral("0"), QStringLiteral("0"), QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("0 0"),
+                       QStringLiteral("0 0 0 0 1 0 0 0"), QStringLiteral("0"), id + QStringLiteral(" 0 0"), QStringLiteral("0"), QStringLiteral("0")}
+        .join(u'\n');
+}
+
 CktFile parse(const QByteArray& raw)
 {
     QString d = QString::fromLatin1(raw);
@@ -618,7 +635,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (cmName.endsWith(u'~')) cmName.chop(1);
         // analysis directives and instruments have no schematic meaning here
         if (cmName.startsWith(u"SAVE")) {
-            if (cmName == u"SAVE-") savePoints << CktFile::Probe{d.value.trimmed(), QPointF(d.x, d.y), file.version >= 5.0 ? d.raw : QString()};   // older records differ
+            if (cmName == u"SAVE-") savePoints << CktFile::Probe{d.value.trimmed(), QPointF(d.x, d.y), file.version >= 5.0 ? d.raw : saveRecord(d)};
             continue;
         }
         const SymbolDef* s = library.findByAlias(cmName);
@@ -693,6 +710,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             for (int p : d.packageTable) t << QString::number(p);
             c.props.insert(QStringLiteral("cmPackageTable"), t.join(u' '));
         }
+        // an Input / Output whose number after the pin count is 19 or more
+        // (Vtpwramp's, from CircuitMaker 5.0: 64) names its SPICE node (NFB)
+        if (s && (s->id == u"port_in" || s->id == u"port_out") && d.span != d.nets.size() - 1)
+            c.props.insert(QStringLiteral("cmSpan"), d.span);
         // the part's package pins, which its model may set ("pkg:TO-18 3,2,1"):
         // CircuitMaker names SPICE nodes and probes by them (Q1_3, U1A_3)
         if (!d.partPins.isEmpty() && d.type != 0x5e && std::any_of(d.partPins.cbegin(), d.partPins.cend(), [](int p) { return p > 0; })) {
@@ -943,7 +964,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         QString opts = r.string().simplified();
         if (opts.startsWith(QStringLiteral(".OPTIONS"), Qt::CaseInsensitive)) opts = opts.mid(8).trimmed();
         const int enabled = r.integer();
-        r.ints(4);
+        const bool uic = r.ints(4).value(0) & 2;     // "16 2 0": Use Initial Conditions
         auto num = [&] {
             const double v = r.token().toDouble();
             return QString::number(v, 'g', 6);
@@ -959,6 +980,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         const QString tranStop = num(), tranStep = num(), tranMax = num();
         analysis.acSweep = acType == 0 ? QStringLiteral("lin") : acType == 2 ? QStringLiteral("oct") : QStringLiteral("dec");
         analysis.tranStart = tranStart;
+        analysis.tranUic = uic;
         if (tranMax.toDouble() > 0 && tranMax != tranStep) analysis.tranMax = tranMax;
         analysis.spiceOptions = opts;
         analysis.cmAnalyses = enabled;
@@ -1035,6 +1057,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             for (QPointF p : anchorDeltas[i]) { xs << p.x(); ys << p.y(); }
             placed[i].comp.pos = QPointF(std::round(median(xs) / 10) * 10, std::round(median(ys) / 10) * 10);
         }
+        // CircuitMaker's own position, for export while the part stays put (on
+        // the grid ours can be a unit off, and a probe there would then sit on
+        // a pin: Diffamp's A, a current instead of Q1_3)
+        placed[i].comp.props.insert(QStringLiteral("cmAt"), QStringLiteral("%1 %2 %3 %4 %5 %6").arg(file.devices[i].x).arg(file.devices[i].y)
+                                       .arg(placed[i].comp.pos.x()).arg(placed[i].comp.pos.y()).arg(placed[i].comp.rotation).arg(int(placed[i].comp.mirrored)));
         // text as CircuitMaker showed it: flag 0x200 designator, 0x100 label
         const Device& d = file.devices[i];
         Component& comp = placed[i].comp;
