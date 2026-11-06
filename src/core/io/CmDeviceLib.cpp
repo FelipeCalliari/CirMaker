@@ -38,6 +38,7 @@ public:
         return QString::fromLatin1(m_d.constData() + at, end - at);
     }
     QByteArray mid(qsizetype at, qsizetype n) const { return m_d.mid(at, n); }
+    char at(qsizetype i) const { return i >= 0 && i < m_d.size() ? m_d[i] : '\0'; }
 
 private:
     const QByteArray& m_d;
@@ -56,7 +57,20 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
     QStringList names;
     for (int k = 0; k < pinTotal; ++k) {
         if (!b.has(p, 0x18)) return false;
-        const QPoint at(b.i32(p), b.i32(p + 4));
+        // where the pin is drawn from, then its length and direction: the
+        // wire end is that far out ('+' at 8: a long pin, 12; else 6; the
+        // direction letter at 0x0e: l, r, u, d)
+        QPoint at(b.i32(p), b.i32(p + 4));
+        if (k > 0 && k < pinTotal - 1) {
+            const int reach = b.at(p + 8) == '+' ? 12 : 6;
+            switch (b.at(p + 0x0e)) {
+            case 'l': at.rx() -= reach; break;
+            case 'r': at.rx() += reach; break;
+            case 'u': at.ry() -= reach; break;
+            case 'd': at.ry() += reach; break;
+            default: break;
+            }
+        }
         const int len = b.i32(p + 0x14);
         p += 0x18;
         if (len < 0 || len > 64 || !b.has(p, len)) return false;

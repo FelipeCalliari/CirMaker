@@ -634,6 +634,20 @@ void TestCktImport::exportKeepsNodeNaming()
     QVERIFY(order.size() > 40);
     // kept as the file had them: rising, about one apart
     for (int k = 0; k < order.size(); ++k) QVERIFY(std::abs(order[k] - float(k)) < 0.01f);
+    // parts where CircuitMaker had them: a Device.lib pin is drawn from its
+    // point, 6 (or 12, '+') out in its direction (+V's wire end is 12 below)
+    // (within one unit: our grid rounds the wires)
+    auto near = [&](int type, int x, int y) {
+        const QRegularExpression at(QStringLiteral("\\n%1 (-?\\d+) (-?\\d+) 0 1 ").arg(type));
+        for (auto it = at.globalMatch(text); it.hasNext();) {
+            const auto m = it.next();
+            if (std::abs(m.captured(1).toInt() - x) <= 1 && std::abs(m.captured(2).toInt() - y) <= 1) return true;
+        }
+        return false;
+    };
+    QVERIFY(near(167, 150, 257));
+    QVERIFY(near(167, 425, 306));
+    QVERIFY(near(168, 19, 346));
     // Q1's package pins as its model gives them
     QVERIFY(text.contains(QStringLiteral("\n2 Q1\n")));
     QVERIFY(text.contains(QStringLiteral("5 TO-18\n7\n0 3 2 1 3 2 1 0\n")));
