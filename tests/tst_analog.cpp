@@ -263,6 +263,18 @@ void TestAnalog::invertingAmplifier()
     QVERIFY2(res.ok, qPrintable(res.error));
     const double out = res.last(QStringLiteral("out")).value();
     QVERIFY2(qAbs(out + 1.0) < 0.01, qPrintable(QString::number(out)));
+
+    // labelled UA741: CircuitMaker's own subcircuit, nodes in its pin order
+    if (cmmodels::findSubckt(QStringLiteral("UA741")).lines.isEmpty()) return;
+    Component op = *c.component(u);
+    op.label = QStringLiteral("UA741");
+    c.updateComponent(op);
+    spice::Deck deck;
+    const spice::Result res741 = simulate(c, &deck);
+    QVERIFY2(deck.text.contains(QStringLiteral("CM_UA741")), qPrintable(deck.text));
+    QVERIFY2(res741.ok, qPrintable(res741.error));
+    const double out741 = res741.last(QStringLiteral("out")).value();
+    QVERIFY2(qAbs(out741 + 1.0) < 0.02, qPrintable(QString::number(out741)));
 }
 
 void TestAnalog::mixedModeInverter()

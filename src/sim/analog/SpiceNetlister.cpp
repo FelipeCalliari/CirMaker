@@ -228,7 +228,7 @@ private:
         if (!own.isEmpty() || !s.spice.isEmpty()) {
             QJsonObject spice = variant(c, s);
             QString line = own.isEmpty() ? spice.value(u"line").toString() : own;
-            if (own.isEmpty()) labelledModel(c, line, spice);
+            if (own.isEmpty() && !labelledSubckt(c, s, line, spice)) labelledModel(c, line, spice);
             emitTemplate(c, s, name, line, spice);
             noteCurrent(c, line.left(1), name);
             if (line.startsWith(u'V'))
@@ -289,6 +289,38 @@ private:
     // A semiconductor labelled with a model CircuitMaker has (2N2222, 1N4001,
     // IRF540): that model, from the installation's Models folder, in place
     // of the part's default one when it is of the same kind.
+    // A subcircuit part (op-amp) labelled with one of CircuitMaker's
+    // subcircuits (UA741): that subcircuit, its nodes in CircuitMaker's pin
+    // order, as CircuitMaker's "%D %1 %2 %3 %4 %5 %S" passes them.
+    bool labelledSubckt(const Component& c, const SymbolDef& s, QString& line, QJsonObject& spice)
+    {
+        const QJsonArray sub = spice.value(u"subckt").toArray();
+        if (sub.isEmpty() || !line.startsWith(QStringLiteral("X{name} ")) || line.contains(u'\n')) return false;
+        static const QRegularExpression head(QStringLiteral("^\\.subckt\\s+(\\S+)"), QRegularExpression::CaseInsensitiveOption);
+        const auto h = head.match(sub.first().toString());
+        if (!h.hasMatch() || !line.endsWith(u' ' + h.captured(1))) return false;
+        const QString label = c.label.trimmed();
+        if (label.isEmpty() || label.compare(h.captured(1), Qt::CaseInsensitive) == 0) return false;
+        if (!c.props.value(QStringLiteral("spiceModels")).toString().trimmed().isEmpty()) return false;
+        QStringList pins;
+        for (const QString& p : s.cmPins)
+            if (!p.isEmpty()) pins << u'{' + p + u'}';
+        const cmmodels::Subckt sc = cmmodels::findSubckt(label);
+        if (sc.lines.isEmpty() || sc.nodes != pins.size()) return false;
+        QString own = QStringLiteral("CM_") + sc.name;
+        own.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9_]")), QStringLiteral("_"));
+        line = QStringLiteral("X{name} ") + pins.join(u' ') + u' ' + own;
+        QJsonArray lines;
+        for (QString l : sc.lines) {
+            if (lines.isEmpty())
+                l.replace(QRegularExpression(QStringLiteral("^(\\.subckt\\s+)\\S+"), QRegularExpression::CaseInsensitiveOption), QStringLiteral("\\1") + own);
+            lines << l;
+        }
+        spice.insert(QStringLiteral("subckt"), lines);
+        spice.insert(QStringLiteral("models"), QJsonArray{});
+        return true;
+    }
+
     void labelledModel(const Component& c, QString& line, QJsonObject& spice)
     {
         const QJsonArray models = spice.value(u"models").toArray();

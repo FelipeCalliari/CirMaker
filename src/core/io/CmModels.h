@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 
 namespace cm {
 
@@ -17,6 +18,16 @@ struct Model {
 // The model of this name (case ignored), or an empty Model; the Models
 // folder beside the Device.lib that CmDeviceLib::locate finds.
 Model find(const QString& name);
+
+// A subcircuit of the Models folder: its node count and lines (.SUBCKT ..
+// .ENDS), followed by the folder's .MODEL statements the body names.
+struct Subckt {
+    QString name;
+    int nodes = 0;
+    QStringList lines;
+    bool packaged = false;      // under a CircuitMaker "pkg:" comment
+};
+Subckt findSubckt(const QString& name);
 
 } // namespace cmmodels
 } // namespace cm
