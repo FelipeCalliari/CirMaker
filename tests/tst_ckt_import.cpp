@@ -5,6 +5,7 @@
 #include "core/io/CmDeviceLib.h"
 #include "core/io/CmUserLib.h"
 #include "library/Macros.h"
+#include "core/WireGeometry.h"
 
 #include <QDirIterator>
 #include <functional>
@@ -35,6 +36,7 @@ private slots:
     void logicDisplayColours();
     void signalGenerators();
     void simExample();
+    void importsProbes();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -536,6 +538,23 @@ void TestCktImport::simExample()
     QSet<int> seen;
     for (int t = 0; t < 400; ++t) { b.sim.step(1); seen << count(); }
     QVERIFY2(seen.size() >= 5, "counts once PE is off");
+}
+
+// The waveform probes of the header land on the wires they marked.
+void TestCktImport::importsProbes()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Mixed93.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    QCOMPARE(c.probes().size(), 5);                 // Clk, Q0..Q3
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QSet<int> nets;
+    for (QPointF p : c.probes())
+        for (const Wire& w : c.wires())
+            if (!w.bus && WireGeometry::onPolyline(p, w.points)) { nets << nl.wireNet.value(w.id); break; }
+    QCOMPARE(nets.size(), 5);                       // each on a wire, all different nets
 }
 
 void TestCktImport::importedCounterCounts()

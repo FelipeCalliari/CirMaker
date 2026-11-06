@@ -57,6 +57,10 @@ struct CktFile {
     std::optional<int> options;
     // what follows the text list: the analysis setup (see CktImporter.cpp)
     QString trailer;
+    // waveform probes of the header ("Probes: 2", then name, analysis and
+    // "index x y colour" each)
+    struct Probe { QString name; QPointF at; };
+    QVector<Probe> probes;
     QVector<Device> devices;
     QVector<CktWire> wires;
     QVector<CktText> texts;

@@ -45,6 +45,7 @@ private slots:
     void miscPartsSimulate();
     void importsSpiceNetlist();
     void labelledModels();
+    void mixedRippleCounter();
     void controlledSources_data();
     void controlledSources();
     void converters();
@@ -936,6 +937,52 @@ void TestAnalog::labelledModels()
     QVERIFY2(deck.text.contains(QStringLiteral(" CM_2N2222A\n")), qPrintable(deck.text));
     QVERIFY2(deck.text.contains(QStringLiteral(".MODEL CM_2N2222A NPN(")), qPrintable(deck.text));
     QVERIFY2(deck.text.contains(QStringLiteral(" Q2N3904\n")), qPrintable(deck.text));
+}
+
+// CircuitMaker's Mixed93.ckt in mixed mode: the 74112 ripple counter on a
+// 10 MHz clock, each stage at half the rate of the one before.
+void TestAnalog::mixedRippleCounter()
+{
+    requireEngine();
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Mixed93.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QVector<ItemId> ffs;
+    ItemId gen = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"jkff_pcn") ffs << comp.id;
+        if (comp.symbolId == u"siggen") gen = comp.id;
+    }
+    QCOMPARE(ffs.size(), 4);
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error));
+    auto rises = [&](int net) {
+        const spice::Vector* v = r.find(deck.nodeOfNet.value(net));
+        if (!v) return -1;
+        int n = 0;
+        for (int k = 1; k < v->real.size(); ++k) n += v->real[k - 1] < 2.5 && v->real[k] >= 2.5;
+        return n;
+    };
+    const SymbolDef* ff = library().find(QStringLiteral("jkff_pcn"));
+    // stage order: the clock drives the first, each Q the next one's clock
+    QVector<int> order;
+    int clockNet = nl.netOf(gen, library().find(QStringLiteral("siggen"))->pinIndex(QStringLiteral("+")));
+    QStringList counts{QString::number(rises(clockNet))};
+    for (int stage = 0; stage < 4; ++stage)
+        for (ItemId f : ffs)
+            if (nl.netOf(f, ff->pinIndex(QStringLiteral("~CLK"))) == clockNet) {
+                clockNet = nl.netOf(f, ff->pinIndex(QStringLiteral("Q")));
+                counts << QString::number(rises(clockNet));
+                break;
+            }
+    qInfo("rising edges: clock, Q0..Q3 = %s", qPrintable(counts.join(u' ')));
+    QCOMPARE(counts.size(), 5);
+    for (int k = 1; k < 5; ++k)
+        QVERIFY2(qAbs(counts[k].toInt() * 2 - counts[k - 1].toInt()) <= 1, qPrintable(counts.join(u' ')));
 }
 
 void TestAnalog::importsSpiceNetlist()

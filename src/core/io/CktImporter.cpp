@@ -286,6 +286,20 @@ CktFile parse(const QByteArray& raw)
     const double version = head[1].trimmed().toDouble(&ok);
     if (!ok) throw ParseError("unreadable version");
     if (version > 5.61) throw ParseError("version newer than CircuitMaker 2000 (5.61)");
+    QVector<CktFile::Probe> probes;
+    {
+        const QStringList lines = d.left(4000).split(u'\n');
+        static const QRegularExpression count(QStringLiteral("^Probes:\\s*(\\d+)"));
+        for (int i = 0; i < std::min<qsizetype>(lines.size(), 6); ++i)
+            if (const auto m = count.match(lines[i].trimmed()); m.hasMatch()) {
+                const int n = m.captured(1).toInt();
+                for (int k = 0; k < n && i + 3 + 3 * k < lines.size(); ++k) {
+                    const QStringList v = lines[i + 3 + 3 * k].split(u' ', Qt::SkipEmptyParts);
+                    if (v.size() >= 3) probes << CktFile::Probe{lines[i + 1 + 3 * k].trimmed(), QPointF(v[1].toDouble(), v[2].toDouble())};
+                }
+                break;
+            }
+    }
 
     static const QRegularExpression candidate(QStringLiteral("(?m)^(\\d+)\\n(\\d+) "));
     QString lastError = QStringLiteral("device list not found");
@@ -294,6 +308,7 @@ CktFile parse(const QByteArray& raw)
         if (m.captured(1).toInt() <= 0) continue;
         try {
             CktFile f = parseAt(d, int(m.capturedStart()), version);
+            f.probes = probes;
             f.title = titleBefore(d, int(m.capturedStart()));
             static const QRegularExpression options(QStringLiteral("(?m)^(\\d{6,}) -?\\d+\\s*$"));
             for (auto o = options.globalMatch(d.left(int(m.capturedStart()))); o.hasNext();)
@@ -1329,6 +1344,28 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     rep.components = int(file.devices.size());
     rep.wires = int(file.wires.size());
     rep.texts = int(file.texts.size());
+    // waveform probes, on the nearest wire of the redrawn circuit
+    if (!file.probes.isEmpty()) {
+        QVector<QPointF> points;
+        for (const CktFile::Probe& p : file.probes) {
+            const QPointF want = scaled(p.at);
+            QPointF best = want;
+            double bestDist = 40;
+            for (const Wire& w : circuit.wires()) {
+                if (w.bus) continue;
+                for (int k = 0; k + 1 < w.points.size(); ++k) {
+                    const QPointF a = w.points[k], b = w.points[k + 1];
+                    const QPointF ab = b - a;
+                    const double len2 = QPointF::dotProduct(ab, ab);
+                    const double t = len2 > 0 ? std::clamp(QPointF::dotProduct(want - a, ab) / len2, 0.0, 1.0) : 0;
+                    const QPointF q = a + ab * t;
+                    if (const double dd = QLineF(q, want).length(); dd < bestDist) bestDist = dd, best = q;
+                }
+            }
+            points << best;
+        }
+        circuit.setProbes(points);
+    }
     if (qEnvironmentVariableIsSet("CM_TRAILER"))
         qInfo("TRAILER %s", qPrintable(file.trailer.simplified().left(700)));
     if (drawn)
