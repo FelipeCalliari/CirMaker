@@ -696,6 +696,20 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             }
             pkg << own << own << 0;
         }
+        // what the file had after the pins, where we write nothing there
+        // ourselves: a relay's nets[10] = 1 (without it CircuitMaker joins
+        // its contact to the coil), a resistor's hidden third entry
+        if (const QStringList kept = c.props.value(QStringLiteral("cmNetsTail")).toString().split(u' ', Qt::SkipEmptyParts);
+            !kept.isEmpty() && nets.size() == l.pinCount + 1) {
+            const int origMax = kept.first().toInt();
+            if (origMax + 1 < nets.size()) {
+                bool zeros = true;
+                for (int k = origMax + 1; k < nets.size(); ++k) zeros = zeros && nets[k] == 0;
+                if (zeros) nets.resize(origMax + 1);
+            } else {
+                for (int k = 1; k < kept.size(); ++k) nets << kept[k].toInt();
+            }
+        }
         const int pinMax = int(nets.size()) - 1;
 
         // text: what is shown, and where (rectangles relative to the origin)
@@ -759,13 +773,16 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             << str(c.props.value(QStringLiteral("cmPackage"), l.package).toString());
         rec << QString::number(pkg.size() - 1) << join(pkg);
         const QStringList modelAt = c.props.value(QStringLiteral("cmModelAt")).toString().split(u' ', Qt::SkipEmptyParts);
-        rec << join({l.code & 0xffff, 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
+        rec << join({c.props.value(QStringLiteral("cmCode"), l.code & 0xffff).toInt(), 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);
         rec << join({i + 1, 0, 0});
-        // the stamps as read; a file of 5.5 or older has none, and 5.6 needs
-        // them (CircuitMaker fails opening Scr.ckt written without), so it gets ours
-        if (const QStringList st = c.props.value(QStringLiteral("cmStamp")).toString().split(u' ', Qt::SkipEmptyParts); st.size() == 2) {
+        // the stamps as read, none where the file had none (older files:
+        // CircuitMaker then names nodes its own way); ours for new parts
+        const QVariant keptStamp = c.props.value(QStringLiteral("cmStamp"));
+        if (const QStringList st = keptStamp.toString().split(u' ', Qt::SkipEmptyParts); st.size() == 2) {
             rec << QStringLiteral("2") << st.join(u' ') << QStringLiteral("0");
+        } else if (keptStamp.isValid() && st.isEmpty()) {
+            rec << QStringLiteral("0") << QStringLiteral("0");
         } else {
             // parts without a designator (grounds) last: CircuitMaker fails
             // when one of them is the earliest on a net (Math1.ckt)
@@ -810,10 +827,27 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 pin[e] = be.code;
                 onWire[e] = be.bus + 1;
             }
+            // the pin at the end, of the wire's own net: a pin merely near
+            // (a relay's are 7 apart, a fuse's free end beside a supply wire)
+            // must not join two nets
+            const int wireNet = netlist.wireNet.value(wireIds[i], -1);
+            auto otherPinAt = [&](QPointF at, int notDev, int notPin) {
+                for (int j = 0; j < devices.size(); ++j)
+                    for (int k = 1; k <= devices[j].lib->pinCount; ++k)
+                        if ((j != notDev || k != notPin) && devices[j].ourPin[k - 1] >= 0
+                            && WireGeometry::near(library.pinScenePos(*devices[j].c, devices[j].ourPin[k - 1]), at)
+                            && (wireNet < 0 || netlist.netOf(devices[j].c->id, devices[j].ourPin[k - 1]) == wireNet))
+                            return true;
+                return false;
+            };
             for (int j = 0; j < devices.size() && !found; ++j) {
                 const Device& d = devices[j];
                 for (int k = 1; k <= d.lib->pinCount && !found; ++k) {
                     if (d.ourPin[k - 1] < 0 || !WireGeometry::near(library.pinScenePos(*d.c, d.ourPin[k - 1]), end)) continue;
+                    if (wireNet >= 0 && netlist.netOf(d.c->id, d.ourPin[k - 1]) != wireNet) continue;
+                    // a wire of one point joins two pins there: its second
+                    // end takes another one than its first (R13 to IC2)
+                    if (e == 1 && dev[0] == j + 1 && pin[0] == k && otherPinAt(end, j, k)) continue;
                     found = true;
                     pin[e] = k;
                     dev[e] = j + 1;

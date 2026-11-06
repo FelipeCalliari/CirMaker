@@ -708,6 +708,21 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // CircuitMaker takes the model from the value, X12VSPDT)
         if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.kind.trimmed() != dev->kind.trimmed() && !c.props.contains(QStringLiteral("cmKind")))
             c.props.insert(QStringLiteral("cmKind"), d.kind);
+        // the numbers after its pins (state and marks CircuitMaker keeps
+        // there) and how many it had; not uninitialised memory (64 of
+        // 0xFDFDFDFD), not where we keep a state of our own
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.type != 0xc3 && d.nets.size() != dev->pinCount + 1) {
+            const QVector<int> tail = d.nets.mid(dev->pinCount + 1);
+            if (!tail.contains(-33686019)) {
+                QStringList t{QString::number(d.nets.size() - 1)};
+                for (int v : tail) t << QString::number(v);
+                c.props.insert(QStringLiteral("cmNetsTail"), t.join(u' '));
+            }
+        }
+        // its SPICE letter (the first of the 8 numbers): 0 leaves it out of
+        // CircuitMaker's simulation (Audioamp's spare -Vcc supplies)
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.misc.size() == 8 && d.misc[0] != (dev->code & 0xffff))
+            c.props.insert(QStringLiteral("cmCode"), d.misc[0]);
         // its power pins where its model has others than the library's
         // (a CMOS 4025's DVDD): CircuitMaker powers the digital parts by them
         if (const CmLibDevice* dev = deviceLib().find(d.name); dev && d.power.trimmed() != dev->power.trimmed())

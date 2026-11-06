@@ -1656,6 +1656,11 @@ void TestAnalog::importedExamplesSimulate()
         Circuit c;
         CktImportReport report;
         QVERIFY(CktImporter::import(path, c, library(), &report, nullptr));
+        // digital ones and those skipped below, their decks still go to CM_EXAMPLE_DECK_DIR
+        if (const QString dir = qEnvironmentVariable("CM_EXAMPLE_DECK_DIR"); !dir.isEmpty()) {
+            QFile out(dir + u'/' + QFileInfo(path).completeBaseName() + QStringLiteral(".cir"));
+            if (out.open(QIODevice::WriteOnly)) out.write(spice::build(c, library(), NetlistBuilder::build(c, library())).text.toUtf8());
+        }
         if (!c.analysis().analogMode)
             continue;
         if (!report.unmapped.isEmpty()) {
@@ -1694,6 +1699,11 @@ void TestAnalog::importedExamplesSimulate()
         // CM_EXAMPLE_DECK=<file name>: print that example's deck
         if (QFileInfo(path).fileName() == qEnvironmentVariable("CM_EXAMPLE_DECK"))
             qInfo("%s", qPrintable(deck.text));
+        // CM_EXAMPLE_DECK_DIR=<dir>: every deck to <dir>/<name>.cir (to compare with CircuitMaker's)
+        if (const QString dir = qEnvironmentVariable("CM_EXAMPLE_DECK_DIR"); !dir.isEmpty()) {
+            QFile out(dir + u'/' + QFileInfo(path).completeBaseName() + QStringLiteral(".cir"));
+            if (out.open(QIODevice::WriteOnly)) out.write(deck.text.toUtf8());
+        }
     }
     qInfo("analog examples: %d simulated, %d ok, %d skipped (parts without equivalent, not for simulation)", ran, okCount, skipped);
     for (const QString& f : std::as_const(failures))
