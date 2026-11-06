@@ -459,7 +459,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             value.clear();
         } else if (name == u"Hex Key~") {
             const int v = std::clamp(c.props.value(QStringLiteral("value")).toInt(), 0, 15);
-            nets << 0 << 0 << 0 << 0 << 0 << v << (v < 10 ? '0' + v : 'A' + v - 10);
+            nets.resize(10);                            // the value in nets[10], its character in nets[11]
+            nets << v << (v < 10 ? '0' + v : 'A' + v - 10);
             value.clear();
         } else if (name == u"Ascii Key~") {
             nets.resize(9);
@@ -706,8 +707,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         for (const QString& l : lines) longest = std::max(longest, int(l.size()));
         const QPoint at = toCm(t.pos);
         const QRect box(at, QSize(std::max(1, longest * height / 2) + 6, int(lines.size()) * height + 6));
+        // "<colour> 0 0 <length>": CircuitMaker draws only <length> characters
         textRecords << join({height, height / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54}) + u'\n' + str(QStringLiteral("Courier New"))
-                           + QStringLiteral("\n0 0 0 1\n") + rect(box) + u'\n' + rect(box.adjusted(3, 2, -3, -2)) + u'\n'
+                           + QStringLiteral("\n0 0 0 %1\n").arg(int(t.text.size() + lines.size() - 1)) + rect(box) + u'\n' + rect(box.adjusted(3, 2, -3, -2)) + u'\n'
                            + str(t.text);
     }
 

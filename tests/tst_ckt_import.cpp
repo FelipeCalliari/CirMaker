@@ -34,6 +34,7 @@ private slots:
     void digitalSweep();
     void symbolPinGeometry();
     void propagationDelaysRoundTrip();
+    void keysAndTextsRoundTrip();
     void busEntriesAtOnePoint();
 
 private:
@@ -490,6 +491,39 @@ void TestCktImport::propagationDelaysRoundTrip()
         delays.insert(comp.designator.left(2), comp.props.value(QStringLiteral("delay"), 1).toInt());
     QCOMPARE(delays.value(QStringLiteral("U1")), 7);
     QCOMPARE(delays.value(QStringLiteral("U2")), 1);
+}
+
+// Key values and free texts survive export: CircuitMaker reads the key's
+// character from nets[11] and draws only as many characters as a text's
+// record says.
+void TestCktImport::keysAndTextsRoundTrip()
+{
+    const QString libPath = CmDeviceLib::locate();
+    if (libPath.isEmpty())
+        QSKIP("CircuitMaker 2000 is not installed");
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(libPath));
+    Circuit a;
+    const ItemId hex = place(a, QStringLiteral("hexkey"), {0, 0}, QStringLiteral("U1"));
+    Component h = *a.component(hex);
+    h.props.insert(QStringLiteral("value"), 11);
+    a.updateComponent(h);
+    const ItemId ascii = place(a, QStringLiteral("asciikey"), {300, 0}, QStringLiteral("U2"));
+    Component k = *a.component(ascii);
+    k.props.insert(QStringLiteral("value"), int('Q'));
+    a.updateComponent(k);
+    a.addText({0, {0, 300}, QStringLiteral("Start\nDelay"), 12});
+    const QByteArray data = CktExporter::write(a, library(), cmLib);
+    QVERIFY2(data.contains("0 0 0 12\r\n"), "text length not recorded");
+    Circuit b;
+    QVERIFY(CktImporter::importData(data, b, library(), nullptr, nullptr));
+    QHash<QString, int> values;
+    for (const Component& comp : b.components())
+        values.insert(comp.symbolId, comp.props.value(QStringLiteral("value"), -1).toInt());
+    QCOMPARE(values.value(QStringLiteral("hexkey")), 11);
+    QCOMPARE(values.value(QStringLiteral("asciikey")), int('Q'));
+    QCOMPARE(b.texts().size(), 1);
+    QCOMPARE(b.texts().first().text, QStringLiteral("Start\nDelay"));
 }
 
 // Diagnostic (CM_PIN_GEOMETRY=1): symbols whose pins are not where
