@@ -486,11 +486,11 @@ def dual_flipflops():
 
 
 def keypad():
-    rows = [-90, -30, 30, 90]
+    rows = [-70, -20, 20, 70]          # CircuitMaker's +-22 and +-7 units
     return {'id': 'keypad4x4', 'name': '4x4 Switch', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['4x4 Switch'],
             'cmPins': ['R0', 'R1', 'R2', 'R3', 'C3', 'C0', 'C1', 'C2'], 'model': {'kind': 'keymatrix'},
             'description': 'Key matrix: holding a key connects its row to its column',
-            'graphics': [R(-120, -120, 240, 240)] + [L(-150, y, -120, y) for y in rows] + [L(x, 120, x, 150) for x in rows],
+            'graphics': [R(-100, -100, 200, 200)] + [L(-150, y, -100, y) for y in rows] + [L(x, 100, x, 150) for x in rows],
             'pins': [pin(f'R{i}', -150, y) for i, y in enumerate(rows)] + [pin(f'C{i}', x, 150) for i, x in enumerate(rows)]}
 
 
@@ -1349,9 +1349,9 @@ def inputs():
         {'id': 'pb_spdt', 'name': 'SPDT PB', 'prefix': 'S', 'display': 'button', 'aliases': ['SPDT PB'],
          'cmPins': ['C', 'NC', 'NO'], 'model': {'kind': 'link', 'type': 'spdt'},
          'description': 'Change-over push button: C-NC at rest, C-NO while held',
-         'graphics': [C(15, 0, 3), L(18, 0, 40, 0), C(-15, 0, 3), L(-30, 0, -18, 0), C(-15, 20, 3), L(-30, 20, -18, 20),
-                      T('NC', -15, -9, 6), T('NO', -15, 29, 6)],
-         'pins': [pin('C', 40, 0), pin('NC', -30, 0), pin('NO', -30, 20)]},
+         'graphics': [C(15, 0, 3), L(18, 0, 40, 0), C(-15, 0, 3), L(-30, 0, -18, 0), C(-15, 50, 3), L(-30, 50, -18, 50),
+                      T('NC', -15, -9, 6), T('NO', -15, 59, 6)],
+         'pins': [pin('C', 40, 0), pin('NC', -30, 0), pin('NO', -30, 50)]},   # NO 14 units below NC, as in CircuitMaker
         {'id': 'spdt', 'name': 'SPDT Switch', 'prefix': 'S', 'display': 'spst', 'aliases': ['SPDT Switch'],
          'cmPins': ['C', 'NC', 'NO'], 'model': {'kind': 'link', 'type': 'spdt'}, 'props': {'closed': 0},
          'description': 'Change-over switch: click during simulation to move C from NC to NO and back',
@@ -1451,10 +1451,10 @@ def outputs():
          'model': {'kind': 'led'}, 'spice': sp('D{name} {A} {K} DLED', 'DLED'),
          'props': {'color': 'red'}, 'choices': {'color': ['red', 'green', 'yellow', 'blue', 'orange', 'white']},
          'description': 'Lights when the anode is high and the cathode low; colour in the properties',
-         'graphics': [L(0, -30, 0, -10), P('M -12 -10 L 12 -10 L 0 10 Z'), L(-12, 10, 12, 10), L(0, 10, 0, 30),
-                      L(14, -6, 26, -18), P('M 21 -18 L 26 -18 L 26 -13'),
-                      L(18, 2, 30, -10), P('M 25 -10 L 30 -10 L 30 -5')],
-         'pins': [pin('A', 0, -30, 'in'), pin('K', 0, 30, 'in')]},
+         'graphics': [L(0, -20, 0, -8), P('M -10 -8 L 10 -8 L 0 6 Z'), L(-10, 6, 10, 6), L(0, 6, 0, 10),
+                      L(12, -8, 22, -18), P('M 17 -18 L 22 -18 L 22 -13'),
+                      L(15, -1, 25, -11), P('M 20 -11 L 25 -11 L 25 -6')],
+         'pins': [pin('A', 0, -20, 'in'), pin('K', 0, 10, 'in')]},   # 8 units apart in CircuitMaker
         {'id': 'stoplight', 'name': 'StopLight', 'prefix': 'L', 'display': 'stoplight', 'aliases': ['StopLight'],
          'cmPins': ['D0', 'D1', 'D2'], 'model': {'kind': 'display', 'bits': 3},
          'description': 'Traffic light: D0 red, D1 yellow, D2 green',

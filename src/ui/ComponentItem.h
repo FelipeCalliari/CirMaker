@@ -27,6 +27,7 @@ public:
     QRectF bodyRect() const;
     // Which hex-key cell (0..15) is under a local point, or -1.
     int hexKeyAt(QPointF local) const;
+    int keyRow(int row) const;
     // Designator (0) or label (1) text under a scene point, -1 if none; its
     // anchor as stored in Component::designatorAt/labelAt (centre of the
     // baseline, scene orientation, relative to pos()).

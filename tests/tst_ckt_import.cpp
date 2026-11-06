@@ -24,6 +24,7 @@ private slots:
     void rejectsOtherFiles();
     void importsAllCircuits();
     void importedCounterCounts();
+    void keypadExampleShowsKey();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -117,6 +118,35 @@ void TestCktImport::importsAllCircuits()
     for (auto it = unmapped.cbegin(); it != unmapped.cend(); ++it)
         missing << QStringLiteral("%1 x%2").arg(it.key()).arg(it.value());
     qInfo("unmapped: %s", qPrintable(missing.join(QStringLiteral(", "))));
+}
+
+// CircuitMaker's 4x4.ckt scans its key matrix and latches the key pressed
+// into a hex display: every key shows its own digit.
+void TestCktImport::keypadExampleShowsKey()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/4x4.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    ItemId hex = 0, keys = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"hexdisplay") hex = comp.id;
+        if (comp.symbolId == u"keypad4x4") keys = comp.id;
+    }
+    QVERIFY(hex && keys);
+    Bench bench(c);
+    QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(bench.sim.warnings().join(u'\n')));
+    QStringList wrong;
+    for (int k : {0, 5, 0xA, 0xF, 3, 0xC}) {
+        bench.sim.interact(keys, QStringLiteral("key"), k);
+        bench.sim.step(30000);
+        if (bench.sim.componentState(hex) != k)
+            wrong << QStringLiteral("%1 shows %2").arg(k, 0, 16).arg(bench.sim.componentState(hex), 0, 16);
+        bench.sim.interact(keys, QStringLiteral("release"));
+        bench.sim.step(500);
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join(u", ")));
 }
 
 void TestCktImport::importedCounterCounts()
@@ -619,7 +649,7 @@ void TestCktImport::symbolPinGeometry()
         }
         if (!bad.isEmpty())
             qInfo("%s [%s]: %lld of %lld pins off: %s", qPrintable(s->id), qPrintable(d->name), qsizetype(bad.size()),
-                  qsizetype(ours.size() - 1), qPrintable(bad.mid(0, 3).join(u"; ")));
+                  qsizetype(ours.size() - 1), qPrintable(bad.mid(0, qEnvironmentVariableIsSet("CM_PIN_DEVICE") ? bad.size() : 3).join(u"; ")));
     }
 }
 

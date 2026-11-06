@@ -600,7 +600,10 @@ void TestChips::keypadConnects()
     label(c, k, QStringLiteral("C2"), QStringLiteral("COL2"));
     Bench b(c);
     QCOMPARE(b.sim.componentState(lamp), 0);
-    b.sim.interact(k, QStringLiteral("key"), 1 * 4 + 2);
+    b.sim.interact(k, QStringLiteral("key"), 6);        // CircuitMaker's layout: 6 is on R2, not R1
+    QCOMPARE(b.sim.componentState(lamp), 0);
+    b.sim.interact(k, QStringLiteral("release"));
+    b.sim.interact(k, QStringLiteral("key"), 0xA);      // R1 holds 8-B; C2 is the third column
     QCOMPARE(b.sim.componentState(lamp), 1);
     b.sim.interact(k, QStringLiteral("release"));
     QCOMPARE(b.sim.componentState(lamp), 0);

@@ -1140,7 +1140,8 @@ public:
     QVector<LinkPath> links() const override
     {
         if (m_key < 0) return {};
-        return {{m_rows.value(m_key / 4, -1), m_cols.value(m_key % 4, -1)}};
+        // key k: rows R0 (top, keys C-F) to R3 (bottom, keys 0-3), as in CircuitMaker
+        return {{m_rows.value(3 - m_key / 4, -1), m_cols.value(m_key % 4, -1)}};
     }
     int state() const override { return m_key; }
 

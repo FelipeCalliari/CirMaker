@@ -146,6 +146,12 @@ QRectF ComponentItem::bodyRect() const
     return m_symbol->bounds;
 }
 
+// CircuitMaker's 4x4 key matrix has 0-3 on the bottom row, C-F on top
+int ComponentItem::keyRow(int row) const
+{
+    return m_symbol->model.value(u"kind").toString() == u"keymatrix" ? 3 - row : row;
+}
+
 int ComponentItem::hexKeyAt(QPointF local) const
 {
     const QRectF b = bodyRect();
@@ -153,7 +159,7 @@ int ComponentItem::hexKeyAt(QPointF local) const
         return -1;
     const int col = std::clamp(int((local.x() - b.left()) / (b.width() / 4)), 0, 3);
     const int row = std::clamp(int((local.y() - b.top()) / (b.height() / 4)), 0, 3);
-    return row * 4 + col;
+    return keyRow(row) * 4 + col;
 }
 
 void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
@@ -170,7 +176,9 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
         state = m_c.props.value(QStringLiteral("state"), m_symbol->defaultProps.value(QStringLiteral("state"))).toInt();
     } else if (m_symbol->display == u"spst" || m_symbol->display == u"window") {
         state = m_c.props.value(QStringLiteral("closed"), m_symbol->defaultProps.value(QStringLiteral("closed"))).toInt();
-    } else if (m_symbol->display == u"hexkey" || m_symbol->display == u"asciikey") {
+    } else if ((m_symbol->display == u"hexkey" && m_symbol->model.value(u"kind").toString() != u"keymatrix")
+               || m_symbol->display == u"asciikey") {
+        // a key matrix holds no key until one is pressed while simulating
         state = m_c.props.value(QStringLiteral("value"), m_symbol->defaultProps.value(QStringLiteral("value"))).toInt();
     }
 
@@ -409,7 +417,7 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
     } else if (d == u"hexkey") {
         const double cw = body.width() / 4, ch = body.height() / 4;
         for (int k = 0; k < 16; ++k) {
-            const QRectF cell(body.left() + (k % 4) * cw, body.top() + (k / 4) * ch, cw, ch);
+            const QRectF cell(body.left() + (k % 4) * cw, body.top() + keyRow(k / 4) * ch, cw, ch);
             p->setPen(QPen(ink, 0.8));
             p->setBrush(state == k ? QColor(0xff, 0xd0, 0x40) : QColor(0xf4, 0xf4, 0xf4));
             p->drawRect(cell.adjusted(3, 3, -3, -3));

@@ -985,10 +985,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         const SymbolDef& s = *placed[i].symbol;
         const Component* c = circuit.component(placed[i].id);
         // CircuitMaker saves the two sides of a closed contact (switch,
-        // relay, window) as one net; only the wires tell those pins apart
+        // relay, window, the key held in a key matrix) as one net; only the
+        // wires tell those pins apart
         const QString kind = s.model.value(u"kind").toString();
         QHash<int, int> netUse;
-        if (kind == u"link" || kind == u"relay")
+        if (kind == u"link" || kind == u"relay" || kind == u"keymatrix")
             for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin)
                 if (ourPin(s, d, cmPin) >= 0 && d.nets[cmPin] > 0) netUse[d.nets[cmPin]]++;
         for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin) {
