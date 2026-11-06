@@ -30,6 +30,7 @@
 #include "library/Macros.h"
 
 #include <QFile>
+#include <QFileInfo>
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -406,6 +407,28 @@ const CmDeviceLib& deviceLib()
     return lib;
 }
 
+// A switch model of the user's CircuitMaker Models folder (SW.MOD, CSW.MOD):
+// ".MODEL SSW05 SW(VT=500.0m )" for the V->Switch labelled SW05. Returns
+// the parameters in brackets, or nothing when not found.
+std::optional<QString> cmSwitchModel(const QString& file, QChar prefix, const QString& name)
+{
+    static QHash<QString, QString> texts;
+    if (!texts.contains(file)) {
+        const QString dev = CmDeviceLib::locate(QSettings().value(QStringLiteral("cm/folder")).toString());
+        QFile f(QFileInfo(dev).absolutePath() + QStringLiteral("/Models/") + file);
+        texts.insert(file, f.open(QIODevice::ReadOnly) ? QString::fromLatin1(f.readAll()) : QString());
+    }
+    static const QRegularExpression line(QStringLiteral("^\\s*\\.MODEL\\s+(\\S+)\\s+\\w+\\s*\\(([^)]*)\\)"),
+                                         QRegularExpression::CaseInsensitiveOption | QRegularExpression::MultilineOption);
+    for (auto it = line.globalMatch(texts.value(file)); it.hasNext();) {
+        const auto m = it.next();
+        QString model = m.captured(1);
+        if (model.endsWith(u'~')) model.chop(1);
+        if (model.compare(prefix + name, Qt::CaseInsensitive) == 0) return m.captured(2).simplified();
+    }
+    return std::nullopt;
+}
+
 // The macros of CircuitMaker's User.lib, read once.
 const CmUserLib& userLib()
 {
@@ -666,6 +689,20 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             // CircuitMaker's square-wave VCO swings 0 to 5 V
             c.props.insert(QStringLiteral("low"), QStringLiteral("0"));
             c.props.insert(QStringLiteral("high"), QStringLiteral("5"));
+        } else if (s->id == u"vswitch" || s->id == u"iswitch") {
+            // the switch model the label names, from CircuitMaker's own Models
+            const bool v = s->id == u"vswitch";
+            const QString name = d.value.trimmed();
+            static const QRegularExpression plain(QStringLiteral("^[A-Za-z0-9_]+$"));
+            if (plain.match(name).hasMatch())
+                if (const auto params = cmSwitchModel(v ? QStringLiteral("SW.MOD") : QStringLiteral("CSW.MOD"), v ? u'S' : u'W', name)) {
+                    const QString model = (v ? QStringLiteral("VSW_") : QStringLiteral("ISW_")) + name.toUpper();
+                    QString line = s->spice.value(u"line").toString();
+                    line.replace(v ? QStringLiteral("VSW_GEN") : QStringLiteral("ISW_GEN"), model);
+                    c.props.insert(QStringLiteral("spice"), line);
+                    c.props.insert(QStringLiteral("spiceModels"),
+                                   QStringLiteral(".model %1 %2(%3)").arg(model, v ? QStringLiteral("sw") : QStringLiteral("csw"), *params));
+                }
         } else if (kind == u"siggen") {
             // "-1/1V": low/high levels
             static const QRegularExpression levels(QStringLiteral("^\\s*([-+]?[\\d.]+[a-zA-Z]*)\\s*/\\s*([-+]?[\\d.]+[a-zA-Z]*)"));
