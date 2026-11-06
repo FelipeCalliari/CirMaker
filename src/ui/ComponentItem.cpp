@@ -474,7 +474,9 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         // the car on its track, 0..100 from start to finish
         const double x = -70 + std::clamp(state, 0, 100) * 2.6;
         p->setPen(QPen(ink, 1.5));
-        p->setBrush(live && state > 0 ? QColor(0xd0, 0x30, 0x30) : QColor(0xe8, 0xe8, 0xe8));
+        const QString colour = m_c.props.value(QStringLiteral("color"), QStringLiteral("red")).toString();
+        const QColor body = colour == u"green" ? QColor(0x20, 0xb0, 0x30) : colour == u"blue" ? QColor(0x20, 0x40, 0xd0) : QColor(0xd0, 0x30, 0x30);
+        p->setBrush(body);
         p->drawRoundedRect(QRectF(x - 20, -32, 40, 14), 4, 4);
         p->drawRect(QRectF(x - 10, -40, 18, 8));
         p->setBrush(ink);

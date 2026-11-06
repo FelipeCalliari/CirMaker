@@ -634,8 +634,13 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             c.props.insert(QStringLiteral("state"), int(d.nets.size() > 10 && d.nets[10] == 1));
         else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0)
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
-        else if (kind == u"car" && d.nets.size() > 14 && d.nets[14] > 0)
-            c.props.insert(QStringLiteral("speed"), d.nets[14]);      // as CircuitMaker keeps it
+        else if (kind == u"car") {
+            if (d.nets.size() > 14 && d.nets[14] > 0)
+                c.props.insert(QStringLiteral("speed"), d.nets[14]);  // as CircuitMaker keeps it
+            // the colour in nets[0]: Cars.ckt has 10 red, 12 green, 13 blue
+            static const QHash<int, QString> colours{{10, QStringLiteral("red")}, {12, QStringLiteral("green")}, {13, QStringLiteral("blue")}};
+            if (const QString col = colours.value(d.nets.value(0)); !col.isEmpty()) c.props.insert(QStringLiteral("color"), col);
+        }
         else if (kind == u"pot") {
             // "100k 40%": total resistance and wiper position
             c.label = d.value.section(u' ', 0, 0);

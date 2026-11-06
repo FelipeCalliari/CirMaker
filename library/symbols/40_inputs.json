@@ -916,7 +916,15 @@
     "kind": "car"
    },
    "props": {
-    "speed": 3
+    "speed": 3,
+    "color": "red"
+   },
+   "choices": {
+    "color": [
+     "red",
+     "green",
+     "blue"
+    ]
    },
    "description": "Animated race car: drives along its track once S goes high (faster with a higher speed), raises F at the finish and goes back to the start while RESET is high",
    "graphics": [

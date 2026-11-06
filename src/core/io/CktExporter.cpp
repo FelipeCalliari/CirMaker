@@ -462,6 +462,12 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             nets.resize(10);                            // the value in nets[10], its character in nets[11]
             nets << v << (v < 10 ? '0' + v : 'A' + v - 10);
             value.clear();
+        } else if (kind == u"car") {
+            // colour in nets[0], speed in nets[14], as CircuitMaker keeps them
+            static const QHash<QString, int> colours{{QStringLiteral("red"), 10}, {QStringLiteral("green"), 12}, {QStringLiteral("blue"), 13}};
+            nets[0] = colours.value(c.props.value(QStringLiteral("color"), QStringLiteral("red")).toString(), 10);
+            nets.resize(21);
+            nets[14] = std::max(1, c.props.value(QStringLiteral("speed"), 3).toInt());
         } else if (name == u"Ascii Key~") {
             nets.resize(9);
             nets << 0 << 0 << std::clamp(c.props.value(QStringLiteral("value"), 65).toInt(), 32, 126);

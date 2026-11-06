@@ -2970,7 +2970,7 @@ Saída do SPICE:
     </message>
     <message>
         <location filename="../src/ui/SchematicScene.cpp" line="1228"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1648"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1650"/>
         <source>Text:</source>
         <translation>Texto:</translation>
     </message>
@@ -3038,32 +3038,32 @@ Saída do SPICE:
         <translation>Definir breakpoint</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1560"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1562"/>
         <source>%1 takes the keyboard: Space or Enter switches it (Esc to stop)</source>
         <translation>%1 recebe o teclado: Espaço ou Enter alterna (Esc para sair)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1564"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1566"/>
         <source>%1 takes the keyboard: hold Space or Enter to press it (Esc to stop)</source>
         <translation>%1 recebe o teclado: segure Espaço ou Enter para pressionar (Esc para sair)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1571"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1573"/>
         <source>%1 takes the keyboard: type 0-9 and A-F (Esc to stop)</source>
         <translation>%1 recebe o teclado: digite 0-9 e A-F (Esc para parar)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1573"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1575"/>
         <source>%1 takes the keyboard: type characters (Esc to stop)</source>
         <translation>%1 recebe o teclado: digite caracteres (Esc para parar)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1602"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1604"/>
         <source>The node is driven by an output: its level stays</source>
         <translation>O nó é forçado por uma saída: o nível dele se mantém</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2042"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2044"/>
         <source>Reshape bus</source>
         <translation>Remodelar barramento</translation>
     </message>
@@ -3076,23 +3076,23 @@ Saída do SPICE:
         <translation type="vanished">Caractere:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1648"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1652"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1650"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1654"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2007"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2009"/>
         <source>Move designator</source>
         <translation>Mover designador</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2007"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2009"/>
         <source>Move label</source>
         <translation>Mover rótulo</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2042"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2044"/>
         <source>Reshape wire</source>
         <translation>Remodelar fio</translation>
     </message>

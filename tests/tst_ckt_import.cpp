@@ -354,6 +354,20 @@ void TestCktImport::carsExample()
         QSKIP("CircuitMaker examples not available");
     Circuit imported;
     QVERIFY(CktImporter::import(path, imported, library(), nullptr, nullptr));
+    // colours and speeds, also written back
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    Circuit back;
+    QVERIFY(CktImporter::importData(CktExporter::write(imported, library(), cmLib), back, library(), nullptr, nullptr));
+    for (const Circuit* cc : {&imported, &back}) {
+        QStringList cars;
+        for (const Component& comp : cc->components())
+            if (comp.symbolId == u"car")
+                cars << QStringLiteral("%1:%2:%3").arg(comp.pos.y()).arg(comp.props.value(QStringLiteral("color")).toString()).arg(comp.props.value(QStringLiteral("speed")).toInt());
+        std::sort(cars.begin(), cars.end(), [](const QString& x, const QString& y) { return x.section(u':', 0, 0).toDouble() < y.section(u':', 0, 0).toDouble(); });
+        QCOMPARE(QStringList({cars[0].section(u':', 1), cars[1].section(u':', 1), cars[2].section(u':', 1)}),
+                 QStringList({QStringLiteral("red:4"), QStringLiteral("green:3"), QStringLiteral("blue:4")}));
+    }
     QStringList warnings;
     const std::unique_ptr<Circuit> flat = macros::flatten(imported, library(), &warnings);
     QVERIFY2(warnings.isEmpty(), qPrintable(warnings.join(u"; ")));

@@ -1365,7 +1365,8 @@ def inputs():
                       L(-30, 10, -18, 10)],
          'pins': [pin('C', 30, 0), pin('NC', -30, -10), pin('NO', -30, 10)]},
         {'id': 'car', 'name': 'Car', 'prefix': 'CAR', 'display': 'car', 'aliases': ['Car'],
-         'cmPins': ['S', 'F', 'RESET'], 'model': {'kind': 'car'}, 'props': {'speed': 3},
+         'cmPins': ['S', 'F', 'RESET'], 'model': {'kind': 'car'}, 'props': {'speed': 3, 'color': 'red'},
+         'choices': {'color': ['red', 'green', 'blue']},
          'description': 'Animated race car: drives along its track once S goes high (faster with a higher speed), '
                         'raises F at the finish and goes back to the start while RESET is high',
          'graphics': [R(-90, -45, 330, 70), L(-90, -10, 240, -10), L(220, -45, 220, 25), L(-110, -20, -90, -20),
