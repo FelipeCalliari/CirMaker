@@ -101,7 +101,8 @@ struct Device {
     QVector<int> ourPin;            // our pin index of CircuitMaker pin 1, 2, ...
     QPoint origin;
     QTransform turn;                // rotation and mirror, no translation
-    QPoint pinAt(int cmPin) const { return origin + turn.map(lib->pins[cmPin - 1]); }
+    QPoint pinShift;            // a macro kept where CircuitMaker had it: how far its wires stay off
+    QPoint pinAt(int cmPin) const { return origin - pinShift + turn.map(lib->pins[cmPin - 1]); }
 };
 
 // package pin number of CircuitMaker pin k (1-based) of a part
@@ -487,8 +488,15 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         // where CircuitMaker had it, while it has not moved
         if (const QStringList at = c.props.value(QStringLiteral("cmAt")).toString().split(u' ', Qt::SkipEmptyParts); at.size() == 6
             && QPointF(at[2].toDouble(), at[3].toDouble()) == c.pos && at[4].toInt() == c.rotation && bool(at[5].toInt()) == c.mirrored
-            && (d.origin - QPoint(at[0].toInt(), at[1].toInt())).manhattanLength() <= 4)   // farther: our pins would not meet the wires
+            // farther, our pins would not meet the wires; but a User.lib macro
+            // edited since the file was saved (Cars' Timer, its pins 5 off)
+            // must stay put, or CircuitMaker asks to reconnect its wires
+            && (d.origin - QPoint(at[0].toInt(), at[1].toInt())).manhattanLength() <= (d.lib->type == 0x5e ? 12 : 4)) {
+            // its wires end where they did (CircuitMaker 5.6 accepts that, but
+            // not ends moved onto the macro's present pins)
+            if (d.lib->type == 0x5e) d.pinShift = QPoint(at[0].toInt(), at[1].toInt()) - d.origin;
             d.origin = QPoint(at[0].toInt(), at[1].toInt());
+        }
         devices << d;
     }
 
