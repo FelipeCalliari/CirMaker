@@ -165,7 +165,7 @@ Device readDevice(Reader& r, double version)
     d.designator = r.string();
     if (!d.designator.isEmpty()) d.designatorRect = rect();
     d.tag = r.string();
-    if (!d.tag.isEmpty()) r.ints(4);
+    if (!d.tag.isEmpty()) d.tagRect = rect();
     d.power = r.string();                       // power pins, e.g. "DVCC=14;DGND=7;"
     d.spice = r.string();                       // SPICE template ("%D %1 0 DC %V"); empty: not simulated
     r.string();
@@ -789,6 +789,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
 
         if (!d.tag.isEmpty() && s->defaultProps.contains(QStringLiteral("relay")))
             c.props.insert(QStringLiteral("relay"), d.tag.trimmed());
+        // the third label and its box (any other: a math block's expression,
+        // as its model kind has it, "kind": then it follows the expression)
+        if (!d.tag.isEmpty() && d.tagRect)
+            c.props.insert(QStringLiteral("cmTag"), QStringLiteral("%1 %2 %3 %4 %5 %6").arg(d.tagRect->left()).arg(d.tagRect->top())
+                                                       .arg(d.tagRect->right()).arg(d.tagRect->bottom()).arg(d.tag == d.kind ? QStringLiteral("kind") : QStringLiteral("text")).arg(d.tag));
         const QString kind = s->model.value(u"kind").toString();
         // Ascii Display: the cursor in nets[10], then the 64 characters two
         // to a word (high byte first)
@@ -840,12 +845,14 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         } else if (kind == u"siggen") {
             // "-1/1V": low/high levels
             static const QRegularExpression levels(QStringLiteral("^\\s*([-+]?[\\d.]+[a-zA-Z]*)\\s*/\\s*([-+]?[\\d.]+[a-zA-Z]*)"));
-            if (const auto m = levels.match(d.value); m.hasMatch()) {
+            const auto m = levels.match(d.value);
+            if (m.hasMatch()) {
                 const double lo = spiceValue(m.captured(1)), hi = spiceValue(m.captured(2));
                 c.props.insert(QStringLiteral("amplitude"), QString::number((hi - lo) / 2));
                 c.props.insert(QStringLiteral("offset"), QString::number((hi + lo) / 2));
             }
-            c.label = s->defaultLabel;
+            // a label of the user's own stays (Csjfamp's "40MV P-P")
+            c.label = m.hasMatch() || d.value.trimmed().isEmpty() ? s->defaultLabel : d.value;
             // the waveform as the instance's SPICE line gives it:
             // "%D %1 %2 DC 0 PULSE(0 5 100n 10n 10n 100n 1u) AC 1 0"
             static const QRegularExpression shape(QStringLiteral("\\b(SIN|PULSE|EXP|PWL|SFFM)\\s*\\(([^)]*)\\)"),
@@ -1020,7 +1027,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     }
 
     // ---- placement: align our pins with the wire ends attached to CM pins
-    QVector<QVector<QPointF>> anchorDeltas(file.devices.size());
+    QVector<QVector<QPointF>> anchorDeltas(file.devices.size()), turnShifts(file.devices.size());
     for (const CktWire& w : file.wires) {
         if (w.isBus()) continue;
         const int ends[2][2] = {{w.h[7], w.h[0]}, {w.h[8], w.h[1]}};
@@ -1034,7 +1041,21 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             const QPointF offset = LibraryRegistry::placement(probe).map(placed[dev].symbol->pins[pin].pos);
             const QPointF end = scaled(e == 0 ? w.points.first() : w.points.last());
             anchorDeltas[dev] << end - offset;
+            // CircuitMaker turns a part about the middle of its drawing, not
+            // its origin: how far its pins are from Device.lib's turned there
+            if (const CmLibDevice* lib = deviceLib().find(file.devices[dev].name); lib && cmPin >= 1 && cmPin <= lib->pins.size())
+                turnShifts[dev] << (e == 0 ? w.points.first() : w.points.last()) - QPointF(file.devices[dev].x, file.devices[dev].y)
+                                          - LibraryRegistry::placement(probe).map(QPointF(lib->pins[cmPin - 1]));
         }
+    }
+    for (int i = 0; i < placed.size(); ++i) {
+        if (turnShifts[i].isEmpty() || (placed[i].comp.rotation == 0 && !placed[i].comp.mirrored)) continue;
+        QVector<double> xs, ys;
+        for (QPointF p : turnShifts[i]) { xs << p.x(); ys << p.y(); }
+        const QPoint shift(int(std::lround(median(xs))), int(std::lround(median(ys))));
+        if (!shift.isNull() && shift.manhattanLength() <= 12)
+            placed[i].comp.props.insert(QStringLiteral("cmTurnShift"), QStringLiteral("%1 %2 %3 %4").arg(shift.x()).arg(shift.y())
+                                                                           .arg(placed[i].comp.rotation).arg(int(placed[i].comp.mirrored)));
     }
     for (int i = 0; i < placed.size(); ++i) {
         if (!placed[i].symbol) continue;
@@ -1094,6 +1115,20 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             }
             for (std::optional<QPointF>* at : {&comp.designatorAt, &comp.labelAt})
                 if (*at) *at = QPointF(std::round((**at + *shift).x()), std::round((**at + *shift).y()));
+        }
+        // CircuitMaker's own boxes, for export while the text and its place
+        // are unchanged (ours above are moved close to our drawing)
+        auto keepBox = [&comp](const char* key, const std::optional<QRectF>& box, const std::optional<QPointF>& at, const QString& text) {
+            if (!box || !at) return;
+            comp.props.insert(QString::fromLatin1(key), QStringLiteral("%1 %2 %3 %4 %5 %6 %7").arg(box->left()).arg(box->top()).arg(box->right())
+                                                           .arg(box->bottom()).arg(at->x(), 0, 'g', 17).arg(at->y(), 0, 'g', 17).arg(text));
+        };
+        keepBox("cmValueBox", d.valueRect, comp.labelAt, d.value);
+        keepBox("cmDesignatorBox", d.designatorRect, comp.designatorAt, d.designator);
+        // a signal generator's label as read, while its waveform stays as read
+        if (d.type == 0xc3 && !d.value.isEmpty()) {
+            comp.props.insert(QStringLiteral("cmGenKey"), waveformKey(comp.props));
+            comp.props.insert(QStringLiteral("cmGenLabel"), d.value);
         }
         placed[i].id = circuit.addComponent(comp);
     }

@@ -3,6 +3,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QString>
+#include <QVariantMap>
 #include <QVector>
 
 #include <optional>
@@ -17,7 +18,7 @@ struct Device {
     int delay = 1;              // propagation delay, 1..14 ticks
     int span = 0;               // the number after the pin count (an Input / Output from 19 up names its node)
     QString spice;              // the instance's SPICE template
-    std::optional<QRectF> valueRect, designatorRect;
+    std::optional<QRectF> valueRect, designatorRect, tagRect;
     QVector<int> nets;
     QString value, designator, prefix;
     QString kind;               // "type:digital", "alias:XPLLX {Fc=100k Fr=50k}"
@@ -84,5 +85,16 @@ struct CktFile {
     QVector<CktWire> wires;
     QVector<CktText> texts;
 };
+
+// A signal generator's waveform as its properties give it: its label as
+// read stays while this is unchanged (CircuitMaker's can be out of date:
+// Cbamp's "-1/1V" for 1 mV)
+inline QString waveformKey(const QVariantMap& props)
+{
+    QString key;
+    for (auto it = props.cbegin(); it != props.cend(); ++it)
+        if (!it.key().startsWith(QLatin1String("cm"))) key += it.key() + u'=' + it.value().toString() + u'|';
+    return key;
+}
 
 } // namespace cm::ckt

@@ -741,7 +741,25 @@ void TestCktImport::exportKeepsNodeNaming()
         bool named = false;
         for (int n = 0; n < nl.nets.size(); ++n) named |= NetlistBuilder::nodeName(nl, n, vt, library()) == u"NFB";
         QVERIFY(named);
-        QVERIFY(exported(QStringLiteral("Diffamp.ckt"), da).contains(QStringLiteral("\n219 199 110 0 3 ")));
+        const QString diff = exported(QStringLiteral("Diffamp.ckt"), da);
+        QVERIFY(diff.contains(QStringLiteral("\n219 199 110 0 3 ")));
+        // texts where CircuitMaker had them, a generator's label as it writes
+        // it, and a part turned about the middle of its drawing (the -12V
+        // supply, upside down: 6 above where a turn about its origin puts it)
+        QVERIFY(diff.contains(QStringLiteral("\n11 -100m/100mV\n-36 -48 41 -40\n")));
+        QVERIFY(diff.contains(QStringLiteral("\n167 169 274 0 1 ")));
+    }
+    // a 4.0 file's texts (Ujt), a math block's expression as its third label
+    // (Math1), a potentiometer's wiper in its label (Ammod), a Logic Switch's
+    // own label (Digfault: "5V" while off), a generator's label out of date
+    // in the file, kept while its waveform is (Cbamp)
+    {
+        Circuit u, m, a, d, cb;
+        QVERIFY(exported(QStringLiteral("Ujt.ckt"), u).contains(QStringLiteral("\n3 330\n7 2 28 10\n")));
+        QVERIFY(exported(QStringLiteral("Math1.ckt"), m).contains(QStringLiteral("\n2 M1\n-7 -36 7 -28\n4 -(V)\n-13 -14 15 -6\n")));
+        QVERIFY(exported(QStringLiteral("Ammod.ckt"), a).contains(QStringLiteral("\n7 50k 80%\n-24 -20 25 -12\n")));
+        QVERIFY(exported(QStringLiteral("Digfault.ckt"), d).contains(QStringLiteral("\n2 5V\n-7 -16 7 -8\n")));
+        QVERIFY(exported(QStringLiteral("Cbamp.ckt"), cb).contains(QStringLiteral("\n5 -1/1V\n-15 -48 20 -40\n")));
     }
 }
 

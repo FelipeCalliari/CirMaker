@@ -102,7 +102,9 @@ struct Device {
     QPoint origin;
     QTransform turn;                // rotation and mirror, no translation
     QPoint pinShift;            // a macro kept where CircuitMaker had it: how far its wires stay off
-    QPoint pinAt(int cmPin) const { return origin - pinShift + turn.map(lib->pins[cmPin - 1]); }
+    QPoint turnShift;               // a turned part's pins from Device.lib's turned about the origin (cmTurnShift)
+    bool atCm = false;              // where CircuitMaker had it (cmAt)
+    QPoint pinAt(int cmPin) const { return origin - pinShift + turnShift + turn.map(lib->pins[cmPin - 1]); }
 };
 
 // package pin number of CircuitMaker pin k (1-based) of a part
@@ -467,6 +469,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         Component turned = c;
         turned.pos = {};
         d.turn = LibraryRegistry::placement(turned);
+        if (const QStringList ts = c.props.value(QStringLiteral("cmTurnShift")).toString().split(u' ', Qt::SkipEmptyParts);
+            ts.size() == 4 && ts[2].toInt() == c.rotation && bool(ts[3].toInt()) == c.mirrored)
+            d.turnShift = QPoint(ts[0].toInt(), ts[1].toInt());
         // the origin that puts CircuitMaker's pins where ours are; like the
         // importer, from the pins wires end on, one vote per wire end, so a
         // symbol of another width comes back where it was
@@ -474,7 +479,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         for (int k = 1; k <= d.lib->pinCount; ++k) {
             if (d.ourPin[k - 1] < 0) continue;
             const QPointF pin = library.pinScenePos(c, d.ourPin[k - 1]);
-            const QPointF at = pin * kToCm - d.turn.map(QPointF(d.lib->pins[k - 1]));
+            const QPointF at = pin * kToCm - d.turn.map(QPointF(d.lib->pins[k - 1])) - QPointF(d.turnShift);
             allX << at.x();
             allY << at.y();
             for (const Wire& w : circuit.wires()) {
@@ -496,6 +501,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             // not ends moved onto the macro's present pins)
             if (d.lib->type == 0x5e) d.pinShift = QPoint(at[0].toInt(), at[1].toInt()) - d.origin;
             d.origin = QPoint(at[0].toInt(), at[1].toInt());
+            d.atCm = true;
         }
         devices << d;
     }
@@ -522,10 +528,15 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             for (QChar ch : portName) nets << (ch.unicode() < 128 ? ch.unicode() : '?');
         }
         // device state kept in the net list after the pins
-        if (kind == u"logicswitch") {
+        if (kind == u"pot") {
+            // "100k 40%": the wiper position is kept in the label
+            if (const QVariant pos = c.props.value(QStringLiteral("position"), s.defaultProps.value(QStringLiteral("position"))); pos.isValid() && !value.contains(u'%'))
+                value = value.section(u' ', 0, 0) + u' ' + QString::number(pos.toDouble(), 'g', 6) + u'%';
+        } else if (kind == u"logicswitch") {
             // the position is nets[10]; the value text only labels it
             const bool on = c.props.value(QStringLiteral("state")).toInt();
-            value = on ? QStringLiteral("5V") : QStringLiteral("0V");
+            // (the label is its own: "5V" on a switch that is off, as in Digfault)
+            if (c.label.isEmpty()) value = on ? QStringLiteral("5V") : QStringLiteral("0V");
             if (on) {
                 nets.resize(10);
                 nets << 1;
@@ -579,6 +590,17 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 return number(c.props.value(QString::fromLatin1(key), QString::fromLatin1(fallback)).toString());
             };
             auto g = [](double v) { return QString::number(v, 'g', 6); };
+            // the label as CircuitMaker writes it: "-100m/100mV", "11.8/12.2V"
+            auto eng = [](double v) {
+                if (v == 0) return QStringLiteral("0");
+                static const struct { double scale; const char* prefix; } steps[] = {
+                    {1e9, "G"}, {1e6, "Meg"}, {1e3, "k"}, {1, ""}, {1e-3, "m"}, {1e-6, "u"}, {1e-9, "n"}, {1e-12, "p"}};
+                for (const auto& st : steps)
+                    if (std::abs(v) >= st.scale * (1 - 1e-9) || st.scale == 1e-12)
+                        return QString::number(v / st.scale, 'g', 3) + QString::fromLatin1(st.prefix);
+                return QString::number(v, 'g', 3);
+            };
+            auto range = [&eng](double lo, double hi) { return eng(lo) + u'/' + eng(hi) + u'V'; };
             const QString wave = c.props.value(QStringLiteral("wave"), QStringLiteral("sine")).toString();
             // the AC magnitude first (0: no AC stimulus)
             const double ac = c.props.value(QStringLiteral("ac"), true).toBool() ? prop("acMag", "1") : 0;
@@ -590,7 +612,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 const double v1 = prop("v1", "0"), v2 = prop("v2", "5"), period = std::max(prop("period", "1m"), 1e-12);
                 params = {ac, 1 / period, v1, v2, prop("delay", "0"), prop("rise", "1n"), prop("fall", "1n"), prop("width", "0.5m"), period};
                 nets << 1;
-                value = QStringLiteral("%1/%2V").arg(g(v1), g(v2));
+                value = range(v1, v2);
                 // (the template's own %D %1 %2 stay as they are)
                 spice = QStringLiteral("%D %1 %2 DC 0 PULSE(")
                       + QStringList{g(v1), g(v2), g(params[4]), g(params[5]), g(params[6]), g(params[7]), g(period)}.join(u' ') + u')';
@@ -599,7 +621,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 const double off = prop("offset", "0"), amp = prop("amplitude", "1");
                 params = {ac, prop("carrier", "10k"), off, amp, prop("mdi", "1"), prop("signal", "1k")};
                 nets << 3;
-                value = QStringLiteral("%1/%2V").arg(g(off - amp), g(off + amp));
+                value = range(off - amp, off + amp);
                 spice = QStringLiteral("%D %1 %2 DC 0 SFFM(") + QStringList{g(off), g(amp), g(params[1]), g(params[4]), g(params[5])}.join(u' ') + u')';
             } else if (wave == u"pwl") {
                 // PWL(t v ...): nets[3] = 5; the end time, then the pairs (nine at most)
@@ -615,7 +637,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 nets << 5;
                 double lo = pts[1], hi = pts[1];
                 for (int k = 1; k < pts.size(); k += 2) lo = std::min(lo, pts[k]), hi = std::max(hi, pts[k]);
-                value = QStringLiteral("%1/%2V").arg(g(lo), g(hi));
+                value = range(lo, hi);
                 QStringList txt;
                 for (double v : std::as_const(pts)) txt << g(v);
                 spice = QStringLiteral("%D %1 %2 DC 0 PWL( ") + txt.join(u' ') + u')';
@@ -624,13 +646,17 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 const double amplitude = prop("amplitude", "1"), offset = prop("offset", "0"), frequency = prop("frequency", "1k");
                 params = {ac, frequency, offset, amplitude};
                 nets << 2;
-                value = QStringLiteral("%1/%2V").arg(g(offset - amplitude), g(offset + amplitude));
+                value = range(offset - amplitude, offset + amplitude);
                 spice = QStringLiteral("%D %1 %2 DC 0 SIN(") + QStringList{g(offset), g(amplitude), g(frequency)}.join(u' ')
                       + QStringLiteral(" 0 0)") + (ac != 0 ? QStringLiteral(" AC %1 0").arg(g(ac)) : QString());
             }
             // the AC stimulus on every waveform (Bandpass: "PULSE(...) AC 1 0")
             if (wave != u"sine" && wave != u"sin" && ac != 0 && !spice.contains(QStringLiteral(" AC ")))
                 spice += QStringLiteral(" AC %1 0").arg(g(ac));
+            if (c.props.contains(QStringLiteral("cmGenLabel")) && c.props.value(QStringLiteral("cmGenKey")).toString() == ckt::waveformKey(c.props))
+                value = c.props.value(QStringLiteral("cmGenLabel")).toString();
+            // a label of the user's own stays (Csjfamp's "40MV P-P")
+            if (!c.label.isEmpty() && c.label != s.defaultLabel && !c.label.contains(u'/')) value = c.label;
             // nets[4..6]: 'V' and the display range; nets[7]: pairs + 1 of a PWL
             nets << 'V' << (wave == u"pulse" || wave == u"pwl" ? -10 : -8) << (wave == u"pulse" || wave == u"pwl" ? 10 : 8)
                  << (pairs ? pairs + 1 : 0) << 0 << 0 << 0 << 0 << 0 << 0 << 0 << 0;
@@ -743,6 +769,14 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             }
             return QRect(QPoint(at.x(), at.y() - 4), QPoint(at.x() + w, at.y() + 4));
         };
+        // the box the file had, while the part, the text and its place are as read
+        auto keptBox = [&](const char* key, const QString& text, std::optional<QPointF> centre) -> std::optional<QRect> {
+            if (!d.atCm || !centre) return std::nullopt;
+            const QString kept = c.props.value(QString::fromLatin1(key)).toString();
+            const QStringList f = kept.section(u' ', 0, 5).split(u' ');
+            if (f.size() != 6 || kept.section(u' ', 6) != text || QPointF(f[4].toDouble(), f[5].toDouble()) != *centre) return std::nullopt;
+            return QRect(QPoint(f[0].toInt(), f[1].toInt()), QPoint(f[2].toInt(), f[3].toInt()));
+        };
         const QPointF designatorAnchor(r.right() + 3, r.top() + 6);
         const QPointF labelAnchor = s.netLabel ? QPointF(r.right() + 2, r.center().y())
                                                : QPointF(r.right() + 3, r.top() + (showDesignator ? 26 : 6));
@@ -775,15 +809,25 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         rec << (macro ? str(name) : ref.isEmpty() ? QStringLiteral("0") : str(ref));
         rec << join({macro ? 1 : 0, 0, flags, cmAngle(c)});
         rec << str(value);
-        if (!value.isEmpty()) rec << rect(textRect(value, c.labelAt, labelAnchor));
+        if (!value.isEmpty()) rec << rect(keptBox("cmValueBox", value, c.labelAt).value_or(textRect(value, c.labelAt, labelAnchor)));
         rec << str(designator);
-        if (!designator.isEmpty()) rec << rect(textRect(designator, c.designatorAt, designatorAnchor));
-        // third label: the relay of a coil or contact
-        const QString tag = s.defaultProps.contains(QStringLiteral("relay"))
-                                ? c.props.value(QStringLiteral("relay"), s.defaultProps.value(QStringLiteral("relay"))).toString()
-                                : QString();
+        if (!designator.isEmpty())
+            rec << rect(keptBox("cmDesignatorBox", designator, c.designatorAt).value_or(textRect(designator, c.designatorAt, designatorAnchor)));
+        // third label: the relay of a coil or contact, or the one the file had
+        // (a math block's expression: its model kind)
+        const QStringList keptTag = c.props.value(QStringLiteral("cmTag")).toString().split(u' ');
+        QString tag;
+        if (s.defaultProps.contains(QStringLiteral("relay")))
+            tag = c.props.value(QStringLiteral("relay"), s.defaultProps.value(QStringLiteral("relay"))).toString();
+        else if (keptTag.size() >= 6)
+            tag = keptTag[4] == u"kind" ? modelKind : keptTag.mid(5).join(u' ');
         rec << str(tag);
-        if (!tag.isEmpty()) rec << rect(textRect(tag, std::nullopt, QPointF(r.right() + 3, r.top() + 46)));
+        if (!tag.isEmpty()) {
+            QRect box = textRect(tag, std::nullopt, QPointF(r.right() + 3, r.top() + 46));
+            if (keptTag.size() >= 6 && d.atCm && keptTag.mid(5).join(u' ') == tag)
+                box = QRect(QPoint(keptTag[0].toInt(), keptTag[1].toInt()), QPoint(keptTag[2].toInt(), keptTag[3].toInt()));
+            rec << rect(box);
+        }
         rec << str(c.props.value(QStringLiteral("cmPower"), l.power).toString()) << str(spice) << QStringLiteral("0") << str(modelKind)
             << str(c.props.value(QStringLiteral("cmPackage"), l.package).toString());
         rec << QString::number(pkg.size() - 1) << join(pkg);
