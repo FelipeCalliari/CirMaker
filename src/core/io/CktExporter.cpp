@@ -493,6 +493,13 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         for (int k = 1; k <= l.pinCount; ++k)
             nets << (d.ourPin[k - 1] < 0 ? 0 : netNumber(netlist.netOf(c.id, d.ourPin[k - 1])));
         QString value = c.label.isEmpty() ? l.value : c.label;
+        // a macro's Input / Output: its name in nets[10..17], eight characters
+        // padded with spaces (CircuitMaker makes them the subcircuit's ports)
+        if (s.id == u"port_in" || s.id == u"port_out") {
+            nets.resize(10);
+            const QString portName = c.label.left(8).leftJustified(8, u' ');
+            for (QChar ch : portName) nets << (ch.unicode() < 128 ? ch.unicode() : '?');
+        }
         // device state kept in the net list after the pins
         if (kind == u"logicswitch") {
             // the position is nets[10]; the value text only labels it
