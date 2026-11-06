@@ -1,5 +1,7 @@
 #include "sim/analog/SpiceNetlister.h"
 
+#include "core/NetlistBuilder.h"
+
 #include "core/io/CmModels.h"
 
 #include "library/LibraryRegistry.h"
@@ -105,6 +107,7 @@ public:
             for (auto it = m_deck.sourceOfDesignator.begin(); it != m_deck.sourceOfDesignator.end(); ++it)
                 if (const auto k = merged.constFind(it.value()); k != merged.cend()) it.value() = *k;
         }
+        translateExpressions();
         // every node keeps a DC path to ground, so open inputs never make
         // the matrix singular
         for (const QString& node : std::as_const(m_usedNodes))
@@ -146,6 +149,43 @@ private:
     bool connected(int net) const
     {
         return net >= 0 && m_nl.nets[net].pins.size() + m_nl.nets[net].wires.size() > 1;
+    }
+
+    // Expressions of nonlinear sources written for CircuitMaker name its
+    // nodes and parts: V(vcc_1) is the node of Vcc's pin 1, I(VB) the
+    // current of source VB. Each becomes the deck's own name.
+    void translateExpressions()
+    {
+        QSet<QString> nodes;
+        for (const QString& n : std::as_const(m_deck.nodeOfNet)) nodes.insert(n.toLower());
+        QHash<QString, QString> byCmName;
+        for (int i = 0; i < m_nl.nets.size(); ++i) {
+            const QString cm = NetlistBuilder::nodeName(m_nl, i, m_c, m_lib).toLower();
+            if (!cm.isEmpty() && !byCmName.contains(cm)) byCmName.insert(cm, m_deck.nodeOfNet.value(i));
+        }
+        QHash<QString, QString> sources;
+        for (auto it = m_deck.sourceOfDesignator.cbegin(); it != m_deck.sourceOfDesignator.cend(); ++it)
+            sources.insert(it.key().toLower(), it.value());
+        static const QRegularExpression ref(QStringLiteral("\\b([VvIi])\\(\\s*([^,()\\s]+)\\s*(?:,\\s*([^,()\\s]+)\\s*)?\\)"));
+        for (QString& line : m_lines) {
+            if (!line.startsWith(u'B') || !line.contains(u'=')) continue;
+            const qsizetype eq = line.indexOf(u'=');
+            QString expr = line.mid(eq + 1), out;
+            qsizetype last = 0;
+            for (auto it = ref.globalMatch(expr); it.hasNext();) {
+                const auto m = it.next();
+                out += expr.mid(last, m.capturedStart() - last);
+                const bool voltage = m.captured(1).compare(u"v", Qt::CaseInsensitive) == 0;
+                auto map = [&](const QString& a) {
+                    const QString key = a.toLower();
+                    if (voltage) return nodes.contains(key) || key == u"0" ? a : byCmName.value(key, a);
+                    return sources.value(key, a);
+                };
+                out += m.captured(1) + u'(' + map(m.captured(2)) + (m.captured(3).isEmpty() ? QString() : u',' + map(m.captured(3))) + u')';
+                last = m.capturedEnd();
+            }
+            line = line.left(eq + 1) + out + expr.mid(last);
+        }
     }
 
     void assignNodes()

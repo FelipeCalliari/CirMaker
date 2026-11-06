@@ -686,6 +686,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!d.spice.trimmed().isEmpty() && d.type != 0xc3)
             if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->spice.trimmed() != d.spice.trimmed())
                 c.props.insert(QStringLiteral("cmSpice"), d.spice);
+        // a nonlinear source's expression ("%D %1 %2 V=V(vcc_1)*0.5+...")
+        if (s->id == u"nlv" || s->id == u"nli") {
+            static const QRegularExpression expr(QStringLiteral("\\b[VI]\\s*=\\s*(.+)$"), QRegularExpression::CaseInsensitiveOption);
+            if (const auto m = expr.match(d.spice.trimmed()); m.hasMatch()) c.props.insert(QStringLiteral("expr"), m.captured(1).trimmed());
+        }
         // the CircuitMaker device it was, when not the symbol's first one
         // (Op-Amp7 for an LM301A): written back as such
         if (!s->aliases.isEmpty() && cmName.compare(s->aliases.first(), Qt::CaseInsensitive) != 0)

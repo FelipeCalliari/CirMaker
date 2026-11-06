@@ -45,6 +45,7 @@ private slots:
     void miscPartsSimulate();
     void importsSpiceNetlist();
     void labelledModels();
+    void discrete741();
     void mixedRippleCounter();
     void controlledSources_data();
     void controlledSources();
@@ -937,6 +938,38 @@ void TestAnalog::labelledModels()
     QVERIFY2(deck.text.contains(QStringLiteral(" CM_2N2222A\n")), qPrintable(deck.text));
     QVERIFY2(deck.text.contains(QStringLiteral(".MODEL CM_2N2222A NPN(")), qPrintable(deck.text));
     QVERIFY2(deck.text.contains(QStringLiteral(" Q2N3904\n")), qPrintable(deck.text));
+}
+
+// CircuitMaker's 741.ckt: a 741 built of discrete parts whose nonlinear
+// sources name CircuitMaker's nodes and sources (BGND: V(vcc_1)*0.5+
+// V(vee_1)*0.5; BB: I(VB)*10.61E6-...). As an inverter of gain -10 on a
+// 0.1 V sine, its output (RL) swings about +-1 V.
+void TestAnalog::discrete741()
+{
+    requireEngine();
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/741.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    AnalysisSettings a = c.analysis();
+    a.type = AnalysisSettings::Type::Transient;
+    a.tranStop = QStringLiteral("500u");
+    a.tranStep = QStringLiteral("1u");
+    c.setAnalysis(a);
+    spice::Deck deck;
+    const spice::Result res = simulate(c, &deck);
+    QVERIFY2(res.ok, qPrintable(res.error));
+    QVERIFY2(deck.text.contains(QStringLiteral("I=I(Vvb)*10.61E6")), qPrintable(deck.text));
+    const Netlist nl = NetlistBuilder::build(c, library());
+    QString out;
+    for (const Component& comp : c.components())
+        if (comp.designator == u"RL") out = deck.nodeOfNet.value(nl.netOf(comp.id, 0));
+    const spice::Vector* v = res.find(out);
+    QVERIFY2(v && v->size() > 100, qPrintable(out));
+    double lo = 1e9, hi = -1e9;
+    for (int k = v->size() / 2; k < v->size(); ++k) lo = std::min(lo, v->real[k]), hi = std::max(hi, v->real[k]);
+    QVERIFY2(hi > 0.8 && hi < 1.3 && lo < -0.8 && lo > -1.3, qPrintable(QStringLiteral("%1 .. %2").arg(lo).arg(hi)));
 }
 
 // CircuitMaker's Mixed93.ckt in mixed mode: the 74112 ripple counter on a
