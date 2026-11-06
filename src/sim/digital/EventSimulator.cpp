@@ -75,7 +75,8 @@ bool EventSimulator::build(const Circuit& circuit, const LibraryRegistry& librar
         in.model = std::move(model);
         for (int i = 0; i < s->pins.size(); ++i) {
             in.pinNet.push_back(netlist.netOf(c.id, i));
-            in.floatValue.push_back(fromBool(s->pins[i].floatValue != 0));
+            // -1: the pin sees a floating node as it is (Z), as a motor coil does
+            in.floatValue.push_back(s->pins[i].floatValue < 0 ? Logic::Z : fromBool(s->pins[i].floatValue != 0));
         }
         in.out.assign(in.pinNet.size(), released());
         m_byId.insert(c.id, int(m_inst.size()));

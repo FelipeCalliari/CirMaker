@@ -31,7 +31,7 @@ struct SymbolPin {
     QString number;         // package pin number, optional
     QPointF pos;            // connection point
     Dir dir = Dir::Passive;
-    int floatValue = 0;     // logic value read when the pin is left unconnected
+    int floatValue = 0;     // logic value read when the pin is left unconnected (-1: Z)
 };
 
 struct SymbolDef {

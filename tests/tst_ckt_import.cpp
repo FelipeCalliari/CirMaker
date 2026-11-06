@@ -25,6 +25,8 @@ private slots:
     void importsAllCircuits();
     void importedCounterCounts();
     void keypadExampleShowsKey();
+    void rocketExample();
+    void stepperExample();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -147,6 +149,81 @@ void TestCktImport::keypadExampleShowsKey()
         bench.sim.step(500);
     }
     QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join(u", ")));
+}
+
+// CircuitMaker's Rocket.ckt: Launch starts the count down from 9; the
+// rocket lifts off at zero, and only when Arm/Safety is closed.
+void TestCktImport::rocketExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Rocket.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    QVERIFY(!c.analysis().analogMode);          // CircuitMaker opens it in Digital Mode
+    ItemId rocket = 0, arm = 0, launch = 0, counter = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"rocket") rocket = comp.id;
+        else if (comp.symbolId == u"spst") arm = comp.id;
+        else if (comp.symbolId == u"pb_no") launch = comp.id;
+        else if (comp.symbolId == u"74168") counter = comp.id;
+    }
+    QVERIFY(rocket && arm && launch && counter);
+    for (const bool armed : {false, true}) {
+        Bench b(c);
+        auto count = [&] {
+            int v = 0;
+            for (int k = 0; k < 4; ++k)
+                v |= (b.value(c, counter, QStringLiteral("Q%1").arg(k)) == sim::Logic::L1) << k;
+            return v;
+        };
+        b.sim.step(500);
+        QCOMPARE(count(), 9);
+        if (armed) b.sim.interact(arm, QStringLiteral("toggle"));
+        b.sim.step(500);
+        QCOMPARE(b.sim.componentState(rocket), 0);
+        QList<int> counts{count()};
+        int lifted = -1;
+        b.sim.interact(launch, QStringLiteral("press"));
+        for (int t = 0; t < 300 && lifted < 0; ++t) {
+            if (t == 5) b.sim.interact(launch, QStringLiteral("release"));
+            b.sim.step(1);
+            if (counts.isEmpty() || counts.last() != count()) counts << count();
+            if (b.sim.componentState(rocket) > 0) lifted = counts.last();
+        }
+        if (armed) {
+            QCOMPARE(counts.mid(0, 10), (QList<int>{9, 8, 7, 6, 5, 4, 3, 2, 1, 0}));
+            QCOMPARE(lifted, 0);
+        } else {
+            QVERIFY(counts.contains(0));
+            QCOMPARE(lifted, -1);
+        }
+    }
+}
+
+// CircuitMaker's Stepper.ckt (Digital Mode): the sequencer and PROM step the
+// motor through opto isolators, a full turn and back.
+void TestCktImport::stepperExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Stepper.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    QVERIFY(!c.analysis().analogMode);
+    ItemId motor = 0;
+    for (const Component& comp : c.components())
+        if (comp.symbolId == u"stepper") motor = comp.id;
+    QVERIFY(motor);
+    Bench b(c);
+    QVERIFY2(b.sim.warnings().isEmpty(), qPrintable(b.sim.warnings().join(u'\n')));
+    // a full turn one way, reversing at 45 degrees, as CircuitMaker shows it
+    QList<int> steps{b.sim.componentState(motor)};
+    for (int t = 0; t < 200; ++t) {
+        b.sim.step(1);
+        if (steps.last() != b.sim.componentState(motor)) steps << b.sim.componentState(motor);
+    }
+    QCOMPARE(steps.mid(0, 11), (QList<int>{1, 0, -1, -2, -3, -4, -5, -6, -7, -6, -5}));
 }
 
 void TestCktImport::importedCounterCounts()

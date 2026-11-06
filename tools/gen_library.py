@@ -1269,6 +1269,7 @@ def power_parts():
          'pins': [pin('P1', -50, -30), pin('P2', -50, 20), pin('S1', 40, -60), pin('CT', 40, 0), pin('S2', 40, 50)]},
         {'id': 'optoisolator', 'name': 'Opto Isolator', 'prefix': 'U', 'label': '4N25', 'aliases': ['Opto Isolator'],
          'cmPins': ['A', 'C', 'COL', 'E'],
+         'model': {'kind': 'opto'},     # digital: COL-E conduct while the LED is lit (A high, C low)
          'spice': sp('D{name} {A} {name}_k DLED\nV{name} {name}_k {C} 0\nQ{name} {COL} {name}_b {E} Q2N3904\n'
                      'F{name} {E} {name}_b V{name} 0.002', 'DLED', 'Q2N3904'),
          'description': 'LED and phototransistor: the LED current drives the base (CTR about 80 %)',
@@ -1390,8 +1391,8 @@ def inputs():
                       L(60, -80, 50, -50), L(100, 80, 60, 80), L(60, 80, 50, 50),
                       T('1', -92, -108, 6, 'left'), T('2', -92, -68, 6, 'left'), T('3', -92, 52, 6, 'left'),
                       T('4', -92, 92, 6, 'left'), T('A', 92, -88, 6, 'right'), T('B', 92, 72, 6, 'right')],
-         'pins': [pin('1', -100, -100, 'in'), pin('COMA', 100, -80, 'in'), pin('2', -100, -60, 'in'),
-                  pin('3', -100, 60, 'in'), pin('COMB', 100, 80, 'in'), pin('4', -100, 100, 'in')]},
+         'pins': [pin('1', -100, -100, 'in', float=-1), pin('COMA', 100, -80, 'in', float=-1), pin('2', -100, -60, 'in', float=-1),
+                  pin('3', -100, 60, 'in', float=-1), pin('COMB', 100, 80, 'in', float=-1), pin('4', -100, 100, 'in', float=-1)]},
         {'id': 'window', 'name': 'Window', 'prefix': 'W', 'display': 'window', 'aliases': ['Window'],
          'cmPins': ['C', 'NO', 'NC', 'OC'], 'model': {'kind': 'link', 'type': 'spdt'}, 'props': {'closed': 0},
          'description': 'Burglar-alarm window: click during simulation to open or shut it; shut, C connects to NC, '

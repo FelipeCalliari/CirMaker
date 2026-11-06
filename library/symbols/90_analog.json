@@ -2180,6 +2180,9 @@
     "COL",
     "E"
    ],
+   "model": {
+    "kind": "opto"
+   },
    "spice": {
     "line": "D{name} {A} {name}_k DLED\nV{name} {name}_k {C} 0\nQ{name} {COL} {name}_b {E} Q2N3904\nF{name} {E} {name}_b V{name} 0.002",
     "models": [

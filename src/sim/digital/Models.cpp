@@ -507,6 +507,31 @@ private:
     bool m_on = false;
 };
 
+// Opto isolator: its transistor (COL-E) conducts while the LED is lit,
+// A high against C.
+class OptoModel : public Model {
+public:
+    OptoModel(int a, int k, int col, int e) : m_a(a), m_k(k), m_col(col), m_e(e) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const bool on = ctx.input(m_a) == Logic::L1 && ctx.input(m_k) == Logic::L0;
+        if (on != m_on) {
+            m_on = on;
+            ctx.linksChanged();
+        }
+    }
+    QVector<LinkPath> links() const override
+    {
+        if (!m_on) return {};
+        return {{m_col, m_e}};
+    }
+    int state() const override { return m_on; }
+
+private:
+    int m_a, m_k, m_col, m_e;
+    bool m_on = false;
+};
+
 } // namespace
 
 std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QString* error)
@@ -617,6 +642,13 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         if (a < 0 || k < 0)
             return fail(QStringLiteral("LED needs A and K"));
         return std::make_unique<LedModel>(a, k);
+    }
+    if (kind == u"opto") {
+        const int a = s.pinIndex(QStringLiteral("A")), k = s.pinIndex(QStringLiteral("C")),
+                  col = s.pinIndex(QStringLiteral("COL")), e = s.pinIndex(QStringLiteral("E"));
+        if (std::min({a, k, col, e}) < 0)
+            return fail(QStringLiteral("opto isolator needs A, C, COL and E"));
+        return std::make_unique<OptoModel>(a, k, col, e);
     }
     if (kind == u"relay") {
         const int c1 = s.pinIndex(QStringLiteral("C1")), c2 = s.pinIndex(QStringLiteral("C2")),
