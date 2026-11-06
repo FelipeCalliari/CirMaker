@@ -676,6 +676,14 @@ void TestCktImport::exportKeepsNodeNaming()
         QCOMPARE(got.mid(0, 2), (QStringList{QStringLiteral("A=Q1_1"), QStringLiteral("B=D1_3")}));
         QVERIFY(got[2].startsWith(u"C="));
     }
+    // a 5.5 file's "0 0 30 100 9" goes out as format 10 (5.6): with 9,
+    // CircuitMaker reads the 5.6 file as 5.5 and opens nothing (Diffamp.ckt)
+    {
+        Circuit old;
+        QVERIFY(CktImporter::import(QFileInfo(path).dir().filePath(QStringLiteral("Diffamp.ckt")), old, library(), nullptr, nullptr));
+        const QString out = QString::fromLatin1(CktExporter::write(old, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        QVERIFY(out.contains(QStringLiteral("\n0 0 30 100 10\n")));
+    }
     // the header's option bits and its Speed line
     QVERIFY(text.contains(QStringLiteral("\n9961472 0\n")));
     QVERIFY(text.contains(QStringLiteral("\n0 0 30 100 10\n")));

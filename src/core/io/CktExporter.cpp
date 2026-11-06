@@ -934,7 +934,12 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     }
     QStringList out{head};
     const AnalysisSettings& as = circuit.analysis();
-    out << (as.cmSimLine.isEmpty() ? QStringLiteral("0 0 1 100 10") : as.cmSimLine) << rect(extent);
+    // "0 0 <speed> 100 <format>": the last number is the file format (10 for
+    // 5.6, 9 for 5.5, 3 for 5.0); one kept from an older file says 10 here, or
+    // CircuitMaker reads the rest as the older format and opens nothing (Diffamp)
+    QStringList simLine = (as.cmSimLine.isEmpty() ? QStringLiteral("0 0 1 100 10") : as.cmSimLine).split(u' ', Qt::SkipEmptyParts);
+    if (simLine.size() == 5) simLine[4] = QStringLiteral("10");
+    out << simLine.join(u' ') << rect(extent);
     out << str(QStringLiteral("5.000 V")) << str(QStringLiteral("5.000 V")) << str(QStringLiteral("GND"));
     out << QStringLiteral("0 0") << QStringLiteral("24 100 0 0 0") << str(QStringLiteral("Package,Description,"))
         << QStringLiteral("0") << QStringLiteral("0 7") << QStringLiteral("0 4 0.500000 0.500000") << rect(extent)
