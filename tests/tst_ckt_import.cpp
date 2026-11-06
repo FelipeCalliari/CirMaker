@@ -121,6 +121,11 @@ void TestCktImport::importsAllCircuits()
             l.sort();
             qInfo("%s %s: %s", c.analysis().analogMode ? "A" : "D", qPrintable(QFileInfo(path).fileName()), qPrintable(l.join(u' ')));
         }
+        if (qEnvironmentVariableIsSet("CM_LIST_SPICE"))      // instances with a SPICE line of their own
+            for (const Component& comp : c.components())
+                if (comp.props.contains(QStringLiteral("cmSpice")))
+                    qInfo("SPICE %s %s %s: %s", qPrintable(QFileInfo(path).fileName()), qPrintable(comp.symbolId), qPrintable(comp.designator),
+                          qPrintable(comp.props.value(QStringLiteral("cmSpice")).toString()));
         if (qEnvironmentVariableIsSet("CM_NO_DIGITAL_MODEL") && !c.analysis().analogMode) {
             QSet<QString> none;
             for (const Component& comp : c.components()) {

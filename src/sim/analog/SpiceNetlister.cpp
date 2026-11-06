@@ -404,7 +404,13 @@ private:
 
     void emitTemplate(const Component& c, const SymbolDef& s, const QString& name, const QString& tpl, const QJsonObject& spice)
     {
-        m_lines << expand(c, s, name, tpl, true);
+        QString element = expand(c, s, name, tpl, true);
+        // instance parameters a CircuitMaker file gave the part ("IC=2.5", "W=40U L=10U")
+        if (const QString tail = c.props.value(QStringLiteral("spiceTail")).toString().trimmed(); !tail.isEmpty()) {
+            const qsizetype nl = element.indexOf(u'\n');
+            element.insert(nl < 0 ? element.size() : nl, u' ' + tail);
+        }
+        m_lines << element;
         for (const QJsonValue& v : spice.value(u"models").toArray()) addModel(expand(c, s, name, v.toString(), false));
         QJsonArray sub;
         for (const QJsonValue& v : spice.value(u"subckt").toArray()) sub << expand(c, s, name, v.toString(), false);

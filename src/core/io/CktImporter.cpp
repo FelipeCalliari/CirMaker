@@ -686,6 +686,14 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!d.spice.trimmed().isEmpty() && d.type != 0xc3)
             if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->spice.trimmed() != d.spice.trimmed())
                 c.props.insert(QStringLiteral("cmSpice"), d.spice);
+        // parameters the instance adds to the library's element line
+        // ("%D %1 %2 %V IC=2.5", "%D %1 %2 %3 %3 %M W=40U L=10U")
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && !d.spice.trimmed().isEmpty()) {
+            const QString lib = dev->spice.section(u'\n', 0, 0).trimmed(), own = d.spice.section(u'\n', 0, 0).trimmed();
+            static const QRegularExpression params(QStringLiteral("^(\\s+[A-Za-z]\\w*=\\S+)+$"));
+            if (!lib.isEmpty() && own.size() > lib.size() && own.startsWith(lib) && params.match(own.mid(lib.size())).hasMatch())
+                c.props.insert(QStringLiteral("spiceTail"), own.mid(lib.size()).trimmed());
+        }
         // a nonlinear source's expression ("%D %1 %2 V=V(vcc_1)*0.5+...")
         if (s->id == u"nlv" || s->id == u"nli") {
             static const QRegularExpression expr(QStringLiteral("\\b[VI]\\s*=\\s*(.+)$"), QRegularExpression::CaseInsensitiveOption);
