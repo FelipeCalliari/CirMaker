@@ -58,6 +58,12 @@ public:
     // Memory contents (RAM/ROM); empty for models without memory.
     virtual QVector<int> memory() const { return {}; }
     virtual void setMemory(ModelContext&, const QVector<int>& /*words*/) {}
+    // Relays drawn as separate parts: a coil names the relay it is, a
+    // contact the relay it belongs to; the simulator attaches each contact
+    // to its coil, whose state() is 1 while energized.
+    virtual QString relayCoil() const { return {}; }
+    virtual QString relayContact() const { return {}; }
+    virtual void attachCoil(const Model* /*coil*/) {}
 
     // Ticks added to every delayed output: an MSI chip's propagation delay
     // (Edit > Set Prop Delays) less the one tick its model already takes.

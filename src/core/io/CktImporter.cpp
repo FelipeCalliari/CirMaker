@@ -994,7 +994,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // wires tell those pins apart
         const QString kind = s.model.value(u"kind").toString();
         QHash<int, int> netUse;
-        if (kind == u"link" || kind == u"relay" || kind == u"keymatrix")
+        if (kind == u"link" || kind == u"relay" || kind == u"keymatrix" || kind == u"contact")
             for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin)
                 if (ourPin(s, d, cmPin) >= 0 && d.nets[cmPin] > 0) netUse[d.nets[cmPin]]++;
         for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin) {

@@ -27,6 +27,7 @@ private slots:
     void keypadExampleShowsKey();
     void rocketExample();
     void stepperExample();
+    void ladderExample();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -103,6 +104,15 @@ void TestCktImport::importsAllCircuits()
         shorts += report.shorts;
         if (report.shorts && qEnvironmentVariableIsSet("CM_CKT_SHORTS"))
             qInfo("%s: %d shorts (%s)", qPrintable(QFileInfo(path).fileName()), report.shorts, qPrintable(report.warnings.join(u"; ")));
+        if (qEnvironmentVariableIsSet("CM_NO_DIGITAL_MODEL") && !c.analysis().analogMode) {
+            QSet<QString> none;
+            for (const Component& comp : c.components()) {
+                const SymbolDef* sd = library().find(comp.symbolId);
+                if (sd && !sd->netLabel && sd->model.value(u"kind").toString().isEmpty()) none << comp.symbolId;
+            }
+            if (!none.isEmpty())
+                qInfo("%s: no digital model: %s", qPrintable(QFileInfo(path).fileName()), qPrintable(QStringList(none.cbegin(), none.cend()).join(u' ')));
+        }
         // every imported model must build and run
         Bench bench(c);
         QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(path + u": " + bench.sim.warnings().join(u"; ")));
@@ -224,6 +234,49 @@ void TestCktImport::stepperExample()
         if (steps.last() != b.sim.componentState(motor)) steps << b.sim.componentState(motor);
     }
     QCOMPARE(steps.mid(0, 11), (QList<int>{1, 0, -1, -2, -3, -4, -5, -6, -7, -6, -5}));
+}
+
+// CircuitMaker's Ladder.ckt (Digital Mode): switches energize coils S1-S4,
+// whose contacts run the motors, the lamp and relay K1.
+void TestCktImport::ladderExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Ladder.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit c;
+    QVERIFY(CktImporter::import(path, c, library(), nullptr, nullptr));
+    QVERIFY(!c.analysis().analogMode);
+    QHash<QString, ItemId> by;
+    for (const Component& comp : c.components()) by.insert(comp.designator, comp.id);
+    Bench b(c);
+    QVERIFY2(b.sim.warnings().isEmpty(), qPrintable(b.sim.warnings().join(u'\n')));
+    auto on = [&](const char* d) { return b.sim.componentState(by.value(QString::fromLatin1(d))); };
+    auto settle = [&] { b.sim.step(20); };
+    auto set = [&](const char* sw, int level) {
+        if (on(sw) != level) b.sim.interact(by.value(QString::fromLatin1(sw)), QStringLiteral("toggle"));
+        settle();
+    };
+    for (const char* sw : {"V1", "V2", "V3", "V4"}) set(sw, 0);
+    settle();
+    QCOMPARE(on("L1"), 0);
+    QCOMPARE(on("M2"), 0);
+    set("V1", 1);                       // switch S4
+    QCOMPARE(on("L1"), 1);              // through contact S4
+    QCOMPARE(on("M2"), 0);              // S1 or S3 still open
+    set("V4", 1);                       // switch S1
+    QCOMPARE(on("M2"), 1);              // S1, S2 (closed at rest), S4
+    set("V3", 1);                       // switch S2 opens its NC contact
+    QCOMPARE(on("M2"), 0);
+    QCOMPARE(on("M1"), 0);
+    b.sim.interact(by.value(QStringLiteral("S2")), QStringLiteral("press"));       // K1's coil
+    settle();
+    QCOMPARE(on("M1"), 1);
+    b.sim.interact(by.value(QStringLiteral("S2")), QStringLiteral("release"));
+    settle();
+    QCOMPARE(on("M1"), 0);
+    b.sim.interact(by.value(QStringLiteral("S1")), QStringLiteral("press"));
+    settle();
+    QCOMPARE(on("BZ1"), 1);
 }
 
 void TestCktImport::importedCounterCounts()

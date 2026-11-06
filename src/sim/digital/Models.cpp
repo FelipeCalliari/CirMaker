@@ -507,6 +507,54 @@ private:
     bool m_on = false;
 };
 
+// Two-pin loads CircuitMaker animates in Digital Mode (lamp, buzzer, motor,
+// speaker, relay coil, solenoid): energized while their pins differ. A coil
+// also operates the contacts with its relay name.
+class LoadModel : public Model {
+public:
+    LoadModel(int a, int b, QString relay) : m_a(a), m_b(b), m_relay(std::move(relay)) {}
+    void evaluate(ModelContext& ctx) override
+    {
+        const Logic x = ctx.input(m_a), y = ctx.input(m_b);
+        const bool on = isKnown(x) && isKnown(y) && x != y;
+        if (on != m_on) {
+            m_on = on;
+            if (!m_relay.isEmpty()) ctx.linksChanged();
+        }
+    }
+    int state() const override { return m_on; }
+    QString relayCoil() const override { return m_relay; }
+
+private:
+    int m_a, m_b;
+    QString m_relay;
+    bool m_on = false;
+};
+
+// A relay contact drawn on its own: C to the other pin while its coil is
+// energized (normally open) or while it is not (normally closed).
+class ContactModel : public Model {
+public:
+    ContactModel(int c, int other, bool closedAtRest, QString relay)
+        : m_c(c), m_other(other), m_closedAtRest(closedAtRest), m_relay(std::move(relay)) {}
+    void evaluate(ModelContext&) override {}
+    QVector<LinkPath> links() const override
+    {
+        const bool energized = m_coil && m_coil->state() == 1;
+        if (energized == m_closedAtRest) return {};
+        return {{m_c, m_other}};
+    }
+    int state() const override { return m_coil && m_coil->state() == 1; }
+    QString relayContact() const override { return m_relay; }
+    void attachCoil(const Model* coil) override { m_coil = coil; }
+
+private:
+    int m_c, m_other;
+    bool m_closedAtRest;
+    QString m_relay;
+    const Model* m_coil = nullptr;
+};
+
 // Opto isolator: its transistor (COL-E) conducts while the LED is lit,
 // A high against C.
 class OptoModel : public Model {
@@ -642,6 +690,17 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         if (a < 0 || k < 0)
             return fail(QStringLiteral("LED needs A and K"));
         return std::make_unique<LedModel>(a, k);
+    }
+    if (kind == u"load") {
+        if (s.pins.size() < 2) return fail(QStringLiteral("load needs two pins"));
+        const QString relay = s.defaultProps.contains(QStringLiteral("relay")) ? props.value(QStringLiteral("relay")).toString().trimmed() : QString();
+        return std::make_unique<LoadModel>(0, 1, relay);
+    }
+    if (kind == u"contact") {
+        const bool nc = s.model.value(u"closed").toBool();
+        const int com = s.pinIndex(QStringLiteral("C")), other = s.pinIndex(nc ? QStringLiteral("NC") : QStringLiteral("NO"));
+        if (com < 0 || other < 0) return fail(QStringLiteral("contact needs C and NO or NC"));
+        return std::make_unique<ContactModel>(com, other, nc, props.value(QStringLiteral("relay")).toString().trimmed());
     }
     if (kind == u"opto") {
         const int a = s.pinIndex(QStringLiteral("A")), k = s.pinIndex(QStringLiteral("C")),

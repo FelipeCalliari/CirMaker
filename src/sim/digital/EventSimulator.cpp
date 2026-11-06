@@ -83,6 +83,15 @@ bool EventSimulator::build(const Circuit& circuit, const LibraryRegistry& librar
         m_inst.push_back(std::move(in));
     }
 
+    // contacts follow the coil with their relay's name
+    QHash<QString, const Model*> coils;
+    for (const Instance& in : m_inst)
+        if (const QString name = in.model->relayCoil(); !name.isEmpty())
+            coils.insert(name.toUpper(), in.model.get());
+    for (Instance& in : m_inst)
+        if (const QString name = in.model->relayContact(); !name.isEmpty())
+            in.model->attachCoil(coils.value(name.toUpper()));
+
     m_netConnected.assign(m_netCount, false);
     for (int n = 0; n < m_netCount; ++n)
         m_netConnected[n] = netlist.nets[n].pins.size() + netlist.nets[n].wires.size() > 1;
