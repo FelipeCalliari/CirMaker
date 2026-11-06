@@ -555,6 +555,28 @@ void TestCktImport::importsProbes()
         for (const Wire& w : c.wires())
             if (!w.bus && WireGeometry::onPolyline(p, w.points)) { nets << nl.wireNet.value(w.id); break; }
     QCOMPARE(nets.size(), 5);                       // each on a wire, all different nets
+    // written back
+    CmDeviceLib cmLib;
+    QVERIFY(cmLib.load(CmDeviceLib::locate()));
+    Circuit b;
+    QVERIFY(CktImporter::importData(CktExporter::write(c, library(), cmLib), b, library(), nullptr, nullptr));
+    QCOMPARE(b.probes().size(), 5);
+
+    // its 74112 halves drawn apart (U1A, U1B, U3A, U3B) are parts of two
+    // packages: "65 0 0 <x> <parts> <part> <package> 0" after the package map
+    const QString text = QString::fromLatin1(CktExporter::write(c, library(), cmLib)).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    static const QRegularExpression rec(QStringLiteral("\\n3 (U[13][AB])\\n(?:.*\\n){8,20}?65 0 0 \\d+ 2 (\\d) (\\d+) 0\\n"));
+    QHash<QString, std::pair<int, int>> parts;
+    for (auto it = rec.globalMatch(text); it.hasNext();) {
+        const auto m = it.next();
+        parts.insert(m.captured(1), {m.captured(2).toInt(), m.captured(3).toInt()});
+    }
+    QCOMPARE(parts.size(), 4);
+    QCOMPARE(parts[QStringLiteral("U1A")].first, 1);
+    QCOMPARE(parts[QStringLiteral("U1B")].first, 2);
+    QCOMPARE(parts[QStringLiteral("U1A")].second, parts[QStringLiteral("U1B")].second);
+    QCOMPARE(parts[QStringLiteral("U3A")].second, parts[QStringLiteral("U3B")].second);
+    QVERIFY(parts[QStringLiteral("U1A")].second != parts[QStringLiteral("U3A")].second);
 }
 
 void TestCktImport::importedCounterCounts()

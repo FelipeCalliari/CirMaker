@@ -423,6 +423,11 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             continue;
         }
         d.part = packagePart(*s, c);
+        // a part drawn on its own (one flip-flop of a 74112) keeps its letter
+        // in the designator: U1B is the second part of U1
+        if (s->parts.isEmpty() && d.lib->parts > 1 && c.designator.size() > 1 && c.designator.back().isLetter()
+            && c.designator.at(c.designator.size() - 2).isDigit())
+            d.part = std::clamp(c.designator.back().toUpper().unicode() - u'A' + 1, 1, d.lib->parts);
         if (d.lib->parts <= 1 || d.lib->packageMap.size() < 1 + d.lib->pinCount * (d.part + 1)) d.part = 1;
         d.ourPin = pinMapping(d);
         Component turned = c;
@@ -580,7 +585,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         QVector<int> pkg{0};
         const int n = l.pinCount;
         if (l.parts > 1) {
-            pkg << l.packageMap.mid(1 + n * d.part, n) << l.packageMap.mid(1 + n) << 0;
+            pkg << l.packageMap.mid(1 + n * d.part, n) << l.packageMap.mid(1 + n, n * l.parts) << 0;
         } else {
             QVector<int> own = l.packageMap.mid(1, n);
             own.resize(n);
@@ -613,9 +618,13 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
 
         int group = 0;
         if (l.parts > 1) {
-            const auto it = packageIds.constFind(c.designator);
+            // the package: U3 for U3A and U3B drawn as separate parts
+            QString package = c.designator;
+            if (s.parts.isEmpty() && package.size() > 1 && package.back().isLetter() && package.at(package.size() - 2).isDigit())
+                package.chop(1);
+            const auto it = packageIds.constFind(package);
             group = it != packageIds.cend() ? *it : int(packageIds.size()) + 1;
-            packageIds.insert(c.designator, group);
+            packageIds.insert(package, group);
         }
 
         QStringList rec;
@@ -764,7 +773,19 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     QRect extent;
     for (const Device& d : devices) extent |= QRect(d.origin - QPoint(40, 40), QSize(80, 80));
     if (extent.isEmpty()) extent = QRect(0, 0, 600, 300);
-    QStringList out{QString::fromLatin1(kHeaderStart)};
+    QString head = QString::fromLatin1(kHeaderStart);
+    if (!circuit.probes().isEmpty()) {
+        // "Probes: n", then name, analysis and "index x y colour" each
+        static const int colours[] = {65280, 65535, 16776960, 16711935, 11184640, 255, 16711680, 32768};
+        QStringList p{QStringLiteral("Probes: %1").arg(circuit.probes().size())};
+        for (int k = 0; k < circuit.probes().size(); ++k) {
+            const QPoint at = toCm(circuit.probes()[k]);
+            p << QStringLiteral("P%1").arg(k + 1) << QStringLiteral("Transient Analysis")
+              << QStringLiteral("%1 %2 %3 %4").arg(k).arg(at.x()).arg(at.y()).arg(colours[k % 8]);
+        }
+        head.replace(QStringLiteral("Probes: 0"), p.join(u'\n'));
+    }
+    QStringList out{head};
     out << QStringLiteral("0 0 1 100 10") << rect(extent);
     out << str(QStringLiteral("5.000 V")) << str(QStringLiteral("5.000 V")) << str(QStringLiteral("GND"));
     out << QStringLiteral("0 0") << QStringLiteral("24 100 0 0 0") << str(QStringLiteral("Package,Description,"))
