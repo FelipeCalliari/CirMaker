@@ -24,6 +24,7 @@ struct Device {
     QVector<int> data;
     QVector<int> packagePins;   // DIP pin of CM pin 1, 2, ... (first part of the package)
     QVector<int> partPins;      // the same for this part (U1B's)
+    QVector<int> packageTable;  // every part's pins, as the file has them
     QString ref;
     QString package;
     QVector<int> misc;          // the 8 numbers after the package map (code, model location, parts, part, package)                // after the nets: a macro's name, or the device a part's model is looked up under

@@ -177,7 +177,7 @@ Device readDevice(Reader& r, double version)
     const QVector<int> pkg = r.ints(r.integer() + 1);
     const int pins = std::abs(pinMax);
     if (pins > 0 && pkg.size() >= 1 + 2 * pins)
-        d.packagePins = pkg.mid(1 + pins, pins), d.partPins = pkg.mid(1, pins);
+        d.packagePins = pkg.mid(1 + pins, pins), d.partPins = pkg.mid(1, pins), d.packageTable = pkg.mid(1 + pins, pkg.size() - 2 - pins);
     else if (pins > 0 && pkg.size() >= 4)
         d.partPins = pkg.mid(1, (pkg.size() - 2) / 2);  // a shorter map (Scr's generator: 2 of its pins)
     d.misc = r.ints(8);
@@ -662,6 +662,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             c.label = d.value;
         } else {
             c.label = s->defaultLabel;
+            // a value of its own where the symbol has no label: it names the
+            // model (an LED's "LED2" is CircuitMaker's DLED2)
+            if (s->defaultLabel.isEmpty() && !d.value.trimmed().isEmpty())
+                if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->value.trimmed() != d.value.trimmed())
+                    c.label = d.value.trimmed();
         }
         c.symbolId = s->id;
         // where CircuitMaker looks its model up ("N-EMOS 3T:A~", for a model
@@ -680,6 +685,14 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // when it was placed, as written: CircuitMaker names a node after
         // the earliest placed part on it ("" for none: older files)
         if (d.stampRead) c.props.insert(QStringLiteral("cmStamp"), d.stamps.join(u' '));
+        // a package of several parts: its table as the model gives it (the
+        // 74LS02's output on pin 1, not the library's generic NOR's)
+        if (const CmLibDevice* dev = deviceLib().find(d.name); dev && dev->parts > 1 && !d.packageTable.isEmpty()
+            && d.packageTable != dev->packageMap.mid(1 + dev->pinCount, d.packageTable.size())) {
+            QStringList t;
+            for (int p : d.packageTable) t << QString::number(p);
+            c.props.insert(QStringLiteral("cmPackageTable"), t.join(u' '));
+        }
         // the part's package pins, which its model may set ("pkg:TO-18 3,2,1"):
         // CircuitMaker names SPICE nodes and probes by them (Q1_3, U1A_3)
         if (!d.partPins.isEmpty() && d.type != 0x5e && std::any_of(d.partPins.cbegin(), d.partPins.cend(), [](int p) { return p > 0; })) {

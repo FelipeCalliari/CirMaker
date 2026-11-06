@@ -108,6 +108,12 @@ struct Device {
 int packageNumber(const Device& d, int k)
 {
     const CmLibDevice& l = *d.lib;
+    // the instance's own pins where the file gave them (its model's package)
+    const QString key = l.parts > 1 ? QStringLiteral("cmPackageTable") : QStringLiteral("cmPins");
+    if (const QStringList kept = d.c->props.value(key).toString().split(u' ', Qt::SkipEmptyParts); !kept.isEmpty()) {
+        const int at = l.parts > 1 ? l.pinCount * (d.part - 1) + k - 1 : k - 1;
+        if (at < kept.size()) return kept[at].toInt();
+    }
     const QVector<int>& map = l.packageMap;
     if (l.parts > 1) return map.value(1 + l.pinCount * d.part + k - 1);
     return map.value(k);
@@ -670,7 +676,12 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         QVector<int> pkg{0};
         const int n = l.pinCount;
         if (l.parts > 1) {
-            pkg << l.packageMap.mid(1 + n * d.part, n) << l.packageMap.mid(1 + n, n * l.parts) << 0;
+            QVector<int> table = l.packageMap.mid(1 + n, n * l.parts);
+            if (const QStringList kept = c.props.value(QStringLiteral("cmPackageTable")).toString().split(u' ', Qt::SkipEmptyParts);
+                kept.size() == table.size()) {
+                for (int k = 0; k < kept.size(); ++k) table[k] = kept[k].toInt();
+            }
+            pkg << table.mid(n * (d.part - 1), n) << table << 0;
         } else {
             QVector<int> own = l.packageMap.mid(1, n);
             own.resize(n);
