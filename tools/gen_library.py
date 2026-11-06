@@ -1426,6 +1426,8 @@ def seg_graphics():
 
 def outputs():
     seg_g, seg_p = seg_graphics()
+    # a floating segment (an open-collector 7447 output that is off) stays dark
+    seg_p = [dict(p, float=-1) if p['name'] != 'COM' else p for p in seg_p]
     return [
         {'id': 'logicdisplay', 'name': 'Logic Display', 'prefix': 'L', 'display': 'lamp', 'aliases': ['Logic Display'],
          'cmPins': ['D0'], 'model': {'kind': 'display', 'bits': 1},

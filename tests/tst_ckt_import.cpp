@@ -29,6 +29,8 @@ private slots:
     void stepperExample();
     void ladderExample();
     void displayExample();
+    void carsExample();
+    void delayExample();
     void importsDataSequencer();
     void challengeCounterStops();
     void importsPackageParts();
@@ -341,6 +343,88 @@ void TestCktImport::displayExample()
             QCOMPARE(comp.props.value(QStringLiteral("text")).toString(), c.component(term)->props.value(QStringLiteral("text")).toString());
             QCOMPARE(comp.props.value(QStringLiteral("cursor")).toInt(), 48);
         }
+}
+
+// CircuitMaker's Cars.ckt: the race timers (User.lib's Timer macro) stay
+// dark until Start, count while their car races and keep its time.
+void TestCktImport::carsExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Cars.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit imported;
+    QVERIFY(CktImporter::import(path, imported, library(), nullptr, nullptr));
+    QStringList warnings;
+    const std::unique_ptr<Circuit> flat = macros::flatten(imported, library(), &warnings);
+    QVERIFY2(warnings.isEmpty(), qPrintable(warnings.join(u"; ")));
+    const Circuit& c = *flat;
+    Bench b(c);
+    QVERIFY2(b.sim.warnings().isEmpty(), qPrintable(b.sim.warnings().join(u'\n')));
+    QVector<ItemId> digits, cars;
+    ItemId start = 0;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"seg7_ca") digits << comp.id;
+        if (comp.symbolId == u"car") cars << comp.id;
+        if (comp.symbolId == u"pb_no") start = comp.id;
+    }
+    QCOMPARE(digits.size(), 6);
+    QVERIFY(start && cars.size() == 3);
+    b.sim.step(200);
+    for (ItemId d : digits) QCOMPARE(b.sim.componentState(d), 0);       // dark before the race
+    b.sim.interact(start, QStringLiteral("press"));
+    b.sim.step(20);
+    b.sim.interact(start, QStringLiteral("release"));
+    b.sim.step(3000);
+    for (ItemId car : cars) QCOMPARE(b.sim.componentState(car), 100);  // all finished
+    int shown = 0;
+    for (ItemId d : digits) shown += b.sim.componentState(d) != 0;
+    QCOMPARE(shown, 6);                                                // every timer shows its time
+}
+
+// CircuitMaker's Delay.ckt (User.lib's Delay macro): Start lights Q after
+// the delay set on the hex keys; Reset puts it out.
+void TestCktImport::delayExample()
+{
+    const QString path = QDir::homePath() + QStringLiteral("/.wine/drive_c/Program Files/CircuitMaker 2000/Examples/Circuits/Delay.ckt");
+    if (!QFileInfo::exists(path))
+        QSKIP("CircuitMaker examples not available");
+    Circuit imported;
+    QVERIFY(CktImporter::import(path, imported, library(), nullptr, nullptr));
+    QStringList warnings;
+    const std::unique_ptr<Circuit> flat = macros::flatten(imported, library(), &warnings);
+    QVERIFY2(warnings.isEmpty(), qPrintable(warnings.join(u"; ")));
+    const Circuit& c = *flat;
+    Bench b(c);
+    QVERIFY2(b.sim.warnings().isEmpty(), qPrintable(b.sim.warnings().join(u'\n')));
+    ItemId lamp = 0;
+    QVector<ItemId> buttons;
+    for (const Component& comp : c.components()) {
+        if (comp.symbolId == u"logicdisplay") lamp = comp.id;
+        if (comp.symbolId == u"pb_no") buttons << comp.id;
+    }
+    QVERIFY(lamp && buttons.size() == 2);
+    std::sort(buttons.begin(), buttons.end(), [&](ItemId x, ItemId y) { return c.component(x)->pos.x() < c.component(y)->pos.x(); });
+    const ItemId reset = buttons[0], start = buttons[1];   // Reset on the left, Start Delay on the right
+    auto push = [&](ItemId pb) {
+        b.sim.interact(pb, QStringLiteral("press"));
+        b.sim.step(5);
+        b.sim.interact(pb, QStringLiteral("release"));
+    };
+    b.sim.step(100);
+    push(reset);
+    b.sim.step(50);
+    QCOMPARE(b.sim.componentState(lamp), 0);
+    push(start);
+    int litAt = -1;
+    for (int t = 0; t < 20000 && litAt < 0; ++t) {
+        b.sim.step(1);
+        if (b.sim.componentState(lamp) == 1) litAt = t;
+    }
+    qInfo("Q lit %d ticks after Start", litAt);
+    QVERIFY2(litAt >= 10 && litAt <= 60, "CircuitMaker lights it about 25 ticks after Start");
+    push(reset);
+    b.sim.step(50);
+    QCOMPARE(b.sim.componentState(lamp), 0);
 }
 
 void TestCktImport::importedCounterCounts()
@@ -773,7 +857,8 @@ void TestCktImport::keysAndTextsRoundTrip()
     QCOMPARE(b.titleBlock().author, tb.author);
     QCOMPARE(b.titleBlock().date, tb.date);
     QCOMPARE(b.titleBlock().revision, tb.revision);
-    QVERIFY(b.titleBlock().visible);
+    QVERIFY(!b.titleBlock().visible);           // CircuitMaker prints it, it is not on the screen
+    QVERIFY(data.contains("\r\n2\r\n8 Two keys"));
 }
 
 // The title block CircuitMaker 2000 wrote (Options > Schematic > Title Block)
@@ -798,7 +883,6 @@ void TestCktImport::importsTitleBlock()
     QCOMPARE(b.titleBlock().author, QStringLiteral("NAMEaa"));
     QCOMPARE(b.titleBlock().date, QStringLiteral("DATEee"));
     QCOMPARE(b.titleBlock().revision, QStringLiteral("REVdd"));
-    QVERIFY(b.titleBlock().visible);
 }
 
 // Diagnostic (CM_PIN_GEOMETRY=1): symbols whose pins are not where

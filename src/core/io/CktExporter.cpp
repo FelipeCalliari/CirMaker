@@ -730,7 +730,8 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         << QStringLiteral("%1 0").arg(42991634 | (circuit.analysis().analogMode ? 0x80000 : 0));
     const TitleBlock& tb = circuit.titleBlock();
     // title block: display mode (2: on all pages), title, name, date, revision, ID
-    out << QString::number(tb.visible ? 2 : 0) << str(tb.title) << str(tb.author) << str(tb.date) << str(tb.revision)
+    const bool titled = tb.visible || !tb.title.isEmpty() || !tb.author.isEmpty() || !tb.date.isEmpty() || !tb.revision.isEmpty();
+    out << QString::number(titled ? 2 : 0) << str(tb.title) << str(tb.author) << str(tb.date) << str(tb.revision)
         << QStringLiteral("0");
     out << QString::number(records.size());
     out << records;

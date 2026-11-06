@@ -410,13 +410,42 @@ const CmUserLib& userLib()
 bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
 {
     CktFile inner = m.body;
-    // wire ends on device pins whose nets disagree: the nets decide
-    for (CktWire& w : inner.wires) {
-        const int a = w.h[7] - 1, b = w.h[8] - 1;
-        if (a < 0 || b < 0 || a >= inner.devices.size() || b >= inner.devices.size()) continue;
-        if (inner.devices[a].nets.value(w.h[0], -1) != inner.devices[b].nets.value(w.h[1], -2))
-            w.h[0] = w.h[1] = w.h[7] = w.h[8] = 0;
+    // Pins whose inner net no device has reach the circuit through wires
+    // that end on nothing (User.lib keeps no net on wires): Timer's CP, SI
+    // and FI. Taken in order, top to bottom, when the counts agree.
+    QSet<int> deviceNets;
+    for (const Device& d : std::as_const(inner.devices))
+        for (int n : d.nets) deviceNets << n;
+    QVector<int> loosePins;
+    for (int k = 0; k < m.pins.size(); ++k)
+        if (m.pinNets.value(k) > 0 && !deviceNets.contains(m.pinNets.value(k))) loosePins << k;
+    struct LooseEnd { int wire, end; QPointF at; };
+    QVector<LooseEnd> looseEnds;
+    for (int i = 0; i < inner.wires.size(); ++i) {
+        const CktWire& w = inner.wires[i];
+        if (w.isBus()) continue;
+        for (int e : {0, 1}) {
+            if (w.h[7 + e] != 0 || w.h[9 + e] != 0) continue;
+            // an output's wire: its other end is already on a pin's net
+            const int od = w.h[7 + (1 - e)] - 1, op = w.h[1 - e];
+            if (od >= 0 && od < inner.devices.size() && m.pinNets.contains(inner.devices[od].nets.value(op, -1))) continue;
+            const QPointF at = e == 0 ? w.points.first() : w.points.last();
+            bool onOther = false;
+            for (int j = 0; j < inner.wires.size() && !onOther; ++j)
+                if (j != i && WireGeometry::onPolyline(at, inner.wires[j].points)) onOther = true;
+            if (!onOther) looseEnds << LooseEnd{i, e, at};
+        }
     }
+    QHash<int, LooseEnd> looseOf;              // pin -> the wire end it takes
+    if (!loosePins.isEmpty() && looseEnds.size() == loosePins.size()) {
+        std::sort(looseEnds.begin(), looseEnds.end(), [](const LooseEnd& a, const LooseEnd& b) {
+            return a.at.y() != b.at.y() ? a.at.y() < b.at.y() : a.at.x() < b.at.x();
+        });
+        for (int i = 0; i < loosePins.size(); ++i) looseOf.insert(loosePins[i], looseEnds[i]);
+    }
+    // A wire between two device pins connects them even where the devices'
+    // own net numbers disagree: User.lib keeps stale numbers on some parts
+    // (Timer's 74LS74 and inverters), and CircuitMaker follows the wires.
     int left = 0, right = 0, top = 0;
     for (int i = 0; i < inner.devices.size(); ++i) {
         const Device& d = inner.devices[i];
@@ -436,6 +465,11 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
         port.x = out ? right + 45 : left - 45;
         port.y = top + 12 * rows[out]++;
         inner.devices << port;
+        if (auto it = looseOf.constFind(k); it != looseOf.cend()) {
+            CktWire& w = inner.wires[it->wire];
+            w.h[it->end] = 1;                       // the port's pin
+            w.h[7 + it->end] = int(inner.devices.size());
+        }
     }
     Circuit c;
     CktImportReport rep;
@@ -857,7 +891,8 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         tb.author = file.title->name;
         tb.date = file.title->date;
         tb.revision = file.title->revision;
-        tb.visible = file.title->mode != 0;
+        // CircuitMaker shows it on printed pages, not on the screen
+        tb.visible = false;
         double right = 0, bottom = 0;
         for (const Component& c : circuit.components())
             right = std::max(right, c.pos.x()), bottom = std::max(bottom, c.pos.y());
@@ -1006,7 +1041,10 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // wires tell those pins apart
         const QString kind = s.model.value(u"kind").toString();
         QHash<int, int> netUse;
-        if (kind == u"link" || kind == u"relay" || kind == u"keymatrix" || kind == u"contact")
+        // (a resistor is no contact: a ResistorWire's ends are one net, and joined)
+        const bool contact = (kind == u"link" && s.model.value(u"type").toString() != u"resistor") || kind == u"relay"
+                             || kind == u"keymatrix" || kind == u"contact";
+        if (contact)
             for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin)
                 if (ourPin(s, d, cmPin) >= 0 && d.nets[cmPin] > 0) netUse[d.nets[cmPin]]++;
         for (int cmPin = 1; cmPin < d.nets.size(); ++cmPin) {
