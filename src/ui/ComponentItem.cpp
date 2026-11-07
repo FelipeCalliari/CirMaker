@@ -270,7 +270,8 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
         QString tag = m_c.props.value(QStringLiteral("relay")).toString();
         if (tag.isEmpty()) tag = m_c.props.value(QStringLiteral("cmTag")).toString().section(u' ', 5);
         if (!tag.isEmpty())
-            SymbolPainter::uprightText(p, toLocal.map(QPointF(at[0].toDouble(), at[1].toDouble())), tag, kTextSize, 0, ink);
+            // a little smaller: a math block's expression fits our narrower boxes
+            SymbolPainter::uprightText(p, toLocal.map(QPointF(at[0].toDouble(), at[1].toDouble())), tag, kTextSize * 0.85, 0, ink);
     }
     if (m_symbol->display == u"port" && !m_c.label.isEmpty()) {
         // port name inside the arrow, always, as CircuitMaker shows it
