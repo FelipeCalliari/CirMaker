@@ -114,7 +114,7 @@ void SchematicScene::onComponentAdded(ItemId id)
         return;
     }
     // drawn as CircuitMaker draws it, when its Device.lib is there
-    auto* item = new ComponentItem(*c, CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString()));
+    auto* item = new ComponentItem(*c, CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString(), c->label));
     addItem(item);
     m_componentItems.insert(id, item);
 }
@@ -125,14 +125,20 @@ void SchematicScene::setCmDrawings(bool on)
     for (auto it = m_componentItems.cbegin(); it != m_componentItems.cend(); ++it)
         if (const Component* c = m_circuit->component(it.key()))
             if (const SymbolDef* s = m_library.find(c->symbolId))
-                it.value()->setSymbol(CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString()));
+                it.value()->setSymbol(CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString(), c->label));
     update();
 }
 
 void SchematicScene::onComponentChanged(ItemId id)
 {
-    if (ComponentItem* item = m_componentItems.value(id))
-        item->sync(*m_circuit->component(id));
+    if (ComponentItem* item = m_componentItems.value(id)) {
+        const Component* c = m_circuit->component(id);
+        // its label may pick another drawing (a VCO's SQRVCO)
+        if (const SymbolDef* s = m_library.find(c->symbolId))
+            if (const SymbolDef* drawn = CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString(), c->label); drawn != item->symbol())
+                item->setSymbol(drawn);
+        item->sync(*c);
+    }
 }
 
 void SchematicScene::onComponentRemoved(ItemId id)
@@ -315,7 +321,7 @@ void SchematicScene::beginPlace(const QString& symbolId)
     m_ghostComponent.symbolId = symbolId;
     m_ghostComponent.label = s->defaultLabel;
     m_ghostComponent.pos = snap(m_cursor);
-    m_ghost = new ComponentItem(m_ghostComponent, CmLook::symbolFor(*s));
+    m_ghost = new ComponentItem(m_ghostComponent, CmLook::symbolFor(*s, {}, s->defaultLabel));
     m_ghost->setZValue(100);
     addItem(m_ghost);
     emit statusMessage(tr("Click to place %1 · R rotate · M mirror · Shift keeps placing · Esc cancels").arg(s->name));

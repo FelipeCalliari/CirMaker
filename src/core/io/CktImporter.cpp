@@ -1225,7 +1225,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (!placed[i].symbol->netLabel) {
             Component turned = comp;
             turned.pos = {};
-            const SymbolDef* drawn = CmLook::symbolFor(*placed[i].symbol, comp.props.value(QStringLiteral("cmDevice")).toString());
+            const SymbolDef* drawn = CmLook::symbolFor(*placed[i].symbol, comp.props.value(QStringLiteral("cmDevice")).toString(), comp.label);
             const QRectF body = LibraryRegistry::placement(turned).mapRect(drawn->bounds);
             // one shift for both, the smallest that brings one in: stacked
             // texts keep their spacing

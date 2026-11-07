@@ -34,8 +34,36 @@ std::optional<bool> g_enabled;
 
 } // namespace
 
-QJsonArray shapeGraphics(const QVector<CmShape>& shapes, const std::function<QPointF(QPoint)>& pt)
+QJsonArray shapeGraphics(const QVector<CmShape>& allShapes, const std::function<QPointF(QPoint)>& pt, int variant)
 {
+    // kind 12 binds a number of the part (nets[p0.x]) to what is drawn: at
+    // the value p0.y, the elements p1.x on (p1.y of them) counted after the
+    // record closing the bindings (flags 0xf00): the VCO's sine, square or
+    // triangle (nets[5] 1, 2, 3); drawn here for the variant asked (else the
+    // first bound value)
+    QVector<CmShape> shapes;
+    {
+        int end = -1;
+        for (int i = 0; i < allShapes.size(); ++i)
+            if (allShapes[i].kind == 12 && (allShapes[i].flags & 0xf00) == 0xf00 && allShapes[i].points.size() >= 2) end = i;
+        int chosen = variant;
+        QVector<std::pair<int, int>> shown;     // first, count
+        for (int i = 0; i < end; ++i) {
+            const CmShape& b = allShapes[i];
+            if (b.kind != 12 || b.points.size() < 2 || (b.flags & 0xf00) == 0xf00) continue;
+            if (chosen < 0) chosen = b.points[0].y();
+            if (b.points[0].y() == chosen) shown.push_back({b.points[1].x(), b.points[1].y()});
+        }
+        for (int i = 0; i < allShapes.size(); ++i) {
+            if (allShapes[i].kind == 12) continue;
+            if (end >= 0 && i > end) {
+                const int at = i - end - 1;
+                if (std::none_of(shown.cbegin(), shown.cend(), [at](const auto& r) { return at >= r.first && at < r.first + r.second; }))
+                    continue;
+            }
+            shapes << allShapes[i];
+        }
+    }
     // a polyline or polygon piece with a negative count goes on from the one
     // before (a resistor's zigzag, the nonlinear source's hexagon, the
     // divider's last corner)
@@ -162,7 +190,7 @@ void setEnabled(bool on)
     QSettings().setValue(QStringLiteral("view/cmDrawings"), on);
 }
 
-const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
+const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice, const QString& label)
 {
     // drawn live, or a label: our own drawing
     if (!enabled() || !s.display.isEmpty() || s.netLabel || s.pins.isEmpty()) return &s;
@@ -177,11 +205,19 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
         // records of a kind not worked out (12: the Signal Gen's, each waveform drawn over the others)
         || std::any_of(dev->drawing.cbegin(), dev->drawing.cend(), [](const CmShape& sh) {
                return sh.kind != 0 && sh.kind != 4 && sh.kind != 5 && sh.kind != 6 && sh.kind != 10 && sh.kind != 11 && sh.kind != 20
-                   && sh.kind != 23; }))
+                   && sh.kind != 23 && sh.kind != 12; }))
         return &s;
+    // a part whose label picks its variant (the VCO's SINEVCO, SQRVCO,
+    // TRIVCO): CircuitMaker draws variant 1, 2, 3 in that order
+    int variant = -1;
+    if (s.spice.value(u"select").toString() == u"label") {
+        QStringList keys = s.spice.value(u"variants").toObject().keys();
+        std::sort(keys.begin(), keys.end());
+        if (const int i = int(keys.indexOf(label.trimmed().toUpper())); i >= 0) variant = i + 1;
+    }
 
     static QHash<QString, std::shared_ptr<SymbolDef>> cache;    // null: not drawn as CircuitMaker's
-    const QString key = s.id + u'|' + dev->name;
+    const QString key = s.id + u'|' + dev->name + u'|' + QString::number(variant);
     if (auto it = cache.constFind(key); it != cache.cend()) return it.value() ? it.value().get() : &s;
     cache.insert(key, nullptr);
     static const bool debug = qEnvironmentVariableIsSet("CM_LOOK_DEBUG");
@@ -295,7 +331,7 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
     }
     if (check(true) != 0) return &s;
 
-    QJsonArray graphics = shapeGraphics(dev->drawing, pt);
+    QJsonArray graphics = shapeGraphics(dev->drawing, pt, variant);
     bool labelInside = false;
     const QPointF o = pt(QPoint(0, 0)), ux = pt(QPoint(1, 0)) - o, uy = pt(QPoint(0, 1)) - o;
     auto ptf = [&](QPointF p) { return o + ux * p.x() + uy * p.y(); };
