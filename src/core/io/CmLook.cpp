@@ -254,7 +254,7 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
                 for (QPoint q : sh.points) body |= QRect(q, QSize(1, 1));
         const QPointF at = ptf(QPointF(body.center().x() + 0.5, body.top() + 5));
         graphics.append(QJsonObject{{QStringLiteral("text"), QString()}, {QStringLiteral("label"), true},
-                                    {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 14}});
+                                    {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 26}});
         labelInside = true;
     }
     // each pin's lead, straight out to our pin
@@ -264,7 +264,7 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
             if (const QString t = dev->pinNames.value(k).trimmed(); !t.isEmpty())
                 graphics.append(QJsonObject{{QStringLiteral("text"), t}, {QStringLiteral("at"), QJsonArray{pt(dev->pinFrom.value(k) + QPoint(2, -4)).x(),
                                                                                                     pt(dev->pinFrom.value(k) + QPoint(2, -4)).y()}},
-                                            {QStringLiteral("size"), 8}});
+                                            {QStringLiteral("size"), 18}});
             continue;
         }
         const QPointF to = s.pins[ours[k]].pos;
@@ -291,7 +291,7 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
                 const bool bar = name.size() > 2 && ((name.startsWith(u'{') && name.endsWith(u'}')) || (name.startsWith(u'(') && name.endsWith(u')')));
                 if (bar) name = name.mid(1, name.size() - 2);
                 const QPointF at = ptf(QPointF(start) - QPointF(step) * 1.5 + (step.x() ? QPointF(0, 0) : QPointF(0, step.y() > 0 ? -4 : 4)));
-                graphics.append(QJsonObject{{QStringLiteral("text"), name}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 13},
+                graphics.append(QJsonObject{{QStringLiteral("text"), name}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 24},
                                             {QStringLiteral("turns"), true}, {QStringLiteral("overline"), bar},
                                             {QStringLiteral("align"), dir == 'l' ? QStringLiteral("left") : dir == 'r' ? QStringLiteral("right")
                                                                                                               : QStringLiteral("center")}});

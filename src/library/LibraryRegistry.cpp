@@ -287,7 +287,7 @@ void box(SymbolDef& s, const QJsonObject& spec)
     s.graphics << body;
 
     if (const QString title = spec.value(u"title").toString(); !title.isEmpty())
-        s.graphics << textPrim(title, 0, spec.value(u"titleY").toDouble((bodyTop + bodyBottom) / 2), 10, 0);
+        s.graphics << textPrim(title, 0, spec.value(u"titleY").toDouble((bodyTop + bodyBottom) / 2), spec.value(u"titleSize").toDouble(10), 0);
 
     enum Side { L, R, T, B };
     auto place = [&](const QJsonArray& list, Side side, double first) {

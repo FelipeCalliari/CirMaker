@@ -495,8 +495,8 @@ def keypad():
             'description': 'Key matrix: holding a key connects its row to its column',
             # rows y4..y1 and columns x1..x4, labelled as CircuitMaker labels them
             'graphics': [R(-100, -100, 200, 200)] + [L(-150, y, -100, y) for y in rows] + [L(x, 100, x, 150) for x in rows]
-                        + [T(f'y{4 - i}', -125, y - 11, 11) for i, y in enumerate(rows)]
-                        + [T(f'x{i + 1}', x + 14, 125, 11) for i, x in enumerate(rows)],
+                        + [T(f'y{4 - i}', -125, y - 14, 20) for i, y in enumerate(rows)]
+                        + [T(f'x{i + 1}', x + 18, 125, 20) for i, x in enumerate(rows)],
             'pins': [pin(f'R{i}', -150, y) for i, y in enumerate(rows)] + [pin(f'C{i}', x, 150) for i, x in enumerate(rows)]}
 
 
@@ -1320,8 +1320,9 @@ def data_sequencer():
                 [{'name': f'Q{i}', 'label': str(i + 1)} for i in range(7, -1, -1)],
                 {'kind': 'dataseq'}, [f'Q{i}' for i in range(7, -1, -1)] + ['CP1', 'CP2'], 90, -90,
                 aliases=['Data Seq'], title='Data')
-    s['shape']['titleY'] = -100
-    s['graphics'] = [T('Seq', 0, -75, 10)]
+    s['shape']['titleY'] = -98
+    s['graphics'] = [T('Seq', 0, -72, 20)]
+    s['shape'].update({'titleSize': 20, 'labelSize': 20})
     s.update({'name': 'Data Sequencer', 'prefix': 'DS', 'display': 'dataseq', 'label': '', 'floatInputs': 0,
               'props': {'data': '', 'lines': 32, 'start': 0, 'stop': 31, 'tick': 1, 'external': 0,
                         'low': '0', 'high': '5', 'step': '1m'},
@@ -1351,20 +1352,20 @@ def inputs():
                       P('M -53 50 L -23 50 L -23 20 L 23 20 L 23 50 L 53 50'),
                       L(-80, -30, -60, -30), C(-65, 0, 5), L(-100, 0, -70, 0),
                       L(60, -30, 80, -30), C(65, 0, 5), L(70, 0, 100, 0),
-                      T('CP1', -55, -30, 11, 'left'), T('CP2', -55, 0, 11, 'left'),
-                      T('Q1', 55, -30, 11, 'right'), T('Q2', 55, 0, 11, 'right')],
+                      T('CP1', -55, -30, 20, 'left'), T('CP2', -55, 0, 20, 'left'),
+                      T('Q1', 55, -30, 20, 'right'), T('Q2', 55, 0, 20, 'right')],
          'pins': [pin('CP1', -80, -30, 'in'), pin('CP2', -100, 0, 'in'), pin('Q', 80, -30, 'out'), pin('~Q', 100, 0, 'out')]},
         {'id': 'hexkey', 'name': 'Hex Key', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['Hex Key'],
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'key', 'bits': 4}, 'props': {'value': 0},
          'description': 'Click the key during simulation to count it up (0-F), or type 0-9 and A-F; outputs its 4-bit value',
          'graphics': [R(-40, -60, 80, 110), L(-40, 20, 40, 20)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
-                     + [T(str(4 - i), -30 + 20 * i, 36, 11) for i in range(4)],
+                     + [T(str(4 - i), -30 + 20 * i, 36, 20) for i in range(4)],
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'out') for i in range(4)]},
         {'id': 'asciikey', 'name': 'Ascii Key', 'prefix': 'K', 'display': 'asciikey', 'aliases': ['Ascii Key'],
          'cmPins': [f'D{i}' for i in range(7)] + ['STB'], 'model': {'kind': 'key', 'bits': 7}, 'props': {'value': 65},
          'description': 'Click the key during simulation to step its character, or type one; outputs its 7-bit code, STB pulses',
          'graphics': [R(-80, -40, 160, 90), L(-80, 20, 80, 20)] + [L(x, 50, x, 80) for x in range(70, -71, -20)]
-                     + [T(t, -70 + 20 * i, 36, 11) for i, t in enumerate('S7654321')],   # as CircuitMaker labels them
+                     + [T(t, -70 + 20 * i, 36, 20) for i, t in enumerate('S7654321')],   # as CircuitMaker labels them
          'pins': [pin(f'D{i}', 70 - 20 * i, 80, 'out') for i in range(7)] + [pin('STB', -70, 80, 'out')]},
         {'id': 'pb_no', 'name': 'NO PushButton', 'prefix': 'S', 'display': 'button', 'aliases': ['NO PushButton'],
          'cmPins': ['1', '2'], 'model': {'kind': 'link', 'type': 'no'}, 'props': {'travel': 7},
@@ -1399,9 +1400,9 @@ def inputs():
                         'once S goes high (faster with a higher speed), raises F at the finish; its Reset button brings it back',
          # the S/F box, the Reset button under the car; the car is drawn where it has got to
          'graphics': [R(-90, -36, 33, 63), L(-110, -20, -90, -20), L(-110, 10, -90, 10),
-                      T('S', -73, -20, 11), T('F', -73, 10, 11),
+                      T('S', -73, -20, 20), T('F', -73, 10, 20),
                       R(-30, 30, 150, 60), R(-20, 40, 130, 40), L(-30, 30, -20, 40), L(120, 30, 110, 40),
-                      L(-30, 90, -20, 80), L(120, 90, 110, 80), T('Reset', 45, 60, 12)],
+                      L(-30, 90, -20, 80), L(120, 90, 110, 80), T('Reset', 45, 60, 22)],
          'pins': [pin('S', -110, -20, 'in'), pin('F', -110, 10, 'out')]},
         {'id': 'rocket', 'name': 'Rocket', 'prefix': 'R', 'display': 'rocket', 'aliases': ['Rocket'],
          'cmPins': ['+', '-'], 'model': {'kind': 'rocket'},
@@ -1449,9 +1450,9 @@ def seg_graphics(common):
     names = list('abcdefg') + ['dp']
     for i, n in enumerate(names):
         x = -70 + 20 * i
-        g += [L(x, 70, x, 120), T('.' if n == 'dp' else n, x, 59, 11)]
+        g += [L(x, 70, x, 120), T('.' if n == 'dp' else n, x, 58, 20)]
     # pin ends where CircuitMaker has them (36 of its units below and above)
-    g += [L(0, -80, 0, -120), T(common, 0, -67, 11)]
+    g += [L(0, -80, 0, -120), T(common, 0, -64, 20)]
     pins = [pin(n, -70 + 20 * i, 120, 'in') for i, n in enumerate(names)] + [pin('COM', 0, -120, 'in')]
     return g, pins
 
@@ -1483,7 +1484,7 @@ def outputs():
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'display', 'bits': 4},
          'description': 'Shows the hexadecimal value of D3..D0',
          'graphics': [R(-50, -70, 100, 120), L(-50, 26, 50, 26)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
-                     + [T(str(4 - i), -30 + 20 * i, 39, 11) for i in range(4)],   # CircuitMaker numbers the pins 4321
+                     + [T(str(4 - i), -30 + 20 * i, 38, 20) for i in range(4)],   # CircuitMaker numbers the pins 4321
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'in') for i in range(4)]},
         {'id': 'asciidisplay', 'name': 'Ascii Display', 'prefix': 'D', 'display': 'ascii', 'aliases': ['Ascii Display'],
          'cmPins': [f'D{6 - i}' for i in range(7)] + ['CP'], 'model': {'kind': 'asciiterm'},   # CM pin 1 (top) is bit 6
@@ -1493,7 +1494,7 @@ def outputs():
                         'and the text scrolls up past the last line',
          'graphics': [R(-80, -120, 300, 250)] + [L(-110, -100 + 30 * i, -80, -100 + 30 * i) for i in range(7)]
                      + [L(-110, 110, -90, 110), C(-85, 110, 5)]
-                     + [T(str(7 - i), -95, -109 + 30 * i, 11) for i in range(7)] + [T('CP', -100, 101, 11)],   # CircuitMaker's 7..1
+                     + [T(str(7 - i), -95, -112 + 30 * i, 20) for i in range(7)] + [T('CP', -100, 98, 20)],   # CircuitMaker's 7..1
          'pins': [pin(f'D{6 - i}', -110, -100 + 30 * i, 'in') for i in range(7)] + [pin('CP', -110, 110, 'in')]},
         {'id': 'led', 'name': 'LED', 'prefix': 'D', 'display': 'led', 'aliases': ['LED'], 'cmPins': ['A', 'K'],
          'model': {'kind': 'led'}, 'spice': sp('D{name} {A} {K} DLED', 'DLED'),

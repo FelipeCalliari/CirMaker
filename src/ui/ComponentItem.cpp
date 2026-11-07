@@ -18,6 +18,10 @@
 
 namespace cm {
 
+// designators and labels: CircuitMaker's Courier at its size (a character 7
+// of its units wide, 23 of ours)
+constexpr double kTextSize = 28;
+
 namespace {
 
 constexpr int kIdle = INT_MIN;     // not simulating: displays stay blank
@@ -80,13 +84,13 @@ void ComponentItem::updateLabelGeometry()
     if (m_symbol->netLabel) {
         m_labelAt = {r.right() + 2, r.center().y()};
     } else {
-        m_designatorAt = {r.right() + 3, r.top() + 6};
-        m_labelAt = {r.right() + 3, r.top() + (m_showDesignator ? 26 : 6)};
+        m_designatorAt = {r.right() + 4, r.top() + 12};
+        m_labelAt = {r.right() + 4, r.top() + (m_showDesignator ? 50 : 12)};
     }
-    QRectF labels(r.right() - 220, r.top() - 30, 440, std::max(r.height(), 50.0) + 60);
+    QRectF labels(r.right() - 400, r.top() - 50, 800, std::max(r.height(), 90.0) + 100);
     // texts moved elsewhere
     for (const std::optional<QPointF>& at : {m_c.designatorAt, m_c.labelAt})
-        if (at) labels |= QRectF(*at - QPointF(150, 30), QSizeF(300, 60));
+        if (at) labels |= QRectF(*at - QPointF(300, 50), QSizeF(600, 100));
     m_bounds = m_symbol->bounds.united(transform().inverted().mapRect(labels)).adjusted(-3, -3, 3, 3);
     // a Car drives out to the right of its drawing
     if (m_symbol->display == u"car")
@@ -101,14 +105,14 @@ QPointF ComponentItem::textAnchor(int which) const
     if (which == 1 && m_c.labelAt) return *m_c.labelAt;
     // the default places are left-aligned: their centre
     const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : m_c.label;
-    const double w = QFontMetricsF(SymbolPainter::schematicFont(14)).horizontalAdvance(text);
+    const double w = QFontMetricsF(SymbolPainter::schematicFont(kTextSize)).horizontalAdvance(text);
     return (which == 0 ? m_designatorAt : m_labelAt) + QPointF(w / 2, 0);
 }
 
 QRectF ComponentItem::textRect(int which) const
 {
     const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : m_c.label;
-    const QFontMetricsF fm(SymbolPainter::schematicFont(14));
+    const QFontMetricsF fm(SymbolPainter::schematicFont(kTextSize));
     const double w = fm.horizontalAdvance(text);
     const QPointF a = textAnchor(which);
     return QRectF(a.x() - w / 2, a.y() - fm.ascent(), w, fm.ascent() + fm.descent()).adjusted(-2, -2, 2, 2);
@@ -245,16 +249,17 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     QPointF actuator;
     if (m_symbol->display == u"button" && live && state == 1)
         actuator = QPointF(0, m_symbol->defaultProps.value(QStringLiteral("travel"), 7).toDouble());
-    SymbolPainter::paint(p, *m_symbol, ink, actuator, m_c.label);
+    // the label inside the body (CircuitMaker's flag 0x80), unless it is shown outside
+    SymbolPainter::paint(p, *m_symbol, ink, actuator, m_showLabel ? QString() : m_c.label);
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {
         if (m_previewText == 0)
-            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), shownDesignator(*m_symbol, m_c), 14, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), shownDesignator(*m_symbol, m_c), kTextSize, 0, ink);
         else if (m_c.designatorAt)
-            SymbolPainter::uprightText(p, toLocal.map(*m_c.designatorAt), shownDesignator(*m_symbol, m_c), 14, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(*m_c.designatorAt), shownDesignator(*m_symbol, m_c), kTextSize, 0, ink);
         else
-            SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), shownDesignator(*m_symbol, m_c), 14, -1, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), shownDesignator(*m_symbol, m_c), kTextSize, -1, ink);
     }
     if (m_showLabel)
     {
@@ -268,20 +273,20 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
             const int align = side == u"left" ? 1 : -1;
             if ((side == u"up" || side == u"down") && m_c.label.size() > 1) {
                 // on an upright entry CircuitMaker stacks the letters, one a row
-                const double step = 14, first = side == u"up" ? -10 - step * (m_c.label.size() - 1) : 14;
+                const double step = 26, first = side == u"up" ? -16 - step * (m_c.label.size() - 1) : 20;
                 for (int i = 0; i < m_c.label.size(); ++i)
-                    SymbolPainter::uprightText(p, toLocal.map(QPointF(9, first + i * step)), m_c.label.mid(i, 1), 14, 0, ink);
+                    SymbolPainter::uprightText(p, toLocal.map(QPointF(13, first + i * step)), m_c.label.mid(i, 1), kTextSize, 0, ink);
             } else {
-                const QPointF at = side == u"left" ? QPointF(-4, -10) : side == u"right" ? QPointF(4, -10)
-                                 : side == u"up" ? QPointF(5, -14) : QPointF(5, 14);
-                SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, 16, align, ink);
+                const QPointF at = side == u"left" ? QPointF(-4, -16) : side == u"right" ? QPointF(4, -16)
+                                 : side == u"up" ? QPointF(5, -20) : QPointF(5, 20);
+                SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, kTextSize, align, ink);
             }
         } else if (m_previewText == 1) {
-            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), m_c.label, 14, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), m_c.label, kTextSize, 0, ink);
         } else if (m_c.labelAt) {
-            SymbolPainter::uprightText(p, toLocal.map(*m_c.labelAt), m_c.label, 14, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(*m_c.labelAt), m_c.label, kTextSize, 0, ink);
         } else {
-            SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, 14, -1, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, kTextSize, -1, ink);
         }
     }
 }
