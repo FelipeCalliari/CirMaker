@@ -1136,12 +1136,14 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         if (d.valueRect)
             comp.labelAt = (origin + d.valueRect->center()) * kScale - comp.pos;
         // CircuitMaker's texts sit around its own, often larger, drawings:
-        // keep them on the same side but close to ours. Anchors are the
-        // centre of the baseline, about 10 above it and 3 below.
+        // keep them on the same side but close to ours (drawn as CircuitMaker
+        // draws the part, they stay where they were). Anchors are the centre
+        // of the baseline, about 10 above it and 3 below.
         if (!placed[i].symbol->netLabel) {
             Component turned = comp;
             turned.pos = {};
-            const QRectF body = LibraryRegistry::placement(turned).mapRect(placed[i].symbol->bounds);
+            const SymbolDef* drawn = CmLook::symbolFor(*placed[i].symbol, comp.props.value(QStringLiteral("cmDevice")).toString());
+            const QRectF body = LibraryRegistry::placement(turned).mapRect(drawn->bounds);
             // one shift for both, the smallest that brings one in: stacked
             // texts keep their spacing
             std::optional<QPointF> shift;
