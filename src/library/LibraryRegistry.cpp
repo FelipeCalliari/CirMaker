@@ -300,7 +300,9 @@ void box(SymbolDef& s, const QJsonObject& spec)
                 continue;
             const double offset = first + i * pitch;
             const bool activeLow = name.startsWith(u'~');
-            const bool bubble = activeLow && o.value(u"bubble").toBool(true);
+            // active-low pins have a bubble unless told otherwise; another pin
+            // can be given one (CircuitMaker's Data Seq CP2, a falling edge)
+            const bool bubble = o.contains(u"bubble") ? o.value(u"bubble").toBool() : activeLow;
             const bool clock = o.value(u"clock").toBool(name.endsWith(u"CLK"));
             const SymbolPin::Dir def = side == R ? SymbolPin::Dir::Out : SymbolPin::Dir::In;
 

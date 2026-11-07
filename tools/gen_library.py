@@ -1314,11 +1314,14 @@ def power_parts():
 
 
 def data_sequencer():
-    # CircuitMaker's layout: outputs Q7 (pin 1) to Q0 on the right, clocks low on the left
-    s = cm_chip('dataseq', 'Data Sequencer', [clk('CP1'), clk('CP2')], [f'Q{i}' for i in range(7, -1, -1)],
+    # CircuitMaker's layout: outputs Q7 (pin 1) to Q0 on the right, numbered 8..1
+    # as CircuitMaker numbers them, CP1 and CP2 (a bubble: falling edge) low on the left
+    s = cm_chip('dataseq', 'Data Sequencer', [{'name': 'CP1', 'clock': False}, {'name': 'CP2', 'clock': False, 'bubble': True}],
+                [{'name': f'Q{i}', 'label': str(i + 1)} for i in range(7, -1, -1)],
                 {'kind': 'dataseq'}, [f'Q{i}' for i in range(7, -1, -1)] + ['CP1', 'CP2'], 90, -90,
-                aliases=['Data Seq'], title='DATA SEQ')
-    s['shape']['titleY'] = -120
+                aliases=['Data Seq'], title='Data')
+    s['shape']['titleY'] = -100
+    s['graphics'] = [T('Seq', 0, -75, 10)]
     s.update({'name': 'Data Sequencer', 'prefix': 'DS', 'display': 'dataseq', 'label': '', 'floatInputs': 0,
               'props': {'data': '', 'lines': 32, 'start': 0, 'stop': 31, 'tick': 1, 'external': 0,
                         'low': '0', 'high': '5', 'step': '1m'},

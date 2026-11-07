@@ -91,27 +91,52 @@
     "left": [
      {
       "name": "CP1",
-      "clock": true
+      "clock": false
      },
      {
       "name": "CP2",
-      "clock": true
+      "clock": false,
+      "bubble": true
      }
     ],
     "right": [
-     "Q7",
-     "Q6",
-     "Q5",
-     "Q4",
-     "Q3",
-     "Q2",
-     "Q1",
-     "Q0"
+     {
+      "name": "Q7",
+      "label": "8"
+     },
+     {
+      "name": "Q6",
+      "label": "7"
+     },
+     {
+      "name": "Q5",
+      "label": "6"
+     },
+     {
+      "name": "Q4",
+      "label": "5"
+     },
+     {
+      "name": "Q3",
+      "label": "4"
+     },
+     {
+      "name": "Q2",
+      "label": "3"
+     },
+     {
+      "name": "Q1",
+      "label": "2"
+     },
+     {
+      "name": "Q0",
+      "label": "1"
+     }
     ],
     "leftStart": 90,
     "rightStart": -90,
-    "title": "DATA SEQ",
-    "titleY": -120
+    "title": "Data",
+    "titleY": -100
    },
    "model": {
     "kind": "dataseq"
@@ -134,6 +159,16 @@
    "label": "",
    "description": "Word generator: outputs 8-bit words from address start to stop and repeats. Advances every tick increment, or on CP1 rising / CP2 falling edges with the external clock",
    "floatInputs": 0,
+   "graphics": [
+    {
+     "text": "Seq",
+     "at": [
+      0,
+      -75
+     ],
+     "size": 10
+    }
+   ],
    "prefix": "DS",
    "display": "dataseq",
    "props": {
