@@ -23,6 +23,12 @@ struct Preferences {
     int ticksPerFrame = 2;
     int stepTicks = 0;          // Step: this many ticks (CircuitMaker's step size); 0 = to the next event
     bool conflictsUnknown = false;  // outputs that disagree make the node unknown (CircuitMaker: the last device wins)
+    // CircuitMaker's Options > Schematic
+    bool autoRepeat = false;        // a placed device stays on the cursor for another
+    bool promptToSave = true;       // ask before dropping changes
+    bool showBusLabels = true;      // a bus's name in its box
+    int designationStart = 1;       // the first designator number of each prefix
+    bool showNewDesignators = true; // new devices show their designator
     Theme theme;                // colours and fonts
 
     static Preferences load();
@@ -43,6 +49,8 @@ private:
     QSpinBox* m_ticks;
     QCheckBox* m_conflicts;
     QSpinBox* m_step;
+    QCheckBox *m_autoRepeat, *m_promptToSave, *m_busLabels, *m_showNewDesignators;
+    QSpinBox* m_designationStart;
     QString m_initialLanguage;
     Theme m_theme;
     QHash<QPushButton*, QColor Theme::*> m_colorButtons;

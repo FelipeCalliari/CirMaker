@@ -16,6 +16,9 @@ public:
     enum { Type = UserType + 2 };
 
     explicit WireItem(const Wire& w);
+    // CircuitMaker's Show Bus Labels: a bus's name in its box (all buses)
+    static void setShowBusLabels(bool on);
+    static bool showBusLabels();
     void sync(const Wire& w);
     // Temporary shape while connected components are dragged (rubber band).
     void setPreview(const QVector<QPointF>& points);

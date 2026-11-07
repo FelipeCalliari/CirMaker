@@ -13,6 +13,13 @@
 
 namespace cm {
 
+namespace {
+bool g_showBusLabels = true;
+}
+
+void WireItem::setShowBusLabels(bool on) { g_showBusLabels = on; }
+bool WireItem::showBusLabels() { return g_showBusLabels; }
+
 WireItem::WireItem(const Wire& w)
 {
     setFlags(ItemIsSelectable | ItemIsMovable | ItemSendsGeometryChanges);
@@ -65,7 +72,7 @@ void WireItem::rebuild()
 
 QRectF WireItem::boundingRect() const
 {
-    const double margin = m_w.bus && !m_w.name.isEmpty() ? 40 : 3;
+    const double margin = m_w.bus && !m_w.name.isEmpty() && showBusLabels() ? 40 : 3;
     return m_shape.boundingRect().adjusted(-margin, -margin, margin, margin);
 }
 
@@ -91,7 +98,7 @@ void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     p->drawPath(m_path);
 
     // bus name in a box past the bus's top (or left) end
-    if (m_w.bus && !m_w.name.isEmpty() && m_shown.size() >= 2) {
+    if (m_w.bus && !m_w.name.isEmpty() && m_shown.size() >= 2 && showBusLabels()) {
         QPointF end = m_shown.first(), next = m_shown[1];
         if (m_shown.last().y() < end.y() || (qFuzzyCompare(m_shown.last().y(), end.y()) && m_shown.last().x() < end.x())) {
             end = m_shown.last();

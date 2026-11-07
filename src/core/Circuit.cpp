@@ -175,10 +175,10 @@ void Circuit::setProbes(const QVector<QPointF>& probes)
     emit modified();
 }
 
-QString Circuit::nextDesignator(const QString& prefix) const
+QString Circuit::nextDesignator(const QString& prefix, int start) const
 {
     const QRegularExpression re(QStringLiteral("^%1(\\d+)").arg(QRegularExpression::escape(prefix)));
-    int highest = 0;
+    int highest = start - 1;
     for (const Component& c : m_components) {
         auto m = re.match(c.designator);
         if (m.hasMatch())

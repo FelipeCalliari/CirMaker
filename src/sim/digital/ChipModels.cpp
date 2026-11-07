@@ -1062,6 +1062,7 @@ public:
         m_mem.resize(1 << m_addr.size());
         for (int i = 0; i < std::min(contents.size(), m_mem.size()); ++i)
             m_mem[i] = contents[i];
+        m_initial = m_mem;
     }
     void evaluate(ModelContext& ctx) override
     {
@@ -1086,12 +1087,23 @@ public:
             m_mem[i] = words.value(i) & 0xff;
         evaluate(ctx);
     }
+    // what was written while simulating stays in the part when it stops
+    // (its contents, as the part keeps them: hex bytes, trailing zeros left out)
+    QVariantMap persistentProps() const override
+    {
+        if (m_mem == m_initial) return {};
+        int used = int(m_mem.size());
+        while (used > 0 && m_mem[used - 1] == 0) --used;
+        QStringList bytes;
+        for (int i = 0; i < used; ++i) bytes << QStringLiteral("%1").arg(m_mem[i], 2, 16, QChar(u'0')).toUpper();
+        return {{QStringLiteral("data"), bytes.join(u' ')}};
+    }
 
 private:
     QVector<int> m_addr, m_data;
     Control m_cs, m_we;
     bool m_writable;
-    QVector<int> m_mem;
+    QVector<int> m_mem, m_initial;
 };
 
 // ------------------------------------------------------------ F->V Source

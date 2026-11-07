@@ -25,6 +25,7 @@
 #include "ui/ComponentItem.h"
 #include "ui/PreferencesDialog.h"
 #include "ui/WaveformView.h"
+#include "ui/WireItem.h"
 #include "ui/SchematicView.h"
 #include "ui/TextNoteItem.h"
 #include "ui/TitleBlockItem.h"
@@ -1104,7 +1105,7 @@ void MainWindow::updateTitle()
 bool MainWindow::maybeSave()
 {
     m_scene->stopSimulation();
-    if (m_undo->isClean())
+    if (m_undo->isClean() || !m_promptToSave)      // CircuitMaker's Prompt To Save off: no question
         return true;
     const auto answer = QMessageBox::warning(this, tr("Unsaved changes"),
                                              tr("The circuit has been modified. Save the changes?"),
@@ -1882,7 +1883,12 @@ void MainWindow::applyPreferences()
     m_speed->setValue(p.ticksPerFrame);
     m_scene->setStepTicks(p.stepTicks);
     m_scene->setConflictsUnknown(p.conflictsUnknown);
+    m_scene->setAutoRepeat(p.autoRepeat);
+    m_scene->setNewDesignations(p.designationStart, p.showNewDesignators);
+    WireItem::setShowBusLabels(p.showBusLabels);
+    m_promptToSave = p.promptToSave;
     m_scene->applyTheme();
+    m_scene->update();
 }
 
 void MainWindow::showDigitalWaveforms()

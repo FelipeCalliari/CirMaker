@@ -347,7 +347,8 @@ void SchematicScene::placeGhost(QPointF scenePos)
     const SymbolDef* s = m_ghost->symbol();
     Component c = m_ghostComponent;
     c.pos = snap(scenePos);
-    c.designator = m_circuit->nextDesignator(s->prefix);
+    c.designator = m_circuit->nextDesignator(s->prefix, m_designationStart);
+    if (!m_showNewDesignators) c.showDesignator = false;
     if (s->parts.size() > 1) {
         // as in CircuitMaker, a gate goes into the first package of its kind
         // with a free part
@@ -1494,7 +1495,7 @@ void SchematicScene::persistSimProps()
         }
     }
     if (!after.isEmpty())
-        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Switch positions")));
+        m_undo->push(new ModifyItemsCommand(m_circuit, before, after, tr("Simulation state")));    // switch positions, RAM contents
 }
 
 void SchematicScene::advance()
@@ -1692,7 +1693,8 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
     switch (m_tool) {
     case Tool::Place:
         if (m_ghost) {
-            const bool keep = e->modifiers() & Qt::ShiftModifier;
+            // Shift, or CircuitMaker's Auto Repeat, keeps the device on the cursor
+            const bool keep = (e->modifiers() & Qt::ShiftModifier) || m_autoRepeat;
             placeGhost(e->scenePos());
             if (!keep)
                 setTool(Tool::Select);

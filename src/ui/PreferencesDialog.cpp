@@ -30,6 +30,11 @@ Preferences Preferences::load()
     p.ticksPerFrame = std::clamp(s.value(QStringLiteral("prefs/ticksPerFrame"), p.ticksPerFrame).toInt(), 1, 1000);
     p.stepTicks = std::clamp(s.value(QStringLiteral("prefs/stepTicks"), p.stepTicks).toInt(), 0, 100000);
     p.conflictsUnknown = s.value(QStringLiteral("prefs/conflictsUnknown"), p.conflictsUnknown).toBool();
+    p.autoRepeat = s.value(QStringLiteral("prefs/autoRepeat"), p.autoRepeat).toBool();
+    p.promptToSave = s.value(QStringLiteral("prefs/promptToSave"), p.promptToSave).toBool();
+    p.showBusLabels = s.value(QStringLiteral("prefs/showBusLabels"), p.showBusLabels).toBool();
+    p.designationStart = std::clamp(s.value(QStringLiteral("prefs/designationStart"), p.designationStart).toInt(), 0, 100000);
+    p.showNewDesignators = s.value(QStringLiteral("prefs/showNewDesignators"), p.showNewDesignators).toBool();
     p.theme = Theme::current();
     return p;
 }
@@ -44,6 +49,11 @@ void Preferences::save() const
     s.setValue(QStringLiteral("prefs/ticksPerFrame"), ticksPerFrame);
     s.setValue(QStringLiteral("prefs/stepTicks"), stepTicks);
     s.setValue(QStringLiteral("prefs/conflictsUnknown"), conflictsUnknown);
+    s.setValue(QStringLiteral("prefs/autoRepeat"), autoRepeat);
+    s.setValue(QStringLiteral("prefs/promptToSave"), promptToSave);
+    s.setValue(QStringLiteral("prefs/showBusLabels"), showBusLabels);
+    s.setValue(QStringLiteral("prefs/designationStart"), designationStart);
+    s.setValue(QStringLiteral("prefs/showNewDesignators"), showNewDesignators);
     Theme::setCurrent(theme);
 }
 
@@ -83,6 +93,23 @@ PreferencesDialog::PreferencesDialog(const Preferences& prefs, QWidget* parent)
     m_zoom->setValue(prefs.zoomPercent);
     m_zoom->setToolTip(tr("Zoom used for new and opened circuits; \"Fit to window\" never enlarges beyond it"));
     df->addRow(tr("Default &zoom:"), m_zoom);
+    // as CircuitMaker's Options > Schematic
+    m_autoRepeat = new QCheckBox(tr("Auto &repeat: a placed device stays on the cursor for another"));
+    m_autoRepeat->setChecked(prefs.autoRepeat);
+    df->addRow(m_autoRepeat);
+    m_promptToSave = new QCheckBox(tr("&Prompt to save changes"));
+    m_promptToSave->setChecked(prefs.promptToSave);
+    df->addRow(m_promptToSave);
+    m_busLabels = new QCheckBox(tr("Show &bus labels"));
+    m_busLabels->setChecked(prefs.showBusLabels);
+    df->addRow(m_busLabels);
+    m_designationStart = new QSpinBox;
+    m_designationStart->setRange(0, 100000);
+    m_designationStart->setValue(prefs.designationStart);
+    df->addRow(tr("Designations &start at:"), m_designationStart);
+    m_showNewDesignators = new QCheckBox(tr("Show designations of &new devices"));
+    m_showNewDesignators->setChecked(prefs.showNewDesignators);
+    df->addRow(m_showNewDesignators);
     layout->addWidget(drawing);
 
     auto* sim = new QGroupBox(tr("Digital simulation"));
@@ -171,6 +198,11 @@ Preferences PreferencesDialog::result() const
     p.ticksPerFrame = m_ticks->value();
     p.stepTicks = m_step->value();
     p.conflictsUnknown = m_conflicts->isChecked();
+    p.autoRepeat = m_autoRepeat->isChecked();
+    p.promptToSave = m_promptToSave->isChecked();
+    p.showBusLabels = m_busLabels->isChecked();
+    p.designationStart = m_designationStart->value();
+    p.showNewDesignators = m_showNewDesignators->isChecked();
     p.theme = m_theme;
     p.theme.deviceFont = m_deviceFont->currentFont().family();
     const QString text = m_textFont->currentFont().family();

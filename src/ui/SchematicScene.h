@@ -124,6 +124,9 @@ public:
     // title block (no-ops while simulating)
     void editTitleBlock();
     void setTitleBlockVisible(bool visible);
+    // CircuitMaker's Options > Schematic
+    void setAutoRepeat(bool on) { m_autoRepeat = on; }
+    void setNewDesignations(int start, bool showNew) { m_designationStart = start; m_showNewDesignators = showNew; }
     // parts drawn with CircuitMaker's drawings (Device.lib) or our own
     void setCmDrawings(bool on);
 
@@ -332,6 +335,9 @@ private:
     bool m_gridLines = true;
     bool m_trace = true;
     bool m_showNodeNames = false;
+    bool m_autoRepeat = false;
+    int m_designationStart = 1;
+    bool m_showNewDesignators = true;
     bool m_showPropDelays = false;
     bool m_showPinDots = true;
     bool m_autoRoute = true;

@@ -147,7 +147,8 @@ public:
     bool isEmpty() const { return m_components.isEmpty() && m_wires.isEmpty() && m_texts.isEmpty(); }
 
     // First free designator for a prefix: "U" -> "U4" when U1..U3 exist.
-    QString nextDesignator(const QString& prefix) const;
+    // the next free number after the highest in use, from `start` (CircuitMaker's starting number)
+    QString nextDesignator(const QString& prefix, int start = 1) const;
 
     const TitleBlock& titleBlock() const { return m_titleBlock; }
     void setTitleBlock(const TitleBlock& tb);

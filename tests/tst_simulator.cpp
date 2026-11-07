@@ -8,6 +8,7 @@ class TestSimulator : public QObject {
     Q_OBJECT
 private slots:
     void pulserToggles();
+    void ramKeepsWrites();
     void pulserTriggered();
     void animatedDevices();
     void asyncJkCounterCounts();
@@ -31,6 +32,22 @@ void TestSimulator::pulserToggles()
     QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L1);
     bench.sim.step(10);
     QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L0);
+}
+
+// What a RAM holds when the simulation stops stays in the part (its data),
+// so it is there when the simulation is stopped and the memory opened
+void TestSimulator::ramKeepsWrites()
+{
+    Circuit c;
+    const ItemId ram = place(c, QStringLiteral("RAM1K"), {0, 0}, QStringLiteral("U1"));
+    Bench bench(c);
+    QVERIFY(bench.sim.persistentProps(ram).isEmpty());          // unchanged: nothing to keep
+    QVector<int> words = bench.sim.memory(ram);
+    QCOMPARE(words.size(), 1024);
+    words[0] = 0x12;
+    words[2] = 0xAB;
+    bench.sim.setMemory(ram, words);
+    QCOMPARE(bench.sim.persistentProps(ram).value(QStringLiteral("data")).toString(), QStringLiteral("12 00 AB"));
 }
 
 // CircuitMaker's External Trigger: a rise on CP1 makes the Pulser active for
