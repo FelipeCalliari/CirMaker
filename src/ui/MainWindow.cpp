@@ -1884,6 +1884,8 @@ void MainWindow::applyPreferences()
     m_scene->setStepTicks(p.stepTicks);
     m_scene->setConflictsUnknown(p.conflictsUnknown);
     m_scene->setAutoRepeat(p.autoRepeat);
+    SchematicScene::setSnapToGrid(p.snapToGrid);
+    SchematicScene::setConnectionArea(p.connectionArea, p.showConnectionArea);
     m_scene->setNewDesignations(p.designationStart, p.showNewDesignators);
     WireItem::setShowBusLabels(p.showBusLabels);
     m_promptToSave = p.promptToSave;

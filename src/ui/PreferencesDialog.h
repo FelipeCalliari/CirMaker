@@ -28,6 +28,9 @@ struct Preferences {
     bool promptToSave = true;       // ask before dropping changes
     bool showBusLabels = true;      // a bus's name in its box
     int designationStart = 1;       // the first designator number of each prefix
+    bool snapToGrid = true;         // CircuitMaker's Grid > Snap To
+    int connectionArea = 3;         // CircuitMaker's connection area size (its units)
+    bool showConnectionArea = true; // drawn around a connection being made
     bool showNewDesignators = true; // new devices show their designator
     Theme theme;                // colours and fonts
 
@@ -50,7 +53,8 @@ private:
     QCheckBox* m_conflicts;
     QSpinBox* m_step;
     QCheckBox *m_autoRepeat, *m_promptToSave, *m_busLabels, *m_showNewDesignators;
-    QSpinBox* m_designationStart;
+    QSpinBox *m_designationStart, *m_connectionArea;
+    QCheckBox *m_snap, *m_showArea;
     QString m_initialLanguage;
     Theme m_theme;
     QHash<QPushButton*, QColor Theme::*> m_colorButtons;

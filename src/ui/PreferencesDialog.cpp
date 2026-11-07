@@ -34,6 +34,9 @@ Preferences Preferences::load()
     p.promptToSave = s.value(QStringLiteral("prefs/promptToSave"), p.promptToSave).toBool();
     p.showBusLabels = s.value(QStringLiteral("prefs/showBusLabels"), p.showBusLabels).toBool();
     p.designationStart = std::clamp(s.value(QStringLiteral("prefs/designationStart"), p.designationStart).toInt(), 0, 100000);
+    p.snapToGrid = s.value(QStringLiteral("prefs/snapToGrid"), p.snapToGrid).toBool();
+    p.connectionArea = std::clamp(s.value(QStringLiteral("prefs/connectionArea"), p.connectionArea).toInt(), 0, 20);
+    p.showConnectionArea = s.value(QStringLiteral("prefs/showConnectionArea"), p.showConnectionArea).toBool();
     p.showNewDesignators = s.value(QStringLiteral("prefs/showNewDesignators"), p.showNewDesignators).toBool();
     p.theme = Theme::current();
     return p;
@@ -53,6 +56,9 @@ void Preferences::save() const
     s.setValue(QStringLiteral("prefs/promptToSave"), promptToSave);
     s.setValue(QStringLiteral("prefs/showBusLabels"), showBusLabels);
     s.setValue(QStringLiteral("prefs/designationStart"), designationStart);
+    s.setValue(QStringLiteral("prefs/snapToGrid"), snapToGrid);
+    s.setValue(QStringLiteral("prefs/connectionArea"), connectionArea);
+    s.setValue(QStringLiteral("prefs/showConnectionArea"), showConnectionArea);
     s.setValue(QStringLiteral("prefs/showNewDesignators"), showNewDesignators);
     Theme::setCurrent(theme);
 }
@@ -86,6 +92,17 @@ PreferencesDialog::PreferencesDialog(const Preferences& prefs, QWidget* parent)
     m_gridStyle->addItem(tr("Lines"));
     m_gridStyle->setCurrentIndex(prefs.gridStyle == Preferences::GridStyle::Lines ? 1 : 0);
     df->addRow(tr("Grid &style:"), m_gridStyle);
+    m_snap = new QCheckBox(tr("S&nap to grid"));
+    m_snap->setChecked(prefs.snapToGrid);
+    df->addRow(m_snap);
+    m_connectionArea = new QSpinBox;
+    m_connectionArea->setRange(0, 20);
+    m_connectionArea->setValue(prefs.connectionArea);
+    m_connectionArea->setToolTip(tr("How near a pin or a wire a click or a wire end is pulled onto it"));
+    df->addRow(tr("Connection &area size:"), m_connectionArea);
+    m_showArea = new QCheckBox(tr("Sho&w the connection area"));
+    m_showArea->setChecked(prefs.showConnectionArea);
+    df->addRow(m_showArea);
     m_zoom = new QSpinBox;
     m_zoom->setRange(20, 400);
     m_zoom->setSingleStep(10);
@@ -202,6 +219,9 @@ Preferences PreferencesDialog::result() const
     p.promptToSave = m_promptToSave->isChecked();
     p.showBusLabels = m_busLabels->isChecked();
     p.designationStart = m_designationStart->value();
+    p.snapToGrid = m_snap->isChecked();
+    p.connectionArea = m_connectionArea->value();
+    p.showConnectionArea = m_showArea->isChecked();
     p.showNewDesignators = m_showNewDesignators->isChecked();
     p.theme = m_theme;
     p.theme.deviceFont = m_deviceFont->currentFont().family();

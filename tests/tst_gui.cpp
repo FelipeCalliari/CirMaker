@@ -78,6 +78,7 @@ private slots:
     void screenshot();
     void busEntriesFollowBus();
     void draggedBusKeepsConnections();
+    void snapOffAndConnectionArea();
 };
 
 namespace {
@@ -992,3 +993,20 @@ void TestGui::draggedBusKeepsConnections()
 
 QTEST_MAIN(TestGui)
 #include "tst_gui.moc"
+
+void TestGui::snapOffAndConnectionArea()
+{
+    ViewFixture f;
+    SchematicScene::setSnapToGrid(false);
+    // off the grid, a wire end goes where it is dropped...
+    const ItemId free = f.circuit.addWire({0, {{-100, 0}, {100, 0}}});
+    f.drag({100, 0}, {153, 0});
+    QCOMPARE(f.circuit.wire(free)->points.last(), QPointF(153, 0));
+    // ...unless a pin is within the connection area: then it lands on it
+    place(f.circuit, QStringLiteral("resistor"), {-160, -200}, QStringLiteral("R1"));     // pin 2 at (-100, -200)
+    const ItemId toPin = f.circuit.addWire({0, {{100, -200}, {0, -200}}});
+    f.drag({0, -200}, {-102, -198});
+    QCOMPARE(f.circuit.wire(toPin)->points.last(), QPointF(-100, -200));
+    SchematicScene::setSnapToGrid(true);
+    QCOMPARE(SchematicScene::snap({153, 7}), QPointF(150, 10));
+}

@@ -93,9 +93,81 @@ SchematicScene::SchematicScene(Circuit* circuit, QUndoStack* undo, const Library
 
 SchematicScene::~SchematicScene() = default;
 
+namespace {
+bool g_snapToGrid = true;
+double g_connectionRadius = 3 * 10.0 / 9;      // CircuitMaker's 3 (its grid 9, ours 10)
+bool g_showConnectionArea = true;
+}
+
 QPointF SchematicScene::snap(QPointF p)
 {
+    if (!g_snapToGrid)
+        return {std::round(p.x()), std::round(p.y())};
     return {std::round(p.x() / kGrid) * kGrid, std::round(p.y() / kGrid) * kGrid};
+}
+
+void SchematicScene::setSnapToGrid(bool on) { g_snapToGrid = on; }
+bool SchematicScene::snapToGrid() { return g_snapToGrid; }
+
+void SchematicScene::setConnectionArea(int size, bool shown)
+{
+    g_connectionRadius = std::max(0, size) * 10.0 / 9;
+    g_showConnectionArea = shown;
+}
+
+QPointF SchematicScene::attach(QPointF raw) const
+{
+    const double r = std::max(g_connectionRadius, 0.5);
+    std::optional<QPointF> best;
+    double bestD = r;
+    auto consider = [&](QPointF q, double bonus = 0) {
+        const double d = QLineF(q, raw).length() - bonus;
+        if (d <= bestD) { bestD = d; best = q; }
+    };
+    // pins and wire vertices first (a little favoured), then along wires
+    for (const ComponentItem* item : m_componentItems) {
+        if (item == m_ghost) continue;
+        for (int i = 0; i < item->symbol()->pins.size(); ++i)
+            consider(m_library.pinScenePos(item->component(), i), 0.5);
+    }
+    for (const WireItem* w : m_wireItems)
+        for (QPointF v : w->wire().points) consider(v, 0.5);
+    if (!best)
+        for (const WireItem* w : m_wireItems) {
+            const QVector<QPointF>& pts = w->wire().points;
+            for (int k = 0; k + 1 < pts.size(); ++k) {
+                const QPointF a = pts[k], b = pts[k + 1], ab = b - a;
+                const double len2 = QPointF::dotProduct(ab, ab);
+                if (len2 <= 0) continue;
+                const double t = std::clamp(QPointF::dotProduct(raw - a, ab) / len2, 0.0, 1.0);
+                consider(snap(a + ab * t));
+            }
+        }
+    return best ? *best : snap(raw);
+}
+
+QPointF SchematicScene::pinPull(const Component& c, const QSet<ItemId>& moving) const
+{
+    if (g_snapToGrid) return {};
+    const SymbolDef* s = m_library.find(c.symbolId);
+    if (!s) return {};
+    const double r = std::max(g_connectionRadius, 0.5);
+    std::optional<QPointF> best;
+    double bestD = r;
+    for (int i = 0; i < s->pins.size(); ++i) {
+        const QPointF pin = m_library.pinScenePos(c, i);
+        auto consider = [&](QPointF q) {
+            const double d = QLineF(q, pin).length();
+            if (d > 0.01 && d <= bestD) { bestD = d; best = q - pin; }
+        };
+        for (const ComponentItem* item : m_componentItems) {
+            if (item == m_ghost || moving.contains(item->id())) continue;
+            for (int k = 0; k < item->symbol()->pins.size(); ++k) consider(m_library.pinScenePos(item->component(), k));
+        }
+        for (const WireItem* w : m_wireItems)
+            for (QPointF v : w->wire().points) consider(v);
+    }
+    return best ? *best : QPointF();
 }
 
 QWidget* SchematicScene::dialogParent() const
@@ -347,6 +419,7 @@ void SchematicScene::placeGhost(QPointF scenePos)
     const SymbolDef* s = m_ghost->symbol();
     Component c = m_ghostComponent;
     c.pos = snap(scenePos);
+    c.pos += pinPull(c, {});
     c.designator = m_circuit->nextDesignator(s->prefix, m_designationStart);
     if (!m_showNewDesignators) c.showDesignator = false;
     if (s->parts.size() > 1) {
@@ -990,6 +1063,26 @@ void SchematicScene::updateDragPreview()
 void SchematicScene::commitDrag()
 {
     m_drag.active = false;
+    // off the grid, a pin dropped near a connection lands on it (CircuitMaker's area)
+    if (!g_snapToGrid) {
+        QSet<ItemId> moving;
+        for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it) moving << it.key();
+        QPointF pull;
+        for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend() && pull.isNull(); ++it)
+            if (const ComponentItem* item = m_componentItems.value(it.key())) {
+                Component c = item->component();
+                c.pos = item->pos();
+                pull = pinPull(c, moving);
+            }
+        if (!pull.isNull()) {
+            for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it)
+                if (ComponentItem* item = m_componentItems.value(it.key())) item->setPos(item->pos() + pull);
+            for (auto it = m_drag.textStart.cbegin(); it != m_drag.textStart.cend(); ++it)
+                if (TextNoteItem* item = m_textItems.value(it.key())) item->setPos(item->pos() + pull);
+            for (ItemId id : std::as_const(m_drag.wires))
+                if (WireItem* item = m_wireItems.value(id)) item->setPos(item->pos() + pull);
+        }
+    }
     placeFollowers();
     Selection before, after;
     for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it) {
@@ -1661,7 +1754,9 @@ void SchematicScene::simInteractRelease()
 
 void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
-    const QPointF p = snap(e->scenePos());
+    // drawing wires, a click near a pin or a wire lands on it
+    const bool wiring = m_tool == Tool::Wire || m_tool == Tool::Bus || !m_wirePoints.isEmpty();
+    const QPointF p = wiring ? attach(e->scenePos()) : snap(e->scenePos());
     if (simulating()) {
         if (e->button() == Qt::LeftButton && m_tool != Tool::Probe) {
             m_simPressed = true;
@@ -1982,7 +2077,8 @@ void SchematicScene::previewEntries(const EntryMoves& moves, const EntryMoves& p
 
 void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
 {
-    m_cursor = snap(e->scenePos());
+    m_cursor = m_tool == Tool::Wire || m_tool == Tool::Bus || !m_wirePoints.isEmpty() || m_wireEdit ? attach(e->scenePos())
+                                                                                                    : snap(e->scenePos());
     emit cursorMoved(m_cursor);
     if (simulating()) {
         if (m_tool == Tool::Probe) {
@@ -2068,7 +2164,7 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
     }
     if (m_wireFromSelect && m_wirePoints.size() == 1 && e->button() == Qt::LeftButton) {
         // press-drag-release from a pin draws the wire in one gesture
-        const QPointF p = snap(e->scenePos());
+        const QPointF p = attach(e->scenePos());
         if (!near(p, m_wirePoints.first()))
             wireClick(p);
         return;
@@ -2093,8 +2189,8 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
     }
     if (m_wireEdit) {
         const WireEdit edit = *m_wireEdit;
-        const QVector<QPointF> pts = simplify(editedWire(snap(e->scenePos())));
-        const EntryMoves entries = wireEditEntryMoves(snap(e->scenePos()));
+        const QVector<QPointF> pts = simplify(editedWire(attach(e->scenePos())));
+        const EntryMoves entries = wireEditEntryMoves(attach(e->scenePos()));
         m_wireEdit.reset();
         previewEntries({}, m_entryPreview);
         m_entryPreview = {};
@@ -2103,7 +2199,7 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
             return;
         item->clearPreview();
         // a click only selects the wire (it stays selected for Delete)
-        if (snap(e->scenePos()) == edit.start)
+        if (attach(e->scenePos()) == edit.start)
             return;
         if (pts != edit.original && pts.size() >= 2) {
             Selection before, after;
@@ -2514,6 +2610,12 @@ void SchematicScene::drawForeground(QPainter* p, const QRectF&)
         p->setPen(QPen(QColor(0x00, 0xa0, 0x40), 1.2));
         p->setBrush(Qt::NoBrush);
         p->drawEllipse(m_cursor, 4, 4);
+        // CircuitMaker's connection area, shown
+        if (g_showConnectionArea && !g_snapToGrid) {
+            const double r = std::max(g_connectionRadius, 4.0);
+            p->setPen(QPen(QColor(0x00, 0xa0, 0x40), 0.8, Qt::DotLine));
+            p->drawRect(QRectF(m_cursor - QPointF(r, r), QSizeF(2 * r, 2 * r)));
+        }
     }
 }
 

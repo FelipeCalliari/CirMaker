@@ -160,6 +160,18 @@ public:
     QColor wireColor(ItemId id) const;
 
     static QPointF snap(QPointF p);
+    // CircuitMaker's Options > Schematic: Snap To grid (off: whole units) and the
+    // connection area, in CircuitMaker's units (its grid is 9 of them), within
+    // which a click or a wire end is pulled onto a pin or a wire
+    static void setSnapToGrid(bool on);
+    static bool snapToGrid();
+    static void setConnectionArea(int size, bool shown);
+    // the point a click at p means: the pin, wire end or wire within the
+    // connection area, else p snapped
+    QPointF attach(QPointF p) const;
+    // a part placed or moved off the grid: how far to move it so a pin lands
+    // on a connection within the area (none: no move)
+    QPointF pinPull(const Component& c, const QSet<ItemId>& moving) const;
 
     // Items' scene bounds without the grid (and the border, when shown), for export/printing.
     QRectF contentsRect() const;

@@ -765,8 +765,7 @@ QVariant ComponentItem::itemChange(GraphicsItemChange change, const QVariant& va
 {
     if (change == ItemPositionChange && scene()) {
         const QPointF p = value.toPointF();
-        return QPointF(std::round(p.x() / SchematicScene::kGrid) * SchematicScene::kGrid,
-                       std::round(p.y() / SchematicScene::kGrid) * SchematicScene::kGrid);
+        return SchematicScene::snap(p);       // the grid, or whole units with snapping off
     }
     return QGraphicsItem::itemChange(change, value);
 }
