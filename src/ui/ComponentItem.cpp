@@ -172,7 +172,7 @@ double ComponentItem::carTravel() const
 
 bool ComponentItem::onCarReset(QPointF local) const
 {
-    // the second box of the Car's drawing is its Reset button
+    // the second box of the Car's (and the Rocket's) drawing is its Reset button
     int rects = 0;
     for (const Primitive& g : m_symbol->graphics)
         if (g.type == Primitive::Type::Rect && ++rects == 2)
@@ -655,20 +655,20 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->drawEllipse(QPointF(wx, 10), 6, 6);
         }
     } else if (d == u"rocket") {
-        // on the pad (height 0) or climbing; out of sight at 100
+        // on its pad beside the box (height 0) or climbing; out of sight at 100
         const int h = std::clamp(state, 0, 100);
         if (h < 100) {
-            const double y = 10 - h * 2.8;
+            const double x = 17, y = 77 - h * 3;
             p->setPen(QPen(ink, 1.5));
             p->setBrush(QColor(0xe8, 0xe8, 0xe8));
-            p->drawPolygon(QPolygonF({QPointF(-10, y - 60), QPointF(0, y - 80), QPointF(10, y - 60), QPointF(10, y),
-                                      QPointF(-10, y)}));
-            p->drawPolygon(QPolygonF({QPointF(-10, y - 15), QPointF(-20, y), QPointF(-10, y)}));
-            p->drawPolygon(QPolygonF({QPointF(10, y - 15), QPointF(20, y), QPointF(10, y)}));
+            p->drawPolygon(QPolygonF({QPointF(x - 18, y - 110), QPointF(x, y - 160), QPointF(x + 18, y - 110), QPointF(x + 18, y),
+                                      QPointF(x - 18, y)}));
+            p->drawPolygon(QPolygonF({QPointF(x - 18, y - 40), QPointF(x - 38, y), QPointF(x - 18, y)}));
+            p->drawPolygon(QPolygonF({QPointF(x + 18, y - 40), QPointF(x + 38, y), QPointF(x + 18, y)}));
             if (live && h > 0) {
                 p->setPen(Qt::NoPen);
                 p->setBrush(QColor(0xff, 0x90, 0x20));
-                p->drawPolygon(QPolygonF({QPointF(-7, y), QPointF(0, y + 22), QPointF(7, y)}));
+                p->drawPolygon(QPolygonF({QPointF(x - 12, y), QPointF(x, y + 40), QPointF(x + 12, y)}));
             }
         }
     } else if (d == u"contact") {
@@ -679,20 +679,19 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->drawLine(QPointF(-14, 14), QPointF(14, -14));
         }
     } else if (d == u"motor") {
-        // a DC motor turns while energized, as CircuitMaker animates it
-        if (live && state > 0) {
-            const SchematicScene* sc = schematic();
-            const double a = double((sc ? sc->simTime() : 0) % 24) * 15 * M_PI / 180;
-            const QPointF tip(24 * std::cos(a), 24 * std::sin(a));
-            p->setPen(QPen(theme().high, 3, Qt::SolidLine, Qt::RoundCap));
-            p->drawLine(-tip, tip);
-        }
+        // the rotor's pointer, up at rest; it turns while energized, a step
+        // of eight round, as CircuitMaker animates it
+        const SchematicScene* sc = schematic();
+        const int step = live && state > 0 ? int((sc ? sc->simTime() : 0) % 8) : 0;
+        const double a = (step * 45 - 90) * M_PI / 180;
+        p->setPen(QPen(live && state > 0 ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
+        p->drawLine(QPointF(0, 0), QPointF(22 * std::cos(a), 22 * std::sin(a)));
     } else if (d == u"buzzer") {
         // sound waves while it sounds
         if (live && state > 0) {
             p->setPen(QPen(theme().high, 2));
             p->setBrush(Qt::NoBrush);
-            for (int r : {38, 48})
+            for (int r : {72, 84})
                 for (double start : {-40.0, 140.0})
                     p->drawArc(QRectF(-r, -r, 2 * r, 2 * r), int(start * 16), 80 * 16);
         }

@@ -1279,14 +1279,14 @@
    "model": {
     "kind": "rocket"
    },
-   "description": "Animated rocket: lifts off when + goes high against -, and is back on its pad once the input drops after the flight",
+   "description": "Animated rocket, as CircuitMaker's: lifts off when + goes high against -; back on its pad once the input drops after the flight, or with its Reset button",
    "graphics": [
     {
      "rect": [
       -70,
-      20,
-      120,
-      60
+      13,
+      37,
+      64
      ]
     },
     {
@@ -1308,36 +1308,83 @@
     {
      "text": "+",
      "at": [
-      -64,
-      30
+      -52,
+      33
      ],
-     "size": 7,
-     "align": "left"
+     "size": 20
     },
     {
      "text": "-",
      "at": [
-      -64,
-      60
+      -52,
+      61
      ],
-     "size": 7,
-     "align": "left"
+     "size": 20
     },
     {
-     "line": [
-      40,
-      -260,
-      40,
-      20
+     "rect": [
+      -60,
+      83,
+      150,
+      57
+     ]
+    },
+    {
+     "rect": [
+      -50,
+      93,
+      130,
+      37
      ]
     },
     {
      "line": [
-      30,
-      -260,
-      50,
-      -260
+      -60,
+      83,
+      -50,
+      93
      ]
+    },
+    {
+     "line": [
+      90,
+      83,
+      80,
+      93
+     ]
+    },
+    {
+     "line": [
+      -60,
+      140,
+      -50,
+      130
+     ]
+    },
+    {
+     "line": [
+      90,
+      140,
+      80,
+      130
+     ]
+    },
+    {
+     "text": "Reset",
+     "at": [
+      15,
+      112
+     ],
+     "size": 22
+    },
+    {
+     "line": [
+      17,
+      -420,
+      17,
+      77
+     ],
+     "live": true
     }
    ],
    "pins": [

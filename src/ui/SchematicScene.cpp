@@ -1574,8 +1574,8 @@ void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
     }
     const QString& d = hit->symbol()->display;
     // a click on a key, switch or button gives it the keyboard
-    // a Car's Reset button brings it back to the start
-    if (d == u"car") {
+    // a Car's or Rocket's Reset button brings it back to the start
+    if (d == u"car" || d == u"rocket") {
         if (hit->onCarReset(hit->mapFromScene(e->scenePos()))) {
             m_sim->interact(hit->id(), QStringLiteral("reset"));
             update();

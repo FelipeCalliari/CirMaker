@@ -357,6 +357,11 @@ public:
             else evaluate(ctx);
         }
     }
+    // its Reset button: back on the pad
+    void interact(ModelContext&, const QString& action, int) override
+    {
+        if (action == u"reset") m_height = 0;
+    }
     int state() const override { return m_height; }
 
 private:

@@ -649,7 +649,8 @@ def analog():
         {'id': 'lamp', 'name': 'Lamp', 'prefix': 'L', 'label': '100', 'aliases': ['Lamp'], 'display': 'bulb',
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {2} {value}'),
          'description': 'Resistive lamp; glows with the voltage across it',
-         'graphics': [C(0, 0, 25), L(-18, -18, 18, 18), L(-18, 18, 18, -18), L(-20, 40, -20, 15), L(20, 15, 20, 40)],
+         # CircuitMaker's bulb: the filament looping up from the pins
+         'graphics': [C(0, 0, 30), C(0, 0, 26), P('M -20 40 L -20 22 C -20 -30 20 -30 20 22 L 20 40')],
          'pins': [pin('1', -20, 40, float=-1), pin('2', 20, 40, float=-1)]},     # 12 units apart, as in CircuitMaker
         {'id': 'ic', 'name': '.IC Initial Condition', 'prefix': 'IC', 'label': '0V', 'aliases': ['.IC'], 'cmPins': ['1'],
          'spice': sp('.ic v({1})={value}'),
@@ -735,7 +736,9 @@ def misc_parts():
         {'id': 'buzzer', 'name': 'Piezo Buzzer', 'prefix': 'LS', 'label': '1k', 'aliases': ['Piezo Buzzer'], 'display': 'buzzer',
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {2} {value}'),
          'description': 'Piezo buzzer, simulated as a resistive load',
-         'graphics': [C(0, 0, 30), C(0, 0, 18), L(-80, 0, -30, 0), L(30, 0, 80, 0)],
+         # CircuitMaker's: a large disc, its terminals marked + and -
+         'graphics': [C(0, 0, 62), C(0, 0, 40), C(-50, 0, 7), C(50, 0, 7), T('+', -50, 24, 18), T('-', 50, 24, 18),
+                      L(-80, 0, -62, 0), L(62, 0, 80, 0)],
          'pins': [pin('1', -80, 0, float=-1), pin('2', 80, 0, float=-1)]},
         {'id': 'speaker', 'name': 'Speaker', 'prefix': 'LS', 'label': '8', 'aliases': ['Speaker'],
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {2} {value}'),
@@ -746,7 +749,9 @@ def misc_parts():
         {'id': 'dc_motor', 'name': 'DC Motor', 'prefix': 'M', 'label': '10', 'aliases': ['DC Motor'], 'display': 'motor',
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'spice': sp('R{name} {1} {name}_m {value}' + N + 'L{name} {name}_m {2} 1m'),
          'description': 'DC motor, simulated as its winding (resistance from the label, 1 mH)',
-         'graphics': [C(0, 0, 30), T('M', 0, 0, 14), L(-60, 0, -30, 0), L(30, 0, 60, 0)],
+         # CircuitMaker's: a ring, the rotor inside with its pointer (turning while it runs), the terminals
+         'graphics': [C(0, 0, 45), C(0, 0, 22), P('M -45 -10 L -55 -10 L -55 10 L -45 10'), P('M 45 -10 L 55 -10 L 55 10 L 45 10'),
+                      L(-60, 0, -55, 0), L(55, 0, 60, 0)],
          'pins': [pin('1', -60, 0, float=-1), pin('2', 60, 0, float=-1)]},
         {'id': 'solenoid', 'name': 'Solenoid', 'prefix': 'L', 'label': '5VCOIL', 'aliases': ['Solenoid'],
          'cmPins': ['1', '2'], 'model': {'kind': 'load'}, 'props': dict(COIL_PROPS), 'spice': COIL_SPICE,
@@ -1416,10 +1421,14 @@ def inputs():
          'pins': [pin('S', -110, -20, 'in'), pin('F', -110, 10, 'out')]},
         {'id': 'rocket', 'name': 'Rocket', 'prefix': 'R', 'display': 'rocket', 'aliases': ['Rocket'],
          'cmPins': ['+', '-'], 'model': {'kind': 'rocket'},
-         'description': 'Animated rocket: lifts off when + goes high against -, and is back on its pad once the '
-                        'input drops after the flight',
-         'graphics': [R(-70, 20, 120, 60), L(-90, 30, -70, 30), L(-90, 60, -70, 60), T('+', -64, 30, 7, 'left'),
-                      T('-', -64, 60, 7, 'left'), L(40, -260, 40, 20), L(30, -260, 50, -260)],
+         'description': 'Animated rocket, as CircuitMaker\'s: lifts off when + goes high against -; back on its pad '
+                        'once the input drops after the flight, or with its Reset button',
+         # CircuitMaker's: the +/- box, the rocket beside it, the Reset button below;
+         # its flight (drawn live) reaches up the dashed line's height
+         'graphics': [R(-70, 13, 37, 64), L(-90, 30, -70, 30), L(-90, 60, -70, 60), T('+', -52, 33, 20), T('-', -52, 61, 20),
+                      R(-60, 83, 150, 57), R(-50, 93, 130, 37), L(-60, 83, -50, 93), L(90, 83, 80, 93),
+                      L(-60, 140, -50, 130), L(90, 140, 80, 130), T('Reset', 15, 112, 22),
+                      dict(L(17, -420, 17, 77), live=True)],
          'pins': [pin('+', -90, 30, 'in'), pin('-', -90, 60, 'in')]},
         {'id': 'stepper', 'name': 'Stepper Motor', 'prefix': 'M', 'display': 'stepper', 'label': '100H',
          'aliases': ['Stepper'], 'cmPins': ['1', 'COMA', '2', '3', 'COMB', '4'], 'model': {'kind': 'stepper'},
