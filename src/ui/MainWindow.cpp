@@ -283,7 +283,8 @@ void MainWindow::createActions()
     m_mirror->setShortcut(Qt::CTRL | Qt::Key_M);
     connect(m_mirror, &QAction::triggered, m_scene, &SchematicScene::mirrorSelection);
     m_props = new QAction(tr("&Properties..."), this);
-    m_props->setShortcut(Qt::ALT | Qt::Key_Return);
+    // Alt+Enter, and Ctrl+K as CircuitMaker's Device Display Data
+    m_props->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_Return), QKeySequence(Qt::CTRL | Qt::Key_K)});
     connect(m_props, &QAction::triggered, this, [this] {
         const auto sel = m_scene->selectedItems();
         if (sel.size() == 1)
@@ -426,6 +427,7 @@ void MainWindow::createActions()
             QMessageBox::information(this, tr("Group items"), error);
     });
     m_labelPositions = new QAction(tr("Set &Label Positions"), this);
+    m_labelPositions->setShortcut(Qt::ALT | Qt::Key_L);         // as in CircuitMaker
     m_labelPositions->setStatusTip(tr("Puts the designators and labels of the selected devices back in their standard places"));
     connect(m_labelPositions, &QAction::triggered, m_scene, &SchematicScene::resetLabelPositions);
     m_border = new QAction(tr("&Border"), this);
@@ -559,6 +561,7 @@ void MainWindow::createActions()
     m_find->setShortcut(QKeySequence::Find);
     connect(m_find, &QAction::triggered, this, &MainWindow::findAndSelect);
     m_titleBlock = new QAction(tr("Title &Block..."), this);
+    m_titleBlock->setShortcut(Qt::CTRL | Qt::Key_L);            // CircuitMaker's Schematic Display Data
     connect(m_titleBlock, &QAction::triggered, m_scene, &SchematicScene::editTitleBlock);
     m_showTitleBlock = new QAction(tr("Show &Title Block"), this);
     m_showTitleBlock->setCheckable(true);
