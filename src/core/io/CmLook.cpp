@@ -56,12 +56,21 @@ QJsonArray shapeGraphics(const QVector<CmShape>& shapes, const std::function<QPo
     QJsonArray graphics;
     for (const CmShape& sh : std::as_const(joined)) {
         if (sh.kind == 23 && sh.points.size() >= 3) {
-            // a character: centred on its place, standing on it, the code in
-            // the top byte of the third point, the cell's height its size
-            const QChar ch(uint(sh.points[2].x()) >> 24 & 0xff);
+            // characters: centred on their place, standing on it, up to four
+            // codes in the third point's x from its top byte down ("gain"),
+            // four more in its y; the cell's height their size
+            QString text;
+            bool ended = false;
+            for (const int word : {sh.points[2].x(), sh.points[2].y()})
+                for (int shift = 24; shift >= 0 && !ended; shift -= 8) {
+                    const int code = int(uint(word) >> shift & 0xff);
+                    ended = code == 0;
+                    if (code >= 32 && code < 127) text += QChar(code);
+                }
+            if (text.isEmpty()) continue;
             const double height = std::max(4, sh.points[1].y());
             const QPointF at = ptf(QPointF(sh.points[0]) - QPointF(0, height * 0.35));
-            graphics.append(QJsonObject{{QStringLiteral("text"), QString(ch)}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}},
+            graphics.append(QJsonObject{{QStringLiteral("text"), text}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}},
                                         {QStringLiteral("size"), height * 2}});
             continue;
         }
@@ -342,10 +351,11 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
                                             {QStringLiteral("align"), dir == 'l' ? QStringLiteral("left") : dir == 'r' ? QStringLiteral("right")
                                                                                                               : QStringLiteral("center")}});
             }
-            // and, with a package and unless flag 0x20, its package pin numbers
-            // outside, over each lead (the 555, the PLL; not .IC)
+            // and by a named pin, with a package and unless flag 0x20, its
+            // package pin number outside, over the lead (the 555, the PLL;
+            // not .IC, not the fuse)
             const int number = dev->packageMap.size() > dev->pinCount ? dev->packageMap.value(k + 1) : 0;
-            if (!(dev->flags & 0x20) && number > 0 && !dev->package.trimmed().isEmpty()) {
+            if (!(dev->flags & 0x20) && number > 0 && !dev->package.trimmed().isEmpty() && !dev->pinNames.value(k).trimmed().isEmpty()) {
                 const QPointF at = ptf(QPointF(start) + QPointF(step) * 2.5 + (step.x() ? QPointF(0, -3) : QPointF(-3, 0)));
                 graphics.append(QJsonObject{{QStringLiteral("text"), QString::number(number)}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}},
                                             {QStringLiteral("size"), 16}, {QStringLiteral("turns"), true}});
