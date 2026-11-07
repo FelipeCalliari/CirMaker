@@ -1390,7 +1390,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
 
     for (const CktText& t : file.texts) {
         if (t.text.trimmed().isEmpty()) continue;
-        TextNote note{0, scaled(t.rect.topLeft()), t.text, std::max(6.0, t.fontHeight * kScale * 0.6)};
+        // CircuitMaker's character is about 0.65 of the font's height wide
+        // (its text boxes: 8.3 to 9 units a character at 13): Courier's 0.6 em at that width
+        TextNote note{0, scaled(t.rect.topLeft()), t.text, std::max(6.0, t.fontHeight * 2.7)};
         note.family = t.face;
         note.bold = t.bold;
         note.italic = t.italic;

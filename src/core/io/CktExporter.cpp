@@ -1027,7 +1027,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
     // ---- free text
     QStringList textRecords;
     for (const TextNote& t : circuit.texts()) {
-        const int height = std::max(8, int(std::lround(t.pointSize / 2)));
+        const int height = std::max(8, int(std::lround(t.pointSize / 2.7)));     // as the importer sizes it
         const QStringList lines = t.text.split(u'\n');
         int longest = 0;
         for (const QString& l : lines) longest = std::max(longest, int(l.size()));
