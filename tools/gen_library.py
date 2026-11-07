@@ -1426,21 +1426,23 @@ def inputs():
     ]
 
 
-def seg_graphics():
-    # segments a..g drawn by the display renderer; outline and pins here
+def seg_graphics(common):
+    # segments a..g drawn by the display renderer; outline and pins here,
+    # labelled inside as CircuitMaker does: "abcdefg." and Gnd or V+
     g = [R(-80, -80, 160, 150)]
     names = list('abcdefg') + ['dp']
     for i, n in enumerate(names):
         x = -70 + 20 * i
-        g += [L(x, 70, x, 120), T(n, x + 6, 92, 6, 'left')]
+        g += [L(x, 70, x, 120), T('.' if n == 'dp' else n, x, 59, 11)]
     # pin ends where CircuitMaker has them (36 of its units below and above)
-    g += [L(0, -80, 0, -120), T('COM', 12, -100, 6, 'left')]
+    g += [L(0, -80, 0, -120), T(common, 0, -67, 11)]
     pins = [pin(n, -70 + 20 * i, 120, 'in') for i, n in enumerate(names)] + [pin('COM', 0, -120, 'in')]
     return g, pins
 
 
 def outputs():
-    seg_g, seg_p = seg_graphics()
+    seg_g, seg_p = seg_graphics('Gnd')
+    seg_ga, _ = seg_graphics('V+')
     # a floating segment (an open-collector 7447 output that is off) stays dark
     seg_p = [dict(p, float=-1) if p['name'] != 'COM' else p for p in seg_p]
     return [
@@ -1494,7 +1496,7 @@ def outputs():
          'graphics': seg_g, 'pins': seg_p},
         {'id': 'seg7_ca', 'name': 'CA 7-Seg', 'prefix': 'D', 'display': 'seg7', 'aliases': ['CA 7-Seg'],
          'model': {'kind': 'seg7', 'anode': True}, 'description': 'Common-anode 7-segment display: segment lit when its pin is low',
-         'graphics': seg_g, 'pins': seg_p},
+         'graphics': seg_ga, 'pins': seg_p},
     ]
 
 

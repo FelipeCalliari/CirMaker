@@ -419,24 +419,27 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             SymbolPainter::uprightText(p, screen.center(), text, screen.height() * 0.6, 0, QColor(0xff, 0x30, 0x20));
         }
     } else if (d == u"seg7") {
-        // a..g on a digit 50 wide, 110 high, centred in the body; dp bottom right
-        const QPointF c = body.center() + QPointF(-5, -5);
-        const double w = 25, h = 55;
+        // a..g on a digit 50 wide, 90 high, between the labels; dp bottom right
+        const QPointF c = body.center() + QPointF(-5, -2);
+        const double w = 25, h = 45;
         const QLineF seg[7] = {
             {c + QPointF(-w + 5, -h), c + QPointF(w - 5, -h)}, {c + QPointF(w, -h + 5), c + QPointF(w, -5)},
             {c + QPointF(w, 5), c + QPointF(w, h - 5)},        {c + QPointF(-w + 5, h), c + QPointF(w - 5, h)},
             {c + QPointF(-w, 5), c + QPointF(-w, h - 5)},      {c + QPointF(-w, -h + 5), c + QPointF(-w, -5)},
             {c + QPointF(-w + 5, 0), c + QPointF(w - 5, 0)},
         };
+        // only lit segments show, as in CircuitMaker
         const int lit = live && state > 0 ? state : 0;
         for (int i = 0; i < 7; ++i) {
-            QPen pen(lit >> i & 1 ? theme().high : QColor(0xe8, 0xe0, 0xe0), 8, Qt::SolidLine, Qt::RoundCap);
-            p->setPen(pen);
+            if (!(lit >> i & 1)) continue;
+            p->setPen(QPen(theme().high, 8, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(seg[i]);
         }
         p->setPen(Qt::NoPen);
-        p->setBrush(lit >> 7 & 1 ? theme().high : QColor(0xe8, 0xe0, 0xe0));
-        p->drawEllipse(c + QPointF(w + 12, h), 5, 5);
+        if (lit >> 7 & 1) {
+            p->setBrush(theme().high);
+            p->drawEllipse(c + QPointF(w + 12, h), 5, 5);
+        }
     } else if (d == u"logicswitch") {
         // lever from the output pivot to the 1 (upper) or 0 (lower) contact
         const bool on = state == 1;
