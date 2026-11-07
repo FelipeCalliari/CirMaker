@@ -342,6 +342,14 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
                                             {QStringLiteral("align"), dir == 'l' ? QStringLiteral("left") : dir == 'r' ? QStringLiteral("right")
                                                                                                               : QStringLiteral("center")}});
             }
+            // and, with a package and unless flag 0x20, its package pin numbers
+            // outside, over each lead (the 555, the PLL; not .IC)
+            const int number = dev->packageMap.size() > dev->pinCount ? dev->packageMap.value(k + 1) : 0;
+            if (!(dev->flags & 0x20) && number > 0 && !dev->package.trimmed().isEmpty()) {
+                const QPointF at = ptf(QPointF(start) + QPointF(step) * 2.5 + (step.x() ? QPointF(0, -3) : QPointF(-3, 0)));
+                graphics.append(QJsonObject{{QStringLiteral("text"), QString::number(number)}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}},
+                                            {QStringLiteral("size"), 16}, {QStringLiteral("turns"), true}});
+            }
         }
     }
     QJsonArray pins;

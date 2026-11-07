@@ -1527,7 +1527,8 @@ def general():
          'pins': [pin('GND', 0, -20, 'out')]},
         {'id': 'vcc', 'name': '+V', 'prefix': 'V', 'label': '5V', 'aliases': ['+V', '+5V', 'Vcc'], 'cmPins': ['VCC'],
          'model': {'kind': 'const', 'value': 1}, 'spice': sp('V{name} {VCC} 0 DC {value}'),
-         'graphics': [L(0, 30, 0, 10), C(0, 0, 10), L(-5, 0, 5, 0), L(0, -5, 0, 5)], 'pins': [pin('VCC', 0, 30, 'out')]},
+         # CircuitMaker's: a small open diamond on top of its lead
+         'graphics': [L(0, 30, 0, -10), P('M 0 -30 L 10 -20 L 0 -10 L -10 -20 Z')], 'pins': [pin('VCC', 0, 30, 'out')]},
         {'id': 'port_in', 'name': 'Input', 'prefix': '', 'netLabel': True, 'display': 'port', 'label': 'IN',
          'aliases': ['Input'], 'cmPins': ['1'],
          'description': 'Macro input: becomes a pin on the left of the macro symbol; connects by name like a terminal',
