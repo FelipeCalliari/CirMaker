@@ -546,7 +546,7 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             for (QPointF q : std::as_const(tv))
                 line << QPointF(box.left() + (t1 > t0 ? (q.x() - t0) / (t1 - t0) : 0.5) * box.width(),
                                 box.bottom() - (hi > lo ? (q.y() - lo) / (hi - lo) : 0.5) * box.height());
-            p->setPen(QPen(ink, 1.5));
+            p->setPen(QPen(isSelected() ? ink : QColor(0x00, 0x00, 0xe0), 1.5));     // CircuitMaker's blue
             p->setBrush(Qt::NoBrush);
             p->drawPolyline(line);
         }
@@ -615,7 +615,8 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
     } else if (singleKey() || d == u"asciikey") {
         // a bevelled key showing its number (or character)
         const QRectF face = keyFace(), top = face.adjusted(face.height() / 5, face.height() / 5, -face.height() / 5, -face.height() / 5);
-        p->setPen(QPen(ink, 1));
+        // in CircuitMaker's blue, as its keys are drawn
+        p->setPen(QPen(isSelected() ? ink : QColor(0x00, 0x00, 0xe0), 1.5));
         p->setBrush(QColor(0xf4, 0xf4, 0xf4));
         p->drawRect(face);
         p->setBrush(Qt::NoBrush);

@@ -637,7 +637,7 @@ def analog():
          'description': 'Sine, pulse, FM, exponential or piecewise linear source; also the AC source. '
                         'Drawn as CircuitMaker draws it: its waveform, its frequency below and its levels as the label',
          # the waveform and the frequency are drawn live, as the waveform is set
-         'graphics': [R(-40, -40, 80, 80),
+         'graphics': [dict(R(-40, -40, 80, 80), color='#0000e0'),     # CircuitMaker's blue
                       L(40, -20, 100, -20), L(40, 20, 100, 20), T('+', 50, -28, 8), T('-', 50, 28, 8)],
          'pins': [pin('+', 100, -20), pin('-', 100, 20)]},
         {'id': 'pot', 'name': 'Potentiometer', 'prefix': 'R', 'label': '10k', 'aliases': ['Var Resistor'],
@@ -1362,8 +1362,8 @@ def inputs():
                         'active for the high time, a new one before the end starting it again',
          # as CircuitMaker draws it: CP1, CP2 (a bubble) in, Q1, Q2 (a bubble) out, the waveform below;
          # pins where CircuitMaker has them
-         'graphics': [R(-60, -60, 120, 120),
-                      P('M -53 50 L -23 50 L -23 20 L 23 20 L 23 50 L 53 50'),
+         'graphics': [dict(R(-60, -60, 120, 120), color='#0000e0'),     # CircuitMaker's blue
+                      dict(P('M -53 50 L -23 50 L -23 20 L 23 20 L 23 50 L 53 50'), color='#0000e0'),
                       L(-80, -30, -60, -30), C(-65, 0, 5), L(-100, 0, -70, 0),
                       L(60, -30, 80, -30), C(65, 0, 5), L(70, 0, 100, 0),
                       T('CP1', -55, -30, 20, 'left'), T('CP2', -55, 0, 20, 'left'),
@@ -1415,10 +1415,11 @@ def inputs():
          'description': 'Animated race car, as CircuitMaker\'s: drives its distance (CircuitMaker units, up to 1000) to the right '
                         'once S goes high (faster with a higher speed), raises F at the finish; its Reset button brings it back',
          # the S/F box, the Reset button under the car; the car is drawn where it has got to
-         'graphics': [R(-90, -36, 33, 63), L(-110, -20, -90, -20), L(-110, 10, -90, 10),
+         'graphics': [dict(R(-90, -36, 33, 63), color='#0000e0'), L(-110, -20, -90, -20), L(-110, 10, -90, 10),
                       T('S', -73, -20, 20), T('F', -73, 10, 20),
-                      R(-30, 30, 150, 60), R(-20, 40, 130, 40), L(-30, 30, -20, 40), L(120, 30, 110, 40),
-                      L(-30, 90, -20, 80), L(120, 90, 110, 80), T('Reset', 45, 60, 22)],
+                      dict(R(-30, 30, 150, 60), color='#0000e0'), dict(R(-20, 40, 130, 40), color='#0000e0'), dict(L(-30, 30, -20, 40), color='#0000e0'),
+                      dict(L(120, 30, 110, 40), color='#0000e0'), dict(L(-30, 90, -20, 80), color='#0000e0'), dict(L(120, 90, 110, 80), color='#0000e0'),
+                      T('Reset', 45, 60, 22)],
          'pins': [pin('S', -110, -20, 'in'), pin('F', -110, 10, 'out')]},
         {'id': 'rocket', 'name': 'Rocket', 'prefix': 'R', 'display': 'rocket', 'aliases': ['Rocket'],
          'cmPins': ['+', '-'], 'model': {'kind': 'rocket'},
@@ -1426,9 +1427,10 @@ def inputs():
                         'once the input drops after the flight, or with its Reset button',
          # CircuitMaker's: the +/- box, the rocket beside it, the Reset button below;
          # its flight (drawn live) reaches up the dashed line's height
-         'graphics': [R(-70, 13, 37, 64), L(-90, 30, -70, 30), L(-90, 60, -70, 60), T('+', -52, 33, 20), T('-', -52, 61, 20),
-                      R(-60, 83, 150, 57), R(-50, 93, 130, 37), L(-60, 83, -50, 93), L(90, 83, 80, 93),
-                      L(-60, 140, -50, 130), L(90, 140, 80, 130), T('Reset', 15, 112, 22),
+         'graphics': [dict(R(-70, 13, 37, 64), color='#0000e0'), L(-90, 30, -70, 30), L(-90, 60, -70, 60), T('+', -52, 33, 20), T('-', -52, 61, 20),
+                      dict(R(-60, 83, 150, 57), color='#0000e0'), dict(R(-50, 93, 130, 37), color='#0000e0'), dict(L(-60, 83, -50, 93), color='#0000e0'),
+                      dict(L(90, 83, 80, 93), color='#0000e0'), dict(L(-60, 140, -50, 130), color='#0000e0'), dict(L(90, 140, 80, 130), color='#0000e0'),
+                      T('Reset', 15, 112, 22),
                       dict(L(17, -420, 17, 77), live=True)],
          'pins': [pin('+', -90, 30, 'in'), pin('-', -90, 60, 'in')]},
         {'id': 'stepper', 'name': 'Stepper Motor', 'prefix': 'M', 'display': 'stepper', 'label': '100H',
