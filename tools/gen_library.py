@@ -1350,8 +1350,8 @@ def inputs():
         {'id': 'logicswitch', 'name': 'Logic Switch', 'prefix': 'S', 'display': 'logicswitch',
          'aliases': ['Logic Switch'], 'cmPins': ['Y'], 'model': {'kind': 'logicswitch'}, 'props': {'state': 0},
          'description': 'Click during simulation to toggle 0/1',
-         'graphics': [L(-20, -11, -4, -11), C(-10, 10, 4), L(-20, 10, -14, 10), L(20, 0, 40, 0),
-                      T('1', -24, -11, 7, 'right'), T('0', -24, 10, 7, 'right')],
+         # CircuitMaker's: a "1" and a "0" by its two contacts, the lever from the output
+         'graphics': [L(-33, -20, -33, -3), C(-33, 13, 7), L(-23, -13, 0, -13), L(-23, 13, 0, 13), L(20, 0, 40, 0)],
          'pins': [pin('Y', 40, 0, 'out')]},
         data_sequencer(),
         {'id': 'pulser', 'name': 'Pulser', 'prefix': 'P', 'display': 'pulser', 'aliases': ['Pulser'],

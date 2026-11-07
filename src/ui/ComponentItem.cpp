@@ -552,13 +552,10 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         // lever from the output pivot to the 1 (upper) or 0 (lower) contact
         const bool on = state == 1;
         p->setPen(QPen(on ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
-        p->drawLine(QPointF(20, 0), on ? QPointF(-4, -11) : QPointF(-6, 9));
+        p->drawLine(QPointF(20, 0), on ? QPointF(0, -13) : QPointF(0, 13));
         p->setPen(Qt::NoPen);
         p->setBrush(on ? theme().high : ink);
         p->drawEllipse(QPointF(20, 0), 3, 3);
-        if (live)
-            SymbolPainter::uprightText(p, QPointF(-14, on ? -22 : 22), on ? QStringLiteral("1") : QStringLiteral("0"), 9, 0,
-                                       on ? theme().high : theme().low);
     } else if (d == u"pulser") {
         if (live) {
             p->setBrush(state == 1 ? theme().high : theme().low);
