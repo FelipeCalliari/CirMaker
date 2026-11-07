@@ -856,9 +856,10 @@ def rare_parts():
         {'id': 'put', 'name': 'PUT', 'prefix': 'Q', 'label': '2N6027', 'aliases': ['PUT'],
          'cmPins': ['A', 'G', 'K'], 'spice': sp('X{name} {A} {G} {K} PUT_GEN', subckt=PUT),
          'description': 'Programmable unijunction transistor: conducts A to K once A rises 0.6 V above G',
-         'graphics': [L(50, 0, 14, 0), P('M 14 -12 L 14 12 L -14 0 Z'), L(-14, -12, -14, 12), L(-14, 0, -50, 0),
-                      L(14, -12, 30, -30), L(30, -30, 50, -30)],
-         'pins': [pin('A', 50, 0), pin('G', 50, -30, 'in'), pin('K', -50, 0)]},
+         # upright as CircuitMaker draws it: anode on top, the gate beside it, cathode below
+         'graphics': [L(0, -50, 0, -13), dict(P('M 0 13 L -27 -13 L 27 -13 Z'), fill=True), L(-27, 13, 27, 13), L(0, 13, 0, 50),
+                      L(-30, -50, -30, -27), L(-30, -27, -20, -27), L(-20, -27, -10, -13)],
+         'pins': [pin('A', 0, -50), pin('G', -30, -50, 'in'), pin('K', 0, 50)]},
         {'id': 'nlv', 'name': 'NLV Source', 'prefix': 'B', 'label': 'NLV', 'aliases': ['NLV Source'],
          'cmPins': ['V+', 'V-'], 'props': {'expr': '0'}, 'spice': sp('B{name} {V+} {V-} V={prop:expr}'),
          'description': 'Nonlinear voltage source: V = the "expr" property, a SPICE expression of node voltages '
