@@ -97,7 +97,7 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
             || it.key() == u"package" || it.key() == u"excludePcb" || it.key() == u"excludeBom"
             || it.key() == u"pins" || it.key() == u"spice" || it.key() == u"spiceModels" || it.key() == u"cmDevice"
             || it.key() == u"cmRef" || it.key() == u"cmSpice"
-            || it.key() == u"cmModelAt" || it.key() == u"cmPackage" || it.key() == u"cmPins" || it.key() == u"cmFlags" || it.key() == u"cmKind" || it.key() == u"cmStamp" || it.key() == u"spiceTail" || it.key() == u"cmPackageTable" || it.key() == u"cmPower" || it.key() == u"cmCode" || it.key() == u"cmNetsTail" || it.key() == u"cmSpan" || it.key() == u"cmAt" || it.key() == u"cmValueBox" || it.key() == u"cmDesignatorBox" || it.key() == u"cmTurnShift" || it.key() == u"cmTag" || it.key() == u"cmGenKey" || it.key() == u"cmGenLabel" || it.key() == u"cmTagAt")
+            || it.key() == u"cmModelAt" || it.key() == u"cmPackage" || it.key() == u"cmPins" || it.key() == u"cmFlags" || it.key() == u"cmKind" || it.key() == u"cmStamp" || it.key() == u"spiceTail" || it.key() == u"cmPackageTable" || it.key() == u"cmPower" || it.key() == u"cmCode" || it.key() == u"cmNetsTail" || it.key() == u"cmSpan" || it.key() == u"cmAt" || it.key() == u"cmValueBox" || it.key() == u"cmDesignatorBox" || it.key() == u"cmTurnShift" || it.key() == u"cmTag" || it.key() == u"cmGenKey" || it.key() == u"cmGenLabel" || it.key() == u"cmTagAt" || it.key() == u"pwlScale")
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM

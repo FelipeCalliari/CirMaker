@@ -31,6 +31,7 @@
 #include "library/LibraryRegistry.h"
 #include "library/Macros.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
@@ -434,6 +435,11 @@ double median(QVector<double> v)
 
 } // namespace
 
+namespace {
+// the folder of the file being imported: a generator's .PWL file lies next to it
+thread_local QString g_importFolder;
+}
+
 bool import(const QString& path, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report, QString* error)
 {
     QFile f(path);
@@ -441,7 +447,7 @@ bool import(const QString& path, Circuit& circuit, const LibraryRegistry& librar
         if (error) *error = f.errorString();
         return false;
     }
-    return importData(f.readAll(), circuit, library, report, error);
+    return importData(f.readAll(), circuit, library, report, error, QFileInfo(path).absolutePath());
 }
 
 namespace {
@@ -645,7 +651,7 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
 } // namespace
 
 bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report,
-                QString* error)
+                QString* error, const QString& folder)
 {
     CktFile file;
     try {
@@ -654,7 +660,10 @@ bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry&
         if (error) *error = QString::fromUtf8(e.what());
         return false;
     }
-    return importFile(file, circuit, library, report, 0);
+    g_importFolder = folder;
+    const bool ok = importFile(file, circuit, library, report, 0);
+    g_importFolder.clear();
+    return ok;
 }
 
 namespace {
@@ -1003,6 +1012,43 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
                     if (!ac.captured(2).isEmpty()) c.props.insert(QStringLiteral("acPhase"), ac.captured(2));
                 } else {
                     c.props.insert(QStringLiteral("ac"), false);
+                }
+            }
+            // piecewise linear from a file next to the circuit, "PWL %=RAND128.PWL{0.5 0.001 1}":
+            // offset, time span and peak-to-peak amplitude it is scaled to
+            static const QRegularExpression pwlFile(QStringLiteral("PWL\\s*%=\\s*\"?([^\"{\\s]+)\"?\\s*(?:\\{([^}]*)\\})?"),
+                                                    QRegularExpression::CaseInsensitiveOption);
+            if (const auto f = pwlFile.match(d.spice); f.hasMatch()) {
+                c.props.insert(QStringLiteral("wave"), QStringLiteral("pwl"));
+                c.props.insert(QStringLiteral("pwlFile"), f.captured(1));
+                c.props.insert(QStringLiteral("pwlScale"), f.captured(2).simplified());
+                const QStringList k = f.captured(2).split(QRegularExpression(QStringLiteral("[\\s,]+")), Qt::SkipEmptyParts);
+                const double offset = k.value(0).toDouble(), span = k.value(1).toDouble(), amplitude = k.value(2).toDouble();
+                QString path;
+                if (!g_importFolder.isEmpty())
+                    for (const QFileInfo& fi : QDir(g_importFolder).entryInfoList(QDir::Files))
+                        if (fi.fileName().compare(f.captured(1), Qt::CaseInsensitive) == 0) path = fi.absoluteFilePath();
+                QFile in(path);
+                if (!path.isEmpty() && in.open(QIODevice::ReadOnly)) {
+                    QVector<double> v;
+                    for (const QString& t : QString::fromLatin1(in.readAll()).split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts)) {
+                        bool ok = false;
+                        const double x = t.toDouble(&ok);
+                        if (ok) v << x;
+                    }
+                    if (v.size() % 2) v.removeLast();
+                    if (v.size() >= 4) {
+                        double lo = v[1], hi = v[1];
+                        for (int i = 1; i < v.size(); i += 2) lo = std::min(lo, v[i]), hi = std::max(hi, v[i]);
+                        const double tEnd = v[v.size() - 2];
+                        QStringList pts;
+                        for (int i = 0; i + 1 < v.size(); i += 2) {
+                            const double t = span > 0 && tEnd > 0 ? v[i] * span / tEnd : v[i];
+                            const double y = (amplitude > 0 && hi > lo ? (v[i + 1] - (hi + lo) / 2) * amplitude / (hi - lo) : v[i + 1]) + offset;
+                            pts << QString::number(t, 'g', 6) << QString::number(y, 'g', 6);
+                        }
+                        c.props.insert(QStringLiteral("pwl"), pts.join(u' '));
+                    }
                 }
             }
             if (c.label.isEmpty()) c.label = generator::label(c.props);

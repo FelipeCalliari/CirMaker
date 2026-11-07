@@ -676,6 +676,11 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 QStringList txt;
                 for (double v : std::as_const(pts)) txt << g(v);
                 spice = QStringLiteral("%D %1 %2 DC 0 PWL( ") + txt.join(u' ') + u')';
+                // read from a file next to the circuit: the file, as CircuitMaker had it
+                if (const QString file = c.props.value(QStringLiteral("pwlFile")).toString(); !file.isEmpty()) {
+                    const QString scale = c.props.value(QStringLiteral("pwlScale")).toString();
+                    spice = QStringLiteral("%D %1 %2 DC 0 PWL %=") + file + (scale.isEmpty() ? QString() : u'{' + scale + u'}');
+                }
             } else {
                 // SIN(offset amplitude frequency): nets[3] = 2
                 const double amplitude = prop("amplitude", "1"), offset = prop("offset", "0"), frequency = prop("frequency", "1k");

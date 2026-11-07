@@ -25,8 +25,9 @@ struct CktImportReport {
 namespace CktImporter {
 bool import(const QString& path, Circuit& circuit, const LibraryRegistry& library,
             CktImportReport* report, QString* error);
+// folder: where the file was, for what it reads beside it (a generator's .PWL)
 bool importData(const QByteArray& data, Circuit& circuit, const LibraryRegistry& library,
-                CktImportReport* report, QString* error);
+                CktImportReport* report, QString* error, const QString& folder = {});
 } // namespace CktImporter
 
 } // namespace cm

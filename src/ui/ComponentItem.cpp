@@ -522,7 +522,10 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setBrush(Qt::NoBrush);
             p->drawPolyline(line);
         }
-        SymbolPainter::uprightText(p, QPointF(body.center().x(), body.bottom() - 13), generator::frequencyText(generator::frequency(props)), 11, 0, ink);
+        // its frequency, or "Ext.File" for points read from a file, as CircuitMaker writes
+        const QString under = wave == u"pwl" && !props.value(QStringLiteral("pwlFile")).toString().isEmpty()
+                                ? QStringLiteral("Ext.File") : generator::frequencyText(generator::frequency(props));
+        SymbolPainter::uprightText(p, QPointF(body.center().x(), body.bottom() - 13), under, 11, 0, ink);
     } else if (d == u"seg7") {
         // a..g on a digit 50 wide, 90 high, between the labels; dp bottom right
         const QPointF c = body.center() + QPointF(-5, -2);

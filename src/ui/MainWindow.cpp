@@ -1011,7 +1011,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
     if (data.startsWith("CircuitMaker")) {
         Circuit imported;
         CktImportReport report;
-        if (!CktImporter::importData(data, imported, LibraryRegistry::instance(), &report, &error)) {
+        if (!CktImporter::importData(data, imported, LibraryRegistry::instance(), &report, &error, QFileInfo(path).absolutePath())) {
             return fail(tr("Import"), tr("Cannot import %1:\n%2").arg(QFileInfo(path).fileName(), error));
         }
         m_circuit->clear();
@@ -1614,7 +1614,7 @@ void MainWindow::merge()
     Circuit other;
     QString error;
     const bool ok = data.startsWith("CircuitMaker")
-                        ? CktImporter::importData(data, other, LibraryRegistry::instance(), nullptr, &error)
+                        ? CktImporter::importData(data, other, LibraryRegistry::instance(), nullptr, &error, QFileInfo(path).absolutePath())
                         : !data.trimmed().startsWith('{')
                               ? SpiceImporter::importText(QString::fromLocal8Bit(data), other, LibraryRegistry::instance(), nullptr, &error)
                               : NativeFormat::deserialize(data, other, &error);
