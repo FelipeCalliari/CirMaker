@@ -182,6 +182,16 @@ void MainWindow::createActions()
     m_import->setShortcut(Qt::CTRL | Qt::Key_I);
     connect(m_import, &QAction::triggered, this, &MainWindow::importCkt);
 
+    // as in CircuitMaker's File menu
+    m_close = new QAction(tr("&Close"), this);
+    m_close->setStatusTip(tr("Close this circuit and start an empty one"));
+    connect(m_close, &QAction::triggered, this, &MainWindow::newCircuit);
+    m_revert = new QAction(tr("Re&vert"), this);
+    m_revert->setStatusTip(tr("Open the file again as it was last saved, dropping the changes since"));
+    connect(m_revert, &QAction::triggered, this, &MainWindow::revert);
+    m_printWaves = new QAction(tr("Print &Waveforms..."), this);
+    connect(m_printWaves, &QAction::triggered, this, &MainWindow::printWaveforms);
+
     m_merge = new QAction(tr("&Merge..."), this);
     m_merge->setStatusTip(tr("Insert another circuit below this one"));
     connect(m_merge, &QAction::triggered, this, &MainWindow::merge);
@@ -634,13 +644,13 @@ void MainWindow::createMenus()
     QMenu* file = menuBar()->addMenu(tr("&File"));
     file->addActions({m_new, m_open});
     m_recentMenu = file->addMenu(tr("Open &Recent"));
-    file->addActions({m_import, m_merge});
+    file->addActions({m_import, m_merge, m_close});
     file->addSeparator();
-    file->addActions({m_save, m_saveAs});
+    file->addActions({m_save, m_saveAs, m_revert});
     file->addSeparator();
     QMenu* exportMenu = file->addMenu(tr("E&xport"));
     exportMenu->addActions({m_export, m_exportSpice, m_exportSubckt, m_exportPcb, m_exportCkt});
-    file->addActions({m_bom, m_print});
+    file->addActions({m_bom, m_print, m_printWaves});
     file->addSeparator();
     file->addAction(m_quit);
 
@@ -748,6 +758,16 @@ void MainWindow::createToolBars()
     m_speed->setToolTip(tr("Simulation ticks advanced every 30 ms while running"));
     connect(m_speed, &QSpinBox::valueChanged, m_scene, &SchematicScene::setTicksPerFrame);
     sim->addWidget(m_speed);
+    // View: the toolbars and the status bar shown or not, as CircuitMaker's View menu has them
+    if (QMenu* view = menuBar()->findChild<QMenu*>(QStringLiteral("viewMenu"))) {
+        view->addSeparator();
+        view->addActions({main->toggleViewAction(), sim->toggleViewAction()});
+        m_showStatusBar = new QAction(tr("Status &Bar"), this);
+        m_showStatusBar->setCheckable(true);
+        m_showStatusBar->setChecked(true);
+        connect(m_showStatusBar, &QAction::toggled, statusBar(), &QStatusBar::setVisible);
+        view->addAction(m_showStatusBar);
+    }
 }
 
 void MainWindow::updateActions()
@@ -1025,6 +1045,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         m_path.clear();
         updateTitle();
         addRecent(path);
+        m_openedPath = path;
         setWindowModified(true);
         if (interactive && (!report.unmapped.isEmpty() || !report.warnings.isEmpty())) {
             QStringList lines;
@@ -1058,6 +1079,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         m_path.clear();
         updateTitle();
         addRecent(path);
+        m_openedPath = path;
         setWindowModified(true);
         if (interactive && !report.skipped.isEmpty()) {
             QMessageBox box(QMessageBox::Information, tr("Import report"),
@@ -1081,6 +1103,7 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         m_path = path;
         updateTitle();
         addRecent(path);
+        m_openedPath = path;
     }
     m_faultsUnlocked = false;
     applyRestrictions();
@@ -1679,6 +1702,36 @@ void MainWindow::print()
     m_scene->render(&p, {}, src);
     p.end();
     m_scene->setExporting(false);
+}
+
+// the waveform window on a page, as large as it fits
+void MainWindow::printWaveforms()
+{
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setPageOrientation(QPageLayout::Landscape);
+    QPrintDialog dlg(&printer, this);
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+    const QPixmap shot = m_waves->grab();
+    QPainter p(&printer);
+    const QRect page = p.viewport();
+    const QSize size = shot.size().scaled(page.size(), Qt::KeepAspectRatio);
+    p.setViewport(page.x(), page.y(), size.width(), size.height());
+    p.setWindow(shot.rect());
+    p.drawPixmap(0, 0, shot);
+}
+
+// File > Revert: the file opened last, as it is on disk
+void MainWindow::revert()
+{
+    if (m_openedPath.isEmpty())
+        return;
+    if (isWindowModified()
+        && QMessageBox::question(this, tr("Revert"), tr("Drop the changes and open %1 again?").arg(QFileInfo(m_openedPath).fileName()))
+               != QMessageBox::Yes)
+        return;
+    setWindowModified(false);
+    openFile(m_openedPath);
 }
 
 void MainWindow::editPreferences()

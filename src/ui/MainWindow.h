@@ -66,6 +66,8 @@ private:
     QString writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text);
     void findAndSelect();
     void print();
+    void printWaveforms();
+    void revert();
     void about();
     void editPreferences();
     void setAnalogMode(bool analog);
@@ -107,6 +109,8 @@ private:
     QMenu* m_recentMenu = nullptr;
 
     QAction *m_new, *m_open, *m_import, *m_merge, *m_copyImage, *m_copyWaves, *m_save, *m_saveAs, *m_export, *m_print, *m_quit;
+    QAction *m_close, *m_revert, *m_printWaves, *m_showStatusBar;
+    QString m_openedPath;       // the file last opened, for File > Revert
     QAction *m_undoAct, *m_redoAct, *m_cut, *m_copy, *m_paste, *m_delete, *m_selectAll, *m_rotate, *m_mirror, *m_props;
     QAction *m_zoomIn, *m_zoomOut, *m_zoomFit, *m_grid;
     QAction *m_toolSelect, *m_toolWire, *m_toolBus, *m_toolNetLabel, *m_toolText, *m_toolDelete = nullptr,
