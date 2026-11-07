@@ -152,11 +152,16 @@ void TestGui::dragWireSegment()
     f.undo.undo();
     QCOMPARE(f.circuit.wire(id)->points.at(1), QPointF(0, 0));
 
-    // an end segment keeps its end in place and grows an elbow
+    // as in CircuitMaker, free ends move with the segment
     const ItemId straight = f.circuit.addWire({0, {{-100, -200}, {100, -200}}});
     f.drag({0, -200}, {0, -150});
-    QCOMPARE(f.circuit.wire(straight)->points,
-             QVector<QPointF>({{-100, -200}, {-100, -150}, {100, -150}, {100, -200}}));
+    QCOMPARE(f.circuit.wire(straight)->points, QVector<QPointF>({{-100, -150}, {100, -150}}));
+
+    // an end on a part's pin stays there and its segment grows an elbow
+    place(f.circuit, QStringLiteral("resistor"), {-160, -400}, QStringLiteral("R1"));     // pin 2 at (-100, -400)
+    const ItemId pinned = f.circuit.addWire({0, {{-100, -400}, {100, -400}}});
+    f.drag({0, -400}, {0, -350});
+    QCOMPARE(f.circuit.wire(pinned)->points, QVector<QPointF>({{-100, -400}, {-100, -350}, {100, -350}}));
 }
 
 void TestGui::dragWireEnd()
@@ -187,13 +192,14 @@ void TestGui::wiresFollowReshapedWire()
     QCOMPARE(f.circuit.wire(tee)->points.last(), QPointF(0, 50));
     QCOMPARE(f.circuit.component(label)->pos, labelAt);
 
-    // an end kept by the elbow keeps its wire; one along the segment slides
+    // a free end moves with the segment and the wire meeting it there
+    // stretches; one along the segment slides
     const ItemId straight = f.circuit.addWire({0, {{-100, -200}, {100, -200}}});
     const ItemId atEnd = f.circuit.addWire({0, {{-100, -250}, {-100, -200}}});
     const ItemId along = f.circuit.addWire({0, {{0, -250}, {0, -200}}});
     f.drag({50, -200}, {50, -150});
-    QCOMPARE(f.circuit.wire(straight)->points.first(), QPointF(-100, -200));
-    QCOMPARE(f.circuit.wire(atEnd)->points.last(), QPointF(-100, -200));
+    QCOMPARE(f.circuit.wire(straight)->points.first(), QPointF(-100, -150));
+    QCOMPARE(f.circuit.wire(atEnd)->points.last(), QPointF(-100, -150));
     QCOMPARE(f.circuit.wire(along)->points.last(), QPointF(0, -150));
 
     // a dragged end carries the wire ends that meet it
