@@ -233,6 +233,7 @@ private:
         QPointF start;
         int segment = -1;       // segment being slid, or
         int endpoint = -1;      // free end being dragged
+        bool firstFree = false, lastFree = false;   // ends not held by a pin or another wire's middle
     };
     bool beginWireEdit(QGraphicsSceneMouseEvent* e);
     static int segmentAt(const QVector<QPointF>& pts, QPointF p);

@@ -1769,8 +1769,10 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
     }
     if (previousHighlight >= 0)
         update();
-    if (!restricted(QStringLiteral("wire")) && !restricted(QStringLiteral("edit")) && beginWireEdit(e))
+    if (!restricted(QStringLiteral("wire")) && !restricted(QStringLiteral("edit")) && beginWireEdit(e)) {
+        e->accept();        // the view starts no selection box
         return;
+    }
     QGraphicsScene::mousePressEvent(e);
     if (!restricted(QStringLiteral("edit")))
         beginDrag();
@@ -1812,6 +1814,8 @@ bool SchematicScene::beginWireEdit(QGraphicsSceneMouseEvent* e)
         }
         return true;
     };
+    edit.firstFree = freeEnd(pts.first());
+    edit.lastFree = freeEnd(pts.last());
     if (near(at, pts.first(), 5) && freeEnd(pts.first())) {
         edit.endpoint = 0;
     } else if (near(at, pts.last(), 5) && freeEnd(pts.last())) {
@@ -1857,12 +1861,15 @@ QVector<QPointF> SchematicScene::editedWire(QPointF cursor) const
     const bool horizontal = std::abs(pts[i].y() - pts[i + 1].y()) < 0.5;
     const bool vertical = std::abs(pts[i].x() - pts[i + 1].x()) < 0.5;
     const QPointF d = horizontal ? QPointF(0, delta.y()) : vertical ? QPointF(delta.x(), 0) : delta;
-    // keep the wire ends where they are: an end segment grows an elbow
-    if (i == 0) {
+    // an end held by a pin (or partway along another wire) stays where it
+    // is: its segment grows an elbow; a free end moves with the segment, and
+    // what meets it there follows, as in CircuitMaker
+    const bool lastSegment = i + 1 == pts.size() - 1;
+    if (i == 0 && !m_wireEdit->firstFree) {
         pts.prepend(pts.first());
         ++i;
     }
-    if (i + 1 == pts.size() - 1)
+    if (lastSegment && !m_wireEdit->lastFree)
         pts.append(pts.last());
     pts[i] += d;
     pts[i + 1] += d;
@@ -1876,7 +1883,8 @@ SchematicScene::EntryMoves SchematicScene::busEntryMoves(const QVector<QPointF>&
     EntryMoves out;
     for (const WireItem* w : m_wireItems) {
         const Wire& wire = w->wire();
-        if (wire.bus || skipWires.contains(wire.id) || wire.points.size() < 2)
+        // (a bus meeting a dragged bus follows it too)
+        if (skipWires.contains(wire.id) || wire.points.size() < 2)
             continue;
         QVector<QPointF> pts = wire.points;
         bool changed = false;
@@ -1936,7 +1944,7 @@ SchematicScene::EntryMoves SchematicScene::wireEditEntryMoves(QPointF cursor) co
         const bool vertical = std::abs(pts[i].x() - pts[i + 1].x()) < 0.5;
         const QPointF d = horizontal ? QPointF(0, delta.y()) : vertical ? QPointF(delta.x(), 0) : delta;
         const QVector<QPointF> segment{pts[i], pts[i + 1]};
-        const bool firstStays = i == 0, lastStays = i + 2 == int(pts.size());
+        const bool firstStays = i == 0 && !m_wireEdit->firstFree, lastStays = i + 2 == int(pts.size()) && !m_wireEdit->lastFree;
         const QPointF first = pts.first(), last = pts.last();
         moved = [=](QPointF p) {
             if ((firstStays && near(p, first)) || (lastStays && near(p, last)))
