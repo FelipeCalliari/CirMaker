@@ -91,6 +91,8 @@ void ComponentItem::updateLabelGeometry()
     // texts moved elsewhere
     for (const std::optional<QPointF>& at : {m_c.designatorAt, m_c.labelAt})
         if (at) labels |= QRectF(*at - QPointF(300, 50), QSizeF(600, 100));
+    if (const QStringList tag = m_c.props.value(QStringLiteral("cmTagAt")).toString().split(u' ', Qt::SkipEmptyParts); tag.size() == 2)
+        labels |= QRectF(QPointF(tag[0].toDouble(), tag[1].toDouble()) - QPointF(300, 50), QSizeF(600, 100));
     m_bounds = m_symbol->bounds.united(transform().inverted().mapRect(labels)).adjusted(-3, -3, 3, 3);
     // a Car drives out to the right of its drawing
     if (m_symbol->display == u"car")
@@ -261,13 +263,21 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
         else
             SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), shownDesignator(*m_symbol, m_c), kTextSize, -1, ink);
     }
-    if (m_showLabel)
+    // CircuitMaker's third label where it showed it (flag 0x400): the coil
+    // a contact or solenoid follows
+    if (const QStringList at = m_c.props.value(QStringLiteral("cmTagAt")).toString().split(u' ', Qt::SkipEmptyParts); at.size() == 2) {
+        QString tag = m_c.props.value(QStringLiteral("relay")).toString();
+        if (tag.isEmpty()) tag = m_c.props.value(QStringLiteral("cmTag")).toString().section(u' ', 5);
+        if (!tag.isEmpty())
+            SymbolPainter::uprightText(p, toLocal.map(QPointF(at[0].toDouble(), at[1].toDouble())), tag, kTextSize, 0, ink);
+    }
+    if (m_symbol->display == u"port" && !m_c.label.isEmpty()) {
+        // port name inside the arrow, always, as CircuitMaker shows it
+        const double cx = m_symbol->id == u"port_in" ? -118 : 108;
+        SymbolPainter::uprightText(p, QPointF(cx, 0), m_c.label, kTextSize * 0.8, 0, ink);
+    } else if (m_showLabel)
     {
-        if (m_symbol->display == u"port") {
-            // port name inside the arrow
-            const double cx = m_symbol->id == u"port_in" ? -32 : 28;
-            SymbolPainter::uprightText(p, QPointF(cx, 0), m_c.label, 11, 0, ink);
-        } else if (m_symbol->id == u"netlabel") {
+        if (m_symbol->id == u"netlabel") {
             // bus entry / net label: name above the wire, on the wire's side
             const QString side = m_c.props.value(QStringLiteral("side"), QStringLiteral("right")).toString();
             const int align = side == u"left" ? 1 : -1;

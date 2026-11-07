@@ -1158,6 +1158,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
             comp.designatorAt = (origin + d.designatorRect->center()) * kScale - comp.pos;
         if (d.valueRect)
             comp.labelAt = (origin + d.valueRect->center()) * kScale - comp.pos;
+        // flag 0x400: the third label shown (a contact's or solenoid's coil, K1)
+        if ((d.flags & 0x400) && d.tagRect && !d.tag.trimmed().isEmpty()) {
+            const QPointF at = (origin + d.tagRect->center()) * kScale - comp.pos;
+            comp.props.insert(QStringLiteral("cmTagAt"), QStringLiteral("%1 %2").arg(std::round(at.x())).arg(std::round(at.y())));
+        }
         // CircuitMaker's texts sit around its own, often larger, drawings:
         // keep them on the same side but close to ours (drawn as CircuitMaker
         // draws the part, they stay where they were). Anchors are the centre
