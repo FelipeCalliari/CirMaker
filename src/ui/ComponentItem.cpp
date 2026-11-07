@@ -72,7 +72,7 @@ void ComponentItem::updateLabelGeometry()
     const QString kind = m_symbol->model.value(u"kind").toString();
     // CircuitMaker shows designators and hides chip part numbers by default
     m_showDesignator = m_c.showDesignator.value_or(!m_symbol->netLabel && kind != u"const") && !m_c.designator.isEmpty();
-    m_showLabel = m_c.showLabel.value_or(m_symbol->netLabel || m_symbol->prefix != u"U") && !m_c.label.isEmpty()
+    m_showLabel = m_c.showLabel.value_or((m_symbol->netLabel || m_symbol->prefix != u"U") && !m_symbol->labelInside) && !m_c.label.isEmpty()
                && (m_symbol->netLabel || kind != u"const" || m_c.showLabel.value_or(false));
 
     // offsets are in scene orientation, relative to pos()
@@ -226,7 +226,7 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     QPointF actuator;
     if (m_symbol->display == u"button" && live && state == 1)
         actuator = QPointF(0, m_symbol->defaultProps.value(QStringLiteral("travel"), 7).toDouble());
-    SymbolPainter::paint(p, *m_symbol, ink, actuator);
+    SymbolPainter::paint(p, *m_symbol, ink, actuator, m_c.label);
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {
@@ -247,9 +247,16 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
             // bus entry / net label: name above the wire, on the wire's side
             const QString side = m_c.props.value(QStringLiteral("side"), QStringLiteral("right")).toString();
             const int align = side == u"left" ? 1 : -1;
-            const QPointF at = side == u"left" ? QPointF(-4, -10) : side == u"right" ? QPointF(4, -10)
-                             : side == u"up" ? QPointF(5, -14) : QPointF(5, 14);
-            SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, 16, align, ink);
+            if ((side == u"up" || side == u"down") && m_c.label.size() > 1) {
+                // on an upright entry CircuitMaker stacks the letters, one a row
+                const double step = 14, first = side == u"up" ? -10 - step * (m_c.label.size() - 1) : 14;
+                for (int i = 0; i < m_c.label.size(); ++i)
+                    SymbolPainter::uprightText(p, toLocal.map(QPointF(9, first + i * step)), m_c.label.mid(i, 1), 14, 0, ink);
+            } else {
+                const QPointF at = side == u"left" ? QPointF(-4, -10) : side == u"right" ? QPointF(4, -10)
+                                 : side == u"up" ? QPointF(5, -14) : QPointF(5, 14);
+                SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, 16, align, ink);
+            }
         } else if (m_previewText == 1) {
             SymbolPainter::uprightText(p, toLocal.map(m_previewAt), m_c.label, 14, 0, ink);
         } else if (m_c.labelAt) {
@@ -297,7 +304,20 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         const bool on = live && state == 1;
         const bool unknown = live && state < 0 && state != kIdle;
         const auto cs = circles();
-        if (cs.size() >= 2) {
+        const Primitive* dome = nullptr;
+        for (const Primitive& g : m_symbol->graphics)
+            if (g.type == Primitive::Type::Path && !dome) dome = &g;
+        if (m_symbol->id == u"logicdisplay" && dome) {
+            // CircuitMaker's Logic Display: the dome outlined in its colour,
+            // filled with it when lit
+            const QPainterPath path = SymbolPainter::parsePath(dome->path);
+            p->setPen(QPen(unknown ? QColor(0xc0, 0x90, 0x00) : color.darker(name == u"white" ? 130 : 100), 2));
+            p->setBrush(on ? QBrush(color) : QBrush(Qt::white));
+            p->drawPath(path);
+            p->setPen(Qt::NoPen);
+            if (unknown)
+                SymbolPainter::uprightText(p, QPointF(0, -16), QStringLiteral("X"), 12, 0, QColor(0x90, 0x60, 0x00));
+        } else if (cs.size() >= 2) {
             // bezel ring, then the lamp: pale when off, bright with a glow and highlight when on
             const QPointF c(cs[0]->v[0], cs[0]->v[1]);
             const double outer = cs[0]->v[2], inner = cs[1]->v[2];

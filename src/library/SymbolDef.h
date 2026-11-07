@@ -23,7 +23,9 @@ struct Primitive {
     int align = 0;          // text: -1 left, 0 centre, 1 right
     bool overline = false;  // text: draw a bar above (active-low names)
     bool turns = false;     // text: turns with the part (CircuitMaker macro pin names), kept unmirrored
+    bool label = false;     // text: the part's own label goes here (CircuitMaker's flag 0x80: "74LS93", "TP1")
     bool actuator = false;  // moving part of a switch, drawn displaced while pressed
+    bool live = false;      // drawn by the part's display (a Logic Display's dome), not with the rest
 };
 
 struct SymbolPin {
@@ -54,6 +56,7 @@ struct SymbolDef {
     QVariantMap defaultProps;
     QHash<QString, QStringList> propChoices;    // property -> allowed values (combo box in the dialog)
     QRectF bounds;
+    bool labelInside = false;   // a text primitive shows the label: not shown again outside by default
     // Gates sharing a package (7408...): the package pins of each part, in
     // symbol pin order; components pick theirs with the "part" property.
     QVector<QStringList> parts;

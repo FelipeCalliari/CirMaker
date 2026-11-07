@@ -89,13 +89,14 @@ void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointS
     p->restore();
 }
 
-void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset)
+void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset, const QString& label)
 {
     QPen pen(color, 1.6);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     p->setPen(pen);
     for (const Primitive& g : s.graphics) {
+        if (g.live) continue;                   // the display draws it
         p->setBrush(g.fill ? QBrush(color) : Qt::NoBrush);
         p->save();
         if (g.actuator)
@@ -114,7 +115,11 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuato
             p->drawPath(parsePath(g.path));
             break;
         case Primitive::Type::Text:
-            uprightText(p, {g.v[0], g.v[1]}, g.text, g.size, g.align, color, g.overline, true, g.turns);
+            if (g.label) {
+                if (!label.isEmpty()) uprightText(p, {g.v[0], g.v[1]}, label, g.size, g.align, color, g.overline, true, g.turns);
+            } else {
+                uprightText(p, {g.v[0], g.v[1]}, g.text, g.size, g.align, color, g.overline, true, g.turns);
+            }
             break;
         }
         p->restore();

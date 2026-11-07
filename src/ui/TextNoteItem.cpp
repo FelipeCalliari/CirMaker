@@ -45,7 +45,8 @@ void TextNoteItem::sync(const TextNote& t)
 void TextNoteItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 {
     p->setFont(font());
-    p->setPen(isSelected() ? theme().selection : theme().text);
+    // a node name in red, as CircuitMaker shows one
+    p->setPen(isSelected() ? theme().selection : m_t.nameAt ? QColor(0xc0, 0x10, 0x10) : theme().text);
     p->drawText(m_rect.adjusted(2, 2, -2, -2), Qt::AlignLeft | Qt::AlignTop, m_t.text);
     if (isSelected()) {
         p->setPen(QPen(theme().selection, 0, Qt::DotLine));

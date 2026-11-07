@@ -494,6 +494,7 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
             p.align = al == u"left" ? -1 : al == u"right" ? 1 : 0;
             p.turns = g.value(u"turns").toBool();
             p.overline = g.value(u"overline").toBool();
+            p.label = g.value(u"label").toBool();
         } else {
             continue;
         }
@@ -506,6 +507,7 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
         }
         p.fill = g.value(u"fill").toBool();
         p.actuator = g.value(u"actuator").toBool();
+        p.live = g.value(u"live").toBool();
         s.graphics << p;
     }
 

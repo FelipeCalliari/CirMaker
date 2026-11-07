@@ -1453,7 +1453,9 @@ def outputs():
          'props': {'color': 'red'},
          'choices': {'color': ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta', 'orange', 'white']},
          'description': 'Lamp showing the logic level of its input; colour in the properties',
-         'graphics': [C(0, 0, 20), C(0, 0, 15), L(0, 20, 0, 60)], 'pins': [pin('D0', 0, 60, 'in')]},
+         # CircuitMaker's bulb: a dome on a base, the dome filled with the colour when lit
+         'graphics': [dict(P('M -17 0 C -17 -49 17 -49 17 0'), live=True), R(-20, 0, 40, 40), L(-27, 0, 27, 0), L(0, 40, 0, 60)],
+         'pins': [pin('D0', 0, 60, 'in')]},
         {'id': 'scope', 'name': 'SCOPE', 'prefix': 'T', 'label': '', 'aliases': ['SCOPE'], 'cmPins': ['1'],
          'model': {'kind': 'scope'},
          'description': 'Adds this node to the waveform window (digital and analog); the label names the trace',

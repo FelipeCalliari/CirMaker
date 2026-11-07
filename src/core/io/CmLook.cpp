@@ -241,17 +241,21 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
     }
 
     QJsonArray graphics = shapeGraphics(dev->drawing, pt);
+    bool labelInside = false;
     const QPointF o = pt(QPoint(0, 0)), ux = pt(QPoint(1, 0)) - o, uy = pt(QPoint(0, 1)) - o;
     auto ptf = [&](QPointF p) { return o + ux * p.x() + uy * p.y(); };
-    // flag 0x80: the part number inside the top of the body (chips, ADC8;
-    // not the 555, whose label is shown instead)
+    // flag 0x80: the part's own label inside the top of the body (a chip's
+    // part number, ADC8, a SCOPE's trace name; not the 555, whose label is
+    // shown outside instead)
     if ((dev->flags & 0x80) && !dev->value.trimmed().isEmpty()) {
         QRect body;
         for (const CmShape& sh : dev->drawing)
             if (!(sh.flags & 0x4000))
                 for (QPoint q : sh.points) body |= QRect(q, QSize(1, 1));
         const QPointF at = ptf(QPointF(body.center().x() + 0.5, body.top() + 5));
-        graphics.append(QJsonObject{{QStringLiteral("text"), dev->value.trimmed()}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 14}});
+        graphics.append(QJsonObject{{QStringLiteral("text"), QString()}, {QStringLiteral("label"), true},
+                                    {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 14}});
+        labelInside = true;
     }
     // each pin's lead, straight out to our pin
     for (int k = 0; k < dev->pinCount; ++k) {
@@ -304,6 +308,7 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
     auto out = std::make_shared<SymbolDef>(s);
     out->graphics = drawn.graphics;
     out->bounds = drawn.bounds;
+    out->labelInside = labelInside;
     cache.insert(key, out);
     return out.get();
 }
