@@ -36,12 +36,14 @@ std::optional<bool> g_enabled;
 
 QJsonArray shapeGraphics(const QVector<CmShape>& shapes, const std::function<QPointF(QPoint)>& pt)
 {
-    // a polyline with a negative count goes on into the next one (a
-    // resistor's zigzag, the nonlinear source's hexagon)
+    // a polyline or polygon piece with a negative count goes on from the one
+    // before (a resistor's zigzag, the nonlinear source's hexagon, the
+    // divider's last corner)
     QVector<CmShape> joined;
     for (const CmShape& sh : shapes) {
         if (sh.flags & 0x4000) continue;
-        if (!joined.isEmpty() && joined.last().kind == 20 && joined.last().declared < 0 && sh.kind == 20) {
+        if (!joined.isEmpty() && (joined.last().kind == 20 || joined.last().kind == 10) && sh.declared < 0
+            && (sh.kind == 20 || sh.kind == 10)) {
             joined.last().points += sh.points;
             joined.last().declared = sh.declared;
             continue;
@@ -53,6 +55,16 @@ QJsonArray shapeGraphics(const QVector<CmShape>& shapes, const std::function<QPo
     auto ptf = [&](QPointF p) { return o + ux * p.x() + uy * p.y(); };
     QJsonArray graphics;
     for (const CmShape& sh : std::as_const(joined)) {
+        if (sh.kind == 23 && sh.points.size() >= 3) {
+            // a character: centred on its place, standing on it, the code in
+            // the top byte of the third point, the cell's height its size
+            const QChar ch(uint(sh.points[2].x()) >> 24 & 0xff);
+            const double height = std::max(4, sh.points[1].y());
+            const QPointF at = ptf(QPointF(sh.points[0]) - QPointF(0, height * 0.35));
+            graphics.append(QJsonObject{{QStringLiteral("text"), QString(ch)}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}},
+                                        {QStringLiteral("size"), height * 2}});
+            continue;
+        }
         if (sh.points.size() < 2) continue;
         if (sh.kind == 11 && sh.points.size() >= 4) {
             // an arc as Windows draws one: the ellipse in the box, counter-clockwise
@@ -155,7 +167,8 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
         || std::none_of(dev->drawing.cbegin(), dev->drawing.cend(), [](const CmShape& sh) { return !(sh.flags & 0x4000); })
         // records of a kind not worked out (12: the Signal Gen's, each waveform drawn over the others)
         || std::any_of(dev->drawing.cbegin(), dev->drawing.cend(), [](const CmShape& sh) {
-               return sh.kind != 0 && sh.kind != 4 && sh.kind != 5 && sh.kind != 6 && sh.kind != 10 && sh.kind != 11 && sh.kind != 20; }))
+               return sh.kind != 0 && sh.kind != 4 && sh.kind != 5 && sh.kind != 6 && sh.kind != 10 && sh.kind != 11 && sh.kind != 20
+                   && sh.kind != 23; }))
         return &s;
 
     static QHash<QString, std::shared_ptr<SymbolDef>> cache;    // null: not drawn as CircuitMaker's
@@ -225,20 +238,53 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
     fit(true, sx, ox);
     fit(false, sy, oy);
     auto pt = [&](QPoint p) { return QPointF(p.x() * sx + ox, p.y() * sy + oy); };
-    for (int k = 0; k < dev->pinCount; ++k) {
-        if (ours[k] < 0) continue;
-        const QPointF from = pt(dev->pinFrom.value(k, dev->pins[k])), at = pt(dev->pins[k]), to = s.pins[ours[k]].pos;
-        const char d = dirOf(k);
-        const bool horizontal = d == 'l' || d == 'r', vertical = d == 'u' || d == 'd';
-        // across the lead within a quarter grid; along it, outward of where it starts
-        const double across = horizontal ? to.y() - at.y() : vertical ? to.x() - at.x() : (to - at).manhattanLength();
-        const double out = d == 'l' ? from.x() - to.x() : d == 'r' ? to.x() - from.x() : d == 'u' ? from.y() - to.y() : d == 'd' ? to.y() - from.y() : 0;
-        const double along = horizontal ? to.x() - at.x() : vertical ? to.y() - at.y() : 0;
-        if (std::abs(across) > 2.5 || out < 0 || (!horizontal && !vertical && std::abs(along) > 2.5)) {
-            if (debug) std::fprintf(stderr, "  pin %d misses by %g across, %g out (scale %g %g)\n", k + 1, across, out, sx, sy);
-            return &s;
+    // 0: every pin fits; 1, 2: a pin of ours lies inside where CircuitMaker's
+    // lead starts, across x or y; -1: off its lead
+    auto check = [&](bool report) {
+        for (int k = 0; k < dev->pinCount; ++k) {
+            if (ours[k] < 0) continue;
+            const QPointF from = pt(dev->pinFrom.value(k, dev->pins[k])), at = pt(dev->pins[k]), to = s.pins[ours[k]].pos;
+            const char d = dirOf(k);
+            const bool horizontal = d == 'l' || d == 'r', vertical = d == 'u' || d == 'd';
+            // across the lead within a quarter grid; along it, outward of where it starts
+            const double across = horizontal ? to.y() - at.y() : vertical ? to.x() - at.x() : (to - at).manhattanLength();
+            const double out = d == 'l' ? from.x() - to.x() : d == 'r' ? to.x() - from.x() : d == 'u' ? from.y() - to.y() : d == 'd' ? to.y() - from.y() : 0;
+            const double along = horizontal ? to.x() - at.x() : vertical ? to.y() - at.y() : 0;
+            if (std::abs(across) > 2.5 || (!horizontal && !vertical && std::abs(along) > 2.5)) {
+                if (report && debug) std::fprintf(stderr, "  pin %d misses by %g across (scale %g %g)\n", k + 1, across, sx, sy);
+                return -1;
+            }
+            if (out < 0) {
+                if (report && debug) std::fprintf(stderr, "  pin %d lies %g inside its lead (scale %g %g)\n", k + 1, -out, sx, sy);
+                return horizontal ? 1 : 2;
+            }
         }
+        return 0;
+    };
+    // ours closer together than CircuitMaker's leads start: the drawing
+    // squeezed along that axis, between our pins with a lead each side
+    auto squeeze = [&](bool xAxis) {
+        double cmLo = 1e9, cmHi = -1e9, ourLo = -1e9, ourHi = 1e9;
+        for (int k = 0; k < dev->pinCount; ++k) {
+            if (ours[k] < 0) continue;
+            const char d = dirOf(k);
+            const double from = xAxis ? dev->pinFrom.value(k).x() : dev->pinFrom.value(k).y();
+            const double to = xAxis ? s.pins[ours[k]].pos.x() : s.pins[ours[k]].pos.y();
+            if (d == (xAxis ? 'l' : 'u')) cmLo = std::min(cmLo, from), ourLo = std::max(ourLo, to + 10);
+            if (d == (xAxis ? 'r' : 'd')) cmHi = std::max(cmHi, from), ourHi = std::min(ourHi, to - 10);
+        }
+        if (cmLo > cmHi || ourLo > ourHi || cmHi - cmLo < 2) return false;
+        const double scale = (ourHi - ourLo) / (cmHi - cmLo);
+        if (scale < kScale * 0.5 || scale > kScale * 1.2) return false;
+        (xAxis ? sx : sy) = scale;
+        (xAxis ? ox : oy) = ourLo - scale * cmLo;
+        return true;
+    };
+    for (int tries = 0; tries < 2; ++tries) {
+        const int bad = check(false);
+        if (bad <= 0 || !squeeze(bad == 1)) break;
     }
+    if (check(true) != 0) return &s;
 
     QJsonArray graphics = shapeGraphics(dev->drawing, pt);
     bool labelInside = false;

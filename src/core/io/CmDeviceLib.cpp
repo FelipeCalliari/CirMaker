@@ -116,10 +116,13 @@ bool parseRecord(const Bytes& b, qsizetype L, CmLibDevice& out)
                 sh.flags = b.i32(q + 4);
                 sh.declared = b.i32(q + 40);
                 sh.link = b.i32(q + 44);
-                const int used = sh.kind == 0 || sh.kind == 4 || sh.kind == 5 ? 2 : sh.kind == 6 ? 3
-                               : std::clamp(std::abs(b.i32(q + 40)), 2, 4);
+                // a polygon or polyline piece that goes on from the one
+                // before may hold a single point; a character (23) has its
+                // place, its cell and its code
+                const int used = sh.kind == 0 || sh.kind == 4 || sh.kind == 5 ? 2 : sh.kind == 6 || sh.kind == 23 ? 3
+                               : std::clamp(std::abs(b.i32(q + 40)), 1, 4);
                 for (int k = 0; k < used; ++k) sh.points << QPoint(b.i32(q + 8 + 8 * k), b.i32(q + 12 + 8 * k));
-                drawn << (sh.kind == 6 ? sh.points.mid(0, 2) : sh.points);
+                drawn << (sh.kind == 6 ? sh.points.mid(0, 2) : sh.kind == 23 ? sh.points.mid(0, 1) : sh.points);
                 shapes << sh;
             }
         }
