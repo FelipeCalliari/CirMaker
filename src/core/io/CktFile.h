@@ -52,6 +52,8 @@ struct CktText {
     QRectF rect;
     QString text;
     int fontHeight = 13;
+    QString face;               // the Windows font before it: face, weight 700 bold, italic
+    bool bold = false, italic = false;
     bool nodeName = false;      // 0x8000 in its second number: names the node of the wire under it
 };
 

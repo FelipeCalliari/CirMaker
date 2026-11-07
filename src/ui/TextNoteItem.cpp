@@ -19,8 +19,16 @@ TextNoteItem::TextNoteItem(const TextNote& t)
 QFont TextNoteItem::font() const
 {
     QFont f;
-    if (!theme().textFont.isEmpty()) f.setFamily(theme().textFont);
+    if (!m_t.family.isEmpty()) {
+        // CircuitMaker's Courier New, or the nearest monospaced face here
+        f.setFamilies({m_t.family, QStringLiteral("Liberation Mono"), QStringLiteral("DejaVu Sans Mono"), QStringLiteral("monospace")});
+        f.setStyleHint(m_t.family.contains(u"Courier", Qt::CaseInsensitive) ? QFont::TypeWriter : QFont::AnyStyle);
+    } else if (!theme().textFont.isEmpty()) {
+        f.setFamily(theme().textFont);
+    }
     f.setPointSizeF(m_t.pointSize);
+    f.setBold(m_t.bold);
+    f.setItalic(m_t.italic);
     return f;
 }
 

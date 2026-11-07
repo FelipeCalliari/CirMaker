@@ -143,6 +143,9 @@ QByteArray serialize(const Circuit& circuit)
     for (const TextNote& t : circuit.texts()) {
         QJsonObject o{{u"pos"_s, point(t.pos)}, {u"text"_s, t.text}, {u"size"_s, t.pointSize}};
         if (t.nameAt) o.insert(u"nameAt"_s, point(*t.nameAt));
+        if (!t.family.isEmpty()) o.insert(u"font"_s, t.family);
+        if (t.bold) o.insert(u"bold"_s, true);
+        if (t.italic) o.insert(u"italic"_s, true);
         texts.append(o);
     }
 
@@ -242,6 +245,9 @@ bool deserialize(const QByteArray& data, Circuit& circuit, QString* error)
         const QJsonObject o = v.toObject();
         TextNote t{0, point(o.value(u"pos")), o.value(u"text").toString(), o.value(u"size").toDouble(10)};
         if (o.contains(u"nameAt")) t.nameAt = point(o.value(u"nameAt"));
+        t.family = o.value(u"font").toString();
+        t.bold = o.value(u"bold").toBool();
+        t.italic = o.value(u"italic").toBool();
         circuit.addText(t);
     }
     return true;

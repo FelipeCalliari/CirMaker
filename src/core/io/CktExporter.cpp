@@ -1005,7 +1005,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         }
         const QRect box(at, size);
         // "<colour> 0 0 <length>": CircuitMaker draws only <length> characters
-        textRecords << join({height, height / 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54}) + u'\n' + str(QStringLiteral("Courier New"))
+        // the font: height, width, weight (700 bold), italic, ..., then its face
+        textRecords << join({height, height / 2, 0, 0, t.bold ? 700 : 0, t.italic ? 255 : 0, 0, 0, 0, 0, 0, 0, 54}) + u'\n'
+                           + str(t.family.isEmpty() ? QStringLiteral("Courier New") : t.family)
                            + QStringLiteral("\n0 %1 0 %2\n").arg(t.nameAt ? 0x8000 : 0).arg(int(t.text.size() + lines.size() - 1)) + rect(box) + u'\n' + rect(t.nameAt ? box : box.adjusted(3, 2, -3, -2)) + u'\n'
                            + str(t.text);
     }

@@ -44,6 +44,11 @@ struct TextNote {
     // a node name (CircuitMaker's): names the net of the wire at pos + nameAt
     // without joining anything; SPICE and probes use the name
     std::optional<QPointF> nameAt;
+    // the font, as CircuitMaker's file gives it ("Courier New", bold, italic);
+    // no family: the theme's text font
+    QString family;
+    bool bold = false;
+    bool italic = false;
 };
 
 struct TitleBlock {

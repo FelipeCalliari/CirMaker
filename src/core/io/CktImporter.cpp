@@ -237,8 +237,13 @@ CktFile parseAt(const QString& d, int pos, double version)
     const int texts = r.integer();
     for (int i = 0; i < texts; ++i) {
         CktText t;
-        t.fontHeight = std::abs(r.ints(13)[0]);
-        r.string();
+        // a Windows LOGFONT: height, width, escapement, orientation, weight,
+        // italic, ...; then the face name
+        const QVector<int> font = r.ints(13);
+        t.fontHeight = std::abs(font[0]);
+        t.bold = font[4] >= 600;
+        t.italic = font[5] != 0;
+        t.face = r.string().trimmed();
         t.nodeName = r.ints(4)[1] & 0x8000;
         const QVector<int> rect = r.ints(4);
         r.ints(4);
@@ -1292,6 +1297,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
     for (const CktText& t : file.texts) {
         if (t.text.trimmed().isEmpty()) continue;
         TextNote note{0, scaled(t.rect.topLeft()), t.text, std::max(6.0, t.fontHeight * kScale * 0.6)};
+        note.family = t.face;
+        note.bold = t.bold;
+        note.italic = t.italic;
         if (t.nodeName) {
             // the wire its bottom edge lies on (or nearest to it)
             const QPointF a = scaled(t.rect.bottomLeft()), b = scaled(t.rect.bottomRight());
