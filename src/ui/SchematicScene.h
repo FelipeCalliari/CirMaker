@@ -55,6 +55,8 @@ public:
     void mirrorSelection();
     void deleteSelection();
     void selectAll();
+    // only these parts and wires selected (the connection checks' findings)
+    void selectOnly(const QSet<ItemId>& components, const QSet<ItemId>& wires);
     void copySelection();
     void cutSelection();
     void duplicateSelection();

@@ -10,6 +10,7 @@
 #include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
 #include "core/Generator.h"
+#include "core/WireGeometry.h"
 #include "core/io/CmDeviceLib.h"
 #include "core/io/CmLook.h"
 #include "core/io/SpiceImporter.h"
@@ -706,6 +707,53 @@ void MainWindow::createMenus()
     simulation->addActions({m_digitalMode, m_analogMode});
     simulation->addSeparator();
     simulation->addActions({m_run, m_step, m_trace, m_reset, m_stop});
+    simulation->addSeparator();
+    // CircuitMaker's checks: parts with a pin left unconnected, wires with an end
+    // on nothing; what is found is selected and listed
+    simulation->addAction(tr("Check &Pin Connections"), this, [this] {
+        m_scene->refreshNetlist();
+        const Netlist& nl = m_scene->netlist();
+        QStringList found;
+        QSet<ItemId> parts;
+        for (const Component& c : m_circuit->components()) {
+            const SymbolDef* s = LibraryRegistry::instance().find(c.symbolId);
+            if (!s || s->netLabel) continue;
+            QStringList open;
+            for (int i = 0; i < s->pins.size(); ++i) {
+                const int net = nl.netOf(c.id, i);
+                if (net < 0 || (nl.nets[net].pins.size() <= 1 && nl.nets[net].wires.isEmpty())) open << s->pins[i].name;
+            }
+            if (open.isEmpty()) continue;
+            parts << c.id;
+            found << tr("%1: %2").arg(c.designator.isEmpty() ? s->name : c.designator, open.join(QStringLiteral(", ")));
+        }
+        m_scene->selectOnly(parts, {});
+        QMessageBox::information(this, tr("Check Pin Connections"),
+                                 found.isEmpty() ? tr("Every pin is connected.")
+                                                 : tr("%n part(s) with unconnected pins (selected):", nullptr, int(found.size())) + u'\n'
+                                                       + found.mid(0, 30).join(u'\n') + (found.size() > 30 ? QStringLiteral("\n…") : QString()));
+    });
+    simulation->addAction(tr("Check &Wire Connections"), this, [this] {
+        const LibraryRegistry& lib = LibraryRegistry::instance();
+        QVector<QPointF> pins;
+        for (const Component& c : m_circuit->components())
+            if (const SymbolDef* s = lib.find(c.symbolId))
+                for (int i = 0; i < s->pins.size(); ++i) pins << lib.pinScenePos(c, i);
+        QSet<ItemId> loose;
+        for (const Wire& w : m_circuit->wires()) {
+            if (w.bus || w.points.size() < 2) continue;
+            for (const QPointF end : {w.points.first(), w.points.last()}) {
+                bool met = std::any_of(pins.cbegin(), pins.cend(), [&](QPointF p) { return QLineF(p, end).length() < 1; });
+                for (const Wire& o : m_circuit->wires())
+                    if (!met && o.id != w.id && WireGeometry::onPolyline(end, o.points)) met = true;
+                if (!met) loose << w.id;
+            }
+        }
+        m_scene->selectOnly({}, loose);
+        QMessageBox::information(this, tr("Check Wire Connections"),
+                                 loose.isEmpty() ? tr("Every wire end is connected.")
+                                                 : tr("%n wire(s) with an end connected to nothing (selected).", nullptr, int(loose.size())));
+    });
     // CircuitMaker Digital Options: how the SCOPE breakpoint boxes combine
     QMenu* breakMenu = simulation->addMenu(tr("&Breakpoint Type"));
     auto* breakGroup = new QActionGroup(breakMenu);

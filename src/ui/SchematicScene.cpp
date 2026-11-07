@@ -129,6 +129,15 @@ void SchematicScene::setCmDrawings(bool on)
     update();
 }
 
+void SchematicScene::selectOnly(const QSet<ItemId>& components, const QSet<ItemId>& wires)
+{
+    clearSelection();
+    for (ItemId id : components)
+        if (ComponentItem* item = m_componentItems.value(id)) item->setSelected(true);
+    for (ItemId id : wires)
+        if (WireItem* item = m_wireItems.value(id)) item->setSelected(true);
+}
+
 void SchematicScene::onComponentChanged(ItemId id)
 {
     if (ComponentItem* item = m_componentItems.value(id)) {
