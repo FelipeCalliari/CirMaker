@@ -77,7 +77,7 @@ void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
     QColor color = sc && sc->simulating() ? sc->wireColor(m_w.id) : theme().wire;
     if (m_w.bus)
         color = theme().bus;
-    QPen pen(color, m_w.bus ? 8.0 : 1.6);
+    QPen pen(color, m_w.bus ? 8.0 : 2.6);     // wires heavier than the parts, as in CircuitMaker
     if (isSelected()) {
         pen.setColor(theme().selection);
         pen.setWidthF(m_w.bus ? 8.0 : 2.2);
