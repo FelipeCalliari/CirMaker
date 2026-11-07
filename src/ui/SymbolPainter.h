@@ -18,7 +18,7 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuato
 // Text that stays upright and unmirrored whatever the item transform is.
 // align: -1 left, 0 centre, 1 right of `anchor` (local coordinates).
 void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointSize, int align,
-                 const QColor& color, bool overline = false, bool vcenter = true);
+                 const QColor& color, bool overline = false, bool vcenter = true, bool turns = false);
 
 QPainterPath parsePath(const QString& d);
 

@@ -22,6 +22,7 @@ struct Primitive {
     double size = 7;        // text point size
     int align = 0;          // text: -1 left, 0 centre, 1 right
     bool overline = false;  // text: draw a bar above (active-low names)
+    bool turns = false;     // text: turns with the part (CircuitMaker macro pin names), kept unmirrored
     bool actuator = false;  // moving part of a switch, drawn displaced while pressed
 };
 

@@ -154,11 +154,32 @@ int ComponentItem::keyRow(int row) const
     return m_symbol->model.value(u"kind").toString() == u"keymatrix" ? 3 - row : row;
 }
 
+bool ComponentItem::singleKey() const
+{
+    return m_symbol->display == u"hexkey" && m_symbol->model.value(u"kind").toString() != u"keymatrix";
+}
+
+// CircuitMaker's key face, above the pin numbers
+QRectF ComponentItem::keyFace() const
+{
+    const QRectF b = bodyRect();
+    return QRectF(b.left() + 8, b.top() + 8, b.width() - 16, b.width() - 16);
+}
+
 int ComponentItem::hexKeyAt(QPointF local) const
 {
     const QRectF b = bodyRect();
     if (!b.contains(local))
         return -1;
+    // the Hex Key counts up on each click, as CircuitMaker's does
+    if (singleKey()) {
+        if (!keyFace().contains(local))
+            return -1;
+        const SchematicScene* sc = schematic();
+        const int now = sc && sc->simulating() ? sc->simState(m_c.id)
+                                               : m_c.props.value(QStringLiteral("value"), m_symbol->defaultProps.value(QStringLiteral("value"))).toInt();
+        return (std::max(now, 0) + 1) % 16;
+    }
     const int col = std::clamp(int((local.x() - b.left()) / (b.width() / 4)), 0, 3);
     const int row = std::clamp(int((local.y() - b.top()) / (b.height() / 4)), 0, 3);
     return keyRow(row) * 4 + col;
@@ -447,6 +468,19 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setPen(QPen(live && thrown ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(com, com + (to - com) * 0.88);
         }
+    } else if (singleKey()) {
+        // a bevelled key showing its number
+        const QRectF face = keyFace(), top = face.adjusted(face.width() / 5, face.height() / 5, -face.width() / 5, -face.height() / 5);
+        p->setPen(QPen(ink, 1));
+        p->setBrush(QColor(0xf4, 0xf4, 0xf4));
+        p->drawRect(face);
+        p->setBrush(Qt::NoBrush);
+        p->drawRect(top);
+        p->drawLine(face.topLeft(), top.topLeft());
+        p->drawLine(face.topRight(), top.topRight());
+        p->drawLine(face.bottomLeft(), top.bottomLeft());
+        p->drawLine(face.bottomRight(), top.bottomRight());
+        SymbolPainter::uprightText(p, top.center(), hexDigit(std::clamp(state, 0, 15)), 16, 0, ink);
     } else if (d == u"hexkey") {
         const double cw = body.width() / 4, ch = body.height() / 4;
         for (int k = 0; k < 16; ++k) {

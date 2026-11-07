@@ -622,7 +622,7 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
             if (const QString shown = m.shownNames.value(k); !shown.isEmpty()) {
                 const bool left = end.x() < from.x(), right = end.x() > from.x();
                 const QPointF at = from + QPointF(left ? 4 : right ? -4 : 0, end.y() < from.y() ? 9 : end.y() > from.y() ? -4 : 3);
-                graphics.append(QJsonObject{{QStringLiteral("text"), shown}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 6},
+                graphics.append(QJsonObject{{QStringLiteral("text"), shown}, {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 9}, {QStringLiteral("turns"), true},
                                             {QStringLiteral("align"), left ? QStringLiteral("left") : right ? QStringLiteral("right") : QStringLiteral("center")}});
             }
         }

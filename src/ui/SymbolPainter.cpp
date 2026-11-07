@@ -61,14 +61,22 @@ QFont schematicFont(double pointSize, bool bold)
 }
 
 void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointSize, int align, const QColor& color,
-                 bool overline, bool vcenter)
+                 bool overline, bool vcenter, bool turns)
 {
     const QTransform t = p->worldTransform();
     const QPointF at = t.map(anchor);
     const double scale = std::sqrt(std::abs(t.determinant()));
 
     p->save();
-    p->setWorldTransform(QTransform::fromTranslate(at.x(), at.y()).scale(scale, scale));
+    QTransform placed = QTransform::fromTranslate(at.x(), at.y());
+    if (turns) {
+        // the part's turn, read from where its y axis goes (a mirror only flips x)
+        placed.rotateRadians(std::atan2(-t.m21(), t.m22()));
+        // mirrored: the name stays on its side of the pin, reading forwards
+        if (t.determinant() < 0)
+            align = -align;
+    }
+    p->setWorldTransform(placed.scale(scale, scale));
     QFont f = schematicFont(pointSize);
     f.setOverline(overline);
     p->setFont(f);
@@ -106,7 +114,7 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuato
             p->drawPath(parsePath(g.path));
             break;
         case Primitive::Type::Text:
-            uprightText(p, {g.v[0], g.v[1]}, g.text, g.size, g.align, color, g.overline);
+            uprightText(p, {g.v[0], g.v[1]}, g.text, g.size, g.align, color, g.overline, true, g.turns);
             break;
         }
         p->restore();

@@ -1342,8 +1342,9 @@ def inputs():
          'pins': [pin('Q', 80, -30, 'out'), pin('~Q', 100, 0, 'out')]},
         {'id': 'hexkey', 'name': 'Hex Key', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['Hex Key'],
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'key', 'bits': 4}, 'props': {'value': 0},
-         'description': 'Click a key during simulation to output its 4-bit value',
-         'graphics': [R(-40, -60, 80, 110)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)],
+         'description': 'Click the key during simulation to count it up (0-F), or type 0-9 and A-F; outputs its 4-bit value',
+         'graphics': [R(-40, -60, 80, 110), L(-40, 20, 40, 20)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
+                     + [T(str(4 - i), -30 + 20 * i, 36, 11) for i in range(4)],
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'out') for i in range(4)]},
         {'id': 'asciikey', 'name': 'Ascii Key', 'prefix': 'K', 'display': 'asciikey', 'aliases': ['Ascii Key'],
          'cmPins': [f'D{i}' for i in range(7)] + ['STB'], 'model': {'kind': 'key', 'bits': 7}, 'props': {'value': 65},
@@ -1460,8 +1461,8 @@ def outputs():
         {'id': 'hexdisplay', 'name': 'Hex Display', 'prefix': 'D', 'display': 'hex', 'aliases': ['Hex Display'],
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'display', 'bits': 4},
          'description': 'Shows the hexadecimal value of D3..D0',
-         'graphics': [R(-50, -70, 100, 120)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
-                     + [T(n, x, 40, 8) for n, x in (('8', -30), ('4', -10), ('2', 10), ('1', 30))],
+         'graphics': [R(-50, -70, 100, 120), L(-50, 26, 50, 26)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
+                     + [T(str(4 - i), -30 + 20 * i, 39, 11) for i in range(4)],   # CircuitMaker numbers the pins 4321
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'in') for i in range(4)]},
         {'id': 'asciidisplay', 'name': 'Ascii Display', 'prefix': 'D', 'display': 'ascii', 'aliases': ['Ascii Display'],
          'cmPins': [f'D{6 - i}' for i in range(7)] + ['CP'], 'model': {'kind': 'asciiterm'},   # CM pin 1 (top) is bit 6

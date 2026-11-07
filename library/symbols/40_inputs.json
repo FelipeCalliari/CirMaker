@@ -255,7 +255,7 @@
    "props": {
     "value": 0
    },
-   "description": "Click a key during simulation to output its 4-bit value",
+   "description": "Click the key during simulation to count it up (0-F), or type 0-9 and A-F; outputs its 4-bit value",
    "graphics": [
     {
      "rect": [
@@ -267,6 +267,14 @@
     },
     {
      "line": [
+      -40,
+      20,
+      40,
+      20
+     ]
+    },
+    {
+     "line": [
       30,
       50,
       30,
@@ -296,6 +304,38 @@
       -30,
       80
      ]
+    },
+    {
+     "text": "4",
+     "at": [
+      -30,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "3",
+     "at": [
+      -10,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "2",
+     "at": [
+      10,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "1",
+     "at": [
+      30,
+      36
+     ],
+     "size": 11
     }
    ],
    "pins": [
