@@ -561,13 +561,17 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
                                           : state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");
         SymbolPainter::uprightText(p, top.center(), shown, 16, 0, ink);
     } else if (d == u"hexkey") {
+        // CircuitMaker's keys: framed squares apart, the held one's number in red
         const double cw = body.width() / 4, ch = body.height() / 4;
         for (int k = 0; k < 16; ++k) {
             const QRectF cell(body.left() + (k % 4) * cw, body.top() + keyRow(k / 4) * ch, cw, ch);
-            p->setPen(QPen(ink, 0.8));
-            p->setBrush(state == k ? QColor(0xff, 0xd0, 0x40) : QColor(0xf4, 0xf4, 0xf4));
-            p->drawRect(cell.adjusted(3, 3, -3, -3));
-            SymbolPainter::uprightText(p, cell.center(), hexDigit(k), 11, 0, ink);
+            const QRectF key = cell.adjusted(7, 7, -7, -7);
+            p->setPen(QPen(ink, 1));
+            p->setBrush(QColor(0xf4, 0xf4, 0xf4));
+            p->drawRect(key);
+            p->setBrush(Qt::NoBrush);
+            p->drawRect(key.adjusted(3, 3, -3, -3));
+            SymbolPainter::uprightText(p, cell.center(), hexDigit(k), 14, 0, state == k ? QColor(0xe0, 0x10, 0x10) : ink);
         }
     } else if (d == u"meter") {
         const QRectF screen = body.adjusted(10, 10, -10, -30);

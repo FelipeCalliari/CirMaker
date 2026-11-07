@@ -493,7 +493,10 @@ def keypad():
     return {'id': 'keypad4x4', 'name': '4x4 Switch', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['4x4 Switch'],
             'cmPins': ['R0', 'R1', 'R2', 'R3', 'C3', 'C0', 'C1', 'C2'], 'model': {'kind': 'keymatrix'},
             'description': 'Key matrix: holding a key connects its row to its column',
-            'graphics': [R(-100, -100, 200, 200)] + [L(-150, y, -100, y) for y in rows] + [L(x, 100, x, 150) for x in rows],
+            # rows y4..y1 and columns x1..x4, labelled as CircuitMaker labels them
+            'graphics': [R(-100, -100, 200, 200)] + [L(-150, y, -100, y) for y in rows] + [L(x, 100, x, 150) for x in rows]
+                        + [T(f'y{4 - i}', -125, y - 11, 11) for i, y in enumerate(rows)]
+                        + [T(f'x{i + 1}', x + 14, 125, 11) for i, x in enumerate(rows)],
             'pins': [pin(f'R{i}', -150, y) for i, y in enumerate(rows)] + [pin(f'C{i}', x, 150) for i, x in enumerate(rows)]}
 
 
