@@ -1548,6 +1548,7 @@ void MainWindow::findAndSelect()
 
 bool MainWindow::exportTo(const QString& path)
 {
+    m_scene->refreshNetlist();      // its junction dots
     const QRectF src = m_scene->contentsRect();
     m_scene->clearSelection();
     m_scene->setExporting(true);

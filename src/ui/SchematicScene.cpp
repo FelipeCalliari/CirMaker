@@ -2329,10 +2329,11 @@ void SchematicScene::drawBackground(QPainter* p, const QRectF& rect)
 void SchematicScene::drawForeground(QPainter* p, const QRectF&)
 {
     p->setRenderHint(QPainter::Antialiasing);
+    // junction dots, black as CircuitMaker draws them
     p->setPen(Qt::NoPen);
-    p->setBrush(theme().wire);
+    p->setBrush(theme().device);
     for (QPointF j : std::as_const(m_netlist.junctions))
-        p->drawEllipse(j, 4, 4);
+        p->drawEllipse(j, 5.5, 5.5);
 
     if (!m_wirePoints.isEmpty()) {
         QVector<QPointF> pts = m_wirePoints;
