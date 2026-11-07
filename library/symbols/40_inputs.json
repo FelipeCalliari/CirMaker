@@ -398,7 +398,7 @@
    "props": {
     "value": 65
    },
-   "description": "Click during simulation and type a character to output its 7-bit code; STB pulses",
+   "description": "Click the key during simulation to step its character, or type one; outputs its 7-bit code, STB pulses",
    "graphics": [
     {
      "rect": [
@@ -410,6 +410,14 @@
     },
     {
      "line": [
+      -80,
+      20,
+      80,
+      20
+     ]
+    },
+    {
+     "line": [
       70,
       50,
       70,
@@ -471,6 +479,70 @@
       -70,
       80
      ]
+    },
+    {
+     "text": "S",
+     "at": [
+      -70,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "7",
+     "at": [
+      -50,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "6",
+     "at": [
+      -30,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "5",
+     "at": [
+      -10,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "4",
+     "at": [
+      10,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "3",
+     "at": [
+      30,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "2",
+     "at": [
+      50,
+      36
+     ],
+     "size": 11
+    },
+    {
+     "text": "1",
+     "at": [
+      70,
+      36
+     ],
+     "size": 11
     }
    ],
    "pins": [

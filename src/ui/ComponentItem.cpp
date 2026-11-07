@@ -163,6 +163,8 @@ bool ComponentItem::singleKey() const
 QRectF ComponentItem::keyFace() const
 {
     const QRectF b = bodyRect();
+    if (m_symbol->display == u"asciikey")
+        return QRectF(b.center().x() - 50, b.top() + 6, 100, 48);
     return QRectF(b.left() + 8, b.top() + 8, b.width() - 16, b.width() - 16);
 }
 
@@ -171,14 +173,17 @@ int ComponentItem::hexKeyAt(QPointF local) const
     const QRectF b = bodyRect();
     if (!b.contains(local))
         return -1;
-    // the Hex Key counts up on each click, as CircuitMaker's does
-    if (singleKey()) {
+    // the Hex Key counts up on each click, as CircuitMaker's does, and the
+    // ASCII Key steps through the printable characters
+    if (singleKey() || m_symbol->display == u"asciikey") {
         if (!keyFace().contains(local))
             return -1;
         const SchematicScene* sc = schematic();
         const int now = sc && sc->simulating() ? sc->simState(m_c.id)
                                                : m_c.props.value(QStringLiteral("value"), m_symbol->defaultProps.value(QStringLiteral("value"))).toInt();
-        return (std::max(now, 0) + 1) % 16;
+        if (singleKey())
+            return (std::max(now, 0) + 1) % 16;
+        return now >= 32 && now < 126 ? now + 1 : 32;
     }
     const int col = std::clamp(int((local.x() - b.left()) / (b.width() / 4)), 0, 3);
     const int row = std::clamp(int((local.y() - b.top()) / (b.height() / 4)), 0, 3);
@@ -468,9 +473,9 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setPen(QPen(live && thrown ? theme().high : ink, 2, Qt::SolidLine, Qt::RoundCap));
             p->drawLine(com, com + (to - com) * 0.88);
         }
-    } else if (singleKey()) {
-        // a bevelled key showing its number
-        const QRectF face = keyFace(), top = face.adjusted(face.width() / 5, face.height() / 5, -face.width() / 5, -face.height() / 5);
+    } else if (singleKey() || d == u"asciikey") {
+        // a bevelled key showing its number (or character)
+        const QRectF face = keyFace(), top = face.adjusted(face.height() / 5, face.height() / 5, -face.height() / 5, -face.height() / 5);
         p->setPen(QPen(ink, 1));
         p->setBrush(QColor(0xf4, 0xf4, 0xf4));
         p->drawRect(face);
@@ -480,7 +485,9 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         p->drawLine(face.topRight(), top.topRight());
         p->drawLine(face.bottomLeft(), top.bottomLeft());
         p->drawLine(face.bottomRight(), top.bottomRight());
-        SymbolPainter::uprightText(p, top.center(), hexDigit(std::clamp(state, 0, 15)), 16, 0, ink);
+        const QString shown = singleKey() ? hexDigit(std::clamp(state, 0, 15))
+                                          : state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");
+        SymbolPainter::uprightText(p, top.center(), shown, 16, 0, ink);
     } else if (d == u"hexkey") {
         const double cw = body.width() / 4, ch = body.height() / 4;
         for (int k = 0; k < 16; ++k) {
@@ -593,11 +600,6 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setPen(QPen(theme().high, 2));
             p->drawRect(QRectF(-80, 5, 140, 90));
         }
-    } else if (d == u"asciikey") {
-        const QString text = state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");
-        SymbolPainter::uprightText(p, body.center() + QPointF(0, -10), text, 36, 0, ink);
-        SymbolPainter::uprightText(p, body.center() + QPointF(0, 32), QStringLiteral("0x%1").arg(state, 2, 16, QChar(u'0')),
-                                   8, 0, ink);
     }
     p->restore();
 }

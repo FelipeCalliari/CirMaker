@@ -1348,8 +1348,9 @@ def inputs():
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'out') for i in range(4)]},
         {'id': 'asciikey', 'name': 'Ascii Key', 'prefix': 'K', 'display': 'asciikey', 'aliases': ['Ascii Key'],
          'cmPins': [f'D{i}' for i in range(7)] + ['STB'], 'model': {'kind': 'key', 'bits': 7}, 'props': {'value': 65},
-         'description': 'Click during simulation and type a character to output its 7-bit code; STB pulses',
-         'graphics': [R(-80, -40, 160, 90)] + [L(x, 50, x, 80) for x in range(70, -71, -20)],
+         'description': 'Click the key during simulation to step its character, or type one; outputs its 7-bit code, STB pulses',
+         'graphics': [R(-80, -40, 160, 90), L(-80, 20, 80, 20)] + [L(x, 50, x, 80) for x in range(70, -71, -20)]
+                     + [T(t, -70 + 20 * i, 36, 11) for i, t in enumerate('S7654321')],   # as CircuitMaker labels them
          'pins': [pin(f'D{i}', 70 - 20 * i, 80, 'out') for i in range(7)] + [pin('STB', -70, 80, 'out')]},
         {'id': 'pb_no', 'name': 'NO PushButton', 'prefix': 'S', 'display': 'button', 'aliases': ['NO PushButton'],
          'cmPins': ['1', '2'], 'model': {'kind': 'link', 'type': 'no'}, 'props': {'travel': 7},
@@ -1472,7 +1473,7 @@ def outputs():
                         'and the text scrolls up past the last line',
          'graphics': [R(-80, -120, 300, 250)] + [L(-110, -100 + 30 * i, -80, -100 + 30 * i) for i in range(7)]
                      + [L(-110, 110, -90, 110), C(-85, 110, 5)]
-                     + [T(f'D{6 - i}', -96, -106 + 30 * i, 6) for i in range(7)] + [T('CP', -66, 110, 6)],
+                     + [T(str(7 - i), -95, -109 + 30 * i, 11) for i in range(7)] + [T('CP', -100, 101, 11)],   # CircuitMaker's 7..1
          'pins': [pin(f'D{6 - i}', -110, -100 + 30 * i, 'in') for i in range(7)] + [pin('CP', -110, 110, 'in')]},
         {'id': 'led', 'name': 'LED', 'prefix': 'D', 'display': 'led', 'aliases': ['LED'], 'cmPins': ['A', 'K'],
          'model': {'kind': 'led'}, 'spice': sp('D{name} {A} {K} DLED', 'DLED'),

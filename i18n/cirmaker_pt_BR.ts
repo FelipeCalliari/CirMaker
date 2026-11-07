@@ -3033,7 +3033,7 @@ Saída do SPICE:
     </message>
     <message>
         <location filename="../src/ui/SchematicScene.cpp" line="1247"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1669"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1674"/>
         <source>Text:</source>
         <translation>Texto:</translation>
     </message>
@@ -3116,17 +3116,17 @@ Saída do SPICE:
         <translation>%1 recebe o teclado: digite 0-9 e A-F (Esc para parar)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1594"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1599"/>
         <source>%1 takes the keyboard: type characters (Esc to stop)</source>
         <translation>%1 recebe o teclado: digite caracteres (Esc para parar)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1623"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1628"/>
         <source>The node is driven by an output: its level stays</source>
         <translation>O nó é forçado por uma saída: o nível dele se mantém</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2063"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2068"/>
         <source>Reshape bus</source>
         <translation>Remodelar barramento</translation>
     </message>
@@ -3139,23 +3139,23 @@ Saída do SPICE:
         <translation type="vanished">Caractere:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="1669"/>
-        <location filename="../src/ui/SchematicScene.cpp" line="1673"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1674"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="1678"/>
         <source>Add text</source>
         <translation>Adicionar texto</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2028"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2033"/>
         <source>Move designator</source>
         <translation>Mover designador</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2028"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2033"/>
         <source>Move label</source>
         <translation>Mover rótulo</translation>
     </message>
     <message>
-        <location filename="../src/ui/SchematicScene.cpp" line="2063"/>
+        <location filename="../src/ui/SchematicScene.cpp" line="2068"/>
         <source>Reshape wire</source>
         <translation>Remodelar fio</translation>
     </message>

@@ -1591,6 +1591,11 @@ void SchematicScene::simInteractPress(QGraphicsSceneMouseEvent* e)
         m_heldButton = hit->id();
         emit statusMessage(tr("%1 takes the keyboard: type 0-9 and A-F (Esc to stop)").arg(hit->component().designator));
     } else if (d == u"asciikey") {
+        // a click on the key steps its character, as CircuitMaker's does
+        if (const int next = hit->hexKeyAt(hit->mapFromScene(e->scenePos())); next >= 0) {
+            m_sim->interact(hit->id(), QStringLiteral("key"), next);
+            m_heldButton = hit->id();
+        }
         emit statusMessage(tr("%1 takes the keyboard: type characters (Esc to stop)").arg(hit->component().designator));
     }
     update();
