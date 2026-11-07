@@ -1440,11 +1440,14 @@ def inputs():
                             for c, com in (('1', 'COMA'), ('2', 'COMA'), ('3', 'COMB'), ('4', 'COMB')))),
          'description': 'Unipolar stepper motor: coils 1 and 2 on COMA, 3 and 4 on COMB (each the label inductance '
                         'and 10 ohm); the rotor turns to the energized coils: 1, 3, 2, 4 in sequence is a full turn',
-         'graphics': [C(0, 0, 70), L(-100, -100, -60, -100), L(-60, -100, -45, -55), L(-100, -60, -70, -60),
-                      L(-100, 60, -70, 60), L(-100, 100, -60, 100), L(-60, 100, -45, 55), L(100, -80, 60, -80),
-                      L(60, -80, 50, -50), L(100, 80, 60, 80), L(60, 80, 50, 50),
-                      T('1', -92, -108, 6, 'left'), T('2', -92, -68, 6, 'left'), T('3', -92, 52, 6, 'left'),
-                      T('4', -92, 92, 6, 'left'), T('A', 92, -88, 6, 'right'), T('B', 92, 72, 6, 'right')],
+         # CircuitMaker's: a box, the coil pairs 1-2 and 3-4 wound across it, each
+         # pair tapped at its end for its common (A, B), the rotor between them
+         'graphics': [R(-80, -140, 160, 280), C(0, 0, 18)]
+                     + [P(f'M -100 {y} L -50 {y} ' + ' '.join(f'Q {-40 + 20 * i} {y - 16} {-30 + 20 * i} {y}' for i in range(4))
+                          + f' L 50 {y}') for y in (-100, -60, 60, 100)]
+                     + [L(50, -100, 50, -60), L(50, -80, 100, -80), L(50, 60, 50, 100), L(50, 80, 100, 80)]
+                     + [T(t, -88, y - 12, 18) for t, y in (('1', -100), ('2', -60), ('3', 60), ('4', 100))]
+                     + [T('A', 70, -92, 18), T('B', 70, 68, 18)],
          'pins': [pin('1', -100, -100, 'in', float=-1), pin('COMA', 100, -80, 'in', float=-1), pin('2', -100, -60, 'in', float=-1),
                   pin('3', -100, 60, 'in', float=-1), pin('COMB', 100, 80, 'in', float=-1), pin('4', -100, 100, 'in', float=-1)]},
         {'id': 'window', 'name': 'Window', 'prefix': 'W', 'display': 'window', 'aliases': ['Window'],

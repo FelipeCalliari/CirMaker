@@ -695,12 +695,12 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
     } else if (d == u"stepper") {
         // the rotor points at the energized coils (half steps of 45 degrees)
         const double a = (state * 45.0 - 90) * M_PI / 180;
-        const QPointF tip(48 * std::cos(a), 48 * std::sin(a));
-        p->setPen(QPen(live ? theme().high : ink, 4, Qt::SolidLine, Qt::RoundCap));
-        p->drawLine(-tip * 0.5, tip);
+        const QPointF tip(16 * std::cos(a), 16 * std::sin(a));
+        p->setPen(QPen(live ? theme().high : ink, 2.5, Qt::SolidLine, Qt::RoundCap));
+        p->drawLine(QPointF(), tip);
         p->setPen(QPen(ink, 1.5));
         p->setBrush(ink);
-        p->drawEllipse(QPointF(), 5, 5);
+        p->drawEllipse(QPointF(), 3, 3);
     } else if (d == u"window") {
         // a sash window: the lower sash slides up over the upper one when open
         const bool open = state == 1;
