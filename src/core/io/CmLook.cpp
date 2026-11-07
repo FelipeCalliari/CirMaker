@@ -165,6 +165,13 @@ QJsonArray shapeGraphics(const QVector<CmShape>& allShapes, const std::function<
             g.insert(QStringLiteral("path"), path);
         }
         if (sh.flags & 0x1000) g.insert(QStringLiteral("fill"), true);
+        // CircuitMaker's colours (the low nibble): 3, 6 and 13 blue (a source's
+        // "V", a current arrow, a key), and on pin leads (0x40) 5 red, 4 blue
+        const int colour = sh.flags & 0x0f;
+        if (sh.flags & 0x40)
+            g.insert(QStringLiteral("color"), colour == 5 ? QStringLiteral("#e00000") : QStringLiteral("#0000e0"));
+        else if (colour == 3 || colour == 6 || colour == 13)
+            g.insert(QStringLiteral("color"), QStringLiteral("#0000e0"));
         graphics.append(g);
     }
     return graphics;

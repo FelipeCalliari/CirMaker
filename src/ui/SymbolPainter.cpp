@@ -97,7 +97,11 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuato
     p->setPen(pen);
     for (const Primitive& g : s.graphics) {
         if (g.live) continue;                   // the display draws it
-        p->setBrush(g.fill ? QBrush(color) : Qt::NoBrush);
+        // its own colour, unless the part is drawn otherwise (selected)
+        const QColor c = g.color.isValid() && color == theme().device ? g.color : color;
+        pen.setColor(c);
+        p->setPen(pen);
+        p->setBrush(g.fill ? QBrush(c) : Qt::NoBrush);
         p->save();
         if (g.actuator)
             p->translate(actuatorOffset);

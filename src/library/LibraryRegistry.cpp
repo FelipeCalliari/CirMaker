@@ -511,6 +511,7 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
         p.fill = g.value(u"fill").toBool();
         p.actuator = g.value(u"actuator").toBool();
         p.live = g.value(u"live").toBool();
+        if (const QString col = g.value(u"color").toString(); !col.isEmpty()) p.color = QColor(col);
         s.graphics << p;
     }
 

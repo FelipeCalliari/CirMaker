@@ -7,6 +7,7 @@
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
+#include <QColor>
 #include <QVector>
 
 namespace cm {
@@ -26,6 +27,7 @@ struct Primitive {
     bool label = false;     // text: the part's own label goes here (CircuitMaker's flag 0x80: "74LS93", "TP1")
     bool actuator = false;  // moving part of a switch, drawn displaced while pressed
     bool live = false;      // drawn by the part's display (a Logic Display's dome), not with the rest
+    QColor color;           // its own colour (CircuitMaker's blue and red), none: the part's
 };
 
 struct SymbolPin {
