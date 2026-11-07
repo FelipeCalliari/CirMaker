@@ -250,7 +250,7 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     if (m_symbol->display == u"button" && live && state == 1)
         actuator = QPointF(0, m_symbol->defaultProps.value(QStringLiteral("travel"), 7).toDouble());
     // the label inside the body (CircuitMaker's flag 0x80), unless it is shown outside
-    SymbolPainter::paint(p, *m_symbol, ink, actuator, m_showLabel ? QString() : m_c.label);
+    SymbolPainter::paint(p, *m_symbol, ink, actuator, m_showLabel ? nullptr : &m_c.label);
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {

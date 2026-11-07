@@ -437,6 +437,7 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
     s.defaultLabel = o.value(u"label").toString();
     s.netLabel = o.value(u"netLabel").toBool();
     s.hidden = o.value(u"hidden").toBool();
+    s.labelInside = o.value(u"labelInside").toBool();
     s.package = o.value(u"package").toString();
     for (const QJsonValue& part : o.value(u"parts").toArray()) {
         QStringList numbers;

@@ -108,6 +108,7 @@ QJsonObject symbolJson(const QString& name, const QJsonObject& circuitJson, QStr
         sym.remove(u"shape"_s);
         sym.insert(u"graphics"_s, drawn.value(u"graphics"));
         sym.insert(u"pins"_s, drawn.value(u"pins"));
+        if (drawn.value(u"labelInside").toBool()) sym.insert(u"labelInside"_s, true);
     }
     if (layout.contains(u"cmPins")) sym.insert(u"cmPins"_s, layout.value(u"cmPins"));
     return sym;

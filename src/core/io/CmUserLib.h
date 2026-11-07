@@ -19,6 +19,8 @@ struct CmMacro {
     QVector<QPoint> at;         // pin positions on CircuitMaker's symbol
     QVector<QPoint> from;       // where each pin's lead starts
     QStringList shownNames;     // pin names as drawn (empty: none shown)
+    QVector<bool> bubbles;      // inverting pins: a bubble against the body
+    int flags = 0;              // the header's (0x80: the name shown inside)
     QVector<CmShape> drawing;   // CircuitMaker's drawing of the symbol
     QVector<int> pinNets;       // the inner net each pin joins
     ckt::CktFile body;          // inner devices and wires, as a .ckt file holds them

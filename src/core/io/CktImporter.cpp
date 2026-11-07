@@ -575,7 +575,16 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
             const bool across = std::abs(end.x() - from.x()) >= std::abs(end.y() - from.y());
             const QPointF snapped(across ? std::round(end.x() / 10) * 10 : std::round(end.x() * 100) / 100,
                                   across ? std::round(end.y() * 100) / 100 : std::round(end.y() / 10) * 10);
-            if (from != snapped) graphics.append(QJsonObject{{QStringLiteral("line"), QJsonArray{from.x(), from.y(), snapped.x(), snapped.y()}}});
+            QPointF leadFrom = from;
+            // an inverting pin: a bubble against the body, the lead beyond
+            if (m.bubbles.value(k) && from != snapped) {
+                const QPointF dir = (snapped - from) / std::hypot(snapped.x() - from.x(), snapped.y() - from.y());
+                const double r = 2.5 * kScale;
+                const QPointF c = from + dir * 3 * kScale;
+                graphics.append(QJsonObject{{QStringLiteral("circle"), QJsonArray{c.x(), c.y(), r}}});
+                leadFrom = from + dir * 6 * kScale;
+            }
+            if (leadFrom != snapped) graphics.append(QJsonObject{{QStringLiteral("line"), QJsonArray{leadFrom.x(), leadFrom.y(), snapped.x(), snapped.y()}}});
             pins.append(QJsonObject{{QStringLiteral("name"), m.pins[k]}, {QStringLiteral("at"), QJsonArray{snapped.x(), snapped.y()}},
                                     {QStringLiteral("dir"), m.outputs.value(k) ? QStringLiteral("out") : QStringLiteral("in")}});
             // the name CircuitMaker writes by the pin, inside the drawing
@@ -586,9 +595,23 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
                                             {QStringLiteral("align"), left ? QStringLiteral("left") : right ? QStringLiteral("right") : QStringLiteral("center")}});
             }
         }
+        // flag 0x80: the name inside the top of the drawing (Delay), or the
+        // part's label when it has one
+        bool labelInside = false;
+        if (m.flags & 0x80) {
+            QRect body;
+            for (const CmShape& sh : m.drawing)
+                if (!(sh.flags & 0x4000))
+                    for (QPoint q : sh.points) body |= QRect(q, QSize(1, 1));
+            const QPointF at = pt(QPoint(body.center().x(), body.top() + 5));
+            graphics.append(QJsonObject{{QStringLiteral("text"), macroName}, {QStringLiteral("label"), true},
+                                        {QStringLiteral("at"), QJsonArray{at.x(), at.y()}}, {QStringLiteral("size"), 26}});
+            labelInside = true;
+        }
         // kept with the macro's circuit, so a saved document draws it again
         circuitJson.insert(QStringLiteral("symbol"), QJsonObject{{QStringLiteral("cmDrawing"), QJsonObject{{QStringLiteral("graphics"), graphics},
-                                                                                                         {QStringLiteral("pins"), pins}}},
+                                                                                                         {QStringLiteral("pins"), pins},
+                                                                                                         {QStringLiteral("labelInside"), labelInside}}},
                                                                  {QStringLiteral("cmPins"), QJsonArray::fromStringList(m.pins)}});
         QJsonObject drawn = macros::symbolJson(macroName, circuitJson, &error);
         if (drawn.isEmpty()) return false;

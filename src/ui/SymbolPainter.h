@@ -13,7 +13,9 @@ namespace cm {
 namespace SymbolPainter {
 
 // Draws the symbol's static graphics in the painter's current coordinates.
-void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset = {}, const QString& label = {});
+// inside: the part's label for a text that shows it (empty: the text's own,
+// the device name), or nullptr when the label is shown elsewhere
+void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset = {}, const QString* inside = nullptr);
 
 // Text that stays upright and unmirrored whatever the item transform is.
 // align: -1 left, 0 centre, 1 right of `anchor` (local coordinates).

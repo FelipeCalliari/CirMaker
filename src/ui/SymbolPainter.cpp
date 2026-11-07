@@ -89,7 +89,7 @@ void uprightText(QPainter* p, QPointF anchor, const QString& text, double pointS
     p->restore();
 }
 
-void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset, const QString& label)
+void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuatorOffset, const QString* inside)
 {
     QPen pen(color, 1.6);
     pen.setCapStyle(Qt::RoundCap);
@@ -116,7 +116,10 @@ void paint(QPainter* p, const SymbolDef& s, const QColor& color, QPointF actuato
             break;
         case Primitive::Type::Text:
             if (g.label) {
-                if (!label.isEmpty()) uprightText(p, {g.v[0], g.v[1]}, label, g.size, g.align, color, g.overline, true, g.turns);
+                if (inside) {
+                    const QString shown = inside->isEmpty() ? g.text : *inside;
+                    if (!shown.isEmpty()) uprightText(p, {g.v[0], g.v[1]}, shown, g.size, g.align, color, g.overline, true, g.turns);
+                }
             } else {
                 uprightText(p, {g.v[0], g.v[1]}, g.text, g.size, g.align, color, g.overline, true, g.turns);
             }
