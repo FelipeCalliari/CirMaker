@@ -106,14 +106,14 @@ QPointF ComponentItem::textAnchor(int which) const
     if (which == 0 && m_c.designatorAt) return *m_c.designatorAt;
     if (which == 1 && m_c.labelAt) return *m_c.labelAt;
     // the default places are left-aligned: their centre
-    const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : m_c.label;
+    const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : shownLabel();
     const double w = QFontMetricsF(SymbolPainter::schematicFont(kTextSize)).horizontalAdvance(text);
     return (which == 0 ? m_designatorAt : m_labelAt) + QPointF(w / 2, 0);
 }
 
 QRectF ComponentItem::textRect(int which) const
 {
-    const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : m_c.label;
+    const QString text = which == 0 ? shownDesignator(*m_symbol, m_c) : shownLabel();
     const QFontMetricsF fm(SymbolPainter::schematicFont(kTextSize));
     const double w = fm.horizontalAdvance(text);
     const QPointF a = textAnchor(which);
@@ -162,6 +162,15 @@ QRectF ComponentItem::bodyRect() const
 int ComponentItem::keyRow(int row) const
 {
     return m_symbol->model.value(u"kind").toString() == u"keymatrix" ? 3 - row : row;
+}
+
+// the label as CircuitMaker shows it: a potentiometer's with its wiper ("50k 60%")
+QString ComponentItem::shownLabel() const
+{
+    if (m_symbol->model.value(u"kind").toString() == u"pot" && !m_c.label.isEmpty())
+        return m_c.label + QStringLiteral(" %1%").arg(m_c.props.value(QStringLiteral("position"),
+                                                                       m_symbol->defaultProps.value(QStringLiteral("position"), 50)).toInt());
+    return m_c.label;
 }
 
 double ComponentItem::carTravel() const
@@ -294,11 +303,11 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
                 SymbolPainter::uprightText(p, toLocal.map(at), m_c.label, kTextSize, align, ink);
             }
         } else if (m_previewText == 1) {
-            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), m_c.label, kTextSize, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_previewAt), shownLabel(), kTextSize, 0, ink);
         } else if (m_c.labelAt) {
-            SymbolPainter::uprightText(p, toLocal.map(*m_c.labelAt), m_c.label, kTextSize, 0, ink);
+            SymbolPainter::uprightText(p, toLocal.map(*m_c.labelAt), shownLabel(), kTextSize, 0, ink);
         } else {
-            SymbolPainter::uprightText(p, toLocal.map(m_labelAt), m_c.label, kTextSize, -1, ink);
+            SymbolPainter::uprightText(p, toLocal.map(m_labelAt), shownLabel(), kTextSize, -1, ink);
         }
     }
 }

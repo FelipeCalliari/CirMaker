@@ -32,6 +32,7 @@ public:
     // a Car: how far it drives (its distance in CircuitMaker units, ours here)
     // and whether a point is on its Reset button
     double carTravel() const;
+    QString shownLabel() const;
     bool onCarReset(QPointF local) const;
     bool singleKey() const;
     QRectF keyFace() const;
