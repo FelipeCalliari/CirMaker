@@ -128,7 +128,8 @@
     "title": "Data",
     "titleY": -98,
     "titleSize": 20,
-    "labelSize": 20
+    "labelSize": 20,
+    "color": "#0000e0"
    },
    "model": {
     "kind": "dataseq"

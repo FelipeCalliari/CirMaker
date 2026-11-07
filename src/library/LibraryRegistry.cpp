@@ -284,6 +284,7 @@ void box(SymbolDef& s, const QJsonObject& spec)
     Primitive body;
     body.type = Primitive::Type::Rect;
     body.v = {-hw, bodyTop, w, bodyBottom - bodyTop};
+    if (const QString col = spec.value(u"color").toString(); !col.isEmpty()) body.color = QColor(col);    // the Data Seq's blue
     s.graphics << body;
 
     if (const QString title = spec.value(u"title").toString(); !title.isEmpty())

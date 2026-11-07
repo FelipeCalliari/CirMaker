@@ -1336,7 +1336,7 @@ def data_sequencer():
                 aliases=['Data Seq'], title='Data')
     s['shape']['titleY'] = -98
     s['graphics'] = [T('Seq', 0, -72, 20)]
-    s['shape'].update({'titleSize': 20, 'labelSize': 20})
+    s['shape'].update({'titleSize': 20, 'labelSize': 20, 'color': '#0000e0'})     # CircuitMaker's blue box
     s.update({'name': 'Data Sequencer', 'prefix': 'DS', 'display': 'dataseq', 'label': '', 'floatInputs': 0,
               'props': {'data': '', 'lines': 32, 'start': 0, 'stop': 31, 'tick': 1, 'external': 0,
                         'low': '0', 'high': '5', 'step': '1m'},
