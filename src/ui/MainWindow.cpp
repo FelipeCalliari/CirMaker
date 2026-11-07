@@ -681,6 +681,22 @@ void MainWindow::createMenus()
     tools->addAction(m_autoRoute);
     tools->addAction(m_circuitFaults);
     tools->addAction(m_prefs);
+    // where CircuitMaker 2000 is installed: its Device.lib, User.lib and models
+    // (read for its drawings, its macros and .ckt export; never shipped)
+    QAction* libraryLocation = tools->addAction(tr("&Library Location..."));
+    libraryLocation->setStatusTip(tr("The folder where CircuitMaker 2000 is installed, for its drawings, macros and export"));
+    connect(libraryLocation, &QAction::triggered, this, [this] {
+        QSettings settings;
+        const QString was = QFileInfo(CmDeviceLib::locate(settings.value(QStringLiteral("cm/folder")).toString())).absolutePath();
+        const QString folder = QFileDialog::getExistingDirectory(this, tr("CircuitMaker 2000 folder"), was);
+        if (folder.isEmpty()) return;
+        if (CmDeviceLib::locate(folder).isEmpty()) {
+            QMessageBox::warning(this, tr("Library Location"), tr("There is no Device.lib in %1.").arg(folder));
+            return;
+        }
+        settings.setValue(QStringLiteral("cm/folder"), folder);
+        QMessageBox::information(this, tr("Library Location"), tr("CircuitMaker's library will be read from %1 the next time CirMaker starts.").arg(folder));
+    });
 
     QMenu* simulation = menuBar()->addMenu(tr("&Simulation"));
     simulation->addActions({m_digitalMode, m_analogMode});
