@@ -1523,9 +1523,10 @@ def outputs():
          'model': {'kind': 'led'}, 'spice': sp('D{name} {A} {K} DLED', 'DLED'),
          'props': {'color': 'red'}, 'choices': {'color': ['red', 'green', 'yellow', 'blue', 'orange', 'white']},
          'description': 'Lights when the anode is high and the cathode low; colour in the properties',
-         'graphics': [L(0, -20, 0, -8), P('M -10 -8 L 10 -8 L 0 6 Z'), L(-10, 6, 10, 6), L(0, 6, 0, 10),
+         # drawn live in its colour, as CircuitMaker draws an LED, filled when lit
+         'graphics': [dict(g, live=True) for g in (L(0, -20, 0, -8), P('M -10 -8 L 10 -8 L 0 6 Z'), L(-10, 6, 10, 6), L(0, 6, 0, 10),
                       L(12, -8, 22, -18), P('M 17 -18 L 22 -18 L 22 -13'),
-                      L(15, -1, 25, -11), P('M 20 -11 L 25 -11 L 25 -6')],
+                      L(15, -1, 25, -11), P('M 20 -11 L 25 -11 L 25 -6'))],
          'pins': [pin('A', 0, -20, 'in'), pin('K', 0, 10, 'in')]},   # 8 units apart in CircuitMaker
         {'id': 'stoplight', 'name': 'StopLight', 'prefix': 'L', 'display': 'stoplight', 'aliases': ['StopLight'],
          'cmPins': ['D0', 'D1', 'D2'], 'model': {'kind': 'display', 'bits': 3},

@@ -1208,6 +1208,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         Component& comp = placed[i].comp;
         comp.showDesignator = (d.flags & 0x200) != 0;
         comp.showLabel = (d.flags & 0x100) != 0;
+        // flag 0x80 on a +V: its name "+V" shown over it (Digfault), the label hidden
+        if ((d.flags & 0x80) && placed[i].symbol->id == u"vcc")
+            comp.props.insert(QStringLiteral("cmShowName"), true);
         const QPointF origin(d.x, d.y);
         if (d.designatorRect)
             comp.designatorAt = (origin + d.designatorRect->center()) * kScale - comp.pos;

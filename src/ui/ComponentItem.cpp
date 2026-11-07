@@ -278,6 +278,9 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
         else
             SymbolPainter::uprightText(p, toLocal.map(m_designatorAt), shownDesignator(*m_symbol, m_c), kTextSize, -1, ink);
     }
+    // a +V showing its name, as CircuitMaker does with flag 0x80
+    if (m_c.props.value(QStringLiteral("cmShowName")).toBool())
+        SymbolPainter::uprightText(p, toLocal.map(QPointF(0, -48)), QStringLiteral("+V"), kTextSize, 0, ink);
     // CircuitMaker's third label where it showed it (flag 0x400): the coil
     // a contact or solenoid follows
     if (const QStringList at = m_c.props.value(QStringLiteral("cmTagAt")).toString().split(u' ', Qt::SkipEmptyParts); at.size() == 2) {
@@ -415,9 +418,20 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             p->setBrush(glow);
             p->drawEllipse(QPointF(0, 0), 26, 26);
         }
-        QColor body = on ? color : color.lighter(name == u"white" ? 100 : 175);
-        if (!on) body.setAlpha(name == u"white" ? 60 : 255);
-        fillFirst(Primitive::Type::Path, body);
+        // all of it in its colour (white drawn grey), the triangle filled when lit
+        const QColor pen = isSelected() ? ink : name == u"white" ? QColor(0x90, 0x90, 0x90) : color;
+        bool triangle = true;
+        for (const Primitive& g : m_symbol->graphics) {
+            p->setPen(QPen(pen, 1.6, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            p->setBrush(Qt::NoBrush);
+            if (g.type == Primitive::Type::Line) {
+                p->drawLine(QPointF(g.v[0], g.v[1]), QPointF(g.v[2], g.v[3]));
+            } else if (g.type == Primitive::Type::Path) {
+                if (triangle && on) p->setBrush(color);
+                triangle = false;
+                p->drawPath(SymbolPainter::parsePath(g.path));
+            }
+        }
     } else if (d == u"stoplight") {
         const QColor on[3] = {QColor(0xe0, 0x10, 0x10), QColor(0xf0, 0xc0, 0x00), QColor(0x10, 0xb0, 0x30)};
         const auto cs = circles();
