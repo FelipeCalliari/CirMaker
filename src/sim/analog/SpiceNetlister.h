@@ -17,6 +17,7 @@ namespace cm::spice {
 // What a multimeter reads once the analysis has run.
 struct Meter {
     bool amps = false;
+    double ohmsCurrent = 0;     // an ohmmeter: the current it forces from + round to - (0: not one)
     QString plus, minus;        // voltmeter nodes
     QString current;            // ammeter: branch-current vector
 };

@@ -863,7 +863,16 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // (Digfault and Display open with their "5V" switches off)
         if (kind == u"logicswitch")
             c.props.insert(QStringLiteral("state"), int(d.nets.size() > 10 && d.nets[10] == 1));
-        else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0) {
+        else if (kind == u"meter") {
+            // the SPICE letter says what it measures (R voltmeter, V ammeter,
+            // I ohmmeter, forcing the value's current); nets[20]: 0 DC, 1 DC
+            // AVG, 2 AC RMS (4 with ohms)
+            const int letter = d.misc.value(0);
+            c.props.insert(QStringLiteral("mode"), letter == 'I' ? QStringLiteral("R") : letter == 'V' ? QStringLiteral("A") : QStringLiteral("V"));
+            const int measure = d.nets.value(20);
+            c.props.insert(QStringLiteral("measure"), measure == 1 ? QStringLiteral("AVG") : measure == 2 ? QStringLiteral("RMS") : QStringLiteral("DC"));
+            if (letter == 'I' && !d.value.trimmed().isEmpty()) c.props.insert(QStringLiteral("current"), d.value.trimmed());
+        } else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0) {
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
             // nets[6]: Pulse Format Invert (External Trigger is not kept in the file)
             if (d.nets[6] == 1) c.props.insert(QStringLiteral("inverted"), true);

@@ -1,5 +1,6 @@
 #include "sim/analog/SpiceNetlister.h"
 
+#include "core/Generator.h"
 #include "core/NetlistBuilder.h"
 
 #include "core/io/CmModels.h"
@@ -525,12 +526,18 @@ private:
     void emitMeter(const Component& c, const SymbolDef& s, const QString& name)
     {
         Meter m;
-        m.amps = props(c, s).value(QStringLiteral("mode")).toString().toUpper() == u"A";
+        const QString mode = props(c, s).value(QStringLiteral("mode")).toString().toUpper();
+        m.amps = mode == u"A";
         m.plus = node(c, s, QStringLiteral("+"));
         m.minus = node(c, s, QStringLiteral("-"));
         if (m.amps) {
             m_lines << QStringLiteral("Vam_%1 %2 %3 DC 0").arg(name, m.plus, m.minus);
             m.current = QStringLiteral("vam_%1#branch").arg(name);
+        } else if (mode == u"R") {
+            // as CircuitMaker measures ohms: a current out of + through the circuit back into -
+            m.ohmsCurrent = generator::spiceNumber(props(c, s).value(QStringLiteral("current"), QStringLiteral("1u")).toString(), 1e-6);
+            if (m.ohmsCurrent <= 0) m.ohmsCurrent = 1e-6;
+            m_lines << QStringLiteral("Iohm_%1 %2 %3 DC %4").arg(name, m.minus, m.plus, QString::number(m.ohmsCurrent, 'g', 6));
         }
         m_deck.meters.insert(c.id, m);
     }

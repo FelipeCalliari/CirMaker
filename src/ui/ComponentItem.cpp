@@ -610,16 +610,16 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             SymbolPainter::uprightText(p, cell.center(), hexDigit(k), 14, 0, state == k ? QColor(0xe0, 0x10, 0x10) : ink);
         }
     } else if (d == u"meter") {
-        const QRectF screen = body.adjusted(10, 10, -10, -30);
-        p->setPen(QPen(ink, 1));
-        p->setBrush(QColor(0xd8, 0xe8, 0xd0));
-        p->drawRect(screen);
+        // CircuitMaker's: the reading in the display, what it measures below ("DC V", "OHMS")
+        const QRectF screen = body;
+        const QString mode = m_c.props.value(QStringLiteral("mode"), QStringLiteral("V")).toString().toUpper();
+        const QString measure = m_c.props.value(QStringLiteral("measure"), QStringLiteral("DC")).toString().toUpper();
         const SchematicScene* sc = schematic();
         QString text = sc ? sc->meterText(m_c.id) : QString();
-        if (text.isEmpty())
-            text = m_c.props.value(QStringLiteral("mode"), QStringLiteral("V")).toString() == u"A" ? QStringLiteral("— A")
-                                                                                                  : QStringLiteral("— V");
-        SymbolPainter::uprightText(p, screen.center(), text, 14, 0, QColor(0x10, 0x30, 0x10));
+        if (text.isEmpty()) text = QStringLiteral("NO DATA");
+        SymbolPainter::uprightText(p, screen.center(), text, kTextSize, 0, ink);
+        SymbolPainter::uprightText(p, QPointF(screen.center().x(), screen.bottom() + 18),
+                                   mode == u"R" ? QStringLiteral("OHMS") : measure + u' ' + (mode == u"A" ? u'A' : u'V'), kTextSize * 0.8, 0, ink);
     } else if (d == u"bulb") {
         if (live && state > 0) {
             p->setBrush(QColor(0xff, 0xe0, 0x40));

@@ -18,6 +18,7 @@ private slots:
     void parsesSpiceNumbers();
     void deckNamesGroundAndLabels();
     void dividerOperatingPoint();
+    void ohmmeter();
     void diodeForwardDrop();
     void rcTransient();
     void lowPassAc();
@@ -165,6 +166,42 @@ void TestAnalog::dividerOperatingPoint()
     const spice::Result r = simulate(c, &deck);
     QVERIFY2(r.ok, qPrintable(r.error));
     QVERIFY(qAbs(nodeVoltage(r, deck, c, r2, QStringLiteral("1")) - 7.5) < 1e-6);
+}
+
+// CircuitMaker's multimeter in ohms: its current out of + through the
+// resistors and back reads their sum (Ohm.ckt: 500 + 1k||1k + 2k)
+void TestAnalog::ohmmeter()
+{
+    requireEngine();
+    Circuit c;
+    Component m;
+    m.symbolId = QStringLiteral("multimeter");
+    m.designator = QStringLiteral("M1");
+    m.props = {{QStringLiteral("mode"), QStringLiteral("R")}};
+    const ItemId meter = c.addComponent(m);
+    const ItemId r1 = part(c, QStringLiteral("resistor"), QStringLiteral("R1"), QStringLiteral("500"));
+    const ItemId r2 = part(c, QStringLiteral("resistor"), QStringLiteral("R2"), QStringLiteral("1k"));
+    const ItemId r3 = part(c, QStringLiteral("resistor"), QStringLiteral("R3"), QStringLiteral("1k"));
+    const ItemId r4 = part(c, QStringLiteral("resistor"), QStringLiteral("R4"), QStringLiteral("2k"));
+    label(c, meter, QStringLiteral("+"), QStringLiteral("A"));
+    label(c, r1, QStringLiteral("1"), QStringLiteral("A"));
+    label(c, r1, QStringLiteral("2"), QStringLiteral("B"));
+    label(c, r2, QStringLiteral("1"), QStringLiteral("B"));
+    label(c, r3, QStringLiteral("1"), QStringLiteral("B"));
+    label(c, r2, QStringLiteral("2"), QStringLiteral("C"));
+    label(c, r3, QStringLiteral("2"), QStringLiteral("C"));
+    label(c, r4, QStringLiteral("1"), QStringLiteral("C"));
+    label(c, r4, QStringLiteral("2"), QStringLiteral("G"));
+    label(c, meter, QStringLiteral("-"), QStringLiteral("G"));
+    ground(c, QStringLiteral("G"));
+    c.setAnalysis({true, AnalysisSettings::Type::OperatingPoint});
+    spice::Deck deck;
+    const spice::Result r = simulate(c, &deck);
+    QVERIFY2(r.ok, qPrintable(r.error));
+    const spice::Meter mm = deck.meters.value(meter);
+    QCOMPARE(mm.ohmsCurrent, 1e-6);
+    const double ohms = (nodeVoltage(r, deck, c, meter, QStringLiteral("+")) - nodeVoltage(r, deck, c, meter, QStringLiteral("-"))) / mm.ohmsCurrent;
+    QVERIFY2(qAbs(ohms - 3000) < 0.01, qPrintable(QString::number(ohms)));
 }
 
 void TestAnalog::diodeForwardDrop()

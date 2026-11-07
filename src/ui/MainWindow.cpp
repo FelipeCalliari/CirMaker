@@ -1858,8 +1858,24 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
     SchematicScene::AnalogOverlay overlay;
     for (auto it = deck.meters.cbegin(); it != deck.meters.cend(); ++it) {
         const spice::Meter& m = it.value();
-        const double v = m.amps ? r.last(m.current).value_or(qQNaN()) : voltage(r, m.plus) - voltage(r, m.minus);
-        overlay.meterText.insert(it.key(), WaveformView::siFormat(v, m.amps ? QStringLiteral("A") : QStringLiteral("V"), 4));
+        double v = m.amps ? r.last(m.current).value_or(qQNaN()) : voltage(r, m.plus) - voltage(r, m.minus);
+        if (m.ohmsCurrent > 0) v /= m.ohmsCurrent;
+        // as CircuitMaker's display reads: four digits, the prefix, the unit ("5.000uV", "3.000k" ohms)
+        const double a = std::abs(v);
+        QString text = QStringLiteral("—");
+        if (std::isfinite(v)) {
+            static const struct { double scale; const char* prefix; } steps[] = {
+                {1e9, "G"}, {1e6, "M"}, {1e3, "k"}, {1, ""}, {1e-3, "m"}, {1e-6, "u"}, {1e-9, "n"}, {1e-12, "p"}};
+            for (const auto& st : steps)
+                if (a >= st.scale * 0.99995 || st.scale == 1e-12) {
+                    const double x = v / st.scale;
+                    const int before = std::abs(x) >= 100 ? 3 : std::abs(x) >= 10 ? 2 : 1;
+                    text = QString::number(x, 'f', 4 - before) + QString::fromLatin1(st.prefix)
+                         + (m.ohmsCurrent > 0 ? QString() : m.amps ? QStringLiteral("A") : QStringLiteral("V"));
+                    break;
+                }
+        }
+        overlay.meterText.insert(it.key(), text);
     }
     for (const Component& c : m_circuit->components()) {
         const SymbolDef* s = LibraryRegistry::instance().find(c.symbolId);

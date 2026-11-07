@@ -603,6 +603,22 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         // an empty template leaves the part out of CircuitMaker's simulation
         QString spice = c.props.value(QStringLiteral("noSpice")).toBool() ? QString()
                       : c.props.value(QStringLiteral("cmSpice"), l.spice).toString();
+        // a multimeter: its SPICE letter, lines and value say what it measures
+        // (R voltmeter, V ammeter through a micro-ohm, I ohmmeter forcing its
+        // current); as read while that is unchanged
+        int meterLetter = 0, meterMeasure = 0;
+        if (kind == u"meter") {
+            const QString mode = c.props.value(QStringLiteral("mode"), QStringLiteral("V")).toString().toUpper();
+            const QString measure = c.props.value(QStringLiteral("measure"), QStringLiteral("DC")).toString().toUpper();
+            meterLetter = mode == u"R" ? 'I' : mode == u"A" ? 'V' : 'R';
+            meterMeasure = mode == u"R" ? 4 : measure == u"AVG" ? 1 : measure == u"RMS" ? 2 : 0;
+            if (c.props.value(QStringLiteral("cmCode"), l.code & 0xffff).toInt() != meterLetter) {
+                spice = mode == u"R" ? QStringLiteral("R1%D %1 %2 1E-9\n%D %4 %2 DC %V")
+                      : mode == u"A" ? QStringLiteral("R1%D %1 %2 %V\n%D %2 %4 DC 0") : QStringLiteral("%D %1 %4 %V");
+                value = mode == u"R" ? c.props.value(QStringLiteral("current"), QStringLiteral("1u")).toString()
+                      : mode == u"A" ? QStringLiteral("1.000u") : QStringLiteral("100.0Meg");
+            }
+        }
         QStringList genBlock;                   // the generator's 20 numbers
         if (l.type == 0xc3) {
             auto prop = [&](const char* key, const char* fallback) {
@@ -768,6 +784,17 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 for (int k = 1; k < kept.size(); ++k) nets << kept[k].toInt();
             }
         }
+        // the multimeter's display text ("NO DATA "), what it measures in
+        // nets[20] (0 DC, 1 DC AVG, 2 AC RMS, 4 ohms) and its letter in nets[21]
+        if (meterLetter) {
+            if (nets.size() < 22) {
+                nets.resize(11);
+                for (const char ch : QByteArrayLiteral("NO DATA ")) nets << ch;
+                nets.resize(22);
+            }
+            nets[20] = meterMeasure;
+            nets[21] = meterLetter;
+        }
         const int pinMax = int(nets.size()) - 1;
 
         // text: what is shown, and where (rectangles relative to the origin)
@@ -853,7 +880,7 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
             << str(c.props.value(QStringLiteral("cmPackage"), l.package).toString());
         rec << QString::number(pkg.size() - 1) << join(pkg);
         const QStringList modelAt = c.props.value(QStringLiteral("cmModelAt")).toString().split(u' ', Qt::SkipEmptyParts);
-        rec << join({c.props.value(QStringLiteral("cmCode"), l.code & 0xffff).toInt(), 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
+        rec << join({meterLetter ? meterLetter : c.props.value(QStringLiteral("cmCode"), l.code & 0xffff).toInt(), 0, modelAt.value(0).toInt(), modelAt.value(1).toInt(), l.parts, l.parts > 1 ? d.part : 0, group, 0});
         rec << str(l.prefix);
         rec << join({i + 1, 0, 0});
         // the stamps as read, none where the file had none (older files:

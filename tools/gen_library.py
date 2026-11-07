@@ -660,9 +660,17 @@ def analog():
          'description': 'Initial guess for this node when finding the operating point',
          'graphics': [R(-40, -40, 80, 24), T('.NODESET', 0, -28, 8), L(0, -16, 0, 10)], 'pins': [pin('1', 0, 10)]},
         {'id': 'multimeter', 'name': 'Multimeter', 'prefix': 'M', 'label': 'V', 'aliases': ['Multimeter'],
-         'display': 'meter', 'cmPins': ['+', '', '', '-'], 'model': {'kind': 'meter'}, 'props': {'mode': 'V'},
-         'description': 'Voltmeter (mode V) or ammeter (mode A) between + and -',
-         'graphics': [R(-80, -50, 160, 100), L(-80, 50, -80, 80), L(80, 50, 80, 80), T('+', -70, 40, 9), T('-', 70, 40, 9)],
+         'display': 'meter', 'cmPins': ['+', '', '', '-'], 'model': {'kind': 'meter'},
+         'props': {'mode': 'V', 'measure': 'DC', 'current': '1u'},
+         'choices': {'mode': ['V', 'A', 'R'], 'measure': ['DC', 'AVG', 'RMS']},
+         'description': 'CircuitMaker\'s multimeter between + and -: volts (mode V), amps (A) or ohms (R, forcing its '
+                        'current through the circuit; only one ohmmeter at a time, no sources)',
+         # the display first (the reading goes there), CircuitMaker's rounded box,
+         # the + and - terminals by the leads
+         'graphics': [R(-100, -20, 200, 40), P('M -90 -30 L 90 -30 Q 110 -30 110 -10 L 110 37 Q 110 57 90 57 L -90 57 Q -110 57 -110 37 '
+                                               'L -110 -10 Q -110 -30 -90 -30 Z'),
+                      C(-82, 38, 11), L(-89, 38, -75, 38), L(-82, 31, -82, 45), C(85, 38, 11), L(78, 38, 92, 38),
+                      L(-80, 57, -80, 80), L(80, 57, 80, 80)],
          'pins': [pin('+', -80, 80), pin('-', 80, 80)]},
     ] + power_parts() + misc_parts() + controlled_sources() + rare_parts()
 
