@@ -1,5 +1,6 @@
 #include "ui/SignalGenDialog.h"
 
+#include "core/Generator.h"
 #include "library/SymbolDef.h"
 #include "sim/analog/SpiceNetlister.h"
 
@@ -201,6 +202,8 @@ Component SignalGenDialog::result() const
     c.props.insert(QStringLiteral("ac"), m_ac->isChecked());
     c.props.insert(QStringLiteral("acMag"), m_acMag->text().trimmed());
     c.props.insert(QStringLiteral("acPhase"), m_acPhase->text().trimmed());
+    // CircuitMaker's label follows the waveform ("-1/1V"); one of the user's own stays
+    if (generator::automaticLabel(c.label)) c.label = generator::label(c.props);
     return c;
 }
 

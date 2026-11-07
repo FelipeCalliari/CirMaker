@@ -628,11 +628,13 @@ def analog():
          'description': 'Current flows out of the - terminal into the circuit',
          'graphics': [C(0, 0, 25), L(0, -70, 0, -25), L(0, 25, 0, 70), L(0, -14, 0, 14), P('M -6 6 L 0 14 L 6 6')],
          'pins': [pin('+', 0, -70), pin('-', 0, 70)]},
-        {'id': 'siggen', 'name': 'Signal Gen', 'prefix': 'V', 'label': '1kHz', 'aliases': ['Signal Gen'],
-         'cmPins': ['+', '-'], 'model': {'kind': 'siggen'},
+        {'id': 'siggen', 'name': 'Signal Gen', 'prefix': 'V', 'label': '-1/1V', 'aliases': ['Signal Gen'],
+         'display': 'siggen', 'cmPins': ['+', '-'], 'model': {'kind': 'siggen'},
          'props': {'wave': 'sine', 'amplitude': '1', 'frequency': '1k', 'offset': '0'},
-         'description': 'Sine, square or triangle source (wave = sine/square/triangle); also the AC source',
-         'graphics': [R(-40, -40, 80, 80), P('M -28 0 Q -21 -22 -14 0 Q -7 22 0 0 Q 7 -22 14 0 Q 21 22 28 0'),
+         'description': 'Sine, pulse, FM, exponential or piecewise linear source; also the AC source. '
+                        'Drawn as CircuitMaker draws it: its waveform, its frequency below and its levels as the label',
+         # the waveform and the frequency are drawn live, as the waveform is set
+         'graphics': [R(-40, -40, 80, 80),
                       L(40, -20, 100, -20), L(40, 20, 100, 20), T('+', 50, -28, 8), T('-', 50, 28, 8)],
          'pins': [pin('+', 100, -20), pin('-', 100, 20)]},
         {'id': 'pot', 'name': 'Potentiometer', 'prefix': 'R', 'label': '10k', 'aliases': ['Var Resistor'],

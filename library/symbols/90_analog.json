@@ -1426,10 +1426,11 @@
    "id": "siggen",
    "name": "Signal Gen",
    "prefix": "V",
-   "label": "1kHz",
+   "label": "-1/1V",
    "aliases": [
     "Signal Gen"
    ],
+   "display": "siggen",
    "cmPins": [
     "+",
     "-"
@@ -1443,7 +1444,7 @@
     "frequency": "1k",
     "offset": "0"
    },
-   "description": "Sine, square or triangle source (wave = sine/square/triangle); also the AC source",
+   "description": "Sine, pulse, FM, exponential or piecewise linear source; also the AC source. Drawn as CircuitMaker draws it: its waveform, its frequency below and its levels as the label",
    "graphics": [
     {
      "rect": [
@@ -1452,9 +1453,6 @@
       80,
       80
      ]
-    },
-    {
-     "path": "M -28 0 Q -21 -22 -14 0 Q -7 22 0 0 Q 7 -22 14 0 Q 21 22 28 0"
     },
     {
      "line": [

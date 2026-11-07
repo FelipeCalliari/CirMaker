@@ -20,6 +20,7 @@
 
 #include "core/io/CktImporter.h"
 
+#include "core/Generator.h"
 #include "core/NetlistBuilder.h"
 #include "core/io/CktFile.h"
 #include "core/io/CmDeviceLib.h"
@@ -876,8 +877,9 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
                 c.props.insert(QStringLiteral("amplitude"), QString::number((hi - lo) / 2));
                 c.props.insert(QStringLiteral("offset"), QString::number((hi + lo) / 2));
             }
-            // a label of the user's own stays (Csjfamp's "40MV P-P")
-            c.label = m.hasMatch() || d.value.trimmed().isEmpty() ? s->defaultLabel : d.value;
+            // the label as CircuitMaker shows it ("0/2.56V"), or the user's own
+            // (Csjfamp's "40MV P-P"); none: the levels, once the waveform is read
+            c.label = d.value.trimmed();
             // the waveform as the instance's SPICE line gives it:
             // "%D %1 %2 DC 0 PULSE(0 5 100n 10n 10n 100n 1u) AC 1 0"
             static const QRegularExpression shape(QStringLiteral("\\b(SIN|PULSE|EXP|PWL|SFFM)\\s*\\(([^)]*)\\)"),
@@ -957,6 +959,7 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
                     c.props.insert(QStringLiteral("ac"), false);
                 }
             }
+            if (c.label.isEmpty()) c.label = generator::label(c.props);
         } else if ((kind == u"rom" || kind == u"ram") && !d.data.isEmpty()) {
             QStringList bytes;
             for (int b : d.data)

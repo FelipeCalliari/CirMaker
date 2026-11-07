@@ -3163,257 +3163,257 @@ Saída do SPICE:
 <context>
     <name>cm::SignalGenDialog</name>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="33"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="36"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="38"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="44"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="47"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="34"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="37"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="39"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="45"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="48"/>
         <source>DC offset (VO):</source>
         <translation>Offset DC (VO):</translation>
-    </message>
-    <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="33"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="36"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="38"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="44"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="47"/>
-        <source>Peak amplitude (VA):</source>
-        <translation>Amplitude de pico (VA):</translation>
     </message>
     <message>
         <location filename="../src/ui/SignalGenDialog.cpp" line="34"/>
         <location filename="../src/ui/SignalGenDialog.cpp" line="37"/>
         <location filename="../src/ui/SignalGenDialog.cpp" line="39"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="45"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="48"/>
+        <source>Peak amplitude (VA):</source>
+        <translation>Amplitude de pico (VA):</translation>
+    </message>
+    <message>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="35"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="38"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="40"/>
         <source>Frequency (Hz):</source>
         <translation>Frequência (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="34"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="35"/>
         <source>Start delay (s):</source>
         <translation>Atraso inicial (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="35"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="36"/>
         <source>Damping factor (1/s):</source>
         <translation>Fator de amortecimento (1/s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="40"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="50"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="41"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="51"/>
         <source>Initial amplitude (VI):</source>
         <translation>Amplitude inicial (VI):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="40"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="50"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="41"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="51"/>
         <source>Pulse amplitude (VP):</source>
         <translation>Amplitude do pulso (VP):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="41"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="42"/>
         <source>Period (s):</source>
         <translation>Período (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="41"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="42"/>
         <source>Pulse width (s):</source>
         <translation>Largura do pulso (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="42"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="43"/>
         <source>Rise time (s):</source>
         <translation>Tempo de subida (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="42"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="43"/>
         <source>Fall time (s):</source>
         <translation>Tempo de descida (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="43"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="44"/>
         <source>Delay to start (s):</source>
         <translation>Atraso para iniciar (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="45"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="48"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="46"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="49"/>
         <source>Carrier frequency (Hz):</source>
         <translation>Frequência da portadora (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="45"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="48"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="46"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="49"/>
         <source>Modulation index:</source>
         <translation>Índice de modulação:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="46"/>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="49"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="47"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="50"/>
         <source>Signal frequency (Hz):</source>
         <translation>Frequência do sinal (Hz):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="51"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="52"/>
         <source>Rise time delay (s):</source>
         <translation>Atraso da subida (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="51"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="52"/>
         <source>Rise time constant (s):</source>
         <translation>Constante de tempo da subida (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="52"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="53"/>
         <source>Fall time delay (s):</source>
         <translation>Atraso da descida (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="52"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="53"/>
         <source>Fall time constant (s):</source>
         <translation>Constante de tempo da descida (s):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="96"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="97"/>
         <source>%1 properties</source>
         <translation>Propriedades de %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="103"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="104"/>
         <source>&amp;Designator:</source>
         <translation>&amp;Designador:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="105"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="106"/>
         <source>&amp;Label:</source>
         <translation>&amp;Rótulo:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
         <source>Sine wave</source>
         <translation>Senoide</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
         <source>Square</source>
         <translation>Quadrada</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
         <source>Triangle</source>
         <translation>Triangular</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
         <source>Pulse/Sawtooth</source>
         <translation>Pulso/dente de serra</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="107"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
         <source>AM signal</source>
         <translation>Sinal AM</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="109"/>
         <source>FM signal</source>
         <translation>Sinal FM</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="109"/>
         <source>Exponential</source>
         <translation>Exponencial</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="108"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="109"/>
         <source>Piece-wise linear</source>
         <translation>Linear por partes (PWL)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="110"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="111"/>
         <source>&amp;Wave:</source>
         <translation>&amp;Onda:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="112"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="113"/>
         <source>Volts</source>
         <translation>Volts</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="113"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="114"/>
         <source>Amps</source>
         <translation>Ampères</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="115"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="116"/>
         <source>&amp;Source:</source>
         <translation>&amp;Fonte:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="130"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="131"/>
         <source>time value, one point per line (e.g. 0 0, 1m 5, 2m 0)</source>
         <translation>tempo valor, um ponto por linha (ex.: 0 0, 1m 5, 2m 0)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="131"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="132"/>
         <source>&amp;Points:</source>
         <translation>&amp;Pontos:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="132"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="133"/>
         <source>Load .PWL &amp;file...</source>
         <translation>Carregar arquivo .&amp;PWL...</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="138"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="139"/>
         <source>Wave parameters</source>
         <translation>Parâmetros da onda</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="145"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="146"/>
         <source>AC analysis</source>
         <translation>Análise AC</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="147"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="148"/>
         <source>Use as AC &amp;source</source>
         <translation>Usar como &amp;fonte AC</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="152"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="153"/>
         <source>Magnitude:</source>
         <translation>Magnitude:</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="153"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="154"/>
         <source>Phase (degrees):</source>
         <translation>Fase (graus):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="164"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="165"/>
         <source>Piece-wise linear data</source>
         <translation>Dados lineares por partes</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="165"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="166"/>
         <source>PWL data (*.pwl *.PWL *.txt);;All files (*)</source>
         <translation>Dados PWL (*.pwl *.PWL *.txt);;Todos os arquivos (*)</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="169"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="170"/>
         <source>Cannot open %1</source>
         <translation>Não foi possível abrir %1</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="174"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="175"/>
         <source>Scale PWL data</source>
         <translation>Escalar dados PWL</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="175"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="176"/>
         <source>Max. amplitude, offset, max. time (0 = keep the file&apos;s):</source>
         <translation>Amplitude máx., offset, tempo máx. (0 = manter os do arquivo):</translation>
     </message>
     <message>
-        <location filename="../src/ui/SignalGenDialog.cpp" line="182"/>
+        <location filename="../src/ui/SignalGenDialog.cpp" line="183"/>
         <source>No &quot;+ time value&quot; lines in %1</source>
         <translation>Nenhuma linha &quot;+ tempo valor&quot; em %1</translation>
     </message>

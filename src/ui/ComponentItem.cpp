@@ -1,5 +1,6 @@
 #include "ui/ComponentItem.h"
 
+#include "core/Generator.h"
 #include "library/LibraryRegistry.h"
 #include "ui/Theme.h"
 
@@ -418,6 +419,54 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
                                : state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");
             SymbolPainter::uprightText(p, screen.center(), text, screen.height() * 0.6, 0, QColor(0xff, 0x30, 0x20));
         }
+    } else if (d == u"siggen") {
+        // as CircuitMaker draws a generator: its waveform, its frequency below
+        QVariantMap props = m_symbol->defaultProps;
+        for (auto it = m_c.props.cbegin(); it != m_c.props.cend(); ++it) props.insert(it.key(), it.value());
+        const QString wave = props.value(QStringLiteral("wave"), QStringLiteral("sine")).toString();
+        auto num = [&](const char* key, const char* fallback) { return generator::prop(props, key, fallback); };
+        QVector<QPointF> tv;                        // (time, value)
+        if (wave == u"pulse") {
+            const double v1 = num("v1", "0"), v2 = num("v2", "5"), delay = std::max(num("delay", "0"), 0.0);
+            const double rise = std::max(num("rise", "1n"), 0.0), fall = std::max(num("fall", "1n"), 0.0);
+            const double width = std::max(num("width", "0.5m"), 0.0), period = std::max(num("period", "1m"), rise + width + fall);
+            tv << QPointF(0, v1);
+            // one period, as CircuitMaker shows it
+            tv << QPointF(delay, v1) << QPointF(delay + rise, v2) << QPointF(delay + rise + width, v2)
+               << QPointF(delay + rise + width + fall, v1) << QPointF(delay + period, v1);
+        } else if (wave == u"pwl") {
+            QVector<double> pts;
+            static const QRegularExpression sep(QStringLiteral("[\\s,;]+"));
+            for (const QString& t : props.value(QStringLiteral("pwl")).toString().split(sep, Qt::SkipEmptyParts)) pts << generator::spiceNumber(t);
+            for (int k = 0; k + 1 < pts.size(); k += 2) tv << QPointF(pts[k], pts[k + 1]);
+        } else if (wave == u"exp") {
+            const double v1 = num("v1", "0"), v2 = num("v2", "1"), rd = num("rd", "0"), rt = std::max(num("rt", "1"), 1e-15);
+            const double fd = std::max(num("fd", "1"), rd), ft = std::max(num("ft", "1"), 1e-15), end = fd + 5 * ft;
+            for (int i = 0; i <= 40; ++i) {
+                const double t = end * i / 40;
+                double v = v1;
+                if (t > rd) v += (v2 - v1) * (1 - std::exp(-(t - rd) / rt));
+                if (t > fd) v += (v1 - v2) * (1 - std::exp(-(t - fd) / ft));
+                tv << QPointF(t, v);
+            }
+        } else {
+            // a sine, one cycle as CircuitMaker shows it; FM more of them
+            const int cycles = wave == u"fm" ? 3 : 1;
+            for (int i = 0; i <= 16 * cycles; ++i) tv << QPointF(i, std::sin(i * M_PI / 8));
+        }
+        if (tv.size() >= 2) {
+            double t0 = tv.first().x(), t1 = tv.first().x(), lo = tv.first().y(), hi = tv.first().y();
+            for (QPointF q : std::as_const(tv)) t0 = std::min(t0, q.x()), t1 = std::max(t1, q.x()), lo = std::min(lo, q.y()), hi = std::max(hi, q.y());
+            const QRectF box(body.left() + 12, body.top() + 12, body.width() - 24, body.height() * 0.45);
+            QPolygonF line;
+            for (QPointF q : std::as_const(tv))
+                line << QPointF(box.left() + (t1 > t0 ? (q.x() - t0) / (t1 - t0) : 0.5) * box.width(),
+                                box.bottom() - (hi > lo ? (q.y() - lo) / (hi - lo) : 0.5) * box.height());
+            p->setPen(QPen(ink, 1.5));
+            p->setBrush(Qt::NoBrush);
+            p->drawPolyline(line);
+        }
+        SymbolPainter::uprightText(p, QPointF(body.center().x(), body.bottom() - 13), generator::frequencyText(generator::frequency(props)), 11, 0, ink);
     } else if (d == u"seg7") {
         // a..g on a digit 50 wide, 90 high, between the labels; dp bottom right
         const QPointF c = body.center() + QPointF(-5, -2);

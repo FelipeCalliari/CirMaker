@@ -243,8 +243,9 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice)
     QJsonArray graphics = shapeGraphics(dev->drawing, pt);
     const QPointF o = pt(QPoint(0, 0)), ux = pt(QPoint(1, 0)) - o, uy = pt(QPoint(0, 1)) - o;
     auto ptf = [&](QPointF p) { return o + ux * p.x() + uy * p.y(); };
-    // a chip's part number over its body
-    if (dev->type < 150 && !dev->value.trimmed().isEmpty()) {
+    // flag 0x80: the part number inside the top of the body (chips, ADC8;
+    // not the 555, whose label is shown instead)
+    if ((dev->flags & 0x80) && !dev->value.trimmed().isEmpty()) {
         QRect body;
         for (const CmShape& sh : dev->drawing)
             if (!(sh.flags & 0x4000))

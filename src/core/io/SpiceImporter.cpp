@@ -1,5 +1,7 @@
 #include "core/io/SpiceImporter.h"
 
+#include "core/Generator.h"
+
 #include "library/LibraryRegistry.h"
 
 #include <QHash>
@@ -156,8 +158,9 @@ bool importText(const QString& text, Circuit& circuit, const LibraryRegistry& li
             if (symbol.isEmpty()) {
                 symbol = kind == u'v' ? QStringLiteral("vsource") : QStringLiteral("isource");
                 label = dc;
-            } else if (kind == u'i') {
-                props.insert(QStringLiteral("current"), true);
+            } else {
+                if (kind == u'i') props.insert(QStringLiteral("current"), true);
+                label = generator::label(props);        // its levels, as CircuitMaker labels a generator
             }
             break;
         }
