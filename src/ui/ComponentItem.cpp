@@ -188,10 +188,11 @@ bool ComponentItem::singleKey() const
 // CircuitMaker's key face, above the pin numbers
 QRectF ComponentItem::keyFace() const
 {
+    // CircuitMaker's: 80 high, 13 in from the box
     const QRectF b = bodyRect();
     if (m_symbol->display == u"asciikey")
-        return QRectF(b.center().x() - 50, b.top() + 6, 100, 48);
-    return QRectF(b.left() + 8, b.top() + 8, b.width() - 16, b.width() - 16);
+        return QRectF(b.left() + 13, b.top() + 13, b.width() - 26, 80);
+    return QRectF(b.center().x() - 40, b.top() + 13, 80, 80);
 }
 
 int ComponentItem::hexKeyAt(QPointF local) const
@@ -416,8 +417,8 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         // red seven-segment digit; segments a..g = bits 0..6
         static constexpr int glyph[16] = {0x3f, 0x06, 0x5b, 0x4f, 0x66, 0x6d, 0x7d, 0x07,
                                           0x7f, 0x6f, 0x77, 0x7c, 0x39, 0x5e, 0x79, 0x71};
-        // digit area above the 8-4-2-1 pin captions
-        const QRectF screen = body.adjusted(14, 10, -14, -24);
+        // digit area above the divider and the 4-3-2-1 pin captions
+        const QRectF screen = body.adjusted(14, 10, -14, -55);
         const int lit = state == kIdle || state < 0 ? 0 : glyph[state & 15];
         const double w = screen.width() * 0.32, h = screen.height() * 0.21;
         const QPointF c = screen.center();
@@ -593,7 +594,7 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
         p->drawLine(face.bottomRight(), top.bottomRight());
         const QString shown = singleKey() ? hexDigit(std::clamp(state, 0, 15))
                                           : state >= 32 && state < 127 ? QString(QChar(state)) : QStringLiteral("\u00b7");
-        SymbolPainter::uprightText(p, top.center(), shown, 16, 0, ink);
+        SymbolPainter::uprightText(p, top.center(), shown, 28, 0, ink);
     } else if (d == u"hexkey") {
         // CircuitMaker's keys: framed squares apart, the held one's number in red
         const double cw = body.width() / 4, ch = body.height() / 4;

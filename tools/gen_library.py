@@ -1358,14 +1358,15 @@ def inputs():
         {'id': 'hexkey', 'name': 'Hex Key', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['Hex Key'],
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'key', 'bits': 4}, 'props': {'value': 0},
          'description': 'Click the key during simulation to count it up (0-F), or type 0-9 and A-F; outputs its 4-bit value',
-         'graphics': [R(-40, -60, 80, 110), L(-40, 20, 40, 20)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
-                     + [T(str(4 - i), -30 + 20 * i, 36, 20) for i in range(4)],
+         # CircuitMaker's box: the key above, the pin numbers below
+         'graphics': [R(-53, -80, 106, 140), L(-53, 20, 53, 20)] + [L(x, 60, x, 80) for x in (30, 10, -10, -30)]
+                     + [T(str(4 - i), -30 + 20 * i, 40, 20) for i in range(4)],
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'out') for i in range(4)]},
         {'id': 'asciikey', 'name': 'Ascii Key', 'prefix': 'K', 'display': 'asciikey', 'aliases': ['Ascii Key'],
          'cmPins': [f'D{i}' for i in range(7)] + ['STB'], 'model': {'kind': 'key', 'bits': 7}, 'props': {'value': 65},
          'description': 'Click the key during simulation to step its character, or type one; outputs its 7-bit code, STB pulses',
-         'graphics': [R(-80, -40, 160, 90), L(-80, 20, 80, 20)] + [L(x, 50, x, 80) for x in range(70, -71, -20)]
-                     + [T(t, -70 + 20 * i, 36, 20) for i, t in enumerate('S7654321')],   # as CircuitMaker labels them
+         'graphics': [R(-93, -80, 190, 140), L(-93, 20, 97, 20)] + [L(x, 60, x, 80) for x in range(70, -71, -20)]
+                     + [T(t, -70 + 20 * i, 40, 20) for i, t in enumerate('S7654321')],   # as CircuitMaker labels them
          'pins': [pin(f'D{i}', 70 - 20 * i, 80, 'out') for i in range(7)] + [pin('STB', -70, 80, 'out')]},
         {'id': 'pb_no', 'name': 'NO PushButton', 'prefix': 'S', 'display': 'button', 'aliases': ['NO PushButton'],
          'cmPins': ['1', '2'], 'model': {'kind': 'link', 'type': 'no'}, 'props': {'travel': 7},
@@ -1483,8 +1484,8 @@ def outputs():
         {'id': 'hexdisplay', 'name': 'Hex Display', 'prefix': 'D', 'display': 'hex', 'aliases': ['Hex Display'],
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'display', 'bits': 4},
          'description': 'Shows the hexadecimal value of D3..D0',
-         'graphics': [R(-50, -70, 100, 120), L(-50, 26, 50, 26)] + [L(x, 50, x, 80) for x in (30, 10, -10, -30)]
-                     + [T(str(4 - i), -30 + 20 * i, 38, 20) for i in range(4)],   # CircuitMaker numbers the pins 4321
+         'graphics': [R(-53, -93, 106, 153), L(-53, 15, 53, 15)] + [L(x, 60, x, 80) for x in (30, 10, -10, -30)]
+                     + [T(str(4 - i), -30 + 20 * i, 38, 20) for i in range(4)],   # CircuitMaker's box, pins numbered 4321
          'pins': [pin(f'D{i}', 30 - 20 * i, 80, 'in') for i in range(4)]},
         {'id': 'asciidisplay', 'name': 'Ascii Display', 'prefix': 'D', 'display': 'ascii', 'aliases': ['Ascii Display'],
          'cmPins': [f'D{6 - i}' for i in range(7)] + ['CP'], 'model': {'kind': 'asciiterm'},   # CM pin 1 (top) is bit 6
