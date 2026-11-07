@@ -23,6 +23,7 @@
 #include "core/NetlistBuilder.h"
 #include "core/io/CktFile.h"
 #include "core/io/CmDeviceLib.h"
+#include "core/io/CmLook.h"
 #include "core/io/CmUserLib.h"
 #include "core/WireGeometry.h"
 #include "core/io/NativeFormat.h"
@@ -442,16 +443,7 @@ namespace {
 bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& library, CktImportReport* report, int depth);
 
 // CircuitMaker's Device.lib, read once (empty when it is not installed).
-const CmDeviceLib& deviceLib()
-{
-    static const CmDeviceLib lib = [] {
-        CmDeviceLib l;
-        const QString path = CmDeviceLib::locate(QSettings().value(QStringLiteral("cm/folder")).toString());
-        if (!path.isEmpty()) l.load(path);
-        return l;
-    }();
-    return lib;
-}
+const CmDeviceLib& deviceLib() { return CmLook::deviceLib(); }
 
 // A switch model of the user's CircuitMaker Models folder (SW.MOD, CSW.MOD):
 // ".MODEL SSW05 SW(VT=500.0m )" for the V->Switch labelled SW05. Returns
@@ -567,46 +559,8 @@ bool defineMacro(const CmMacro& m, const LibraryRegistry& library, int depth)
     sym.insert(QStringLiteral("description"), QStringLiteral("CircuitMaker macro %1 (from its User.lib)").arg(m.name));
     // CircuitMaker's own drawing of the symbol, where User.lib has one: its
     // shapes, and each pin's lead out to its wire end (on our grid)
-    QJsonArray graphics;
     auto pt = [](QPoint p) { return QPointF(p) * kScale; };
-    auto num = [](double v) { return QString::number(std::round(v * 100) / 100, 'g', 8); };
-    for (const CmShape& sh : m.drawing) {
-        if ((sh.flags & 0x4000) || sh.points.size() < 2) continue;
-        const QPointF a = pt(sh.points[0]), b = pt(sh.points[1]);
-        const QRectF r = QRectF(a, b).normalized();
-        QJsonObject g;
-        if (sh.kind == 0) {
-            g.insert(QStringLiteral("line"), QJsonArray{a.x(), a.y(), b.x(), b.y()});
-        } else if (sh.kind == 5) {
-            g.insert(QStringLiteral("rect"), QJsonArray{r.x(), r.y(), r.width(), r.height()});
-        } else if (sh.kind == 4) {
-            // an ellipse in four quarter curves
-            const double k = 0.5523, cx = r.center().x(), cy = r.center().y(), rx = r.width() / 2, ry = r.height() / 2;
-            g.insert(QStringLiteral("path"), QStringLiteral("M %1 %2 C %3 %4 %5 %6 %7 %8 C %9 %10 %11 %12 %13 %14 ")
-                                  .arg(num(cx + rx), num(cy), num(cx + rx), num(cy + k * ry), num(cx + k * rx), num(cy + ry), num(cx), num(cy + ry))
-                                  .arg(num(cx - k * rx), num(cy + ry), num(cx - rx), num(cy + k * ry), num(cx - rx), num(cy))
-                              + QStringLiteral("C %1 %2 %3 %4 %5 %6 C %7 %8 %9 %10 %11 %12 Z")
-                                  .arg(num(cx - rx), num(cy - k * ry), num(cx - k * rx), num(cy - ry), num(cx), num(cy - ry))
-                                  .arg(num(cx + k * rx), num(cy - ry), num(cx + rx), num(cy - k * ry), num(cx + rx), num(cy)));
-        } else if (sh.kind == 6) {
-            // rounded corners: the third point holds the radii
-            const QPointF rad = sh.points.size() > 2 ? pt(sh.points[2]) / 2 : QPointF();
-            const double rx = std::min(rad.x(), r.width() / 2), ry = std::min(rad.y(), r.height() / 2);
-            const double l = r.left(), t = r.top(), rr = r.right(), bb = r.bottom();
-            g.insert(QStringLiteral("path"), QStringLiteral("M %1 %2 L %3 %2 Q %4 %2 %4 %5 L %4 %6 Q %4 %7 %3 %7 L %1 %7 Q %8 %7 %8 %6 L %8 %5 Q %8 %2 %1 %2 Z")
-                                  .arg(num(l + rx), num(t), num(rr - rx), num(rr), num(t + ry), num(bb - ry), num(bb), num(l)));
-        } else {
-            QString path;
-            for (int k = 0; k < sh.points.size(); ++k) {
-                const QPointF q = pt(sh.points[k]);
-                path += (k ? QStringLiteral(" L ") : QStringLiteral("M ")) + num(q.x()) + u' ' + num(q.y());
-            }
-            if (sh.kind == 10) path += QStringLiteral(" Z");
-            g.insert(QStringLiteral("path"), path);
-        }
-        if (sh.flags & 0x1000) g.insert(QStringLiteral("fill"), true);
-        graphics.append(g);
-    }
+    QJsonArray graphics = CmLook::shapeGraphics(m.drawing, pt);
     if (!graphics.isEmpty()) {
         QJsonArray pins;
         for (int k = 0; k < m.pins.size(); ++k) {

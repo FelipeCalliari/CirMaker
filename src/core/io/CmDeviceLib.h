@@ -15,6 +15,8 @@ namespace cm {
 struct CmShape {
     int kind = 0, flags = 0;
     QVector<QPoint> points;
+    int declared = 0;           // the point count the record gives (polygons: more than the four it holds)
+    int link = 0;               // the record's last word
 };
 
 // One device of CircuitMaker 2000's Device.lib, as far as a .ckt record needs it.
@@ -24,6 +26,7 @@ struct CmLibDevice {
     int pinCount = 0;           // the schematic pins, CircuitMaker pin 1..pinCount
     QVector<QPoint> pins;       // pin positions relative to the origin, index 0 = pin 1
     QVector<QPoint> pinFrom;    // where each pin is drawn from (its lead runs to pins[k])
+    QVector<QByteArray> pinStyle;  // bytes 8..0x13 of each pin record ('+' at 0: a long pin; direction at 6)
     QStringList pinNames;       // as drawn, often empty
     QVector<int> packageMap;    // 0, the pins of part A, then every part's pins (gates), ...
     int parts = 0;              // gates in one package (0 or 1: not a multi-part package)

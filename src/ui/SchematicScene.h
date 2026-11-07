@@ -122,6 +122,8 @@ public:
     // title block (no-ops while simulating)
     void editTitleBlock();
     void setTitleBlockVisible(bool visible);
+    // parts drawn with CircuitMaker's drawings (Device.lib) or our own
+    void setCmDrawings(bool on);
 
     // simulation
     bool simulating() const { return m_sim != nullptr; }

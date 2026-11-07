@@ -10,6 +10,7 @@
 #include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
 #include "core/io/CmDeviceLib.h"
+#include "core/io/CmLook.h"
 #include "core/io/SpiceImporter.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
@@ -550,6 +551,11 @@ void MainWindow::createActions()
         const QSignalBlocker block(m_showTitleBlock);
         m_showTitleBlock->setChecked(m_circuit->titleBlock().visible);
     });
+    m_cmDrawings = new QAction(tr("&CircuitMaker Drawings"), this);
+    m_cmDrawings->setCheckable(true);
+    m_cmDrawings->setChecked(CmLook::enabled());
+    m_cmDrawings->setStatusTip(tr("Draw parts as CircuitMaker 2000 does, from its Device.lib when it is installed"));
+    connect(m_cmDrawings, &QAction::toggled, m_scene, &SchematicScene::setCmDrawings);
     m_bom = new QAction(tr("&Bill of Materials (CSV)..."), this);
     connect(m_bom, &QAction::triggered, this, &MainWindow::exportBom);
 
@@ -652,7 +658,7 @@ void MainWindow::createMenus()
     view->setObjectName(QStringLiteral("viewMenu"));
     view->addActions({m_scale, m_normalSize, m_zoomFit, m_zoomIn, m_zoomOut, m_home, m_refresh, m_collapseTree});
     view->addSeparator();
-    view->addActions({m_grid, m_border, m_showTitleBlock});
+    view->addActions({m_grid, m_border, m_showTitleBlock, m_cmDrawings});
     view->addSeparator();
 
     QMenu* tools = menuBar()->addMenu(tr("&Options"));

@@ -25,6 +25,7 @@ add_library(cmcore STATIC
     src/core/io/SpiceImporter.h src/core/io/SpiceImporter.cpp
     src/core/io/CktFile.h
     src/core/io/CmDeviceLib.h src/core/io/CmDeviceLib.cpp
+    src/core/io/CmLook.h src/core/io/CmLook.cpp
     src/core/io/CmUserLib.h src/core/io/CmUserLib.cpp
     src/core/io/CmModels.h src/core/io/CmModels.cpp
     src/core/io/CktExporter.h src/core/io/CktExporter.cpp

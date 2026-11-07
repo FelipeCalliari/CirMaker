@@ -493,6 +493,7 @@ bool LibraryRegistry::parseSymbol(const QJsonObject& o, SymbolDef& s, QString* e
             const QString al = g.value(u"align").toString();
             p.align = al == u"left" ? -1 : al == u"right" ? 1 : 0;
             p.turns = g.value(u"turns").toBool();
+            p.overline = g.value(u"overline").toBool();
         } else {
             continue;
         }

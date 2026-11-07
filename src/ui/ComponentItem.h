@@ -19,6 +19,8 @@ public:
     ComponentItem(const Component& c, const SymbolDef* symbol);
 
     void sync(const Component& c);
+    // another drawing of the same symbol (CircuitMaker's or ours)
+    void setSymbol(const SymbolDef* symbol) { prepareGeometryChange(); m_symbol = symbol; sync(m_c); }
     ItemId id() const { return m_c.id; }
     const Component& component() const { return m_c; }
     const SymbolDef* symbol() const { return m_symbol; }

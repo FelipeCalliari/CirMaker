@@ -115,7 +115,7 @@ private:
     QAction *m_autoRoute, *m_groupItems, *m_labelPositions, *m_border, *m_straighten, *m_designations, *m_propDelays, *m_showNodeNames, *m_showPinDots, *m_showPropDelays, *m_exportSpice, *m_exportSubckt, *m_exportPcb, *m_exportCkt,
         *m_home;
     QPointF m_lastCursor;
-    QAction *m_find, *m_titleBlock, *m_showTitleBlock, *m_bom;
+    QAction *m_find, *m_titleBlock, *m_showTitleBlock, *m_cmDrawings, *m_bom;
     QActionGroup* m_tools;
     QAction *m_run, *m_step, *m_reset, *m_stop;
     QAction* m_about;

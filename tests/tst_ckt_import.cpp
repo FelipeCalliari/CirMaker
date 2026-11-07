@@ -24,6 +24,7 @@ class TestCktImport : public QObject {
     Q_OBJECT
 private slots:
     void rejectsOtherFiles();
+    void dumpDevice();
     void importsAllCircuits();
     void importedCounterCounts();
     void keypadExampleShowsKey();
@@ -82,6 +83,32 @@ QStringList TestCktImport::circuitFiles()
              it.hasNext();)
             files << it.next();
     return files;
+}
+
+// CM_DUMP_DEVICE="Resistor~": the Device.lib record's pins and drawing, for working out CircuitMaker's look
+void TestCktImport::dumpDevice()
+{
+    const QString name = qEnvironmentVariable("CM_DUMP_DEVICE");
+    if (name.isEmpty()) QSKIP("set CM_DUMP_DEVICE");
+    CmDeviceLib lib;
+    QVERIFY(lib.load(CmDeviceLib::locate()));
+    for (const QString& n : name.split(u',')) {
+        const CmLibDevice* d = lib.find(n);
+        if (!d) {
+            for (const CmLibDevice& o : lib.devices())
+                if (o.name.contains(n, Qt::CaseInsensitive)) qInfo("  ~ %s", qPrintable(o.name));
+            continue;
+        }
+        qInfo("%s flags %x code %x value %s type %d pins %d box %d,%d %dx%d", qPrintable(d->name), d->flags, d->code, qPrintable(d->value), d->type, d->pinCount, d->box.x(), d->box.y(), d->box.width(), d->box.height());
+        for (int k = 0; k < d->pins.size(); ++k)
+            qInfo("  pin %d '%s' from %d,%d to %d,%d style %s", k + 1, qPrintable(d->pinNames.value(k)), d->pinFrom.value(k).x(), d->pinFrom.value(k).y(),
+                  d->pins[k].x(), d->pins[k].y(), d->pinStyle.value(k).toHex(' ').constData());
+        for (const CmShape& sh : d->drawing) {
+            QString pts;
+            for (QPoint p : sh.points) pts += QStringLiteral(" (%1,%2)").arg(p.x()).arg(p.y());
+            qInfo("  kind %d flags %x n %d link %x%s", sh.kind, sh.flags, sh.declared, sh.link, qPrintable(pts));
+        }
+    }
 }
 
 void TestCktImport::rejectsOtherFiles()

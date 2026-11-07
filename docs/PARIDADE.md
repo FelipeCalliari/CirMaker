@@ -10,6 +10,7 @@ Checklist montado a partir do help do CircuitMaker 2000 (`Cirmaker.hlp`,
 | Ferramentas seta, fio, texto, apagar, zoom, ponta de prova | ✅ | Alt+A/W/T/D/Z/P |
 | Girar, espelhar, recortar/copiar/colar, duplicar, desfazer | ✅ | |
 | Mover componentes levando os fios | ✅ | |
+| Peças com o desenho do CM | ✅ | Exibir > Desenhos do CircuitMaker (ligado por padrão): com o CM instalado, cada peça é desenhada com o desenho do seu registro no `Device.lib` (lido em tempo de execução, não redistribuído): linhas, retângulos, elipses, arcos, polígonos; bolinhas de pino invertido, nomes de pino quando o dispositivo os mostra (flag 0x1000; `{Q}` = barrado), marcas "+"/"−" e número do CI. Ficam com o nosso desenho as peças desenhadas ao vivo (LEDs, chaves, displays), as que o CM desenha por conta própria (+V, gerador de sinal) e as poucas cujos pinos não caem nos nossos (transformadores, PUT, PLL) |
 | Arrastar segmentos e pontas de fio; cortar segmento (Shift+apagar) | ✅ | |
 | Barramentos com nome e entradas nomeadas | ✅ | |
 | Rótulos de nó (Place Node Label) | ✅ | Alt+N |

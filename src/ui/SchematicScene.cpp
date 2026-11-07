@@ -3,6 +3,7 @@
 #include "core/Faults.h"
 #include "core/WireGeometry.h"
 #include "core/WireRouter.h"
+#include "core/io/CmLook.h"
 #include "core/io/NativeFormat.h"
 #include "library/LibraryRegistry.h"
 #include "library/Macros.h"
@@ -112,9 +113,20 @@ void SchematicScene::onComponentAdded(ItemId id)
         qWarning("scene: component %s uses unknown symbol %s", qPrintable(c->designator), qPrintable(c->symbolId));
         return;
     }
-    auto* item = new ComponentItem(*c, s);
+    // drawn as CircuitMaker draws it, when its Device.lib is there
+    auto* item = new ComponentItem(*c, CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString()));
     addItem(item);
     m_componentItems.insert(id, item);
+}
+
+void SchematicScene::setCmDrawings(bool on)
+{
+    CmLook::setEnabled(on);
+    for (auto it = m_componentItems.cbegin(); it != m_componentItems.cend(); ++it)
+        if (const Component* c = m_circuit->component(it.key()))
+            if (const SymbolDef* s = m_library.find(c->symbolId))
+                it.value()->setSymbol(CmLook::symbolFor(*s, c->props.value(QStringLiteral("cmDevice")).toString()));
+    update();
 }
 
 void SchematicScene::onComponentChanged(ItemId id)
@@ -303,7 +315,7 @@ void SchematicScene::beginPlace(const QString& symbolId)
     m_ghostComponent.symbolId = symbolId;
     m_ghostComponent.label = s->defaultLabel;
     m_ghostComponent.pos = snap(m_cursor);
-    m_ghost = new ComponentItem(m_ghostComponent, s);
+    m_ghost = new ComponentItem(m_ghostComponent, CmLook::symbolFor(*s));
     m_ghost->setZValue(100);
     addItem(m_ghost);
     emit statusMessage(tr("Click to place %1 · R rotate · M mirror · Shift keeps placing · Esc cancels").arg(s->name));
