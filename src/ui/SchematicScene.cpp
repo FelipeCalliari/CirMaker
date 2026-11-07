@@ -472,9 +472,33 @@ void SchematicScene::finishWire()
             entries << std::pair{end, name};
         }
     }
+    // a new bus is named, as CircuitMaker asks: drawn on from a named bus it
+    // takes that bus's name, otherwise the next letter is offered
+    QString busName;
+    if (bus) {
+        for (const WireItem* w : std::as_const(m_wireItems))
+            if (w->wire().bus && !w->wire().name.isEmpty()
+                && (WireGeometry::onPolyline(pts.first(), w->wire().points) || WireGeometry::onPolyline(pts.last(), w->wire().points))) {
+                busName = w->wire().name;
+                break;
+            }
+        if (busName.isEmpty()) {
+            QSet<QString> used;
+            for (const WireItem* w : std::as_const(m_wireItems))
+                if (w->wire().bus) used.insert(w->wire().name);
+            QString offer = QStringLiteral("A");
+            for (char ch = 'A'; ch <= 'Z'; ++ch)
+                if (!used.contains(QString(QChar(ch)))) { offer = QString(QChar(ch)); break; }
+            bool ok = false;
+            busName = QInputDialog::getText(dialogParent(), tr("Bus"), tr("Bus name:"), QLineEdit::Normal, offer, &ok).trimmed();
+            if (!ok) busName.clear();
+        }
+    }
     m_undo->beginMacro(bus ? tr("Add bus") : tr("Add wire"));
     Selection sel;
-    sel.wires << Wire{0, pts, bus};
+    Wire added{0, pts, bus};
+    added.name = busName;
+    sel.wires << added;
     m_undo->push(new AddItemsCommand(m_circuit, sel, {}));
     for (const auto& [at, name] : entries) {
         Selection label;
@@ -1667,8 +1691,9 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         return;
     case Tool::Wire:
     case Tool::Bus:
+        // as in CircuitMaker, the wire tool with Shift held draws a bus
         if (m_wirePoints.isEmpty())
-            m_drawingBus = m_tool == Tool::Bus;
+            m_drawingBus = m_tool == Tool::Bus || (e->modifiers() & Qt::ShiftModifier);
         wireClick(p);
         return;
     case Tool::NetLabel:

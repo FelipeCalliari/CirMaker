@@ -309,6 +309,7 @@ void MainWindow::createActions()
                              }),
                              tr("&Wire"), m_tools);
     m_toolWire->setShortcut(Qt::ALT | Qt::Key_W);
+    m_toolWire->setStatusTip(tr("Draw wires between pins (hold Shift on the first click to draw a bus, as in CircuitMaker)"));
     m_toolBus = new QAction(drawnIcon([](QPainter& p) {
                                 QPen pen = p.pen();
                                 pen.setWidthF(5);

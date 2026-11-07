@@ -3,6 +3,7 @@
 #include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
 #include "core/io/CmDeviceLib.h"
+#include "core/io/NativeFormat.h"
 #include "core/io/CmUserLib.h"
 #include "library/Macros.h"
 #include "core/WireGeometry.h"
@@ -25,6 +26,7 @@ class TestCktImport : public QObject {
 private slots:
     void rejectsOtherFiles();
     void dumpDevice();
+    void simulateFile();
     void importsAllCircuits();
     void importedCounterCounts();
     void keypadExampleShowsKey();
@@ -108,6 +110,63 @@ void TestCktImport::dumpDevice()
             for (QPoint p : sh.points) pts += QStringLiteral(" (%1,%2)").arg(p.x()).arg(p.y());
             qInfo("  kind %d flags %x n %d link %x%s", sh.kind, sh.flags, sh.declared, sh.link, qPrintable(pts));
         }
+    }
+}
+
+// CM_SIM_CKT=file.ckt [CM_SIM_STEPS=n]: imports, runs and prints each part's
+// pins every so often, for finding why a circuit does not behave
+void TestCktImport::simulateFile()
+{
+    const QString path = qEnvironmentVariable("CM_SIM_CKT");
+    if (path.isEmpty()) QSKIP("set CM_SIM_CKT");
+    Circuit imported;
+    CktImportReport rep;
+    QString error;
+    QVERIFY2(CktImporter::import(path, imported, library(), &rep, &error), qPrintable(error));
+    QStringList warnings;
+    // CM_SIM_ROUNDTRIP: through our own format first, as the window opens it
+    if (qEnvironmentVariableIsSet("CM_SIM_ROUNDTRIP")) {
+        Circuit again;
+        NativeFormat::deserialize(NativeFormat::serialize(imported), again, nullptr);
+        imported.clear();
+        NativeFormat::deserialize(NativeFormat::serialize(again), imported, nullptr);
+    }
+    std::unique_ptr<Circuit> flatOwned = macros::flatten(imported, library(), &warnings);
+    for (const QString& w : warnings) qInfo("flatten: %s", qPrintable(w));
+    const Circuit* flat = flatOwned ? flatOwned.get() : &imported;
+    Bench b(*flat);
+    for (const QString& w : b.sim.warnings()) qInfo("sim: %s", qPrintable(w));
+    for (const Component& c : flat->components())
+        if (c.symbolId == u"pulser") {
+            QStringList kv;
+            for (auto it = c.props.cbegin(); it != c.props.cend(); ++it) kv << it.key() + u'=' + it.value().toString();
+            qInfo("%s props %s", qPrintable(c.designator), qPrintable(kv.join(u' ')));
+        }
+    for (const Component& c : flat->components())
+        if (const SymbolDef* s = library().find(c.symbolId); s && c.symbolId != u"netlabel") {
+            QStringList names;
+            for (const SymbolPin& p : s->pins) names << p.name;
+            qInfo("%s %s: %s", qPrintable(c.designator), qPrintable(s->id), qPrintable(names.join(u',')));
+        }
+    // CM_SIM_TOGGLE=V2: that switch flipped first
+    for (const QString& d : qEnvironmentVariable("CM_SIM_TOGGLE").split(u',', Qt::SkipEmptyParts))
+        for (const Component& c : flat->components())
+            if (c.designator == d) b.sim.interact(c.id, QStringLiteral("toggle"));
+    const int steps = qEnvironmentVariableIntValue("CM_SIM_STEPS") > 0 ? qEnvironmentVariableIntValue("CM_SIM_STEPS") : 2000;
+    for (int t = 0; t <= steps; t += steps / 10) {
+        if (t) b.sim.step(steps / 10);
+        QStringList line;
+        for (const Component& c : flat->components()) {
+            const SymbolDef* s = library().find(c.symbolId);
+            if (!s || s->pins.isEmpty() || c.symbolId == u"netlabel") continue;
+            QString v;
+            for (int i = 0; i < s->pins.size(); ++i) {
+                const sim::Logic l = b.sim.netValue(b.netlist.netOf(c.id, i));
+                v += l == sim::Logic::L0 ? u'0' : l == sim::Logic::L1 ? u'1' : l == sim::Logic::Z ? u'Z' : u'X';
+            }
+            line << c.designator + u'=' + v;
+        }
+        qInfo("t=%d now=%llu %s", t, (unsigned long long)b.sim.time(), qPrintable(line.join(u' ')));
     }
 }
 
