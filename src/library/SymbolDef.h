@@ -57,6 +57,10 @@ struct SymbolDef {
     QHash<QString, QStringList> propChoices;    // property -> allowed values (combo box in the dialog)
     QRectF bounds;
     bool labelInside = false;   // a text primitive shows the label: not shown again outside by default
+    // drawn as CircuitMaker draws it with its state shown (a relay's arm):
+    // the symbol it stands for and the device whose drawing it is
+    const SymbolDef* cmBase = nullptr;
+    QString cmDevice;
     // Gates sharing a package (7408...): the package pins of each part, in
     // symbol pin order; components pick theirs with the "part" property.
     QVector<QStringList> parts;

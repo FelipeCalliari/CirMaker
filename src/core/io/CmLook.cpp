@@ -56,6 +56,9 @@ QJsonArray shapeGraphics(const QVector<CmShape>& allShapes, const std::function<
         }
         for (int i = 0; i < allShapes.size(); ++i) {
             if (allShapes[i].kind == 12) continue;
+            // colour 0 (the low nibble of the flags) is the background: what
+            // CircuitMaker paints out (a relay's arm at rest, under the one shown)
+            if ((allShapes[i].flags & 0x0f) == 0) continue;
             if (end >= 0 && i > end) {
                 const int at = i - end - 1;
                 if (std::none_of(shown.cbegin(), shown.cend(), [at](const auto& r) { return at >= r.first && at < r.first + r.second; }))
@@ -190,10 +193,13 @@ void setEnabled(bool on)
     QSettings().setValue(QStringLiteral("view/cmDrawings"), on);
 }
 
-const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice, const QString& label)
+const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice, const QString& label, int state)
 {
     // drawn live, or a label: our own drawing
-    if (!enabled() || !s.display.isEmpty() || s.netLabel || s.pins.isEmpty()) return &s;
+    // drawn live (lamps, switches, displays): our own drawing; a relay is
+    // CircuitMaker's, its arm where its state puts it
+    const bool relay = s.model.value(u"kind").toString() == u"relay";
+    if (!enabled() || (!s.display.isEmpty() && !relay) || s.netLabel || s.pins.isEmpty()) return &s;
     const CmDeviceLib& lib = deviceLib();
     if (!lib.isLoaded()) return &s;
     const CmLibDevice* dev = nullptr;
@@ -215,6 +221,7 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice, const QS
         std::sort(keys.begin(), keys.end());
         if (const int i = int(keys.indexOf(label.trimmed().toUpper())); i >= 0) variant = i + 1;
     }
+    if (relay) variant = std::max(state, 0);
 
     static QHash<QString, std::shared_ptr<SymbolDef>> cache;    // null: not drawn as CircuitMaker's
     const QString key = s.id + u'|' + dev->name + u'|' + QString::number(variant);
@@ -409,6 +416,11 @@ const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice, const QS
     out->graphics = drawn.graphics;
     out->bounds = drawn.bounds;
     out->labelInside = labelInside;
+    if (relay) {
+        out->cmBase = &s;
+        out->cmDevice = dev->name;
+        out->display = QStringLiteral("cmstate");      // drawn by state, nothing on top
+    }
     cache.insert(key, out);
     return out.get();
 }

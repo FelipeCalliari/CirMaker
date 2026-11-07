@@ -37,7 +37,8 @@ void setEnabled(bool on);
 // drawing, when it is drawn live (lamps, switches, displays) or when
 // CircuitMaker's pins do not fall on ours. Cached for the program's life.
 // label: a part's label that picks its drawing (the VCO's SQRVCO).
-const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice = {}, const QString& label = {});
+// state: what a part drawn by its state shows (a relay's arm: 0 at rest, 1 pulled in).
+const SymbolDef* symbolFor(const SymbolDef& s, const QString& cmDevice = {}, const QString& label = {}, int state = 0);
 
 } // namespace CmLook
 } // namespace cm

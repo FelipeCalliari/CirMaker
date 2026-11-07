@@ -1,6 +1,7 @@
 #include "ui/ComponentItem.h"
 
 #include "core/Generator.h"
+#include "core/io/CmLook.h"
 #include "library/LibraryRegistry.h"
 #include "ui/Theme.h"
 
@@ -262,7 +263,11 @@ void ComponentItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*
     if (m_symbol->display == u"button" && live && state == 1)
         actuator = QPointF(0, m_symbol->defaultProps.value(QStringLiteral("travel"), 7).toDouble());
     // the label inside the body (CircuitMaker's flag 0x80), unless it is shown outside
-    SymbolPainter::paint(p, *m_symbol, ink, actuator, m_showLabel ? nullptr : &m_c.label);
+    // a part drawn by its state (a relay's arm) as CircuitMaker draws that state
+    const SymbolDef* drawn = m_symbol;
+    if (m_symbol->cmBase)
+        drawn = CmLook::symbolFor(*m_symbol->cmBase, m_symbol->cmDevice, m_c.label, live && state > 0 ? 1 : 0);
+    SymbolPainter::paint(p, *drawn, ink, actuator, m_showLabel ? nullptr : &m_c.label);
 
     const QTransform toLocal = transform().inverted();
     if (m_showDesignator) {
