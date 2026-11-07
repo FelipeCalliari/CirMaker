@@ -1384,14 +1384,16 @@ def inputs():
                       L(-30, 10, -18, 10)],
          'pins': [pin('C', 30, 0), pin('NC', -30, -10), pin('NO', -30, 10)]},
         {'id': 'car', 'name': 'Car', 'prefix': 'CAR', 'display': 'car', 'aliases': ['Car'],
-         'cmPins': ['S', 'F', 'RESET'], 'model': {'kind': 'car'}, 'props': {'speed': 3, 'color': 'red'},
+         'cmPins': ['S', 'F'], 'model': {'kind': 'car'}, 'props': {'speed': 3, 'color': 'red', 'distance': 400},
          'choices': {'color': ['red', 'green', 'yellow', 'blue', 'cyan', 'magenta']},
-         'description': 'Animated race car: drives along its track once S goes high (faster with a higher speed), '
-                        'raises F at the finish and goes back to the start while RESET is high',
-         'graphics': [R(-90, -45, 330, 70), L(-90, -10, 240, -10), L(220, -45, 220, 25), L(-110, -20, -90, -20),
-                      L(-110, 10, -90, 10), L(20, 25, 20, 80), T('S', -84, -20, 7, 'left'), T('F', -84, 10, 7, 'left'),
-                      T('RESET', 20, 18, 6)],
-         'pins': [pin('S', -110, -20, 'in'), pin('F', -110, 10, 'out'), pin('RESET', 20, 80, 'in')]},
+         'description': 'Animated race car, as CircuitMaker\'s: drives its distance (CircuitMaker units, up to 1000) to the right '
+                        'once S goes high (faster with a higher speed), raises F at the finish; its Reset button brings it back',
+         # the S/F box, the Reset button under the car; the car is drawn where it has got to
+         'graphics': [R(-90, -36, 33, 63), L(-110, -20, -90, -20), L(-110, 10, -90, 10),
+                      T('S', -73, -20, 11), T('F', -73, 10, 11),
+                      R(-30, 30, 150, 60), R(-20, 40, 130, 40), L(-30, 30, -20, 40), L(120, 30, 110, 40),
+                      L(-30, 90, -20, 80), L(120, 90, 110, 80), T('Reset', 45, 60, 12)],
+         'pins': [pin('S', -110, -20, 'in'), pin('F', -110, 10, 'out')]},
         {'id': 'rocket', 'name': 'Rocket', 'prefix': 'R', 'display': 'rocket', 'aliases': ['Rocket'],
          'cmPins': ['+', '-'], 'model': {'kind': 'rocket'},
          'description': 'Animated rocket: lifts off when + goes high against -, and is back on its pad once the '

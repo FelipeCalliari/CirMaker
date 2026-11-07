@@ -845,6 +845,12 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         else if (kind == u"car") {
             if (d.nets.size() > 14 && d.nets[14] > 0)
                 c.props.insert(QStringLiteral("speed"), d.nets[14]);  // as CircuitMaker keeps it
+            // how far it drives, in CircuitMaker units: the record's reference
+            bool ok = false;
+            if (const int distance = d.ref.trimmed().toInt(&ok); ok && distance > 0) {
+                c.props.insert(QStringLiteral("distance"), distance);
+                c.props.remove(QStringLiteral("cmRef"));
+            }
             if (const QString col = cmColourName(d.nets.value(0)); !col.isEmpty()) c.props.insert(QStringLiteral("color"), col);
         } else if (s->id == u"logicdisplay") {
             if (const QString col = cmColourName(d.nets.value(0)); !col.isEmpty()) c.props.insert(QStringLiteral("color"), col);

@@ -1021,15 +1021,15 @@
    ],
    "cmPins": [
     "S",
-    "F",
-    "RESET"
+    "F"
    ],
    "model": {
     "kind": "car"
    },
    "props": {
     "speed": 3,
-    "color": "red"
+    "color": "red",
+    "distance": 400
    },
    "choices": {
     "color": [
@@ -1041,30 +1041,14 @@
      "magenta"
     ]
    },
-   "description": "Animated race car: drives along its track once S goes high (faster with a higher speed), raises F at the finish and goes back to the start while RESET is high",
+   "description": "Animated race car, as CircuitMaker's: drives its distance (CircuitMaker units, up to 1000) to the right once S goes high (faster with a higher speed), raises F at the finish; its Reset button brings it back",
    "graphics": [
     {
      "rect": [
       -90,
-      -45,
-      330,
-      70
-     ]
-    },
-    {
-     "line": [
-      -90,
-      -10,
-      240,
-      -10
-     ]
-    },
-    {
-     "line": [
-      220,
-      -45,
-      220,
-      25
+      -36,
+      33,
+      63
      ]
     },
     {
@@ -1084,38 +1068,76 @@
      ]
     },
     {
-     "line": [
-      20,
-      25,
-      20,
-      80
-     ]
-    },
-    {
      "text": "S",
      "at": [
-      -84,
+      -73,
       -20
      ],
-     "size": 7,
-     "align": "left"
+     "size": 11
     },
     {
      "text": "F",
      "at": [
-      -84,
+      -73,
       10
      ],
-     "size": 7,
-     "align": "left"
+     "size": 11
     },
     {
-     "text": "RESET",
+     "rect": [
+      -30,
+      30,
+      150,
+      60
+     ]
+    },
+    {
+     "rect": [
+      -20,
+      40,
+      130,
+      40
+     ]
+    },
+    {
+     "line": [
+      -30,
+      30,
+      -20,
+      40
+     ]
+    },
+    {
+     "line": [
+      120,
+      30,
+      110,
+      40
+     ]
+    },
+    {
+     "line": [
+      -30,
+      90,
+      -20,
+      80
+     ]
+    },
+    {
+     "line": [
+      120,
+      90,
+      110,
+      80
+     ]
+    },
+    {
+     "text": "Reset",
      "at": [
-      20,
-      18
+      45,
+      60
      ],
-     "size": 6
+     "size": 12
     }
    ],
    "pins": [
@@ -1134,14 +1156,6 @@
       10
      ],
      "dir": "out"
-    },
-    {
-     "name": "RESET",
-     "at": [
-      20,
-      80
-     ],
-     "dir": "in"
     }
    ]
   },

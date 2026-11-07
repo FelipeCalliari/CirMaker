@@ -213,9 +213,7 @@ void TestSimulator::animatedDevices()
     Circuit c;
     const ItemId car = place(c, QStringLiteral("car"), {0, 0}, QStringLiteral("CAR1"));
     const ItemId start = place(c, QStringLiteral("logicswitch"), {-300, -100}, QStringLiteral("S1"));
-    const ItemId reset = place(c, QStringLiteral("logicswitch"), {-300, 200}, QStringLiteral("S2"));
     link(c, start, QStringLiteral("Y"), car, QStringLiteral("S"));
-    link(c, reset, QStringLiteral("Y"), car, QStringLiteral("RESET"));
     const ItemId rocket = place(c, QStringLiteral("rocket"), {600, 0}, QStringLiteral("R1"));
     const ItemId fire = place(c, QStringLiteral("logicswitch"), {400, -100}, QStringLiteral("S3"));
     const ItemId gnd = place(c, QStringLiteral("ground"), {400, 200});
@@ -247,7 +245,7 @@ void TestSimulator::animatedDevices()
     QCOMPARE(bench.value(c, car, QStringLiteral("F")), Logic::L1);
     QCOMPARE(bench.sim.componentState(rocket), 100);
     bench.sim.interact(start, QStringLiteral("toggle"));
-    bench.sim.interact(reset, QStringLiteral("toggle"));
+    bench.sim.interact(car, QStringLiteral("reset"));      // its Reset button
     bench.sim.interact(fire, QStringLiteral("toggle"));
     bench.sim.step(5);
     QCOMPARE(bench.sim.componentState(car), 0);

@@ -88,6 +88,9 @@ void ComponentItem::updateLabelGeometry()
     for (const std::optional<QPointF>& at : {m_c.designatorAt, m_c.labelAt})
         if (at) labels |= QRectF(*at - QPointF(150, 30), QSizeF(300, 60));
     m_bounds = m_symbol->bounds.united(transform().inverted().mapRect(labels)).adjusted(-3, -3, 3, 3);
+    // a Car drives out to the right of its drawing
+    if (m_symbol->display == u"car")
+        m_bounds |= QRectF(m_symbol->bounds.left(), -40, m_symbol->bounds.width() + carTravel() + 130, 70);
 }
 
 QRectF ComponentItem::boundingRect() const { return m_bounds; }
@@ -153,6 +156,22 @@ QRectF ComponentItem::bodyRect() const
 int ComponentItem::keyRow(int row) const
 {
     return m_symbol->model.value(u"kind").toString() == u"keymatrix" ? 3 - row : row;
+}
+
+double ComponentItem::carTravel() const
+{
+    const int distance = m_c.props.value(QStringLiteral("distance"), m_symbol->defaultProps.value(QStringLiteral("distance"), 400)).toInt();
+    return std::clamp(distance, 0, 1000) * 10.0 / 3.0;
+}
+
+bool ComponentItem::onCarReset(QPointF local) const
+{
+    // the second box of the Car's drawing is its Reset button
+    int rects = 0;
+    for (const Primitive& g : m_symbol->graphics)
+        if (g.type == Primitive::Type::Rect && ++rects == 2)
+            return QRectF(g.v[0], g.v[1], g.v[2], g.v[3]).contains(local);
+    return false;
 }
 
 bool ComponentItem::singleKey() const
@@ -590,17 +609,31 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
             fillFirst(Primitive::Type::Circle, QColor(0xff, 0xe0, 0x40));
         }
     } else if (d == u"car") {
-        // the car on its track, 0..100 from start to finish
-        const double x = -70 + std::clamp(state, 0, 100) * 2.6;
-        p->setPen(QPen(ink, 1.5));
+        // the car beside its box at the start, its distance to the right at the finish
+        const double x = -45 + std::clamp(state, 0, 100) / 100.0 * carTravel();
+        // drawn in its colour, as CircuitMaker draws it
         const QString colour = m_c.props.value(QStringLiteral("color"), QStringLiteral("red")).toString();
-        const QColor body = ledColor(colour).darker(115);
-        p->setBrush(body);
-        p->drawRoundedRect(QRectF(x - 20, -32, 40, 14), 4, 4);
-        p->drawRect(QRectF(x - 10, -40, 18, 8));
-        p->setBrush(ink);
-        p->drawEllipse(QPointF(x - 12, -16), 4, 4);
-        p->drawEllipse(QPointF(x + 12, -16), 4, 4);
+        const QColor body = ledColor(colour);
+        p->setPen(QPen(body, 2));
+        p->setBrush(Qt::white);
+        QPainterPath car;
+        car.moveTo(x, 10);
+        car.lineTo(x, -6);
+        car.lineTo(x + 30, -14);
+        car.lineTo(x + 55, -30);
+        car.lineTo(x + 115, -30);
+        car.lineTo(x + 140, -10);
+        car.lineTo(x + 165, -6);
+        car.lineTo(x + 165, 10);
+        car.closeSubpath();
+        p->drawPath(car);
+        p->setBrush(Qt::white);
+        p->drawPolygon(QPolygonF({QPointF(x + 62, -24), QPointF(x + 84, -24), QPointF(x + 84, -12), QPointF(x + 48, -12)}));
+        p->drawPolygon(QPolygonF({QPointF(x + 92, -24), QPointF(x + 112, -24), QPointF(x + 128, -12), QPointF(x + 92, -12)}));
+        for (const double wx : {x + 35, x + 130}) {
+            p->drawEllipse(QPointF(wx, 10), 15, 15);
+            p->drawEllipse(QPointF(wx, 10), 6, 6);
+        }
     } else if (d == u"rocket") {
         // on the pad (height 0) or climbing; out of sight at 100
         const int h = std::clamp(state, 0, 100);

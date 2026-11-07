@@ -289,6 +289,14 @@ public:
             ctx.wakeAfter(m_step);
         }
     }
+    // the car's Reset button: back to the start
+    void interact(ModelContext& ctx, const QString& action, int) override
+    {
+        if (action != u"reset") return;
+        m_pos = 0;
+        m_moving = false;
+        evaluate(ctx);
+    }
     int state() const override { return m_pos; }
 
 private:

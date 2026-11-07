@@ -29,6 +29,10 @@ public:
     QRectF bodyRect() const;
     // Which hex-key cell (0..15) is under a local point, or -1.
     int hexKeyAt(QPointF local) const;
+    // a Car: how far it drives (its distance in CircuitMaker units, ours here)
+    // and whether a point is on its Reset button
+    double carTravel() const;
+    bool onCarReset(QPointF local) const;
     bool singleKey() const;
     QRectF keyFace() const;
     int keyRow(int row) const;

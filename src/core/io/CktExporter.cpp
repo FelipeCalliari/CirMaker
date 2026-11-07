@@ -823,7 +823,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
         if (l.type == 0xc3) rec << QString::number(genBlock.size()) << genBlock.join(u' ');
         // a macro instance names its User.lib macro here, and has a 1 first
         const bool macro = l.type == 0x5e;
-        const QString ref = c.props.value(QStringLiteral("cmRef")).toString();
+        // a Car's distance is its reference
+        const QString ref = kind == u"car" ? QString::number(std::clamp(c.props.value(QStringLiteral("distance"), 400).toInt(), 1, 1000))
+                                           : c.props.value(QStringLiteral("cmRef")).toString();
         rec << (macro ? str(name) : ref.isEmpty() ? QStringLiteral("0") : str(ref));
         rec << join({macro ? 1 : 0, 0, flags, cmAngle(c)});
         rec << str(value);
