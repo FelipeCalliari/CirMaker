@@ -8,6 +8,7 @@ class TestSimulator : public QObject {
     Q_OBJECT
 private slots:
     void pulserToggles();
+    void pulserTriggered();
     void animatedDevices();
     void asyncJkCounterCounts();
     void pushButtonWithPullUp();
@@ -30,6 +31,38 @@ void TestSimulator::pulserToggles()
     QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L1);
     bench.sim.step(10);
     QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L0);
+}
+
+// CircuitMaker's External Trigger: a rise on CP1 makes the Pulser active for
+// its high time from the next tick; Invert swaps Q1 and Q2
+void TestSimulator::pulserTriggered()
+{
+    Circuit c;
+    Component p;
+    p.symbolId = QStringLiteral("pulser");
+    p.props = {{QStringLiteral("high"), 10}, {QStringLiteral("low"), 10}, {QStringLiteral("trigger"), true}};
+    const ItemId id = c.addComponent(p);
+    const ItemId sw = place(c, QStringLiteral("logicswitch"), {-400, -30}, QStringLiteral("S1"));
+    link(c, sw, QStringLiteral("Y"), id, QStringLiteral("CP1"));
+    Bench bench(c);
+    bench.sim.step(40);
+    QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L0);   // waits for a trigger
+    bench.sim.interact(sw, QStringLiteral("toggle"));
+    bench.sim.step(3);
+    QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L1);
+    QCOMPARE(bench.value(c, id, QStringLiteral("~Q")), Logic::L0);
+    bench.sim.step(15);
+    QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L0);   // for one high time
+    bench.sim.step(40);
+    QCOMPARE(bench.value(c, id, QStringLiteral("Q")), Logic::L0);
+
+    Circuit c2;
+    p.props = {{QStringLiteral("high"), 10}, {QStringLiteral("low"), 10}, {QStringLiteral("inverted"), true}};
+    const ItemId id2 = c2.addComponent(p);
+    Bench bench2(c2);
+    QCOMPARE(bench2.value(c2, id2, QStringLiteral("Q")), Logic::L1);
+    bench2.sim.step(10);
+    QCOMPARE(bench2.value(c2, id2, QStringLiteral("Q")), Logic::L0);
 }
 
 // Four CD4027 JK flip-flops with J=K=1 in a ripple chain, as in the user's

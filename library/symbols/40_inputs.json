@@ -157,8 +157,8 @@
     "Pulser"
    ],
    "cmPins": [
-    "",
-    "",
+    "CP1",
+    "CP2",
     "Q",
     "~Q"
    ],
@@ -167,20 +167,45 @@
    },
    "props": {
     "high": 10,
-    "low": 10
+    "low": 10,
+    "inverted": false,
+    "trigger": false
    },
-   "description": "Clock source; high and low durations in ticks",
+   "description": "Clock source, high and low durations in ticks; inverted swaps Q1 and Q2. With trigger set (CircuitMaker's External Trigger) it is a one-shot: a rise on CP1 or a fall on CP2 makes it active for the high time, a new one before the end starting it again",
    "graphics": [
     {
      "rect": [
       -60,
-      -50,
+      -60,
       120,
-      80
+      120
      ]
     },
     {
-     "path": "M -45 10 L -30 10 L -30 -25 L -5 -25 L -5 10 L 20 10 L 20 -25 L 45 -25 L 45 10"
+     "path": "M -53 50 L -23 50 L -23 20 L 23 20 L 23 50 L 53 50"
+    },
+    {
+     "line": [
+      -80,
+      -30,
+      -60,
+      -30
+     ]
+    },
+    {
+     "circle": [
+      -65,
+      0,
+      5
+     ]
+    },
+    {
+     "line": [
+      -100,
+      0,
+      -70,
+      0
+     ]
     },
     {
      "line": [
@@ -206,16 +231,59 @@
      ]
     },
     {
-     "text": "Q",
+     "text": "CP1",
      "at": [
-      54,
+      -55,
       -30
      ],
-     "size": 7,
+     "size": 11,
+     "align": "left"
+    },
+    {
+     "text": "CP2",
+     "at": [
+      -55,
+      0
+     ],
+     "size": 11,
+     "align": "left"
+    },
+    {
+     "text": "Q1",
+     "at": [
+      55,
+      -30
+     ],
+     "size": 11,
+     "align": "right"
+    },
+    {
+     "text": "Q2",
+     "at": [
+      55,
+      0
+     ],
+     "size": 11,
      "align": "right"
     }
    ],
    "pins": [
+    {
+     "name": "CP1",
+     "at": [
+      -80,
+      -30
+     ],
+     "dir": "in"
+    },
+    {
+     "name": "CP2",
+     "at": [
+      -100,
+      0
+     ],
+     "dir": "in"
+    },
     {
      "name": "Q",
      "at": [

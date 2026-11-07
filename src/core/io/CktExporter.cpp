@@ -560,8 +560,9 @@ QByteArray write(const Circuit& circuit, const LibraryRegistry& library, const C
                 nets << 1;
             }
         } else if (kind == u"pulser") {
-            nets << 0 << 0 << c.props.value(QStringLiteral("high"), 10).toInt() << c.props.value(QStringLiteral("low"), 10).toInt()
-                 << 0 << 0;
+            // nets[6]: Pulse Format Invert
+            nets << 0 << int(c.props.value(QStringLiteral("inverted")).toBool()) << c.props.value(QStringLiteral("high"), 10).toInt()
+                 << c.props.value(QStringLiteral("low"), 10).toInt() << 0 << 0;
             value.clear();
         } else if (name == u"Hex Key~") {
             const int v = std::clamp(c.props.value(QStringLiteral("value")).toInt(), 0, 15);

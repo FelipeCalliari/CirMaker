@@ -237,16 +237,41 @@ private:
 
 class PulserModel : public Model {
 public:
-    PulserModel(int q, int qn, int high, int low) : m_q(q), m_qn(qn), m_high(std::max(1, high)), m_low(std::max(1, low)) {}
+    // CircuitMaker's Pulser: free running, or (trigger) a one-shot fired by a
+    // rise on CP1 or a fall on CP2, active for the high time from the next
+    // tick and started again by each new trigger; inverted swaps the outputs
+    PulserModel(int q, int qn, int cp1, int cp2, int high, int low, bool inverted, bool trigger)
+        : m_q(q), m_qn(qn), m_cp1(cp1), m_cp2(cp2), m_high(std::max(1, high)), m_low(std::max(1, low)),
+          m_inverted(inverted), m_trigger(trigger) {}
     void init(ModelContext& ctx) override
     {
         m_level = false;
         output(ctx);
-        ctx.wakeAfter(m_low);
+        if (!m_trigger) ctx.wakeAfter(m_low);
     }
-    void evaluate(ModelContext&) override {}
+    void evaluate(ModelContext& ctx) override
+    {
+        if (!m_trigger) return;
+        const Logic a = m_cp1 >= 0 ? ctx.input(m_cp1) : Logic::L0, b = m_cp2 >= 0 ? ctx.input(m_cp2) : Logic::L1;
+        const bool fired = (m_lastA == Logic::L0 && a == Logic::L1) || (m_lastB == Logic::L1 && b == Logic::L0);
+        m_lastA = a;
+        m_lastB = b;
+        if (!fired || ctx.settling()) return;
+        // active on the next tick, for the high time from this trigger
+        m_until = ctx.now() + 1 + m_high;
+        ctx.wakeAfter(1);
+    }
     void wake(ModelContext& ctx) override
     {
+        if (m_trigger) {
+            const bool active = ctx.now() < m_until;
+            if (active != m_level) {
+                m_level = active;
+                output(ctx);
+            }
+            if (active) ctx.wakeAfter(std::uint32_t(m_until - ctx.now()));
+            return;
+        }
         m_level = !m_level;
         output(ctx);
         ctx.wakeAfter(m_level ? m_high : m_low);
@@ -256,11 +281,15 @@ public:
 private:
     void output(ModelContext& ctx)
     {
-        if (m_q >= 0) ctx.drive(m_q, strong(fromBool(m_level)), 0);
-        if (m_qn >= 0) ctx.drive(m_qn, strong(fromBool(!m_level)), 0);
+        const bool q = m_level != m_inverted;
+        if (m_q >= 0) ctx.drive(m_q, strong(fromBool(q)), 0);
+        if (m_qn >= 0) ctx.drive(m_qn, strong(fromBool(!q)), 0);
     }
-    int m_q, m_qn, m_high, m_low;
+    int m_q, m_qn, m_cp1, m_cp2, m_high, m_low;
+    bool m_inverted, m_trigger;
     bool m_level = false;
+    Logic m_lastA = Logic::X, m_lastB = Logic::X;       // nothing seen yet: no edge
+    std::uint64_t m_until = 0;
 };
 
 // CircuitMaker's animated devices. A car drives along its track once S is
@@ -745,9 +774,12 @@ std::unique_ptr<Model> createModel(const SymbolDef& s, const Component& c, QStri
         const int q = s.pinIndex(QStringLiteral("Q"));
         if (q < 0)
             return fail(QStringLiteral("pulser needs a Q output"));
-        return std::make_unique<PulserModel>(q, s.pinIndex(QStringLiteral("~Q")),
+        return std::make_unique<PulserModel>(q, s.pinIndex(QStringLiteral("~Q")), s.pinIndex(QStringLiteral("CP1")),
+                                             s.pinIndex(QStringLiteral("CP2")),
                                              props.value(QStringLiteral("high"), 50).toInt(),
-                                             props.value(QStringLiteral("low"), 50).toInt());
+                                             props.value(QStringLiteral("low"), 50).toInt(),
+                                             props.value(QStringLiteral("inverted")).toBool(),
+                                             props.value(QStringLiteral("trigger")).toBool());
     }
     if (kind == u"key") {
         const int bits = s.model.value(u"bits").toInt(4);

@@ -1337,14 +1337,20 @@ def inputs():
          'pins': [pin('Y', 40, 0, 'out')]},
         data_sequencer(),
         {'id': 'pulser', 'name': 'Pulser', 'prefix': 'P', 'display': 'pulser', 'aliases': ['Pulser'],
-         'cmPins': ['', '', 'Q', '~Q'], 'model': {'kind': 'pulser'}, 'props': {'high': 10, 'low': 10},
-         'description': 'Clock source; high and low durations in ticks',
-         # pins where CircuitMaker has them: Q upper right, ~Q further out at mid height
-         'graphics': [R(-60, -50, 120, 80),
-                      P('M -45 10 L -30 10 L -30 -25 L -5 -25 L -5 10 L 20 10 L 20 -25 L 45 -25 L 45 10'),
+         'cmPins': ['CP1', 'CP2', 'Q', '~Q'], 'model': {'kind': 'pulser'},
+         'props': {'high': 10, 'low': 10, 'inverted': False, 'trigger': False},
+         'description': 'Clock source, high and low durations in ticks; inverted swaps Q1 and Q2. With trigger set '
+                        '(CircuitMaker\'s External Trigger) it is a one-shot: a rise on CP1 or a fall on CP2 makes it '
+                        'active for the high time, a new one before the end starting it again',
+         # as CircuitMaker draws it: CP1, CP2 (a bubble) in, Q1, Q2 (a bubble) out, the waveform below;
+         # pins where CircuitMaker has them
+         'graphics': [R(-60, -60, 120, 120),
+                      P('M -53 50 L -23 50 L -23 20 L 23 20 L 23 50 L 53 50'),
+                      L(-80, -30, -60, -30), C(-65, 0, 5), L(-100, 0, -70, 0),
                       L(60, -30, 80, -30), C(65, 0, 5), L(70, 0, 100, 0),
-                      T('Q', 54, -30, 7, 'right')],
-         'pins': [pin('Q', 80, -30, 'out'), pin('~Q', 100, 0, 'out')]},
+                      T('CP1', -55, -30, 11, 'left'), T('CP2', -55, 0, 11, 'left'),
+                      T('Q1', 55, -30, 11, 'right'), T('Q2', 55, 0, 11, 'right')],
+         'pins': [pin('CP1', -80, -30, 'in'), pin('CP2', -100, 0, 'in'), pin('Q', 80, -30, 'out'), pin('~Q', 100, 0, 'out')]},
         {'id': 'hexkey', 'name': 'Hex Key', 'prefix': 'K', 'display': 'hexkey', 'aliases': ['Hex Key'],
          'cmPins': ['D0', 'D1', 'D2', 'D3'], 'model': {'kind': 'key', 'bits': 4}, 'props': {'value': 0},
          'description': 'Click the key during simulation to count it up (0-F), or type 0-9 and A-F; outputs its 4-bit value',

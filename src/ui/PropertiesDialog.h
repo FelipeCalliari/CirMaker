@@ -29,6 +29,7 @@ private:
     QHash<QString, QSpinBox*> m_intProps;
     QHash<QString, QLineEdit*> m_textProps;
     QHash<QString, QComboBox*> m_choiceProps;
+    QHash<QString, QCheckBox*> m_boolProps;
     QCheckBox *m_showDesignator, *m_showLabel;
     bool m_designatorDefault, m_labelDefault;   // the symbol's visibility
     QCheckBox *m_excludePcb = nullptr, *m_excludeBom = nullptr;

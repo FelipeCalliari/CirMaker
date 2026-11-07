@@ -840,8 +840,11 @@ bool importFile(const CktFile& file, Circuit& circuit, const LibraryRegistry& li
         // (Digfault and Display open with their "5V" switches off)
         if (kind == u"logicswitch")
             c.props.insert(QStringLiteral("state"), int(d.nets.size() > 10 && d.nets[10] == 1));
-        else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0)
+        else if (kind == u"pulser" && d.nets.size() > 8 && d.nets[7] > 0 && d.nets[8] > 0) {
             c.props.insert(QStringLiteral("high"), d.nets[7]), c.props.insert(QStringLiteral("low"), d.nets[8]);
+            // nets[6]: Pulse Format Invert (External Trigger is not kept in the file)
+            if (d.nets[6] == 1) c.props.insert(QStringLiteral("inverted"), true);
+        }
         else if (kind == u"car") {
             if (d.nets.size() > 14 && d.nets[14] > 0)
                 c.props.insert(QStringLiteral("speed"), d.nets[14]);  // as CircuitMaker keeps it

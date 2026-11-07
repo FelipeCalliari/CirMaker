@@ -33,6 +33,10 @@ QString propertyCaption(const QString& key)
     if (key == u"value") return PropertiesDialog::tr("Value");
     if (key == u"color") return PropertiesDialog::tr("Colour");
     if (key == u"delay") return PropertiesDialog::tr("Propagation delay (ticks)");
+    if (key == u"inverted") return PropertiesDialog::tr("Inverted pulse format");
+    if (key == u"trigger") return PropertiesDialog::tr("External trigger (one-shot on CP1/CP2)");
+    if (key == u"distance") return PropertiesDialog::tr("Travel distance");
+    if (key == u"speed") return PropertiesDialog::tr("Speed");
     return key;
 }
 
@@ -97,7 +101,12 @@ PropertiesDialog::PropertiesDialog(const Component& c, const SymbolDef& symbol, 
             continue;
         if (it.key() == u"data" && (symbol.model.value(u"kind").toString() == u"ram" || symbol.model.value(u"kind").toString() == u"rom"))
             continue;       // edited with Edit PROM/RAM
-        if (v.typeId() == QMetaType::Int || v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Double) {
+        if (v.typeId() == QMetaType::Bool) {
+            auto* box = new QCheckBox(propertyCaption(it.key()));
+            box->setChecked(v.toBool());
+            m_boolProps.insert(it.key(), box);
+            form->addRow(box);
+        } else if (v.typeId() == QMetaType::Int || v.typeId() == QMetaType::LongLong || v.typeId() == QMetaType::Double) {
             auto* spin = new QSpinBox;
             spin->setRange(0, 1000000);
             spin->setValue(v.toInt());
@@ -195,6 +204,8 @@ Component PropertiesDialog::result() const
         c.props.insert(it.key(), it.value()->value());
     for (auto it = m_textProps.cbegin(); it != m_textProps.cend(); ++it)
         c.props.insert(it.key(), it.value()->text());
+    for (auto it = m_boolProps.cbegin(); it != m_boolProps.cend(); ++it)
+        c.props.insert(it.key(), it.value()->isChecked());
     for (auto it = m_choiceProps.cbegin(); it != m_choiceProps.cend(); ++it)
         c.props.insert(it.key(), it.value()->currentData().toString());
     // only store what differs from the symbol's default
