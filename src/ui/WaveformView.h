@@ -53,6 +53,11 @@ public:
     bool separate() const { return m_separate; }
     void store();                   // keeps the shown traces as the reference
     void clearStored();
+    // CircuitMaker's Wave > Recall: a saved CSV (as toCsv writes it) back as the reference
+    bool recall(const QString& path, QString* error = nullptr);
+    // Wave > Scaling: the ranges shown
+    void setRanges(double x0, double x1, double y0, double y1);
+    std::pair<double, double> yRange() const { return {m_y0, m_y1}; }
     const QVector<Trace>& traces() const { return m_traces; }
     std::pair<double, double> xRange() const { return {m_x0, m_x1}; }
 

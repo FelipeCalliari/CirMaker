@@ -9,6 +9,7 @@
 #include "core/UndoCommands.h"
 #include "core/io/CktExporter.h"
 #include "core/io/CktImporter.h"
+#include "core/Generator.h"
 #include "core/io/CmDeviceLib.h"
 #include "core/io/CmLook.h"
 #include "core/io/SpiceImporter.h"
@@ -39,7 +40,10 @@
 #include <QFileInfo>
 #include <QGraphicsItem>
 #include <QImage>
+#include <QDialogButtonBox>
+#include <QFormLayout>
 #include <QInputDialog>
+#include <QLineEdit>
 #include <QSaveFile>
 #include <QLabel>
 #include <QMenu>
@@ -735,6 +739,64 @@ void MainWindow::createMenus()
     macrosMenu->addActions({m_newMacro, m_editMacro, m_saveMacro, m_expandMacro, m_macroSymbol, m_lockMacro});
     macrosMenu->addSeparator();
     macrosMenu->addAction(m_deleteMacro);
+
+    // CircuitMaker's Wave menu: the analysis window's tools
+    QMenu* wave = menuBar()->addMenu(tr("Wa&ve"));     // Alt+W is the wire tool
+    wave->addAction(tr("&Fit Waveform"), m_waves, &WaveformView::fit);
+    wave->addAction(tr("Zoom &In"), this, [this] {
+        const auto [x0, x1] = m_waves->xRange();
+        m_waves->zoomX(2.0, (x0 + x1) / 2);
+    });
+    wave->addAction(tr("Zoom &Out"), this, [this] {
+        const auto [x0, x1] = m_waves->xRange();
+        m_waves->zoomX(0.5, (x0 + x1) / 2);
+    });
+    wave->addSeparator();
+    wave->addAction(tr("&Scaling..."), this, [this] {
+        if (m_waves->isEmpty()) return;
+        QDialog dlg(this);
+        dlg.setWindowTitle(tr("Scaling"));
+        auto* form = new QFormLayout(&dlg);
+        const auto [x0, x1] = m_waves->xRange();
+        const auto [y0, y1] = m_waves->yRange();
+        auto field = [&](double v) { return new QLineEdit(QString::number(v, 'g', 6)); };
+        QLineEdit *ex0 = field(x0), *ex1 = field(x1), *ey0 = field(y0), *ey1 = field(y1);
+        form->addRow(tr("X from:"), ex0);
+        form->addRow(tr("X to:"), ex1);
+        form->addRow(tr("Y from:"), ey0);
+        form->addRow(tr("Y to:"), ey1);
+        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+        connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+        connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+        form->addRow(buttons);
+        if (dlg.exec() != QDialog::Accepted) return;
+        auto num = [](QLineEdit* e) { return generator::spiceNumber(e->text()); };
+        m_waves->setRanges(num(ex0), num(ex1), num(ey0), num(ey1));
+    });
+    wave->addAction(tr("&Math..."), this, [this] {
+        if (m_waves->isEmpty()) return;
+        bool ok = false;
+        const QString expr = QInputDialog::getText(this, tr("Math"), tr("Trace (T1-T2, T1*2, abs(T3), db(T1)):"), QLineEdit::Normal, {}, &ok);
+        if (!ok || expr.trimmed().isEmpty()) return;
+        QString error;
+        if (!m_waves->addMathTrace(expr, &error)) QMessageBox::warning(this, tr("Math"), error);
+    });
+    wave->addSeparator();
+    wave->addAction(tr("S&tore"), m_waves, &WaveformView::store);
+    wave->addAction(tr("&Recall..."), this, [this] {
+        const QString path = QFileDialog::getOpenFileName(this, tr("Recall"), {}, tr("Waveform data (*.csv)"));
+        if (path.isEmpty()) return;
+        QString error;
+        if (!m_waves->recall(path, &error)) QMessageBox::warning(this, tr("Recall"), error);
+    });
+    wave->addAction(tr("Save &As..."), this, [this] {
+        if (m_waves->isEmpty()) return;
+        const QString path = QFileDialog::getSaveFileName(this, tr("Save waveforms"), {}, tr("Waveform data (*.csv)"));
+        if (path.isEmpty()) return;
+        QFile f(path);
+        if (!f.open(QIODevice::WriteOnly | QIODevice::Text) || f.write(m_waves->toCsv().toUtf8()) < 0)
+            QMessageBox::warning(this, tr("Save waveforms"), f.errorString());
+    });
 
     QMenu* help = menuBar()->addMenu(tr("&Help"));
     help->addAction(m_topicHelp);

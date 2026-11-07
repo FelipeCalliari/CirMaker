@@ -10,6 +10,8 @@
 #include <QMessageBox>
 #include <QRegularExpression>
 #include <QWheelEvent>
+#include <QFile>
+#include <QFileInfo>
 #include <QMenu>
 #include <QPainter>
 #include <QPainterPath>
@@ -303,6 +305,51 @@ void WaveformView::store()
     m_storedX = m_x;
     m_stored = m_traces;
     m_storedTitle = m_title;
+    update();
+}
+
+bool WaveformView::recall(const QString& path, QString* error)
+{
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (error) *error = f.errorString();
+        return false;
+    }
+    const QStringList lines = QString::fromUtf8(f.readAll()).split(u'\n', Qt::SkipEmptyParts);
+    if (lines.size() < 2) {
+        if (error) *error = tr("No data in %1").arg(path);
+        return false;
+    }
+    const QStringList header = lines.first().split(u',');
+    QVector<double> x;
+    QVector<Trace> traces(std::max<qsizetype>(0, header.size() - 1));
+    for (int k = 0; k < traces.size(); ++k) {
+        traces[k].name = header[k + 1].trimmed();
+        traces[k].color = traceColor(k);
+    }
+    for (int i = 1; i < lines.size(); ++i) {
+        const QStringList row = lines[i].split(u',');
+        bool ok = false;
+        const double xv = row.value(0).toDouble(&ok);
+        if (!ok) continue;
+        x << xv;
+        for (int k = 0; k < traces.size(); ++k) traces[k].y << row.value(k + 1).toDouble();
+    }
+    if (x.isEmpty() || traces.isEmpty()) {
+        if (error) *error = tr("No data in %1").arg(path);
+        return false;
+    }
+    m_storedX = x;
+    m_stored = traces;
+    m_storedTitle = QFileInfo(path).fileName();
+    update();
+    return true;
+}
+
+void WaveformView::setRanges(double x0, double x1, double y0, double y1)
+{
+    if (x1 > x0) m_x0 = x0, m_x1 = x1;
+    if (y1 > y0) m_y0 = y0, m_y1 = y1;
     update();
 }
 
