@@ -764,6 +764,9 @@ void ComponentItem::paintDynamic(QPainter* p, int state, bool live, const QColor
 QVariant ComponentItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
     if (change == ItemPositionChange && scene()) {
+        // a dragged selection moves as one, already on the grid
+        if (const auto* s = qobject_cast<const SchematicScene*>(scene()); s && s->movingGroup())
+            return value;
         const QPointF p = value.toPointF();
         return SchematicScene::snap(p);       // the grid, or whole units with snapping off
     }

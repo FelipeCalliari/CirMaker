@@ -189,7 +189,7 @@ void TestCktImport::importsAllCircuits()
         Circuit c;
         CktImportReport report;
         QString error;
-        QVERIFY2(CktImporter::import(path, c, library(), &report, &error), qPrintable(path + u": " + error));
+        QVERIFY2(CktImporter::import(path, c, library(), &report, &error), qPrintable(path + QStringLiteral(": ") + error));
         QVERIFY(report.components > 0);
         devices += report.components;
         wires += report.wires;
@@ -223,7 +223,7 @@ void TestCktImport::importsAllCircuits()
         }
         // every imported model must build and run
         Bench bench(c);
-        QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(path + u": " + bench.sim.warnings().join(u"; ")));
+        QVERIFY2(bench.sim.warnings().isEmpty(), qPrintable(path + QStringLiteral(": ") + bench.sim.warnings().join(u"; ")));
         bench.sim.step(500);
     }
     qInfo("%lld files, %d devices, %d wires, %d net labels, %d nets merged by redrawn symbols",
@@ -1057,7 +1057,7 @@ void TestCktImport::exportRoundTrip()
         Circuit b;
         CktImportReport back;
         QString error;
-        QVERIFY2(CktImporter::importData(data, b, library(), &back, &error), qPrintable(path + u": " + error));
+        QVERIFY2(CktImporter::importData(data, b, library(), &back, &error), qPrintable(path + QStringLiteral(": ") + error));
         QSet<ItemId> skipped;
         for (const Component& comp : a.components())
             if (!CktExporter::deviceFor(*library().find(comp.symbolId), cmLib) && !CktExporter::macroFor(*library().find(comp.symbolId)))

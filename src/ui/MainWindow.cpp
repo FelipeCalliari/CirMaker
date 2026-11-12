@@ -2038,7 +2038,7 @@ void MainWindow::analogFinished()
         QMessageBox box(QMessageBox::Critical, tr("Analog simulation"), tr("SPICE could not simulate the circuit."),
                         QMessageBox::Ok, this);
         box.setInformativeText(m_runs.value(failed).label.isEmpty() ? r.error
-                                                                    : m_runs.value(failed).label + u": " + r.error);
+                                                                    : m_runs.value(failed).label + QStringLiteral(": ") + r.error);
         box.setDetailedText(tr("Netlist:\n%1\nSPICE output:\n%2").arg(m_runs.value(failed).deck.text, r.log));
         box.exec();
         return;
@@ -2273,7 +2273,7 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
                 const spice::Fourier f = spice::fourier(xOf(*t), yOf(results[i], node, t->size()), f0, analysis.fourierHarmonics);
                 if (f.magnitude.isEmpty()) continue;
                 fx = f.frequency;
-                const QString name = sweep ? label + u" @ " + m_runs[i].label : label;
+                const QString name = sweep ? label + QStringLiteral(" @ ") + m_runs[i].label : label;
                 traces << WaveformView::Trace{name, f.magnitude, WaveformView::traceColor(int(traces.size()))};
                 thd << tr("%1: THD %2%").arg(name, QString::number(f.thd, 'f', 2));
             }
@@ -2298,12 +2298,12 @@ void MainWindow::showAnalogResults(const QVector<spice::Result>& results)
         const QVector<double> rx = xOf(*sc);
         for (const auto& [label, node] : std::as_const(plotted)) {
             const QVector<double> y = yOf(results[i], node, int(rx.size()));
-            traces << WaveformView::Trace{sweep ? label + u" @ " + m_runs[i].label : label, i == 0 ? y : resample(rx, y),
+            traces << WaveformView::Trace{sweep ? label + QStringLiteral(" @ ") + m_runs[i].label : label, i == 0 ? y : resample(rx, y),
                                           WaveformView::traceColor(int(traces.size()))};
         }
         for (const DeviceProbe& d : std::as_const(devices)) {
             const QVector<double> y = deviceY(results[i], d, int(rx.size()));
-            traces << WaveformView::Trace{sweep ? d.label + u" @ " + m_runs[i].label : d.label, i == 0 ? y : resample(rx, y),
+            traces << WaveformView::Trace{sweep ? d.label + QStringLiteral(" @ ") + m_runs[i].label : d.label, i == 0 ? y : resample(rx, y),
                                           WaveformView::traceColor(int(traces.size()))};
         }
     }

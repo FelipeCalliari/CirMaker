@@ -79,6 +79,8 @@ private slots:
     void busEntriesFollowBus();
     void draggedBusKeepsConnections();
     void snapOffAndConnectionArea();
+    void groupMoveKeepsLayout();
+    void pasteFollowsMouse();
 };
 
 namespace {
@@ -991,8 +993,6 @@ void TestGui::draggedBusKeepsConnections()
     QCOMPARE(connections(f.circuit), before);
 }
 
-QTEST_MAIN(TestGui)
-#include "tst_gui.moc"
 
 void TestGui::snapOffAndConnectionArea()
 {
@@ -1010,3 +1010,96 @@ void TestGui::snapOffAndConnectionArea()
     SchematicScene::setSnapToGrid(true);
     QCOMPARE(SchematicScene::snap({153, 7}), QPointF(150, 10));
 }
+
+namespace {
+
+ComponentItem* itemOf(QGraphicsScene& scene, ItemId id)
+{
+    for (QGraphicsItem* it : scene.items())
+        if (auto* ci = qgraphicsitem_cast<ComponentItem*>(it); ci && ci->id() == id) return ci;
+    return nullptr;
+}
+
+} // namespace
+
+// A dragged selection moves by one offset: a part off the grid keeps its
+// place relative to the others, and grabbing a part's designator or a pin
+// moves the whole selection.
+void TestGui::groupMoveKeepsLayout()
+{
+    ViewFixture f;
+    const ItemId a = place(f.circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    const ItemId b = place(f.circuit, QStringLiteral("and2"), {33, 127}, QStringLiteral("U2"));
+    f.scene.selectAll();
+    ComponentItem* ia = itemOf(f.scene, a);
+    QVERIFY(ia);
+    const QPointF body = ia->sceneBoundingRect().center();
+    f.drag(body, body + QPointF(52, 38));
+    QCOMPARE(f.circuit.component(a)->pos, QPointF(50, 40));       // whole grid steps
+    QCOMPARE(f.circuit.component(b)->pos, QPointF(83, 167));      // the part off the grid as far
+    QCOMPARE(f.scene.selection().components.size(), 2);
+    QCOMPARE(f.undo.count(), 1);
+
+    ComponentItem* ib = itemOf(f.scene, b);
+    const QPointF label = ib->pos() + ib->textAnchor(0) + QPointF(0, -4);
+    QCOMPARE(ib->textAt(label), 0);
+    f.drag(label, label + QPointF(-40, 0));
+    QCOMPARE(f.circuit.component(a)->pos, QPointF(10, 40));
+    QCOMPARE(f.circuit.component(b)->pos, QPointF(43, 167));
+    QVERIFY(!f.circuit.component(b)->designatorAt.has_value());
+    QCOMPARE(f.scene.selection().components.size(), 2);
+
+    // Esc during the drag puts it back
+    const QPointF from = itemOf(f.scene, a)->sceneBoundingRect().center();
+    QTest::mousePress(f.view.viewport(), Qt::LeftButton, {}, f.at(from));
+    QTest::mouseMove(f.view.viewport(), f.at(from + QPointF(100, 100)));
+    QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    QApplication::sendEvent(&f.scene, &esc);
+    QTest::mouseRelease(f.view.viewport(), Qt::LeftButton, {}, f.at(from + QPointF(100, 100)));
+    QCOMPARE(f.circuit.component(a)->pos, QPointF(10, 40));
+    QCOMPARE(itemOf(f.scene, a)->pos(), QPointF(10, 40));
+    QCOMPARE(f.undo.count(), 2);
+}
+
+// Ctrl+V shows the copy on the mouse; a click (left or right) puts it down,
+// Shift+click keeps another on the mouse, Esc drops it.
+void TestGui::pasteFollowsMouse()
+{
+    ViewFixture f;
+    place(f.circuit, QStringLiteral("and2"), {0, 0}, QStringLiteral("U1"));
+    f.scene.selectAll();
+    f.scene.copySelection();
+    const QPointF to(200, 100);
+    QTest::mouseMove(f.view.viewport(), f.at(to));
+    f.scene.paste();
+    QVERIFY(f.scene.pasting());
+    QCOMPARE(f.circuit.components().size(), 1);      // nothing added yet
+    QCOMPARE(componentItems(f.scene), 2);            // the part and its copy on the mouse
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, {}, f.at(to));
+    QVERIFY(!f.scene.pasting());
+    QCOMPARE(f.circuit.components().size(), 2);
+    QCOMPARE(componentItems(f.scene), 2);
+    QCOMPARE(f.scene.selection().components.size(), 1);
+    // the middle of the copy on the mouse
+    QVERIFY(QLineF(f.scene.selection().components.first().pos, to).length() < 40);
+    f.undo.undo();
+    QCOMPARE(f.circuit.components().size(), 1);
+
+    f.scene.paste();
+    QTest::mouseClick(f.view.viewport(), Qt::RightButton, {}, f.at({-200, -100}));
+    QCOMPARE(f.circuit.components().size(), 2);
+
+    f.scene.paste();
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, Qt::ShiftModifier, f.at({-200, 100}));
+    QTest::mouseClick(f.view.viewport(), Qt::LeftButton, Qt::ShiftModifier, f.at({0, 200}));
+    QVERIFY(f.scene.pasting());
+    QCOMPARE(f.circuit.components().size(), 4);
+    QKeyEvent esc(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+    QApplication::sendEvent(&f.scene, &esc);
+    QVERIFY(!f.scene.pasting());
+    QCOMPARE(f.circuit.components().size(), 4);
+    QCOMPARE(componentItems(f.scene), 4);
+}
+
+QTEST_MAIN(TestGui)
+#include "tst_gui.moc"

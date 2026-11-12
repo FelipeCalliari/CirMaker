@@ -121,6 +121,9 @@ void WireItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*)
 QVariant WireItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
     if (change == ItemPositionChange && scene()) {
+        // a dragged selection moves as one, already on the grid
+        if (const auto* s = qobject_cast<const SchematicScene*>(scene()); s && s->movingGroup())
+            return value;
         const QPointF p = value.toPointF();
         return QPointF(std::round(p.x() / SchematicScene::kGrid) * SchematicScene::kGrid,
                        std::round(p.y() / SchematicScene::kGrid) * SchematicScene::kGrid);

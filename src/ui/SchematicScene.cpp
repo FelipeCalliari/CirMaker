@@ -377,6 +377,7 @@ void SchematicScene::setTool(Tool tool)
         return;
     if (tool != Tool::Place && m_ghost)
         cancelPlace();
+    cancelPaste();
     if (!m_wirePoints.isEmpty())
         cancelWire();
     m_tool = tool;
@@ -865,7 +866,10 @@ void SchematicScene::duplicateSelection()
     if (simulating() || selection().isEmpty())
         return;
     copySelection();
-    paste();
+    const QMimeData* mime = QApplication::clipboard()->mimeData();
+    Circuit temp;
+    if (mime && NativeFormat::deserialize(mime->data(kMime), temp, nullptr))
+        insertCircuit(temp, QPointF(20, 20), tr("Duplicate"));
 }
 
 int SchematicScene::netAt(QPointF p) const
@@ -986,6 +990,49 @@ void SchematicScene::beginDrag()
     }
     m_drag.active = !m_drag.componentStart.isEmpty() || !m_drag.textStart.isEmpty() || !m_drag.wires.isEmpty()
                  || m_drag.titleStart;
+}
+
+// The whole selection moves by one offset: whole grid steps for a group (a
+// part off the grid keeps its place among the others), onto the grid for a
+// lone part.
+void SchematicScene::moveGroup(QPointF scenePos, QPoint screenPos)
+{
+    if (!m_drag.moved) {
+        if ((screenPos - m_drag.pressScreen).manhattanLength() < QApplication::startDragDistance())
+            return;
+        m_drag.moved = true;
+    }
+    const QPointF delta = snap(m_drag.anchor + scenePos - m_drag.press) - m_drag.anchor;
+    if (delta == m_drag.delta)
+        return;
+    setGroupOffset(delta);
+    updateDragPreview();
+}
+
+void SchematicScene::setGroupOffset(QPointF delta)
+{
+    m_drag.delta = delta;
+    m_groupMove = true;
+    for (auto it = m_drag.componentStart.cbegin(); it != m_drag.componentStart.cend(); ++it)
+        if (ComponentItem* item = m_componentItems.value(it.key()); item && !m_drag.followers.contains(it.key()))
+            item->setPos(it.value() + delta);
+    for (auto it = m_drag.textStart.cbegin(); it != m_drag.textStart.cend(); ++it)
+        if (TextNoteItem* item = m_textItems.value(it.key())) item->setPos(it.value() + delta);
+    for (ItemId id : std::as_const(m_drag.wires))
+        if (WireItem* item = m_wireItems.value(id)) item->setPos(delta);
+    if (m_titleItem && m_drag.titleStart)
+        m_titleItem->setPos(*m_drag.titleStart + delta);
+    m_groupMove = false;
+}
+
+// Esc while dragging puts everything back.
+void SchematicScene::cancelDrag()
+{
+    setGroupOffset({});
+    placeFollowers();
+    for (WireItem* w : std::as_const(m_wireItems))
+        w->clearPreview();
+    m_drag = {};
 }
 
 QHash<ItemId, QVector<QPointF>> SchematicScene::rubberBand() const
@@ -1260,9 +1307,92 @@ void SchematicScene::paste()
     const QMimeData* mime = QApplication::clipboard()->mimeData();
     if (!mime || !mime->hasFormat(kMime))
         return;
-    Circuit temp;
-    if (NativeFormat::deserialize(mime->data(kMime), temp, nullptr))
-        insertCircuit(temp, QPointF(20, 20), tr("Paste"));
+    auto source = std::make_unique<Circuit>();
+    if (!NativeFormat::deserialize(mime->data(kMime), *source, nullptr))
+        return;
+    if (source->components().isEmpty() && source->wires().isEmpty() && source->texts().isEmpty())
+        return;
+    setTool(Tool::Select);          // ends placing, wiring and an earlier paste
+    clearSelection();
+    m_pasteSource = std::move(source);
+    m_pasteAnchor = snap(circuitBounds(*m_pasteSource).center());
+    // the copies are drawn only: no ids, no selection, no mouse
+    m_pasteGhost = new QGraphicsItemGroup;
+    m_pasteGhost->setZValue(100);
+    m_pasteGhost->setOpacity(0.6);
+    addItem(m_pasteGhost);
+    auto inert = [this](QGraphicsItem* item) {
+        item->setFlags({});
+        item->setAcceptedMouseButtons(Qt::NoButton);
+        item->setAcceptHoverEvents(false);
+        item->setParentItem(m_pasteGhost);
+    };
+    for (Component c : m_pasteSource->components()) {
+        const SymbolDef* s = m_library.find(c.symbolId);
+        if (!s) continue;
+        c.id = 0;
+        auto* item = new ComponentItem(c, CmLook::symbolFor(*s, c.props.value(QStringLiteral("cmDevice")).toString(), c.label));
+        inert(item);
+        item->setPos(c.pos);
+    }
+    for (Wire w : m_pasteSource->wires()) {
+        w.id = 0;
+        inert(new WireItem(w));
+    }
+    for (TextNote t : m_pasteSource->texts()) {
+        t.id = 0;
+        auto* item = new TextNoteItem(t);
+        inert(item);
+        item->setPos(t.pos);
+    }
+    movePasteGhost();
+    emit statusMessage(tr("Click to paste · Shift+click pastes again · Esc cancels"));
+}
+
+QRectF SchematicScene::circuitBounds(const Circuit& source) const
+{
+    QRectF r;
+    for (const Component& c : source.components()) {
+        const SymbolDef* s = m_library.find(c.symbolId);
+        r |= QRectF(c.pos, QSizeF(1, 1)) | (s ? s->bounds.translated(c.pos) : QRectF());
+    }
+    for (const Wire& w : source.wires())
+        for (QPointF p : w.points) r |= QRectF(p, QSizeF(1, 1));
+    for (const TextNote& t : source.texts()) r |= QRectF(t.pos, QSizeF(1, 1));
+    return r;
+}
+
+// the middle of what is pasted sits on the mouse, on the grid
+QPointF SchematicScene::pasteOffset() const
+{
+    return snap(m_cursor) - m_pasteAnchor;
+}
+
+void SchematicScene::movePasteGhost()
+{
+    if (m_pasteGhost)
+        m_pasteGhost->setPos(pasteOffset());
+}
+
+void SchematicScene::dropPaste(bool keep)
+{
+    if (!m_pasteSource)
+        return;
+    const QPointF offset = pasteOffset();
+    if (keep) {
+        insertCircuit(*m_pasteSource, offset, tr("Paste"));
+        return;
+    }
+    const std::unique_ptr<Circuit> source = std::move(m_pasteSource);
+    cancelPaste();
+    insertCircuit(*source, offset, tr("Paste"));
+}
+
+void SchematicScene::cancelPaste()
+{
+    delete m_pasteGhost;        // and the copies drawn in it
+    m_pasteGhost = nullptr;
+    m_pasteSource.reset();
 }
 
 void SchematicScene::insertCircuit(const Circuit& source, QPointF offset, const QString& undoText)
@@ -1320,14 +1450,7 @@ void SchematicScene::insertCircuit(const Circuit& source, QPointF offset, const 
 // Merge: the other circuit goes below this one, left edges aligned.
 void SchematicScene::mergeCircuit(const Circuit& source)
 {
-    QRectF incoming;
-    for (const Component& c : source.components()) {
-        const SymbolDef* s = m_library.find(c.symbolId);
-        incoming |= QRectF(c.pos, QSizeF(1, 1)) | (s ? s->bounds.translated(c.pos) : QRectF());
-    }
-    for (const Wire& w : source.wires())
-        for (QPointF p : w.points) incoming |= QRectF(p, QSizeF(1, 1));
-    for (const TextNote& t : source.texts()) incoming |= QRectF(t.pos, QSizeF(1, 1));
+    const QRectF incoming = circuitBounds(source);
     QPointF offset;
     if (!m_circuit->components().isEmpty() || !m_circuit->wires().isEmpty() || !m_circuit->texts().isEmpty()) {
         const QRectF here = itemsRect();
@@ -1481,6 +1604,7 @@ void SchematicScene::setTitleBlockVisible(bool visible)
 
 void SchematicScene::run()
 {
+    cancelPaste();
     if (!m_sim) {
         if (m_tool != Tool::Probe)
             setTool(Tool::Select);      // the probe tool reads nodes while simulating
@@ -1774,6 +1898,14 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         }
         return;
     }
+    if (m_pasteGhost) {
+        if (e->button() == Qt::LeftButton || e->button() == Qt::RightButton) {
+            m_cursor = snap(e->scenePos());
+            m_suppressMenu = e->button() == Qt::RightButton;
+            dropPaste(e->modifiers() & Qt::ShiftModifier);
+        }
+        return;
+    }
     if (e->button() == Qt::RightButton) {
         m_suppressMenu = !m_wirePoints.isEmpty() || m_tool != Tool::Select;
         if (!m_wirePoints.isEmpty())
@@ -1833,11 +1965,35 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         wireClick(p);
         return;
     }
+    // a press on an item of a larger selection grabs the whole selection
+    // (not the label, pin or wire shape under it)
+    QGraphicsItem* top = nullptr;
+    for (QGraphicsItem* it : items(e->scenePos()))
+        if (it != m_ghost && (it->flags() & QGraphicsItem::ItemIsSelectable)) { top = it; break; }
+    if (!top)       // a designator or label, outside the part's outline
+        for (QGraphicsItem* it : items(e->scenePos(), Qt::IntersectsItemBoundingRect))
+            if (auto* ci = qgraphicsitem_cast<ComponentItem*>(it); ci && ci != m_ghost && ci->id() && ci->textAt(e->scenePos()) >= 0) {
+                top = ci;
+                break;
+            }
+    const bool grabGroup = top && top->isSelected() && selectedItems().size() > 1
+                        && !(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier))
+                        && !restricted(QStringLiteral("edit"));
+    if (grabGroup) {
+        // the selection stays as it is; a click without moving selects only this item
+        beginDrag();
+        m_drag.press = e->scenePos();
+        m_drag.pressScreen = e->screenPos();
+        m_drag.anchor = snap(e->scenePos());    // a group moves by whole grid steps
+        m_drag.clickSelects = top;
+        e->accept();        // the view starts no selection box
+        return;
+    }
     // a designator or label drags on its own
     // (unless the press is right on a pin end next to it)
     QPointF nearPin;
     const bool onPin = pinAt(e->scenePos(), &nearPin) && QLineF(nearPin, e->scenePos()).length() < 3;
-    if (!onPin && !(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier)) && !restricted(QStringLiteral("edit")))
+    if (!grabGroup && !onPin && !(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier)) && !restricted(QStringLiteral("edit")))
         for (QGraphicsItem* it : items(e->scenePos(), Qt::IntersectsItemBoundingRect)) {
             auto* ci = qgraphicsitem_cast<ComponentItem*>(it);
             if (!ci || ci == m_ghost || ci->id() == 0) continue;
@@ -1850,7 +2006,7 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         }
     // pressing on a pin end starts a wire, as in CircuitMaker
     QPointF pin;
-    if (!(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) && !restricted(QStringLiteral("wire"))
+    if (!grabGroup && !(e->modifiers() & (Qt::ShiftModifier | Qt::ControlModifier)) && !restricted(QStringLiteral("wire"))
         && pinAt(e->scenePos(), &pin)) {
         clearSelection();
         m_wireFromSelect = true;
@@ -1880,8 +2036,17 @@ void SchematicScene::mousePressEvent(QGraphicsSceneMouseEvent* e)
         return;
     }
     QGraphicsScene::mousePressEvent(e);
-    if (!restricted(QStringLiteral("edit")))
+    if (!restricted(QStringLiteral("edit"))) {
         beginDrag();
+        m_drag.press = e->scenePos();
+        m_drag.pressScreen = e->screenPos();
+        // a lone part lands on the grid; a group moves by whole grid steps,
+        // so a part off the grid keeps its place among the others
+        const auto* grabbed = qgraphicsitem_cast<const ComponentItem*>(top);
+        const bool lone = grabbed && m_drag.componentStart.size() == 1 && m_drag.componentStart.contains(grabbed->id())
+                       && m_drag.textStart.isEmpty() && m_drag.wires.isEmpty() && !m_drag.titleStart;
+        m_drag.anchor = lone ? grabbed->pos() : snap(e->scenePos());
+    }
 }
 
 // A press on a lone wire edits its shape instead of moving it: near a free
@@ -2095,6 +2260,10 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
         m_ghost->setPos(m_cursor);
         return;
     }
+    if (m_pasteGhost) {
+        movePasteGhost();
+        return;
+    }
     if (!m_wirePoints.isEmpty()) {
         update();
         return;
@@ -2116,10 +2285,12 @@ void SchematicScene::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
     }
     if (restricted(QStringLiteral("edit")) && (e->buttons() & Qt::LeftButton))
         return;     // the circuit is locked against moving
+    if (m_drag.active && (e->buttons() & Qt::LeftButton)) {
+        moveGroup(e->scenePos(), e->screenPos());
+        return;
+    }
     QGraphicsScene::mouseMoveEvent(e);
-    if (m_drag.active && (e->buttons() & Qt::LeftButton))
-        updateDragPreview();
-    else if (e->buttons() == Qt::NoButton)
+    if (e->buttons() == Qt::NoButton)
         updateHoverCursor(e->scenePos());
 }
 
@@ -2225,8 +2396,15 @@ void SchematicScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
         return;
     }
     QGraphicsScene::mouseReleaseEvent(e);
-    if (m_drag.active)
+    if (m_drag.active) {
+        if (QGraphicsItem* only = m_drag.clickSelects; only && !m_drag.moved && e->button() == Qt::LeftButton) {
+            m_drag.active = false;
+            clearSelection();
+            only->setSelected(true);
+            return;
+        }
         commitDrag();
+    }
 }
 
 void SchematicScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
@@ -2241,7 +2419,7 @@ void SchematicScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
         finishWire();
         return;
     }
-    if (m_tool != Tool::Select)
+    if (m_tool != Tool::Select || m_pasteGhost)
         return;
     for (QGraphicsItem* it : items(e->scenePos())) {
         if (it->type() == ComponentItem::Type || it->type() == TextNoteItem::Type || it->type() == TitleBlockItem::Type) {
@@ -2255,7 +2433,7 @@ void SchematicScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
 
 void SchematicScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
-    if (std::exchange(m_suppressMenu, false) || m_ghost || !m_wirePoints.isEmpty() || m_tool != Tool::Select)
+    if (std::exchange(m_suppressMenu, false) || m_ghost || m_pasteGhost || !m_wirePoints.isEmpty() || m_tool != Tool::Select)
         return;
     QGraphicsItem* hit = nullptr;
     for (QGraphicsItem* it : items(e->scenePos())) {
@@ -2353,7 +2531,11 @@ void SchematicScene::keyPressEvent(QKeyEvent* e)
     if (typeIntoKey(e))
         return;
     if (e->key() == Qt::Key_Escape) {
-        if (!m_wirePoints.isEmpty())
+        if (m_pasteGhost)
+            cancelPaste();
+        else if (m_drag.active && m_drag.moved)
+            cancelDrag();
+        else if (!m_wirePoints.isEmpty())
             cancelWire();
         else if (m_tool != Tool::Select)
             setTool(Tool::Select);
@@ -2361,7 +2543,7 @@ void SchematicScene::keyPressEvent(QKeyEvent* e)
             clearSelection();
         return;
     }
-    if (!simulating() && !m_ghost && m_wirePoints.isEmpty() && e->modifiers() == Qt::NoModifier) {
+    if (!simulating() && !m_ghost && !m_pasteGhost && m_wirePoints.isEmpty() && e->modifiers() == Qt::NoModifier) {
         const QPointF d = e->key() == Qt::Key_Left ? QPointF(-kGrid, 0) : e->key() == Qt::Key_Right ? QPointF(kGrid, 0)
                         : e->key() == Qt::Key_Up ? QPointF(0, -kGrid) : e->key() == Qt::Key_Down ? QPointF(0, kGrid) : QPointF();
         if (!d.isNull() && !selection().components.isEmpty()) {

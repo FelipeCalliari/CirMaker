@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 
+class QGraphicsItemGroup;
 class QUndoStack;
 
 namespace cm {
@@ -85,7 +86,13 @@ public:
     void setRestrictions(const QStringList& options);
     bool restricted(const QString& option) const { return m_restrictions.contains(option); }
     bool trace() const { return m_trace; }
+    // The clipboard follows the mouse; a click (either button) puts it
+    // down, Shift+click keeps another copy on the mouse, Esc cancels.
     void paste();
+    bool pasting() const { return m_pasteGhost != nullptr; }
+    // A selection being dragged: items take the positions they are given
+    // (the group moves by one grid-aligned offset, not item by item).
+    bool movingGroup() const { return m_groupMove; }
     // Adds a copy of `source` moved by offset, selected, as one undo step.
     void insertCircuit(const Circuit& source, QPointF offset, const QString& undoText);
     void mergeCircuit(const Circuit& source);
@@ -271,6 +278,9 @@ private:
 
     // dragging
     void beginDrag();
+    void moveGroup(QPointF scenePos, QPoint screenPos);
+    void setGroupOffset(QPointF delta);
+    void cancelDrag();
     QHash<ItemId, QVector<QPointF>> rubberBand() const;
     void placeFollowers();
     void updateDragPreview();
@@ -278,6 +288,12 @@ private:
 
     void cancelPlace();
     void placeGhost(QPointF scenePos);
+    // paste: the clipboard's contents drawn on the mouse until a click
+    QRectF circuitBounds(const Circuit& source) const;
+    QPointF pasteOffset() const;
+    void movePasteGhost();
+    void dropPaste(bool keep);
+    void cancelPaste();
     void transformSelection(bool rotate);
     void simInteractPress(QGraphicsSceneMouseEvent* e);
     void simInteractRelease();
@@ -318,7 +334,17 @@ private:
         QVector<ItemId> wires;
         std::optional<QPointF> titleStart;
         QHash<ItemId, ItemId> followers;    // entry labels of dragged buses -> their bus
+        QPointF press;                      // where the button went down
+        QPoint pressScreen;
+        QPointF anchor;                     // the grabbed part's position: it lands on the grid
+        QPointF delta;                      // the offset shown
+        bool moved = false;                 // past the drag distance
+        QGraphicsItem* clickSelects = nullptr;  // grabbed from a larger selection
     } m_drag;
+    bool m_groupMove = false;
+    QGraphicsItemGroup* m_pasteGhost = nullptr;
+    std::unique_ptr<Circuit> m_pasteSource;
+    QPointF m_pasteAnchor;
     EntryMoves m_entryPreview;              // entries shown following a reshaped bus
 
     TitleBlockItem* m_titleItem = nullptr;
