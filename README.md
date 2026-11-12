@@ -1,8 +1,14 @@
 # CirMaker Qt
 
 Editor de esquemáticos e simulador lógico digital em C++20/Qt 6, no espírito do
-CircuitMaker 2000 (abandonware). Abre os circuitos `.ckt` do CircuitMaker 2000
-e salva no formato próprio `.cmq` (JSON). Interface em português e inglês.
+CircuitMaker 2000 (abandonware). Abre e salva os circuitos `.ckt` do
+CircuitMaker 2000 e tem o formato próprio `.cmq` (JSON), que guarda tudo.
+Interface em português e inglês.
+
+Salvar em `.ckt` (Arquivo → Salvar como, tipo *CircuitMaker 2000*; um `.ckt`
+aberto é salvo de volta como `.ckt`) usa o `Device.lib` de uma instalação do
+CircuitMaker 2000, que não é distribuído: na primeira vez o programa pergunta a
+pasta. Itens sem equivalente no CircuitMaker são avisados antes de salvar.
 
 ## Compilar e testar
 

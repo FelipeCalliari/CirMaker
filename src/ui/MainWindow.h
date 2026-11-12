@@ -18,6 +18,7 @@ class QDockWidget;
 namespace cm {
 
 class Circuit;
+class CmDeviceLib;
 struct SymbolDef;
 class LibraryBrowser;
 class SchematicView;
@@ -62,6 +63,11 @@ private:
     QImage renderImage() const;
     void exportBom();
     void exportCkt();
+    // A .ckt needs CircuitMaker 2000's Device.lib: asks for its folder the
+    // first time. writeCkt warns about what CircuitMaker has no device for
+    // and writes; false if cancelled or failed.
+    bool loadCktLibrary(const QString& title, CmDeviceLib& lib);
+    bool writeCkt(const QString& path, const QString& title);
     // the path written, empty if cancelled or failed
     QString writeTextFile(const QString& title, const QString& suffix, const QString& filter, const QString& text);
     void findAndSelect();

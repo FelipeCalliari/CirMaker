@@ -1170,13 +1170,11 @@ bool MainWindow::openFile(const QString& path, bool interactive)
         m_macroLock.clear();
         NativeFormat::deserialize(NativeFormat::serialize(imported), *m_circuit, nullptr);
         m_undo->clear();
-        m_undo->resetClean();
-        // imported circuits are saved as .cmq, never over the original
-        m_path.clear();
+        // Save writes it back as .ckt (asking first if something would be lost)
+        m_path = path;
         updateTitle();
         addRecent(path);
         m_openedPath = path;
-        setWindowModified(true);
         if (interactive && (!report.unmapped.isEmpty() || !report.warnings.isEmpty())) {
             QStringList lines;
             for (auto it = report.unmapped.cbegin(); it != report.unmapped.cend(); ++it)
@@ -1262,10 +1260,15 @@ bool MainWindow::save()
     if (m_path.isEmpty())
         return saveAs();
     m_scene->stopSimulation();
-    QString error;
-    if (!NativeFormat::save(m_path, *m_circuit, &error)) {
-        QMessageBox::critical(this, tr("Save"), tr("Cannot save %1:\n%2").arg(m_path, error));
-        return false;
+    if (m_path.endsWith(QStringLiteral(".ckt"), Qt::CaseInsensitive)) {
+        if (!writeCkt(m_path, tr("Save")))
+            return false;
+    } else {
+        QString error;
+        if (!NativeFormat::save(m_path, *m_circuit, &error)) {
+            QMessageBox::critical(this, tr("Save"), tr("Cannot save %1:\n%2").arg(m_path, error));
+            return false;
+        }
     }
     m_undo->setClean();
     updateTitle();
@@ -1277,14 +1280,26 @@ bool MainWindow::save()
 bool MainWindow::saveAs()
 {
     QSettings settings;
-    QString path = QFileDialog::getSaveFileName(this, tr("Save circuit"), settings.value(QStringLiteral("dirs/open")).toString(),
-                                                tr("CirMaker Qt (*.cmq)"));
+    const QString cmq = tr("CirMaker Qt (*.cmq)"), ckt = tr("CircuitMaker 2000 (*.ckt)");
+    const bool wasCkt = m_path.endsWith(QStringLiteral(".ckt"), Qt::CaseInsensitive);
+    QString filter = wasCkt ? ckt : cmq;
+    const QString start = m_path.isEmpty() ? settings.value(QStringLiteral("dirs/open")).toString()
+                                           : QFileInfo(m_path).absolutePath() + u'/' + QFileInfo(m_path).completeBaseName();
+    QString path = QFileDialog::getSaveFileName(this, tr("Save circuit"), start, cmq + QStringLiteral(";;") + ckt, &filter);
     if (path.isEmpty())
         return false;
-    if (!path.endsWith(QStringLiteral(".cmq"), Qt::CaseInsensitive))
-        path += QStringLiteral(".cmq");
+    // the extension typed wins; without one, the chosen type's
+    const bool asCkt = path.endsWith(QStringLiteral(".ckt"), Qt::CaseInsensitive)
+                       || (!path.endsWith(QStringLiteral(".cmq"), Qt::CaseInsensitive) && filter == ckt);
+    if (!path.endsWith(asCkt ? QStringLiteral(".ckt") : QStringLiteral(".cmq"), Qt::CaseInsensitive))
+        path += asCkt ? QStringLiteral(".ckt") : QStringLiteral(".cmq");
+    const QString previous = m_path;
     m_path = path;
-    return save();
+    if (save())
+        return true;
+    m_path = previous;
+    updateTitle();
+    return false;
 }
 
 // ---------------------------------------------------------------- macros
@@ -1601,9 +1616,8 @@ QString MainWindow::writeTextFile(const QString& title, const QString& suffix, c
 
 // CircuitMaker draws devices from its own library, so writing its format
 // needs an installation (normally under Wine); its folder is remembered.
-void MainWindow::exportCkt()
+bool MainWindow::loadCktLibrary(const QString& title, CmDeviceLib& lib)
 {
-    const QString title = tr("Export to CircuitMaker 2000");
     QSettings settings;
     QString libPath = CmDeviceLib::locate(settings.value(QStringLiteral("cm/folder")).toString());
     if (libPath.isEmpty()) {
@@ -1611,25 +1625,27 @@ void MainWindow::exportCkt()
                                  tr("Writing .ckt files needs CircuitMaker 2000's Device.lib, which is not distributed "
                                     "with this program. Choose the folder where CircuitMaker 2000 is installed."));
         const QString folder = QFileDialog::getExistingDirectory(this, title);
-        if (folder.isEmpty()) return;
+        if (folder.isEmpty()) return false;
         libPath = CmDeviceLib::locate(folder);
         if (libPath.isEmpty()) {
             QMessageBox::warning(this, title, tr("There is no Device.lib in %1.").arg(folder));
-            return;
+            return false;
         }
         settings.setValue(QStringLiteral("cm/folder"), QFileInfo(libPath).absolutePath());
     }
-    CmDeviceLib lib;
     QString error;
     if (!lib.load(libPath, &error)) {
         QMessageBox::warning(this, title, tr("Cannot read %1:\n%2").arg(libPath, error));
-        return;
+        return false;
     }
-    const QString base = m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName();
-    const QString path = QFileDialog::getSaveFileName(this, title, base + QStringLiteral(".ckt"),
-                                                      tr("CircuitMaker 2000 schematic (*.ckt)"));
-    if (path.isEmpty()) return;
-    CktExportReport report;
+    return true;
+}
+
+bool MainWindow::writeCkt(const QString& path, const QString& title)
+{
+    CmDeviceLib lib;
+    if (!loadCktLibrary(title, lib))
+        return false;
     // the speed it runs at goes out as CircuitMaker's Speed
     {
         AnalysisSettings a = m_circuit->analysis();
@@ -1640,16 +1656,36 @@ void MainWindow::exportCkt()
             m_circuit->setAnalysis(a);
         }
     }
-    if (!CktExporter::save(path, *m_circuit, LibraryRegistry::instance(), lib, &report, &error)) {
+    // what CircuitMaker has no device for is left out: ask before losing it
+    CktExportReport report;
+    CktExporter::write(*m_circuit, LibraryRegistry::instance(), lib, &report);
+    if (!report.skipped.isEmpty()
+        && QMessageBox::warning(this, title,
+                                tr("CircuitMaker 2000 has no equivalent for these items, which %1 will not contain:\n%2\n\n"
+                                   "Save the circuit as .cmq to keep everything.")
+                                    .arg(QFileInfo(path).fileName(), report.skipped.join(QStringLiteral(", "))),
+                                QMessageBox::Save | QMessageBox::Cancel, QMessageBox::Cancel)
+               != QMessageBox::Save)
+        return false;
+    QString error;
+    if (!CktExporter::save(path, *m_circuit, LibraryRegistry::instance(), lib, nullptr, &error)) {
         QMessageBox::critical(this, title, tr("Cannot write %1:\n%2").arg(path, error));
-        return;
+        return false;
     }
-    if (!report.skipped.isEmpty())
-        QMessageBox::warning(this, title,
-                             tr("Written %1, without these items CircuitMaker 2000 has no equivalent for:\n%2")
-                                 .arg(path, report.skipped.join(QStringLiteral(", "))));
-    else
-        statusBar()->showMessage(tr("Written %1").arg(path), 5000);
+    return true;
+}
+
+// CircuitMaker draws devices from its own library, so writing its format
+// needs an installation (normally under Wine); its folder is remembered.
+// Exporting writes a copy: the document stays where it is.
+void MainWindow::exportCkt()
+{
+    const QString title = tr("Export to CircuitMaker 2000");
+    const QString base = m_path.isEmpty() ? tr("circuit") : QFileInfo(m_path).completeBaseName();
+    const QString path = QFileDialog::getSaveFileName(this, title, base + QStringLiteral(".ckt"),
+                                                      tr("CircuitMaker 2000 schematic (*.ckt)"));
+    if (path.isEmpty() || !writeCkt(path, title)) return;
+    statusBar()->showMessage(tr("Written %1").arg(path), 5000);
 }
 
 void MainWindow::exportBom()
