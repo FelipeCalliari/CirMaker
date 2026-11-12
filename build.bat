@@ -149,8 +149,8 @@ if not exist "%NG_CACHE%\Spice64_dll\dll-vs\ngspice.dll" (
 if not exist "%NG_CACHE%\Spice64\bin\sndfile.dll" (
     rem a DLL depende de sndfile.dll e samplerate.dll, que so vem no pacote de console
     echo     baixando ngspice %NGSPICE_VER% ^(console, pelas DLLs de audio^)
-    curl -fL --retry 3 -o "%NG_CACHE%\con.7z" "%NG_URL%/ngspice-%NGSPICE_VER%_64.7z/download" || exit /b 1
-    call :extract "%NG_CACHE%\con.7z" "%NG_CACHE%" || exit /b 1
+    curl -fL --retry 3 -o "%NG_CACHE%\console.7z" "%NG_URL%/ngspice-%NGSPICE_VER%_64.7z/download" || exit /b 1
+    call :extract "%NG_CACHE%\console.7z" "%NG_CACHE%" || exit /b 1
 )
 copy /y "%NG_CACHE%\Spice64_dll\dll-vs\ngspice.dll" "%STAGE%\" >nul || exit /b 1
 copy /y "%NG_CACHE%\Spice64_dll\dll-vs\libomp140.x86_64.dll" "%STAGE%\" >nul || exit /b 1

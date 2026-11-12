@@ -25,7 +25,28 @@ jobs:
       - name: Dependências
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build ngspice libngspice0 libgl1-mesa-dev libxkbcommon-dev
+          sudo apt-get install -y ninja-build libgl1-mesa-dev libxkbcommon-dev libreadline-dev
+      # o ngspice do Ubuntu (42) não aceita o d_cosim como o usamos: o mesmo
+      # ngspice do pacote do Windows, compilado uma vez e guardado em cache
+      - name: Cache do ngspice
+        id: ngspice-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/ngspice
+          key: ngspice-linux-${{ env.NGSPICE_VER }}
+      - name: Compilar o ngspice
+        if: steps.ngspice-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fL --retry 3 -o ngspice.tar.gz "https://sourceforge.net/projects/ngspice/files/ng-spice-rework/${NGSPICE_VER}/ngspice-${NGSPICE_VER}.tar.gz/download"
+          tar xzf ngspice.tar.gz
+          cd ngspice-${NGSPICE_VER}
+          ./configure --prefix=$HOME/ngspice --with-ngshared --enable-xspice --enable-cider --disable-debug --enable-openmp
+          make -j$(nproc)
+          make install
+      - name: Usar o ngspice
+        run: |
+          echo "LD_LIBRARY_PATH=$HOME/ngspice/lib" >> "$GITHUB_ENV"
+          echo "SPICE_SCRIPTS=$HOME/ngspice/share/ngspice/scripts" >> "$GITHUB_ENV"
       - uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
