@@ -1,8 +1,8 @@
 #include "core/PcbNetlist.h"
+#include "core/NaturalOrder.h"
 
 #include "library/LibraryRegistry.h"
 
-#include <QCollator>
 #include <QHash>
 #include <QSet>
 
@@ -21,8 +21,7 @@ void collect(const Circuit& circuit, const LibraryRegistry& library, const Netli
         return s && !s->netLabel && !s->hidden && s->model.value(u"kind").toString() != u"const"
             && s->model.value(u"kind").toString() != u"scope" && !c.props.value(QStringLiteral("excludePcb")).toBool();
     };
-    QCollator natural;
-    natural.setNumericMode(true);
+    const NaturalOrder natural;
 
     QVector<const Component*> comps;
     for (const Component& c : circuit.components())
@@ -78,8 +77,7 @@ QString write(const Circuit& circuit, const LibraryRegistry& library, const Netl
     QVector<Part> parts;
     QVector<NetPins> nets;
     collect(circuit, library, netlist, parts, nets);
-    QCollator natural;
-    natural.setNumericMode(true);
+    const NaturalOrder natural;
     QHash<std::pair<QString, QString>, QString> netOfPin;
     for (const NetPins& n : std::as_const(nets))
         for (const auto& p : n.pins) netOfPin.insert(p, n.name);

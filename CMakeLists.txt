@@ -18,6 +18,7 @@ add_library(cmcore STATIC
     src/core/WireGeometry.h src/core/WireGeometry.cpp
     src/core/WireRouter.h src/core/WireRouter.cpp
     src/core/Bom.h src/core/Bom.cpp
+    src/core/NaturalOrder.h
     src/core/PcbNetlist.h src/core/PcbNetlist.cpp
     src/core/UndoCommands.h src/core/UndoCommands.cpp
     src/core/io/NativeFormat.h src/core/io/NativeFormat.cpp

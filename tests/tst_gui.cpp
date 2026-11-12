@@ -30,6 +30,7 @@
 #include <QPainter>
 
 #include "sim/digital/EventSimulator.h"
+#include <QStandardPaths>
 #include <QUndoStack>
 
 using namespace cm;
@@ -38,7 +39,15 @@ using namespace cm::test;
 class TestGui : public QObject {
     Q_OBJECT
 private slots:
-    void initTestCase() { library(); }
+    void initTestCase()
+    {
+        // settings of their own: without a name, Windows keeps none (the
+        // registry key is invalid) and elsewhere they mix with other programs'
+        QStandardPaths::setTestModeEnabled(true);
+        QCoreApplication::setOrganizationName(QStringLiteral("cirmaker-tests"));
+        QCoreApplication::setApplicationName(QStringLiteral("tst_gui"));
+        library();
+    }
     void choosingAnotherDeviceReplacesGhost();
     void windowClosesCleanly();
     void dragWireSegment();

@@ -1,4 +1,5 @@
 #include "ui/SchematicScene.h"
+#include "core/NaturalOrder.h"
 
 #include "core/Faults.h"
 #include "core/WireGeometry.h"
@@ -24,7 +25,6 @@
 
 #include <QApplication>
 #include <QClipboard>
-#include <QCollator>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
@@ -429,8 +429,7 @@ void SchematicScene::placeGhost(QPointF scenePos)
         QMap<QString, QSet<int>> used;
         for (const Component& o : m_circuit->components())
             if (o.symbolId == c.symbolId && !o.designator.isEmpty()) used[o.designator] << packagePart(*s, o);
-        QCollator natural;
-        natural.setNumericMode(true);
+        const NaturalOrder natural;
         QStringList refs = used.keys();
         std::sort(refs.begin(), refs.end(), natural);
         for (const QString& ref : std::as_const(refs)) {

@@ -1,8 +1,8 @@
 #include "core/Bom.h"
+#include "core/NaturalOrder.h"
 
 #include "library/LibraryRegistry.h"
 
-#include <QCollator>
 #include <QMap>
 
 #include <algorithm>
@@ -29,9 +29,7 @@ QVector<BomLine> build(const Circuit& circuit, const LibraryRegistry& library)
         }
     }
 
-    QCollator natural;
-    natural.setNumericMode(true);
-    natural.setCaseSensitivity(Qt::CaseInsensitive);
+    const NaturalOrder natural;
     QVector<BomLine> out;
     for (BomLine& line : byKey) {
         std::sort(line.designators.begin(), line.designators.end(), natural);
