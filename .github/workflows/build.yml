@@ -1,0 +1,85 @@
+# Compila e testa em Linux e Windows a cada push/PR. Uma tag v* (ex. v0.2.0)
+# publica um release no GitHub com o .zip do Windows (Qt + ngspice embutidos).
+#   git tag v0.2.0 && git push origin v0.2.0
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QT_VERSION: '6.8.3'
+  NGSPICE_VER: '47'
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libngspice0 libgl1-mesa-dev libxkbcommon-dev
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: linux_gcc_64
+          cache: true
+      - name: Compilar e testar
+        run: ./build.sh --test
+
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_mingw
+          tools: tools_mingw1310
+          cache: true
+      - name: Versão
+        id: ver
+        shell: bash
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then v=${GITHUB_REF#refs/tags/v}; else v=$(git rev-parse --short HEAD); fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Cache do ngspice
+        uses: actions/cache@v4
+        with:
+          path: dist/ngspice-${{ env.NGSPICE_VER }}
+          key: ngspice-${{ env.NGSPICE_VER }}
+      - name: Compilar, testar e empacotar
+        shell: cmd
+        env:
+          MINGW_DIR: ${{ env.IQTA_TOOLS }}\mingw1310_64\bin
+          CM_VERSION: ${{ steps.ver.outputs.version }}
+        run: build.bat test package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CirMaker-${{ steps.ver.outputs.version }}-windows-x64
+          path: dist/CirMaker-*-windows-x64.zip
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

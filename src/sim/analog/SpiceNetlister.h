@@ -67,6 +67,9 @@ Fourier fourier(const QVector<double>& time, const QVector<double>& y, double f0
 // The d_cosim library that runs our chip models inside ngspice, at a path
 // ngspice can read (it lower-cases the deck); empty when not available.
 QString cosimLibrary();
+// On Windows the 8.3 short form of an existing path (no spaces, which
+// ngspice's deck and commands cannot take), '/'-separated; elsewhere the path.
+QString shortPathName(const QString& path);
 
 // SPICE number: 4.7k, 10u, 1Meg, 2.2nF ... (units after the scale are ignored).
 std::optional<double> parseNumber(const QString& text);

@@ -52,7 +52,10 @@ add_library(cmcosim SHARED src/sim/cosim/CmCosim.cpp)
 target_link_libraries(cmcosim PRIVATE cmsim cmlibdata)
 set_target_properties(cmcosim PROPERTIES PREFIX "lib" OUTPUT_NAME cmcosim CXX_VISIBILITY_PRESET hidden)
 # it runs inside the application's process: bind its own copies of our code
-target_link_options(cmcosim PRIVATE -Wl,-Bsymbolic)
+# (ELF only; a Windows DLL always binds its own symbols)
+if(NOT WIN32 AND NOT APPLE)
+    target_link_options(cmcosim PRIVATE -Wl,-Bsymbolic)
+endif()
 target_compile_definitions(cmsim PUBLIC CM_COSIM_BUILD_PATH="$<TARGET_FILE:cmcosim>")
 
 # --- symbol library data, embedded as resources

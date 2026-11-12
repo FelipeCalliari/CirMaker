@@ -13,6 +13,19 @@ ctest --test-dir build
 ./build/cirmaker [circuito.cmq | circuito.ckt]
 ```
 
+Ou pelos scripts:
+
+- **Linux**: `./build.sh` (`--test`, `--package`, `--debug`, `--clean`;
+  `QT_DIR=~/Qt/6.8.3/gcc_64` se o Qt não for o do sistema).
+- **Windows**: `build.bat` (`test`, `package`, `debug`, `clean`), com
+  `set QT_DIR=C:\Qt\6.8.3\mingw_64` e `set MINGW_DIR=C:\Qt\Tools\mingw1310_64\bin`.
+  `build.bat package` gera `dist\CirMaker-<versão>-windows-x64.zip` com as
+  DLLs do Qt e o ngspice (baixado do SourceForge) para a simulação analógica.
+
+No GitHub, o workflow `.github/workflows/build.yml` compila e testa em Linux e
+Windows a cada push; uma tag `v*` (`git tag v0.1.0 && git push origin v0.1.0`)
+publica um release com o `.zip` do Windows.
+
 Requer Qt ≥ 6.5 (Core, Gui, Widgets, Svg, PrintSupport, LinguistTools, Test).
 `-DCM_BUILD_APP=OFF` compila só núcleo, simulador e testes.
 
@@ -136,3 +149,9 @@ Circuitos com peças só analógicas abrem em modo analógico.
 
 A PROM32 importada traz o conteúdo gravado no `.ckt` na propriedade `data`
 (bytes em hexadecimal, editáveis em Propriedades); a 1K RAM começa zerada.
+
+## Licença
+
+MIT — veja [LICENSE](LICENSE). O pacote do Windows inclui o
+[ngspice](https://ngspice.sourceforge.io) (licença BSD-3, "modified BSD") e as
+bibliotecas do Qt (LGPLv3), distribuídas como DLLs separadas.

@@ -19,6 +19,10 @@
 
 #include <cmath>
 
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
+
 using namespace Qt::StringLiterals;
 
 namespace cm::spice {
@@ -868,12 +872,35 @@ QString analysisLine(const AnalysisSettings& a, const Deck& deck, const Netlist&
 
 } // namespace
 
+QString shortPathName(const QString& path)
+{
+#ifdef Q_OS_WIN
+    const std::wstring native = QDir::toNativeSeparators(path).toStdWString();
+    const DWORD size = GetShortPathNameW(native.c_str(), nullptr, 0);
+    if (size == 0) return path;
+    std::wstring buffer(size, L'\0');
+    const DWORD written = GetShortPathNameW(native.c_str(), buffer.data(), size);
+    if (written == 0 || written >= size) return path;
+    buffer.resize(written);
+    return QDir::fromNativeSeparators(QString::fromStdWString(buffer));
+#else
+    return path;
+#endif
+}
+
 QString cosimLibrary()
 {
     static const QString path = [] {
+#ifdef Q_OS_WIN
+        const QString shim = QStringLiteral("/libcmcosim.dll");
+#elif defined(Q_OS_MACOS)
+        const QString shim = QStringLiteral("/libcmcosim.dylib");
+#else
+        const QString shim = QStringLiteral("/libcmcosim.so");
+#endif
         QStringList candidates{qEnvironmentVariable("CM_COSIM")};
         if (QCoreApplication::instance())
-            candidates << QCoreApplication::applicationDirPath() + QStringLiteral("/libcmcosim.so");
+            candidates << QCoreApplication::applicationDirPath() + shim;
 #ifdef CM_COSIM_BUILD_PATH
         candidates << QStringLiteral(CM_COSIM_BUILD_PATH);
 #endif
@@ -881,17 +908,24 @@ QString cosimLibrary()
         for (const QString& c : std::as_const(candidates))
             if (!c.isEmpty() && QFileInfo::exists(c)) { found = QFileInfo(c).canonicalFilePath(); break; }
         if (found.isEmpty()) return QString();
+#ifdef Q_OS_WIN
+        // the file system ignores case, so the lower-cased deck still finds
+        // it; a space (C:/Program Files) goes away in the short 8.3 name
+        found = shortPathName(found).toLower();
+        return found.contains(u' ') ? QString() : found;
+#else
         // ngspice lower-cases the path in the deck: publish the library under
         // a lower-case name if its own is not
         if (found != found.toLower() || found.contains(u' ')) {
             const QString dir = QDir::tempPath() + QStringLiteral("/cmcosim-%1").arg(QString::number(qHash(QDir::homePath()), 16));
             QDir().mkpath(dir);
-            const QString link = dir + QStringLiteral("/libcmcosim.so");
+            const QString link = dir + shim;
             QFile::remove(link);
             if (!QFile::link(found, link) && !QFile::copy(found, link)) return QString();
             found = link;
         }
         return found == found.toLower() && !found.contains(u' ') ? found : QString();
+#endif
     }();
     return path;
 }

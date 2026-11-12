@@ -1,5 +1,9 @@
 #include "sim/analog/NgspiceEngine.h"
+#include "sim/analog/SpiceNetlister.h"
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <QLibrary>
 #include <QMutexLocker>
 #include <QRegularExpression>
@@ -124,7 +128,23 @@ bool NgspiceEngine::load(QString* why)
         return false;
     }
     g_state = {};
+    // the Windows package carries ngspice beside the program: its init file
+    // in ngspice/scripts and the XSPICE code models (digital.cm has d_cosim)
+    // in ngspice/lib, loaded here since spinit cannot name a relative path
+    QString bundled;
+    if (QCoreApplication::instance())
+        bundled = QCoreApplication::applicationDirPath() + QStringLiteral("/ngspice");
+    const bool hasBundle = !bundled.isEmpty() && QFileInfo::exists(bundled + QStringLiteral("/lib"));
+    if (hasBundle && qEnvironmentVariableIsEmpty("SPICE_SCRIPTS"))
+        qputenv("SPICE_SCRIPTS", QDir::toNativeSeparators(bundled + QStringLiteral("/scripts")).toLocal8Bit());
     api->init(onChar, onStat, onExit, nullptr, nullptr, onBgThread, nullptr);
+    if (hasBundle) {
+        const QStringList models = QDir(bundled + QStringLiteral("/lib")).entryList({QStringLiteral("*.cm")}, QDir::Files);
+        for (const QString& model : models) {
+            QByteArray line = "codemodel " + shortPathName(bundled + QStringLiteral("/lib/") + model).toLocal8Bit();
+            api->command(line.data());
+        }
+    }
     m_api = api;
     return true;
 }
